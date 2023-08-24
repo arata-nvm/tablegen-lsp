@@ -28,6 +28,7 @@ impl<'a> Lexer<'a> {
 
     pub fn next(&mut self) -> TokenKind {
         match self.s.eat() {
+            Some(c) if c.is_whitespace() => self.whitespace(),
             Some(c) if c.is_ascii_digit() => self.number(),
             Some(c) if is_identifier_start(c) => self.identifier(),
             Some('-') => T![-],
@@ -60,6 +61,11 @@ impl<'a> Lexer<'a> {
             None => TokenKind::Eof,
             _ => unimplemented!(),
         }
+    }
+
+    fn whitespace(&mut self) -> TokenKind {
+        self.s.eat_while(char::is_ascii_whitespace);
+        TokenKind::Whitespace
     }
 
     fn number(&mut self) -> TokenKind {
