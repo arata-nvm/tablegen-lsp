@@ -49,6 +49,57 @@ pub enum TokenKind {
     String,
     Then,
 
+    // Bang operators
+    XConcat,
+    XAdd,
+    XSub,
+    XMul,
+    XDiv,
+    XNot,
+    XLog2,
+    XAnd,
+    XOr,
+    XXor,
+    XSra,
+    XSrl,
+    XShl,
+    XListConcat,
+    XListSplat,
+    XStrConcat,
+    XInterleave,
+    XSubstr,
+    XFind,
+    XCast,
+    XSubst,
+    XForEach,
+    XFilter,
+    XFoldl,
+    XHead,
+    XTail,
+    XSize,
+    XEmpty,
+    XIf,
+    XCond,
+    XEq,
+    XIsA,
+    XDag,
+    XNe,
+    XLe,
+    XLt,
+    XGe,
+    XGt,
+    XSetDagOp,
+    XGetDagOp,
+    XExists,
+    XListRemove,
+    XToLower,
+    XToUpper,
+    XRange,
+    XGetDagArg,
+    XGetDagName,
+    XSetDagArg,
+    XSetDagName,
+
     // Literals
     IntVal,
 
@@ -99,4 +150,54 @@ macro_rules! T {
     [multiclass] => {$crate::token::TokenKind::MultiClass};
     [string] => {$crate::token::TokenKind::String};
     [then] => {$crate::token::TokenKind::Then};
+
+    [!concat] => {$crate::token::TokenKind::XConcat};
+    [!add] => {$crate::token::TokenKind::XAdd};
+    [!sub] => {$crate::token::TokenKind::XSub};
+    [!mul] => {$crate::token::TokenKind::XMul};
+    [!div] => {$crate::token::TokenKind::XDiv};
+    [!not] => {$crate::token::TokenKind::XNot};
+    [!log2] => {$crate::token::TokenKind::XLog2};
+    [!and] => {$crate::token::TokenKind::XAnd};
+    [!or] => {$crate::token::TokenKind::XOr};
+    [!xor] => {$crate::token::TokenKind::XXor};
+    [!sra] => {$crate::token::TokenKind::XSra};
+    [!srl] => {$crate::token::TokenKind::XSrl};
+    [!shl] => {$crate::token::TokenKind::XShl};
+    [!listconcat] => {$crate::token::TokenKind::XListConcat};
+    [!listsplat] => {$crate::token::TokenKind::XListSplat};
+    [!strconcat] => {$crate::token::TokenKind::XStrConcat};
+    [!interleave] => {$crate::token::TokenKind::XInterleave};
+    [!substr] => {$crate::token::TokenKind::XSubstr};
+    [!find] => {$crate::token::TokenKind::XFind};
+    [!cast] => {$crate::token::TokenKind::XCast};
+    [!subst] => {$crate::token::TokenKind::XSubst};
+    [!foreach] => {$crate::token::TokenKind::XForEach};
+    [!filter] => {$crate::token::TokenKind::XFilter};
+    [!foldl] => {$crate::token::TokenKind::XFoldl};
+    [!head] => {$crate::token::TokenKind::XHead};
+    [!tail] => {$crate::token::TokenKind::XTail};
+    [!size] => {$crate::token::TokenKind::XSize};
+    [!empty] => {$crate::token::TokenKind::XEmpty};
+    [!if] => {$crate::token::TokenKind::XIf};
+    [!cond] => {$crate::token::TokenKind::XCond};
+    [!eq] => {$crate::token::TokenKind::XEq};
+    [!isa] => {$crate::token::TokenKind::XIsA};
+    [!dag] => {$crate::token::TokenKind::XDag};
+    [!ne] => {$crate::token::TokenKind::XNe};
+    [!le] => {$crate::token::TokenKind::XLe};
+    [!lt] => {$crate::token::TokenKind::XLt};
+    [!ge] => {$crate::token::TokenKind::XGe};
+    [!gt] => {$crate::token::TokenKind::XGt};
+    [!setdagop] => {$crate::token::TokenKind::XSetDagOp};
+    [!getdagop] => {$crate::token::TokenKind::XGetDagOp};
+    [!exists] => {$crate::token::TokenKind::XExists};
+    [!listremove] => {$crate::token::TokenKind::XListRemove};
+    [!tolower] => {$crate::token::TokenKind::XToLower};
+    [!toupper] => {$crate::token::TokenKind::XToUpper};
+    [!range] => {$crate::token::TokenKind::XRange};
+    [!getdagarg] => {$crate::token::TokenKind::XGetDagArg};
+    [!getdagname] => {$crate::token::TokenKind::XGetDagName};
+    [!setdagarg] => {$crate::token::TokenKind::XSetDagArg};
+    [!setdagname] => {$crate::token::TokenKind::XSetDagName};
 }

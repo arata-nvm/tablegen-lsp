@@ -32,6 +32,7 @@ impl<'a> Lexer<'a> {
             Some(c) if c.is_whitespace() => self.whitespace(),
             Some(c) if c.is_ascii_digit() => self.number(),
             Some(c) if is_identifier_start(c) => self.identifier(start),
+            Some('!') => self.bangoperator(),
             Some('-') => T![-],
             Some('+') => T![+],
             Some('[') => T!['['],
@@ -104,6 +105,65 @@ impl<'a> Lexer<'a> {
             _ => TokenKind::Id,
         }
     }
+
+    fn bangoperator(&mut self) -> TokenKind {
+        let start = self.s.cursor();
+        self.s.eat_while(char::is_ascii_alphabetic);
+        let ident = self.s.from(start);
+
+        match ident {
+            "concat" => T![!concat],
+            "add" => T![!add],
+            "sub" => T![!sub],
+            "mul" => T![!mul],
+            "div" => T![!div],
+            "not" => T![!not],
+            "log2" => T![!log2],
+            "and" => T![!and],
+            "or" => T![!or],
+            "xor" => T![!xor],
+            "sra" => T![!sra],
+            "srl" => T![!srl],
+            "shl" => T![!shl],
+            "listconcat" => T![!listconcat],
+            "listsplat" => T![!listsplat],
+            "strconcat" => T![!strconcat],
+            "interleave" => T![!interleave],
+            "substr" => T![!substr],
+            "find" => T![!find],
+            "cast" => T![!cast],
+            "subst" => T![!subst],
+            "foreach" => T![!foreach],
+            "filter" => T![!filter],
+            "foldl" => T![!foldl],
+            "head" => T![!head],
+            "tail" => T![!tail],
+            "size" => T![!size],
+            "empty" => T![!empty],
+            "if" => T![!if],
+            "cond" => T![!cond],
+            "eq" => T![!eq],
+            "isa" => T![!isa],
+            "dag" => T![!dag],
+            "ne" => T![!ne],
+            "le" => T![!le],
+            "lt" => T![!lt],
+            "ge" => T![!ge],
+            "gt" => T![!gt],
+            "setdagop" => T![!setdagop],
+            "getdagop" => T![!getdagop],
+            "exists" => T![!exists],
+            "listremove" => T![!listremove],
+            "tolower" => T![!tolower],
+            "toupper" => T![!toupper],
+            "range" => T![!range],
+            "getdagarg" => T![!getdagarg],
+            "getdagname" => T![!getdagname],
+            "setdagarg" => T![!setdagarg],
+            "setdagname" => T![!setdagname],
+            _ => self.error("Unknown operator"),
+        }
+    }
 }
 
 fn is_identifier_start(c: char) -> bool {
@@ -140,12 +200,23 @@ mod tests {
         let mut l = Lexer::new("..");
         assert_eq!(l.next(), TokenKind::Error);
         assert_eq!(l.take_error(), Some("Invalid '..' punctuation".into()));
+
+        let mut l = Lexer::new("!hoge");
+        assert_eq!(l.next(), TokenKind::Error);
+        assert_eq!(l.take_error(), Some("Unknown operator".into()));
     }
 
     #[test]
     fn keyword() {
         insta::assert_debug_snapshot!(tokenize(
             "assert bit bits class code dag def defm defset defvar else field foreach if in include int let list multiclass string then"
+        ));
+    }
+
+    #[test]
+    fn bangoperator() {
+        insta::assert_debug_snapshot!(tokenize(
+          "!concat !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listsplat !strconcat !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname"
         ));
     }
 
