@@ -5,3 +5,12 @@ version = 3
 [[package]]
 name = "tablegen-parser"
 version = "0.1.0"
+dependencies = [
+ "unscanny",
+]
+
+[[package]]
+name = "unscanny"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9df2af067a7953e9c3831320f35c1cc0600c30d44d9f7a12b01db1cd88d6b47"
