@@ -2,6 +2,7 @@
 pub enum TokenKind {
     // Markers
     Eof,
+    Error,
 
     // Symbols
     Minus,

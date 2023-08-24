@@ -1,3 +1,4 @@
+use ecow::EcoString;
 use unscanny::Scanner;
 
 use crate::{token::TokenKind, T};
@@ -5,13 +6,24 @@ use crate::{token::TokenKind, T};
 #[derive(Debug)]
 pub struct Lexer<'a> {
     s: Scanner<'a>,
+    error: Option<EcoString>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
             s: Scanner::new(text),
+            error: None,
         }
+    }
+
+    pub fn take_error(&mut self) -> Option<EcoString> {
+        self.error.take()
+    }
+
+    fn error(&mut self, msg: impl Into<EcoString>) -> TokenKind {
+        self.error = Some(msg.into());
+        TokenKind::Error
     }
 
     pub fn next(&mut self) -> TokenKind {

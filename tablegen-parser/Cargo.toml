@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ecow = "0.1.2"
 insta = "1.31.0"
 unscanny = "0.1.0"
