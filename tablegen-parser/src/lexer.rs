@@ -27,10 +27,11 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn next(&mut self) -> TokenKind {
+        let start = self.s.cursor();
         match self.s.eat() {
             Some(c) if c.is_whitespace() => self.whitespace(),
             Some(c) if c.is_ascii_digit() => self.number(),
-            Some(c) if is_identifier_start(c) => self.identifier(),
+            Some(c) if is_identifier_start(c) => self.identifier(start),
             Some('-') => T![-],
             Some('+') => T![+],
             Some('[') => T!['['],
@@ -73,9 +74,35 @@ impl<'a> Lexer<'a> {
         TokenKind::IntVal
     }
 
-    fn identifier(&mut self) -> TokenKind {
+    fn identifier(&mut self, start: usize) -> TokenKind {
         self.s.eat_while(is_identifier_continue);
-        TokenKind::Id
+        let ident = self.s.from(start);
+
+        match ident {
+            "assert" => T![assert],
+            "bit" => T![bit],
+            "bits" => T![bits],
+            "class" => T![class],
+            "code" => T![code],
+            "dag" => T![dag],
+            "def" => T![def],
+            "defm" => T![defm],
+            "defset" => T![defset],
+            "defvar" => T![defvar],
+            "else" => T![else],
+            "field" => T![field],
+            "foreach" => T![foreach],
+            "if" => T![if],
+            "in" => T![in],
+            "include" => T![include],
+            "int" => T![int],
+            "let" => T![let],
+            "list" => T![list],
+            "multiclass" => T![multiclass],
+            "string" => T![string],
+            "then" => T![then],
+            _ => TokenKind::Id,
+        }
     }
 }
 
@@ -113,6 +140,13 @@ mod tests {
         let mut l = Lexer::new("..");
         assert_eq!(l.next(), TokenKind::Error);
         assert_eq!(l.take_error(), Some("Invalid '..' punctuation".into()));
+    }
+
+    #[test]
+    fn keyword() {
+        insta::assert_debug_snapshot!(tokenize(
+            "assert bit bits class code dag def defm defset defvar else field foreach if in include int let list multiclass string then"
+        ));
     }
 
     #[test]

@@ -25,6 +25,30 @@ pub enum TokenKind {
     Paste,
     DotDotDot,
 
+    // Keywords
+    Assert,
+    Bit,
+    Bits,
+    Class,
+    Code,
+    Dag,
+    Def,
+    Defm,
+    Defset,
+    Defvar,
+    ElseKw,
+    Field,
+    Foreach,
+    If,
+    In,
+    Include,
+    Int,
+    Let,
+    List,
+    MultiClass,
+    String,
+    Then,
+
     // Literals
     IntVal,
 
@@ -52,4 +76,27 @@ macro_rules! T {
     [?] => {$crate::token::TokenKind::Question};
     [#] => {$crate::token::TokenKind::Paste};
     [...] => {$crate::token::TokenKind::DotDotDot};
+
+    [assert] => {$crate::token::TokenKind::Assert};
+    [bit] => {$crate::token::TokenKind::Bit};
+    [bits] => {$crate::token::TokenKind::Bits};
+    [class] => {$crate::token::TokenKind::Class};
+    [code] => {$crate::token::TokenKind::Code};
+    [dag] => {$crate::token::TokenKind::Dag};
+    [def] => {$crate::token::TokenKind::Def};
+    [defm] => {$crate::token::TokenKind::Defm};
+    [defset] => {$crate::token::TokenKind::Defset};
+    [defvar] => {$crate::token::TokenKind::Defvar};
+    [else] => {$crate::token::TokenKind::ElseKw};
+    [field] => {$crate::token::TokenKind::Field};
+    [foreach] => {$crate::token::TokenKind::Foreach};
+    [if] => {$crate::token::TokenKind::If};
+    [in] => {$crate::token::TokenKind::In};
+    [include] => {$crate::token::TokenKind::Include};
+    [int] => {$crate::token::TokenKind::Int};
+    [let] => {$crate::token::TokenKind::Let};
+    [list] => {$crate::token::TokenKind::List};
+    [multiclass] => {$crate::token::TokenKind::MultiClass};
+    [string] => {$crate::token::TokenKind::String};
+    [then] => {$crate::token::TokenKind::Then};
 }
