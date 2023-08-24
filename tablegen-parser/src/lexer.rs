@@ -27,3 +27,25 @@ impl<'a> Lexer<'a> {
         TokenKind::IntVal
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::token::TokenKind;
+
+    use super::Lexer;
+
+    fn tokenize(text: &str) -> Vec<TokenKind> {
+        let mut l = Lexer::new(text);
+
+        let mut tokens = Vec::new();
+        while tokens.last() != Some(&TokenKind::Eof) {
+            tokens.push(l.next());
+        }
+        tokens
+    }
+
+    #[test]
+    fn number() {
+        insta::assert_debug_snapshot!(tokenize("42"));
+    }
+}
