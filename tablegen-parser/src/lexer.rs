@@ -42,10 +42,20 @@ impl<'a> Lexer<'a> {
             Some(':') => T![:],
             Some(';') => T![;],
             Some(',') => T![,],
-            Some('.') => T![.],
             Some('=') => T![=],
             Some('?') => T![?],
             Some('#') => T![#],
+            Some('.') => {
+                if self.s.eat_if('.') {
+                    if self.s.eat_if('.') {
+                        T![...]
+                    } else {
+                        self.error("Invalid '..' punctuation")
+                    }
+                } else {
+                    T![.]
+                }
+            }
             None => TokenKind::Eof,
             _ => unimplemented!(),
         }
@@ -75,7 +85,14 @@ mod tests {
 
     #[test]
     fn symbol() {
-        insta::assert_debug_snapshot!(tokenize("-+[]{}()<>:;,.=?#"));
+        insta::assert_debug_snapshot!(tokenize("-+[]{}()<>:;,.=?#..."));
+    }
+
+    #[test]
+    fn error() {
+        let mut l = Lexer::new("..");
+        assert_eq!(l.next(), TokenKind::Error);
+        assert_eq!(l.take_error(), Some("Invalid '..' punctuation".into()));
     }
 
     #[test]
