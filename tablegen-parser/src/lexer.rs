@@ -102,6 +102,8 @@ impl<'a> Lexer<'a> {
             "multiclass" => T![multiclass],
             "string" => T![string],
             "then" => T![then],
+            "true" => T![true],
+            "false" => T![false],
             _ => TokenKind::Id,
         }
     }
@@ -221,8 +223,8 @@ mod tests {
     }
 
     #[test]
-    fn number() {
-        insta::assert_debug_snapshot!(tokenize("42"));
+    fn literal() {
+        insta::assert_debug_snapshot!(tokenize("true false 42"));
     }
 
     #[test]
