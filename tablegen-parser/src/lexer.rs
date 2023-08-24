@@ -1,6 +1,6 @@
 use unscanny::Scanner;
 
-use crate::token::TokenKind;
+use crate::{token::TokenKind, T};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -17,6 +17,23 @@ impl<'a> Lexer<'a> {
     pub fn next(&mut self) -> TokenKind {
         match self.s.eat() {
             Some(c) if c.is_ascii_digit() => self.number(),
+            Some('-') => T![-],
+            Some('+') => T![+],
+            Some('[') => T!['['],
+            Some(']') => T![']'],
+            Some('{') => T!['{'],
+            Some('}') => T!['}'],
+            Some('(') => T!['('],
+            Some(')') => T![')'],
+            Some('<') => T![<],
+            Some('>') => T![>],
+            Some(':') => T![:],
+            Some(';') => T![;],
+            Some(',') => T![,],
+            Some('.') => T![.],
+            Some('=') => T![=],
+            Some('?') => T![?],
+            Some('#') => T![#],
             None => TokenKind::Eof,
             _ => unimplemented!(),
         }
@@ -42,6 +59,11 @@ mod tests {
             tokens.push(l.next());
         }
         tokens
+    }
+
+    #[test]
+    fn symbol() {
+        insta::assert_debug_snapshot!(tokenize("-+[]{}()<>:;,.=?#"));
     }
 
     #[test]

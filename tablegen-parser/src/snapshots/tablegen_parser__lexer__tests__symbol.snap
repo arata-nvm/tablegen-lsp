@@ -1,0 +1,24 @@
+---
+source: tablegen-parser/src/lexer.rs
+expression: "tokenize(\"-+[]{}()<>:;,.=?#\")"
+---
+[
+    Minus,
+    Plus,
+    LSquare,
+    RSquare,
+    LBrace,
+    RBrace,
+    LParen,
+    RParen,
+    Less,
+    Greater,
+    Colon,
+    Semi,
+    Comma,
+    Dot,
+    Equal,
+    Question,
+    Paste,
+    Eof,
+]
