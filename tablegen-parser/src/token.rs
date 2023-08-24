@@ -26,6 +26,9 @@ pub enum TokenKind {
 
     // Literals
     IntVal,
+
+    // Strings
+    Id,
 }
 
 #[macro_export]

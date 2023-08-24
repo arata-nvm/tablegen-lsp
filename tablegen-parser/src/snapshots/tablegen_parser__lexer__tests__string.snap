@@ -1,0 +1,8 @@
+---
+source: tablegen-parser/src/lexer.rs
+expression: "tokenize(\"hoge\")"
+---
+[
+    Id,
+    Eof,
+]

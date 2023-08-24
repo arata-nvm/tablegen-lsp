@@ -29,6 +29,7 @@ impl<'a> Lexer<'a> {
     pub fn next(&mut self) -> TokenKind {
         match self.s.eat() {
             Some(c) if c.is_ascii_digit() => self.number(),
+            Some(c) if is_identifier_start(c) => self.identifier(),
             Some('-') => T![-],
             Some('+') => T![+],
             Some('[') => T!['['],
@@ -65,6 +66,19 @@ impl<'a> Lexer<'a> {
         self.s.eat_while(char::is_ascii_digit);
         TokenKind::IntVal
     }
+
+    fn identifier(&mut self) -> TokenKind {
+        self.s.eat_while(is_identifier_continue);
+        TokenKind::Id
+    }
+}
+
+fn is_identifier_start(c: char) -> bool {
+    c.is_ascii_alphabetic() || c == '_'
+}
+
+fn is_identifier_continue(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_'
 }
 
 #[cfg(test)]
@@ -98,5 +112,10 @@ mod tests {
     #[test]
     fn number() {
         insta::assert_debug_snapshot!(tokenize("42"));
+    }
+
+    #[test]
+    fn string() {
+        insta::assert_debug_snapshot!(tokenize("hoge"))
     }
 }
