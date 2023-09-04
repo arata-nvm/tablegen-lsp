@@ -4,6 +4,7 @@ pub enum TokenKind {
     Eof,
     Whitespace,
     LineComment,
+    BlockComment,
     Error,
 
     // Symbols

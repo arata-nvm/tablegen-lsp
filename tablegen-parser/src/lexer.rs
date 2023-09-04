@@ -35,6 +35,7 @@ impl<'a> Lexer<'a> {
         match self.s.eat() {
             Some(c) if c.is_whitespace() => self.whitespace(),
             Some('/') if self.s.eat_if('/') => self.line_comment(),
+            Some('/') if self.s.eat_if('*') => self.block_comment(),
 
             Some(c) if c.is_ascii_digit() => self.number(start, c),
             Some(c) if is_identifier_start(c) => self.identifier(start),
@@ -79,6 +80,12 @@ impl<'a> Lexer<'a> {
     fn line_comment(&mut self) -> TokenKind {
         self.s.eat_until(is_newline);
         TokenKind::LineComment
+    }
+
+    fn block_comment(&mut self) -> TokenKind {
+        self.s.eat_until("*/");
+        self.s.eat_if("*/");
+        TokenKind::BlockComment
     }
 
     fn number(&mut self, mut start: usize, c: char) -> TokenKind {
@@ -303,6 +310,11 @@ mod tests {
     #[test]
     fn line_comment() {
         insta::assert_debug_snapshot!(tokenize("// hogefuga\n42"));
+    }
+
+    #[test]
+    fn block_comment() {
+        insta::assert_debug_snapshot!(tokenize("/* hogefuga */42"));
     }
 
     #[test]
