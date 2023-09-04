@@ -7,6 +7,8 @@ pub enum SyntaxKind {
     RecordBody,
     ParentClassList,
     ClassRef,
+    ArgValueList,
+    PositionalArgValueList,
     Type,
     Identifier,
     Value,

@@ -71,7 +71,28 @@ fn parent_class_list(p: &mut Parser) {
 fn class_ref(p: &mut Parser) {
     let m = p.marker();
     identifier(p);
+    if p.eat_if(T![<]) {
+        arg_value_list(p);
+        p.expect(T![>]);
+    }
     p.wrap(m, SyntaxKind::ClassRef);
+}
+
+fn arg_value_list(p: &mut Parser) {
+    let m = p.marker();
+    positional_arg_value_list(p);
+    p.wrap(m, SyntaxKind::ArgValueList);
+}
+
+fn positional_arg_value_list(p: &mut Parser) {
+    let m = p.marker();
+    loop {
+        value(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.wrap(m, SyntaxKind::PositionalArgValueList);
 }
 
 fn r#type(p: &mut Parser) {
@@ -190,6 +211,6 @@ mod tests {
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>: Bar;"));
+        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>: Bar<1, 2>;"));
     }
 }

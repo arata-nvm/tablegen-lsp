@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/parser.rs
-expression: "parse(\"class Foo<int A, int B = 1>: Bar;\")"
+expression: "parse(\"class Foo<int A, int B = 1>: Bar<1, 2>;\")"
 ---
 SyntaxNode(
     Node(
@@ -206,6 +206,70 @@ SyntaxNode(
                                                                 ),
                                                             ),
                                                         ],
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Token(
+                                                        Less,
+                                                        "<",
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Node(
+                                                        ArgValueList,
+                                                        [
+                                                            SyntaxNode(
+                                                                Node(
+                                                                    PositionalArgValueList,
+                                                                    [
+                                                                        SyntaxNode(
+                                                                            Node(
+                                                                                Value,
+                                                                                [
+                                                                                    SyntaxNode(
+                                                                                        Token(
+                                                                                            IntVal,
+                                                                                            "1",
+                                                                                        ),
+                                                                                    ),
+                                                                                ],
+                                                                            ),
+                                                                        ),
+                                                                        SyntaxNode(
+                                                                            Token(
+                                                                                Comma,
+                                                                                ",",
+                                                                            ),
+                                                                        ),
+                                                                        SyntaxNode(
+                                                                            Token(
+                                                                                Whitespace,
+                                                                                " ",
+                                                                            ),
+                                                                        ),
+                                                                        SyntaxNode(
+                                                                            Node(
+                                                                                Value,
+                                                                                [
+                                                                                    SyntaxNode(
+                                                                                        Token(
+                                                                                            IntVal,
+                                                                                            "2",
+                                                                                        ),
+                                                                                    ),
+                                                                                ],
+                                                                            ),
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Token(
+                                                        Greater,
+                                                        ">",
                                                     ),
                                                 ),
                                             ],
