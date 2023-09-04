@@ -105,6 +105,7 @@ pub enum TokenKind {
     FalseVal,
 
     IntVal,
+    BinaryIntVal,
 
     // Strings
     Id,

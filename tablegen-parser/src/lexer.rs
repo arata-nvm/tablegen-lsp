@@ -30,7 +30,7 @@ impl<'a> Lexer<'a> {
         let start = self.s.cursor();
         match self.s.eat() {
             Some(c) if c.is_whitespace() => self.whitespace(),
-            Some(c) if c.is_ascii_digit() => self.number(),
+            Some(c) if c.is_ascii_digit() => self.number(start, c),
             Some(c) if is_identifier_start(c) => self.identifier(start),
             Some('!') => self.bangoperator(),
             Some('-') => T![-],
@@ -70,9 +70,42 @@ impl<'a> Lexer<'a> {
         TokenKind::Whitespace
     }
 
-    fn number(&mut self) -> TokenKind {
-        self.s.eat_while(char::is_ascii_digit);
-        TokenKind::IntVal
+    fn number(&mut self, mut start: usize, c: char) -> TokenKind {
+        let mut base = 10;
+        if c == '0' {
+            if self.s.eat_if('b') {
+                base = 2;
+            } else if self.s.eat_if('x') {
+                base = 16;
+            }
+
+            if base != 10 {
+                start = self.s.cursor();
+            }
+        }
+
+        match base {
+            2 => self.s.eat_while(|c| matches!(c, '0' | '1')),
+            10 => self.s.eat_while(char::is_ascii_digit),
+            16 => self.s.eat_while(char::is_ascii_hexdigit),
+            _ => unreachable!(),
+        };
+
+        let number = self.s.get(start..self.s.cursor());
+        if let Err(_) = i64::from_str_radix(number, base) {
+            match base {
+                2 => return self.error("Invalid number"),
+                10 => return self.error("Invalid binary number"),
+                16 => return self.error("Invalid hexadecimal number"),
+                _ => unreachable!(),
+            }
+        }
+
+        match base {
+            2 => TokenKind::BinaryIntVal,
+            10 | 16 => TokenKind::IntVal,
+            _ => unreachable!(),
+        }
     }
 
     fn identifier(&mut self, start: usize) -> TokenKind {
@@ -243,7 +276,7 @@ mod tests {
 
     #[test]
     fn literal() {
-        insta::assert_debug_snapshot!(tokenize("true false 42"));
+        insta::assert_debug_snapshot!(tokenize("true false 42 0xff 0b01"));
     }
 
     #[test]

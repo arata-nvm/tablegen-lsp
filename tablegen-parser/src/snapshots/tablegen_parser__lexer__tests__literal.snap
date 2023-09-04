@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/lexer.rs
-expression: "tokenize(\"true false 42\")"
+expression: "tokenize(\"true false 42 0xff 0b01\")"
 ---
 [
     TrueVal,
@@ -8,5 +8,9 @@ expression: "tokenize(\"true false 42\")"
     FalseVal,
     Whitespace,
     IntVal,
+    Whitespace,
+    IntVal,
+    Whitespace,
+    BinaryIntVal,
     Eof,
 ]
