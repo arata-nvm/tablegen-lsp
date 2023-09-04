@@ -3,6 +3,7 @@ pub enum TokenKind {
     // Markers
     Eof,
     Whitespace,
+    LineComment,
     Error,
 
     // Symbols

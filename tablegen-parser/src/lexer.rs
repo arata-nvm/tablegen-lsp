@@ -34,6 +34,8 @@ impl<'a> Lexer<'a> {
         let start = self.s.cursor();
         match self.s.eat() {
             Some(c) if c.is_whitespace() => self.whitespace(),
+            Some('/') if self.s.eat_if('/') => self.line_comment(),
+
             Some(c) if c.is_ascii_digit() => self.number(start, c),
             Some(c) if is_identifier_start(c) => self.identifier(start),
             Some('!') => self.bangoperator(),
@@ -72,6 +74,11 @@ impl<'a> Lexer<'a> {
     fn whitespace(&mut self) -> TokenKind {
         self.s.eat_while(char::is_ascii_whitespace);
         TokenKind::Whitespace
+    }
+
+    fn line_comment(&mut self) -> TokenKind {
+        self.s.eat_until(is_newline);
+        TokenKind::LineComment
     }
 
     fn number(&mut self, mut start: usize, c: char) -> TokenKind {
@@ -273,6 +280,10 @@ fn is_identifier_continue(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '_'
 }
 
+fn is_newline(c: char) -> bool {
+    matches!(c, '\r' | '\n')
+}
+
 #[cfg(test)]
 mod tests {
     use crate::token::TokenKind;
@@ -287,6 +298,11 @@ mod tests {
             tokens.push(l.next());
         }
         tokens
+    }
+
+    #[test]
+    fn line_comment() {
+        insta::assert_debug_snapshot!(tokenize("// hogefuga\n42"));
     }
 
     #[test]
