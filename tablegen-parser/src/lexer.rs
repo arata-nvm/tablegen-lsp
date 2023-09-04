@@ -38,14 +38,17 @@ impl<'a> Lexer<'a> {
             Some('/') if self.s.eat_if('*') => self.block_comment(),
 
             Some(c) if c.is_ascii_digit() => self.number(start, c),
-            Some(c) if is_identifier_start(c) => self.identifier(start),
-            Some('!') => self.bangoperator(),
             Some('-') => self.number(start, '-'),
             Some('+') => self.number(start, '+'),
+
+            Some(c) if is_identifier_start(c) => self.identifier(start),
             Some('"') => self.string(),
             Some('$') => self.var_name(),
-            Some('#') => self.preprocessor(start),
             Some('[') if self.s.eat_if('{') => self.code_fragment(),
+
+            Some('!') => self.bangoperator(),
+            Some('#') => self.preprocessor(start),
+
             Some('[') => T!['['],
             Some(']') => T![']'],
             Some('{') => T!['{'],
@@ -135,38 +138,6 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn string(&mut self) -> TokenKind {
-        let mut escaped = false;
-        loop {
-            match self.s.eat() {
-                Some('\\') => escaped = true,
-                Some('"') if !escaped => break,
-                Some('\r') | Some('\n') => return self.error("End of line in string literal"),
-                None => return self.error("End of file in string literal"),
-                _ => escaped = false,
-            }
-        }
-
-        TokenKind::StrVal
-    }
-
-    fn var_name(&mut self) -> TokenKind {
-        if !self.s.eat_if(is_identifier_start) {
-            return self.error("Invalid variable name");
-        }
-        self.s.eat_while(is_identifier_continue);
-        TokenKind::VarName
-    }
-
-    fn code_fragment(&mut self) -> TokenKind {
-        self.s.eat_until("}]");
-        if self.s.eat_if("}]") {
-            TokenKind::CodeFragment
-        } else {
-            self.error("Unterminated code block")
-        }
-    }
-
     fn identifier(&mut self, start: usize) -> TokenKind {
         self.s.eat_while(is_identifier_continue);
         let ident = self.s.from(start);
@@ -197,6 +168,38 @@ impl<'a> Lexer<'a> {
             "true" => T![true],
             "false" => T![false],
             _ => TokenKind::Id,
+        }
+    }
+
+    fn string(&mut self) -> TokenKind {
+        let mut escaped = false;
+        loop {
+            match self.s.eat() {
+                Some('\\') => escaped = true,
+                Some('"') if !escaped => break,
+                Some('\r') | Some('\n') => return self.error("End of line in string literal"),
+                None => return self.error("End of file in string literal"),
+                _ => escaped = false,
+            }
+        }
+
+        TokenKind::StrVal
+    }
+
+    fn var_name(&mut self) -> TokenKind {
+        if !self.s.eat_if(is_identifier_start) {
+            return self.error("Invalid variable name");
+        }
+        self.s.eat_while(is_identifier_continue);
+        TokenKind::VarName
+    }
+
+    fn code_fragment(&mut self) -> TokenKind {
+        self.s.eat_until("}]");
+        if self.s.eat_if("}]") {
+            TokenKind::CodeFragment
+        } else {
+            self.error("Unterminated code block")
         }
     }
 
