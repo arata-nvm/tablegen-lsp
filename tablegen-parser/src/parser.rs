@@ -59,6 +59,7 @@ struct Parser<'a> {
     text: &'a str,
     lexer: Lexer<'a>,
     current: TokenKind,
+    current_start: usize,
     nodes: Vec<SyntaxNode>,
 }
 
@@ -73,12 +74,25 @@ impl<'a> Parser<'a> {
             text,
             lexer,
             current,
+            current_start: 0,
             nodes: vec![],
         }
     }
 
     fn finish(self) -> Vec<SyntaxNode> {
         self.nodes
+    }
+
+    fn current_start(&self) -> usize {
+        self.current_start
+    }
+
+    fn current_end(&self) -> usize {
+        self.lexer.cursor()
+    }
+
+    fn current_text(&self) -> &'a str {
+        &self.text[self.current_start()..self.current_end()]
     }
 
     fn marker(&self) -> Marker {
@@ -89,7 +103,7 @@ impl<'a> Parser<'a> {
         let from = from.0;
         let to = self.nodes.len();
         let children = self.nodes.drain(from..to).collect();
-        self.nodes.insert(from, SyntaxNode(kind, children));
+        self.nodes.insert(from, SyntaxNode::node(kind, children));
     }
 
     fn at(&self, kind: TokenKind) -> bool {
@@ -108,10 +122,18 @@ impl<'a> Parser<'a> {
     }
 
     fn eat(&mut self) {
-        self.current = self.lexer.next();
+        self.consume_token();
         while self.current.is_trivia() {
-            self.current = self.lexer.next();
+            self.consume_token();
         }
+    }
+
+    fn consume_token(&mut self) {
+        let text = self.current_text();
+        self.nodes.push(SyntaxNode::token(self.current, text));
+
+        self.current_start = self.lexer.cursor();
+        self.current = self.lexer.next();
     }
 
     fn eat_if(&mut self, kind: TokenKind) -> bool {

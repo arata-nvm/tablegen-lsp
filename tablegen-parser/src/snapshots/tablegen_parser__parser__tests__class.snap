@@ -3,38 +3,149 @@ source: tablegen-parser/src/parser.rs
 expression: "parse(\"class Foo<int A, int B>;\")"
 ---
 SyntaxNode(
-    Class,
-    [
-        SyntaxNode(
-            TemplateArgList,
-            [
-                SyntaxNode(
-                    TemplateArgDecl,
+    Node(
+        Class,
+        [
+            SyntaxNode(
+                Token(
+                    Class,
+                    "class",
+                ),
+            ),
+            SyntaxNode(
+                Token(
+                    Whitespace,
+                    " ",
+                ),
+            ),
+            SyntaxNode(
+                Node(
+                    Identifier,
                     [
                         SyntaxNode(
-                            Type,
-                            [],
-                        ),
-                        SyntaxNode(
-                            Identifier,
-                            [],
+                            Token(
+                                Id,
+                                "Foo",
+                            ),
                         ),
                     ],
                 ),
-                SyntaxNode(
-                    TemplateArgDecl,
+            ),
+            SyntaxNode(
+                Node(
+                    TemplateArgList,
                     [
                         SyntaxNode(
-                            Type,
-                            [],
+                            Token(
+                                Less,
+                                "<",
+                            ),
                         ),
                         SyntaxNode(
-                            Identifier,
-                            [],
+                            Node(
+                                TemplateArgDecl,
+                                [
+                                    SyntaxNode(
+                                        Node(
+                                            Type,
+                                            [
+                                                SyntaxNode(
+                                                    Token(
+                                                        Int,
+                                                        "int",
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Token(
+                                                        Whitespace,
+                                                        " ",
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Node(
+                                            Identifier,
+                                            [
+                                                SyntaxNode(
+                                                    Token(
+                                                        Id,
+                                                        "A",
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        SyntaxNode(
+                            Token(
+                                Comma,
+                                ",",
+                            ),
+                        ),
+                        SyntaxNode(
+                            Token(
+                                Whitespace,
+                                " ",
+                            ),
+                        ),
+                        SyntaxNode(
+                            Node(
+                                TemplateArgDecl,
+                                [
+                                    SyntaxNode(
+                                        Node(
+                                            Type,
+                                            [
+                                                SyntaxNode(
+                                                    Token(
+                                                        Int,
+                                                        "int",
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Token(
+                                                        Whitespace,
+                                                        " ",
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Node(
+                                            Identifier,
+                                            [
+                                                SyntaxNode(
+                                                    Token(
+                                                        Id,
+                                                        "B",
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        SyntaxNode(
+                            Token(
+                                Greater,
+                                ">",
+                            ),
                         ),
                     ],
                 ),
-            ],
-        ),
-    ],
+            ),
+            SyntaxNode(
+                Token(
+                    Semi,
+                    ";",
+                ),
+            ),
+        ],
+    ),
 )
