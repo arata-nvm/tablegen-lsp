@@ -21,6 +21,10 @@ impl<'a> Lexer<'a> {
         self.error.take()
     }
 
+    pub fn cursor(&self) -> usize {
+        self.s.cursor()
+    }
+
     fn error(&mut self, msg: impl Into<EcoString>) -> TokenKind {
         self.error = Some(msg.into());
         TokenKind::Error
