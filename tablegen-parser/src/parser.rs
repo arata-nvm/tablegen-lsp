@@ -56,6 +56,10 @@ impl<'a> Parser<'a> {
         self.nodes.insert(from, SyntaxNode(kind, children));
     }
 
+    fn at(&self, kind: TokenKind) -> bool {
+        self.current == kind
+    }
+
     fn assert(&mut self, kind: TokenKind) {
         assert_eq!(self.current, kind);
         self.eat();
@@ -75,7 +79,7 @@ impl<'a> Parser<'a> {
     }
 
     fn eat_if(&mut self, kind: TokenKind) -> bool {
-        if self.current == kind {
+        if self.at(kind) {
             self.eat();
             true
         } else {
