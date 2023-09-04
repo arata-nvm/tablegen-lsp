@@ -1,0 +1,16 @@
+---
+source: tablegen-parser/src/lexer.rs
+expression: "tokenize(\"#ifdef #ifndef #else #endif #define\")"
+---
+[
+    Ifdef,
+    Whitespace,
+    Ifndef,
+    Whitespace,
+    Else,
+    Whitespace,
+    Endif,
+    Whitespace,
+    Define,
+    Eof,
+]

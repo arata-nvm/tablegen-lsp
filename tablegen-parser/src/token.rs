@@ -108,6 +108,13 @@ pub enum TokenKind {
 
     // Strings
     Id,
+
+    // Preprocessor tokens
+    Ifdef,
+    Ifndef,
+    Else,
+    Endif,
+    Define,
 }
 
 #[macro_export]
@@ -206,4 +213,10 @@ macro_rules! T {
 
     [true] => {$crate::token::TokenKind::TrueVal};
     [false] => {$crate::token::TokenKind::FalseVal};
+
+    [#ifdef] => {$crate::token::TokenKind::Ifdef};
+    [#ifndef] => {$crate::token::TokenKind::Ifndef};
+    [#else] => {$crate::token::TokenKind::Else};
+    [#endif] => {$crate::token::TokenKind::Endif};
+    [#define] => {$crate::token::TokenKind::Define};
 }

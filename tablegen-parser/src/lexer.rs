@@ -48,7 +48,7 @@ impl<'a> Lexer<'a> {
             Some(',') => T![,],
             Some('=') => T![=],
             Some('?') => T![?],
-            Some('#') => T![#],
+            Some('#') => self.preprocessor(start),
             Some('.') => {
                 if self.s.eat_if('.') {
                     if self.s.eat_if('.') {
@@ -166,6 +166,25 @@ impl<'a> Lexer<'a> {
             _ => self.error("Unknown operator"),
         }
     }
+
+    fn preprocessor(&mut self, start: usize) -> TokenKind {
+        match self.s.peek() {
+            Some(c) if c.is_alphabetic() => {}
+            _ => return T![#],
+        }
+
+        self.s.eat_while(char::is_alphabetic);
+        let ident = self.s.from(start);
+
+        match ident {
+            "#ifdef" => T![#ifdef],
+            "#ifndef" => T![#ifndef],
+            "#else" => T![#else],
+            "#endif" => T![#endif],
+            "#define" => T![#define],
+            _ => self.error("Unknown preprocessor directive"),
+        }
+    }
 }
 
 fn is_identifier_start(c: char) -> bool {
@@ -230,5 +249,10 @@ mod tests {
     #[test]
     fn string() {
         insta::assert_debug_snapshot!(tokenize("hoge"))
+    }
+
+    #[test]
+    fn preprocessor() {
+        insta::assert_debug_snapshot!(tokenize("#ifdef #ifndef #else #endif #define"))
     }
 }
