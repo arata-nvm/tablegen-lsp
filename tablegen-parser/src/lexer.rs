@@ -41,13 +41,9 @@ impl<'a> Lexer<'a> {
             Some('+') => self.number(start, '+'),
             Some('"') => self.string(),
             Some('$') => self.var_name(),
-            Some('[') => {
-                if self.s.eat_if('{') {
-                    self.code_fragment()
-                } else {
-                    T!['[']
-                }
-            }
+            Some('#') => self.preprocessor(start),
+            Some('[') if self.s.eat_if('{') => self.code_fragment(),
+            Some('[') => T!['['],
             Some(']') => T![']'],
             Some('{') => T!['{'],
             Some('}') => T!['}'],
@@ -60,18 +56,14 @@ impl<'a> Lexer<'a> {
             Some(',') => T![,],
             Some('=') => T![=],
             Some('?') => T![?],
-            Some('#') => self.preprocessor(start),
-            Some('.') => {
+            Some('.') if self.s.eat_if('.') => {
                 if self.s.eat_if('.') {
-                    if self.s.eat_if('.') {
-                        T![...]
-                    } else {
-                        self.error("Invalid '..' punctuation")
-                    }
+                    T![...]
                 } else {
-                    T![.]
+                    self.error("Invalid '..' punctuation")
                 }
             }
+            Some('.') => T![.],
             None => TokenKind::Eof,
             _ => self.error("Unexpected character"),
         }
