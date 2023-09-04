@@ -18,7 +18,7 @@ fn class(p: &mut Parser) {
     if p.at(T![<]) {
         template_arg_list(p);
     }
-    p.expect(T![;]);
+    record_body(p);
     p.wrap(m, SyntaxKind::Class);
 }
 
@@ -43,6 +43,35 @@ fn tempalte_arg_decl(p: &mut Parser) {
         value(p);
     }
     p.wrap(m, SyntaxKind::TemplateArgDecl);
+}
+
+fn record_body(p: &mut Parser) {
+    let m = p.marker();
+    parent_class_list(p);
+    p.expect(T![;]);
+    p.wrap(m, SyntaxKind::RecordBody);
+}
+
+fn parent_class_list(p: &mut Parser) {
+    let m = p.marker();
+    if !p.eat_if(T![:]) {
+        p.wrap(m, SyntaxKind::ParentClassList);
+        return;
+    }
+
+    loop {
+        class_ref(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.wrap(m, SyntaxKind::ParentClassList);
+}
+
+fn class_ref(p: &mut Parser) {
+    let m = p.marker();
+    identifier(p);
+    p.wrap(m, SyntaxKind::ClassRef);
 }
 
 fn r#type(p: &mut Parser) {
@@ -161,6 +190,6 @@ mod tests {
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>;"));
+        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>: Bar;"));
     }
 }
