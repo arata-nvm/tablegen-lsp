@@ -1,6 +1,6 @@
 use std::fs;
 
-use tablegen_parser::{lexer::Lexer, token::TokenKind};
+use tablegen_parser::{kind::SyntaxKind, lexer::Lexer};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -12,15 +12,15 @@ fn main() {
     let text = fs::read_to_string(&args[1]).unwrap();
     let mut lexer = Lexer::new(&text);
     loop {
-        let token = lexer.next();
         let cursor = lexer.cursor();
+        let token = lexer.next();
         if let Some(err) = lexer.take_error() {
             println!("{cursor}: Error({err})");
         } else {
             println!("{cursor}: {:?}", token);
         }
 
-        if token == TokenKind::Eof {
+        if token == SyntaxKind::Eof {
             break;
         }
     }
