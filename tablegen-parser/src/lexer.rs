@@ -35,6 +35,7 @@ impl<'a> Lexer<'a> {
             Some('!') => self.bangoperator(),
             Some('-') => self.number(start, '-'),
             Some('+') => self.number(start, '+'),
+            Some('"') => self.string(),
             Some('[') => T!['['],
             Some(']') => T![']'],
             Some('{') => T!['{'],
@@ -115,6 +116,19 @@ impl<'a> Lexer<'a> {
             10 | 16 => TokenKind::IntVal,
             _ => unreachable!(),
         }
+    }
+
+    fn string(&mut self) -> TokenKind {
+        loop {
+            match self.s.eat() {
+                Some('"') => break,
+                Some('\r') | Some('\n') => return self.error("End of line in string literal"),
+                None => return self.error("End of file in string literal"),
+                _ => {}
+            }
+        }
+
+        TokenKind::StrVal
     }
 
     fn identifier(&mut self, start: usize) -> TokenKind {
@@ -290,7 +304,7 @@ mod tests {
 
     #[test]
     fn string() {
-        insta::assert_debug_snapshot!(tokenize("hoge"))
+        insta::assert_debug_snapshot!(tokenize("hoge \"fuga\""))
     }
 
     #[test]

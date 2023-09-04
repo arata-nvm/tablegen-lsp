@@ -109,6 +109,7 @@ pub enum TokenKind {
 
     // Strings
     Id,
+    StrVal,
 
     // Preprocessor tokens
     Ifdef,
