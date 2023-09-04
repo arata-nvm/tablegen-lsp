@@ -9,6 +9,8 @@ pub enum SyntaxKind {
     ClassRef,
     ArgValueList,
     PositionalArgValueList,
+    Body,
+    BodyItem,
     Type,
     Value,
     SimpleValue,

@@ -321,9 +321,16 @@ SyntaxNode(
                             ),
                         ),
                         SyntaxNode(
-                            Token(
-                                Semi,
-                                ";",
+                            Node(
+                                Body,
+                                [
+                                    SyntaxNode(
+                                        Token(
+                                            Semi,
+                                            ";",
+                                        ),
+                                    ),
+                                ],
                             ),
                         ),
                     ],

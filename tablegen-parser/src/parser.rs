@@ -48,7 +48,7 @@ fn tempalte_arg_decl(p: &mut Parser) {
 fn record_body(p: &mut Parser) {
     let m = p.marker();
     parent_class_list(p);
-    p.expect(T![;]);
+    body(p);
     p.wrap(m, SyntaxKind::RecordBody);
 }
 
@@ -93,6 +93,34 @@ fn positional_arg_value_list(p: &mut Parser) {
         }
     }
     p.wrap(m, SyntaxKind::PositionalArgValueList);
+}
+
+fn body(p: &mut Parser) {
+    let m = p.marker();
+    if p.eat_if(T![;]) {
+        p.wrap(m, SyntaxKind::Body);
+        return;
+    }
+
+    p.expect(T!['{']);
+    loop {
+        body_item(p);
+        if p.eat_if(T!['}']) {
+            break;
+        }
+    }
+    p.wrap(m, SyntaxKind::Body);
+}
+
+fn body_item(p: &mut Parser) {
+    let m = p.marker();
+    r#type(p);
+    identifier(p);
+    if p.eat_if(T![=]) {
+        value(p);
+    }
+    p.expect(T![;]);
+    p.wrap(m, SyntaxKind::BodyItem);
 }
 
 fn r#type(p: &mut Parser) {
@@ -232,5 +260,15 @@ mod tests {
     #[test]
     fn class() {
         insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>: Bar<A, 2>;"));
+    }
+
+    #[test]
+    fn class_with_body() {
+        insta::assert_debug_snapshot!(parse(
+            "class Foo<int A> {
+                int B;
+                int C = A;
+            }"
+        ))
     }
 }
