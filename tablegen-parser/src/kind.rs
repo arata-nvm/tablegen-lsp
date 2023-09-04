@@ -10,8 +10,10 @@ pub enum SyntaxKind {
     ArgValueList,
     PositionalArgValueList,
     Type,
-    Identifier,
     Value,
+    SimpleValue,
+    Identifier,
+    Integer,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

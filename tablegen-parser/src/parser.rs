@@ -101,16 +101,32 @@ fn r#type(p: &mut Parser) {
     p.wrap(m, SyntaxKind::Type);
 }
 
+fn value(p: &mut Parser) {
+    let m = p.marker();
+    simple_value(p);
+    p.wrap(m, SyntaxKind::Value);
+}
+
+fn simple_value(p: &mut Parser) {
+    let m = p.marker();
+    match p.current() {
+        TokenKind::IntVal => integer(p),
+        TokenKind::Id => identifier(p),
+        _ => unimplemented!(),
+    }
+    p.wrap(m, SyntaxKind::SimpleValue);
+}
+
 fn identifier(p: &mut Parser) {
     let m = p.marker();
     p.expect(TokenKind::Id);
     p.wrap(m, SyntaxKind::Identifier);
 }
 
-fn value(p: &mut Parser) {
+fn integer(p: &mut Parser) {
     let m = p.marker();
     p.expect(TokenKind::IntVal);
-    p.wrap(m, SyntaxKind::Value);
+    p.wrap(m, SyntaxKind::Integer);
 }
 
 #[derive(Debug)]
@@ -140,6 +156,10 @@ impl<'a> Parser<'a> {
 
     fn finish(self) -> Vec<SyntaxNode> {
         self.nodes
+    }
+
+    fn current(&self) -> TokenKind {
+        self.current
     }
 
     fn current_start(&self) -> usize {
@@ -211,6 +231,6 @@ mod tests {
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>: Bar<1, 2>;"));
+        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>: Bar<A, 2>;"));
     }
 }
