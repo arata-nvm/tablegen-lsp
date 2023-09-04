@@ -1,8 +1,40 @@
 ---
 source: tablegen-parser/src/parser.rs
-expression: "parse(\"class Foo;\")"
+expression: "parse(\"class Foo<int A, int B>;\")"
 ---
 SyntaxNode(
-    ClassDef,
-    [],
+    Class,
+    [
+        SyntaxNode(
+            TemplateArgList,
+            [
+                SyntaxNode(
+                    TemplateArgDecl,
+                    [
+                        SyntaxNode(
+                            Type,
+                            [],
+                        ),
+                        SyntaxNode(
+                            Identifier,
+                            [],
+                        ),
+                    ],
+                ),
+                SyntaxNode(
+                    TemplateArgDecl,
+                    [
+                        SyntaxNode(
+                            Type,
+                            [],
+                        ),
+                        SyntaxNode(
+                            Identifier,
+                            [],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    ],
 )

@@ -2,6 +2,10 @@
 pub enum SyntaxKind {
     // Nodes
     Class,
+    TemplateArgList,
+    TemplateArgDecl,
+    Type,
+    Identifier,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

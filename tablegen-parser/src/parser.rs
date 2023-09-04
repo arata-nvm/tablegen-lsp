@@ -1,7 +1,8 @@
 use crate::{
     kind::{SyntaxKind, TokenKind},
     lexer::Lexer,
-    node::SyntaxNode, T,
+    node::SyntaxNode,
+    T,
 };
 
 pub fn parse(text: &str) -> SyntaxNode {
@@ -14,8 +15,43 @@ fn class(p: &mut Parser) {
     let m = p.marker();
     p.assert(T![class]);
     p.expect(TokenKind::Id);
+    if p.at(T![<]) {
+        template_arg_list(p);
+    }
     p.expect(T![;]);
     p.wrap(m, SyntaxKind::Class);
+}
+
+fn template_arg_list(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![<]);
+    loop {
+        tempalte_arg_decl(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.expect(T![>]);
+    p.wrap(m, SyntaxKind::TemplateArgList);
+}
+
+fn tempalte_arg_decl(p: &mut Parser) {
+    let m = p.marker();
+    r#type(p);
+    identifier(p);
+    p.wrap(m, SyntaxKind::TemplateArgDecl);
+}
+
+fn r#type(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(T![int]);
+    p.wrap(m, SyntaxKind::Type);
+}
+
+fn identifier(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(TokenKind::Id);
+    p.wrap(m, SyntaxKind::Identifier);
 }
 
 #[derive(Debug)]
@@ -94,6 +130,6 @@ mod tests {
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(parse("class Foo;"));
+        insta::assert_debug_snapshot!(parse("class Foo<int A, int B>;"));
     }
 }
