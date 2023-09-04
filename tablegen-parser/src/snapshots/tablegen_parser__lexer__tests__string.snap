@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/lexer.rs
-expression: "tokenize(r#\"hoge \"fuga\\n\\\"\" $piyo\"#)"
+expression: "tokenize(r#\"hoge \"fuga\\n\\\"\" $piyo [{ foo }]\"#)"
 ---
 [
     Id,
@@ -8,5 +8,7 @@ expression: "tokenize(r#\"hoge \"fuga\\n\\\"\" $piyo\"#)"
     StrVal,
     Whitespace,
     VarName,
+    Whitespace,
+    CodeFragment,
     Eof,
 ]

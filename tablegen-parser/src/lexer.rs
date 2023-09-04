@@ -37,7 +37,13 @@ impl<'a> Lexer<'a> {
             Some('+') => self.number(start, '+'),
             Some('"') => self.string(),
             Some('$') => self.var_name(),
-            Some('[') => T!['['],
+            Some('[') => {
+                if self.s.eat_if('{') {
+                    self.code_fragment()
+                } else {
+                    T!['[']
+                }
+            }
             Some(']') => T![']'],
             Some('{') => T!['{'],
             Some('}') => T!['}'],
@@ -140,6 +146,15 @@ impl<'a> Lexer<'a> {
         }
         self.s.eat_while(is_identifier_continue);
         TokenKind::VarName
+    }
+
+    fn code_fragment(&mut self) -> TokenKind {
+        self.s.eat_until("}]");
+        if self.s.eat_if("}]") {
+            TokenKind::CodeFragment
+        } else {
+            self.error("Unterminated code block")
+        }
     }
 
     fn identifier(&mut self, start: usize) -> TokenKind {
@@ -315,7 +330,7 @@ mod tests {
 
     #[test]
     fn string() {
-        insta::assert_debug_snapshot!(tokenize(r#"hoge "fuga\n\"" $piyo"#))
+        insta::assert_debug_snapshot!(tokenize(r#"hoge "fuga\n\"" $piyo [{ foo }]"#))
     }
 
     #[test]

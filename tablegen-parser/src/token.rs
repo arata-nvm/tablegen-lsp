@@ -111,6 +111,7 @@ pub enum TokenKind {
     Id,
     StrVal,
     VarName,
+    CodeFragment,
 
     // Preprocessor tokens
     Ifdef,
