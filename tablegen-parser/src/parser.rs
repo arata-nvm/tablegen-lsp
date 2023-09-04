@@ -14,7 +14,7 @@ pub fn parse(text: &str) -> SyntaxNode {
 fn class(p: &mut Parser) {
     let m = p.marker();
     p.assert(T![class]);
-    p.expect(TokenKind::Id);
+    identifier(p);
     if p.at(T![<]) {
         template_arg_list(p);
     }
