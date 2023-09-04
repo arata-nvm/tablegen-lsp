@@ -1,5 +1,8 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SyntaxKind {
+    // Nodes
+    ClassDef,
+
     // Markers
     Eof,
     Whitespace,
@@ -121,6 +124,15 @@ pub enum SyntaxKind {
     Else,
     Endif,
     Define,
+}
+
+impl SyntaxKind {
+    pub fn is_trivia(&self) -> bool {
+        matches!(
+            self,
+            Self::Whitespace | Self::LineComment | Self::BlockComment
+        )
+    }
 }
 
 #[macro_export]
