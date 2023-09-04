@@ -33,8 +33,8 @@ impl<'a> Lexer<'a> {
             Some(c) if c.is_ascii_digit() => self.number(start, c),
             Some(c) if is_identifier_start(c) => self.identifier(start),
             Some('!') => self.bangoperator(),
-            Some('-') => T![-],
-            Some('+') => T![+],
+            Some('-') => self.number(start, '-'),
+            Some('+') => self.number(start, '+'),
             Some('[') => T!['['],
             Some(']') => T![']'],
             Some('{') => T!['{'],
@@ -71,6 +71,15 @@ impl<'a> Lexer<'a> {
     }
 
     fn number(&mut self, mut start: usize, c: char) -> TokenKind {
+        match self.s.peek() {
+            Some(c2) if !c2.is_ascii_digit() => match c {
+                '+' => return TokenKind::Plus,
+                '-' => return TokenKind::Minus,
+                _ => {}
+            },
+            _ => {}
+        }
+
         let mut base = 10;
         if c == '0' {
             if self.s.eat_if('b') {
@@ -276,7 +285,7 @@ mod tests {
 
     #[test]
     fn literal() {
-        insta::assert_debug_snapshot!(tokenize("true false 42 0xff 0b01"));
+        insta::assert_debug_snapshot!(tokenize("true false 42 +42 -42 0xff 0b01"));
     }
 
     #[test]
