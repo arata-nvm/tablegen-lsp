@@ -1,4 +1,8 @@
-use crate::{kind::SyntaxKind, lexer::Lexer, node::SyntaxNode};
+use crate::{
+    kind::{SyntaxKind, TokenKind},
+    lexer::Lexer,
+    node::SyntaxNode, T,
+};
 
 pub fn parse(text: &str) -> SyntaxNode {
     let mut parser = Parser::new(text);
@@ -8,17 +12,17 @@ pub fn parse(text: &str) -> SyntaxNode {
 
 fn class(p: &mut Parser) {
     let m = p.marker();
-    p.assert(SyntaxKind::Class);
-    p.expect(SyntaxKind::Id);
-    p.expect(SyntaxKind::Semi);
-    p.wrap(m, SyntaxKind::ClassDef);
+    p.assert(T![class]);
+    p.expect(TokenKind::Id);
+    p.expect(T![;]);
+    p.wrap(m, SyntaxKind::Class);
 }
 
 #[derive(Debug)]
 struct Parser<'a> {
     text: &'a str,
     lexer: Lexer<'a>,
-    current: SyntaxKind,
+    current: TokenKind,
     nodes: Vec<SyntaxNode>,
 }
 
@@ -52,12 +56,12 @@ impl<'a> Parser<'a> {
         self.nodes.insert(from, SyntaxNode(kind, children));
     }
 
-    fn assert(&mut self, kind: SyntaxKind) {
+    fn assert(&mut self, kind: TokenKind) {
         assert_eq!(self.current, kind);
         self.eat();
     }
 
-    fn expect(&mut self, kind: SyntaxKind) {
+    fn expect(&mut self, kind: TokenKind) {
         if !self.eat_if(kind) {
             unimplemented!("expected {kind:?}");
         }
@@ -70,7 +74,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn eat_if(&mut self, kind: SyntaxKind) -> bool {
+    fn eat_if(&mut self, kind: TokenKind) -> bool {
         if self.current == kind {
             self.eat();
             true

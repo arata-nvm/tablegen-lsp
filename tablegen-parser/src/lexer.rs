@@ -1,7 +1,7 @@
 use ecow::EcoString;
 use unscanny::Scanner;
 
-use crate::{kind::SyntaxKind, T};
+use crate::{kind::TokenKind, T};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -25,12 +25,12 @@ impl<'a> Lexer<'a> {
         self.s.cursor()
     }
 
-    fn error(&mut self, msg: impl Into<EcoString>) -> SyntaxKind {
+    fn error(&mut self, msg: impl Into<EcoString>) -> TokenKind {
         self.error = Some(msg.into());
-        SyntaxKind::Error
+        TokenKind::Error
     }
 
-    pub fn next(&mut self) -> SyntaxKind {
+    pub fn next(&mut self) -> TokenKind {
         let start = self.s.cursor();
         match self.s.eat() {
             Some(c) if c.is_whitespace() => self.whitespace(),
@@ -70,32 +70,32 @@ impl<'a> Lexer<'a> {
                 }
             }
             Some('.') => T![.],
-            None => SyntaxKind::Eof,
+            None => TokenKind::Eof,
             _ => self.error("Unexpected character"),
         }
     }
 
-    fn whitespace(&mut self) -> SyntaxKind {
+    fn whitespace(&mut self) -> TokenKind {
         self.s.eat_while(char::is_ascii_whitespace);
-        SyntaxKind::Whitespace
+        TokenKind::Whitespace
     }
 
-    fn line_comment(&mut self) -> SyntaxKind {
+    fn line_comment(&mut self) -> TokenKind {
         self.s.eat_until(is_newline);
-        SyntaxKind::LineComment
+        TokenKind::LineComment
     }
 
-    fn block_comment(&mut self) -> SyntaxKind {
+    fn block_comment(&mut self) -> TokenKind {
         self.s.eat_until("*/");
         self.s.eat_if("*/");
-        SyntaxKind::BlockComment
+        TokenKind::BlockComment
     }
 
-    fn number(&mut self, mut start: usize, c: char) -> SyntaxKind {
+    fn number(&mut self, mut start: usize, c: char) -> TokenKind {
         match self.s.peek() {
             Some(c2) if !c2.is_ascii_digit() => match c {
-                '+' => return SyntaxKind::Plus,
-                '-' => return SyntaxKind::Minus,
+                '+' => return TokenKind::Plus,
+                '-' => return TokenKind::Minus,
                 _ => {}
             },
             _ => {}
@@ -132,13 +132,13 @@ impl<'a> Lexer<'a> {
         }
 
         match base {
-            2 => SyntaxKind::BinaryIntVal,
-            10 | 16 => SyntaxKind::IntVal,
+            2 => TokenKind::BinaryIntVal,
+            10 | 16 => TokenKind::IntVal,
             _ => unreachable!(),
         }
     }
 
-    fn identifier(&mut self, start: usize) -> SyntaxKind {
+    fn identifier(&mut self, start: usize) -> TokenKind {
         self.s.eat_while(is_identifier_continue);
         let ident = self.s.from(start);
 
@@ -167,11 +167,11 @@ impl<'a> Lexer<'a> {
             "then" => T![then],
             "true" => T![true],
             "false" => T![false],
-            _ => SyntaxKind::Id,
+            _ => TokenKind::Id,
         }
     }
 
-    fn string(&mut self) -> SyntaxKind {
+    fn string(&mut self) -> TokenKind {
         let mut escaped = false;
         loop {
             match self.s.eat() {
@@ -183,27 +183,27 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        SyntaxKind::StrVal
+        TokenKind::StrVal
     }
 
-    fn var_name(&mut self) -> SyntaxKind {
+    fn var_name(&mut self) -> TokenKind {
         if !self.s.eat_if(is_identifier_start) {
             return self.error("Invalid variable name");
         }
         self.s.eat_while(is_identifier_continue);
-        SyntaxKind::VarName
+        TokenKind::VarName
     }
 
-    fn code_fragment(&mut self) -> SyntaxKind {
+    fn code_fragment(&mut self) -> TokenKind {
         self.s.eat_until("}]");
         if self.s.eat_if("}]") {
-            SyntaxKind::CodeFragment
+            TokenKind::CodeFragment
         } else {
             self.error("Unterminated code block")
         }
     }
 
-    fn bangoperator(&mut self) -> SyntaxKind {
+    fn bangoperator(&mut self) -> TokenKind {
         let start = self.s.cursor();
         self.s.eat_while(char::is_ascii_alphabetic);
         let ident = self.s.from(start);
@@ -262,7 +262,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn preprocessor(&mut self, start: usize) -> SyntaxKind {
+    fn preprocessor(&mut self, start: usize) -> TokenKind {
         match self.s.peek() {
             Some(c) if c.is_alphabetic() => {}
             _ => return T![#],
@@ -296,15 +296,15 @@ fn is_newline(c: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::kind::SyntaxKind;
+    use crate::kind::TokenKind;
 
     use super::Lexer;
 
-    fn tokenize(text: &str) -> Vec<SyntaxKind> {
+    fn tokenize(text: &str) -> Vec<TokenKind> {
         let mut l = Lexer::new(text);
 
         let mut tokens = Vec::new();
-        while tokens.last() != Some(&SyntaxKind::Eof) {
+        while tokens.last() != Some(&TokenKind::Eof) {
             tokens.push(l.next());
         }
         tokens
@@ -328,11 +328,11 @@ mod tests {
     #[test]
     fn error() {
         let mut l = Lexer::new("..");
-        assert_eq!(l.next(), SyntaxKind::Error);
+        assert_eq!(l.next(), TokenKind::Error);
         assert_eq!(l.take_error(), Some("Invalid '..' punctuation".into()));
 
         let mut l = Lexer::new("!hoge");
-        assert_eq!(l.next(), SyntaxKind::Error);
+        assert_eq!(l.next(), TokenKind::Error);
         assert_eq!(l.take_error(), Some("Unknown operator".into()));
     }
 

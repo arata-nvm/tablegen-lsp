@@ -1,6 +1,6 @@
 use std::fs;
 
-use tablegen_parser::{kind::SyntaxKind, lexer::Lexer};
+use tablegen_parser::{kind::TokenKind, lexer::Lexer};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -20,7 +20,7 @@ fn main() {
             println!("{cursor}: {:?}", token);
         }
 
-        if token == SyntaxKind::Eof {
+        if token == TokenKind::Eof {
             break;
         }
     }

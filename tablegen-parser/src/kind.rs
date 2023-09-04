@@ -1,8 +1,11 @@
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SyntaxKind {
     // Nodes
-    ClassDef,
+    Class,
+}
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum TokenKind {
     // Markers
     Eof,
     Whitespace,
@@ -126,7 +129,7 @@ pub enum SyntaxKind {
     Define,
 }
 
-impl SyntaxKind {
+impl TokenKind {
     pub fn is_trivia(&self) -> bool {
         matches!(
             self,
@@ -137,104 +140,104 @@ impl SyntaxKind {
 
 #[macro_export]
 macro_rules! T {
-    [-] => {$crate::kind::SyntaxKind::Minus};
-    [+] => {$crate::kind::SyntaxKind::Plus};
-    ['['] => {$crate::kind::SyntaxKind::LSquare};
-    [']'] => {$crate::kind::SyntaxKind::RSquare};
-    ['{'] => {$crate::kind::SyntaxKind::LBrace};
-    ['}'] => {$crate::kind::SyntaxKind::RBrace};
-    ['('] => {$crate::kind::SyntaxKind::LParen};
-    [')'] => {$crate::kind::SyntaxKind::RParen};
-    [<] => {$crate::kind::SyntaxKind::Less};
-    [>] => {$crate::kind::SyntaxKind::Greater};
-    [:] => {$crate::kind::SyntaxKind::Colon};
-    [;] => {$crate::kind::SyntaxKind::Semi};
-    [,] => {$crate::kind::SyntaxKind::Comma};
-    [.] => {$crate::kind::SyntaxKind::Dot};
-    [=] => {$crate::kind::SyntaxKind::Equal};
-    [?] => {$crate::kind::SyntaxKind::Question};
-    [#] => {$crate::kind::SyntaxKind::Paste};
-    [...] => {$crate::kind::SyntaxKind::DotDotDot};
+    [-] => {$crate::kind::TokenKind::Minus};
+    [+] => {$crate::kind::TokenKind::Plus};
+    ['['] => {$crate::kind::TokenKind::LSquare};
+    [']'] => {$crate::kind::TokenKind::RSquare};
+    ['{'] => {$crate::kind::TokenKind::LBrace};
+    ['}'] => {$crate::kind::TokenKind::RBrace};
+    ['('] => {$crate::kind::TokenKind::LParen};
+    [')'] => {$crate::kind::TokenKind::RParen};
+    [<] => {$crate::kind::TokenKind::Less};
+    [>] => {$crate::kind::TokenKind::Greater};
+    [:] => {$crate::kind::TokenKind::Colon};
+    [;] => {$crate::kind::TokenKind::Semi};
+    [,] => {$crate::kind::TokenKind::Comma};
+    [.] => {$crate::kind::TokenKind::Dot};
+    [=] => {$crate::kind::TokenKind::Equal};
+    [?] => {$crate::kind::TokenKind::Question};
+    [#] => {$crate::kind::TokenKind::Paste};
+    [...] => {$crate::kind::TokenKind::DotDotDot};
 
-    [assert] => {$crate::kind::SyntaxKind::Assert};
-    [bit] => {$crate::kind::SyntaxKind::Bit};
-    [bits] => {$crate::kind::SyntaxKind::Bits};
-    [class] => {$crate::kind::SyntaxKind::Class};
-    [code] => {$crate::kind::SyntaxKind::Code};
-    [dag] => {$crate::kind::SyntaxKind::Dag};
-    [def] => {$crate::kind::SyntaxKind::Def};
-    [defm] => {$crate::kind::SyntaxKind::Defm};
-    [defset] => {$crate::kind::SyntaxKind::Defset};
-    [defvar] => {$crate::kind::SyntaxKind::Defvar};
-    [else] => {$crate::kind::SyntaxKind::ElseKw};
-    [field] => {$crate::kind::SyntaxKind::Field};
-    [foreach] => {$crate::kind::SyntaxKind::Foreach};
-    [if] => {$crate::kind::SyntaxKind::If};
-    [in] => {$crate::kind::SyntaxKind::In};
-    [include] => {$crate::kind::SyntaxKind::Include};
-    [int] => {$crate::kind::SyntaxKind::Int};
-    [let] => {$crate::kind::SyntaxKind::Let};
-    [list] => {$crate::kind::SyntaxKind::List};
-    [multiclass] => {$crate::kind::SyntaxKind::MultiClass};
-    [string] => {$crate::kind::SyntaxKind::String};
-    [then] => {$crate::kind::SyntaxKind::Then};
+    [assert] => {$crate::kind::TokenKind::Assert};
+    [bit] => {$crate::kind::TokenKind::Bit};
+    [bits] => {$crate::kind::TokenKind::Bits};
+    [class] => {$crate::kind::TokenKind::Class};
+    [code] => {$crate::kind::TokenKind::Code};
+    [dag] => {$crate::kind::TokenKind::Dag};
+    [def] => {$crate::kind::TokenKind::Def};
+    [defm] => {$crate::kind::TokenKind::Defm};
+    [defset] => {$crate::kind::TokenKind::Defset};
+    [defvar] => {$crate::kind::TokenKind::Defvar};
+    [else] => {$crate::kind::TokenKind::ElseKw};
+    [field] => {$crate::kind::TokenKind::Field};
+    [foreach] => {$crate::kind::TokenKind::Foreach};
+    [if] => {$crate::kind::TokenKind::If};
+    [in] => {$crate::kind::TokenKind::In};
+    [include] => {$crate::kind::TokenKind::Include};
+    [int] => {$crate::kind::TokenKind::Int};
+    [let] => {$crate::kind::TokenKind::Let};
+    [list] => {$crate::kind::TokenKind::List};
+    [multiclass] => {$crate::kind::TokenKind::MultiClass};
+    [string] => {$crate::kind::TokenKind::String};
+    [then] => {$crate::kind::TokenKind::Then};
 
-    [!concat] => {$crate::kind::SyntaxKind::XConcat};
-    [!add] => {$crate::kind::SyntaxKind::XAdd};
-    [!sub] => {$crate::kind::SyntaxKind::XSub};
-    [!mul] => {$crate::kind::SyntaxKind::XMul};
-    [!div] => {$crate::kind::SyntaxKind::XDiv};
-    [!not] => {$crate::kind::SyntaxKind::XNot};
-    [!log2] => {$crate::kind::SyntaxKind::XLog2};
-    [!and] => {$crate::kind::SyntaxKind::XAnd};
-    [!or] => {$crate::kind::SyntaxKind::XOr};
-    [!xor] => {$crate::kind::SyntaxKind::XXor};
-    [!sra] => {$crate::kind::SyntaxKind::XSra};
-    [!srl] => {$crate::kind::SyntaxKind::XSrl};
-    [!shl] => {$crate::kind::SyntaxKind::XShl};
-    [!listconcat] => {$crate::kind::SyntaxKind::XListConcat};
-    [!listsplat] => {$crate::kind::SyntaxKind::XListSplat};
-    [!strconcat] => {$crate::kind::SyntaxKind::XStrConcat};
-    [!interleave] => {$crate::kind::SyntaxKind::XInterleave};
-    [!substr] => {$crate::kind::SyntaxKind::XSubstr};
-    [!find] => {$crate::kind::SyntaxKind::XFind};
-    [!cast] => {$crate::kind::SyntaxKind::XCast};
-    [!subst] => {$crate::kind::SyntaxKind::XSubst};
-    [!foreach] => {$crate::kind::SyntaxKind::XForEach};
-    [!filter] => {$crate::kind::SyntaxKind::XFilter};
-    [!foldl] => {$crate::kind::SyntaxKind::XFoldl};
-    [!head] => {$crate::kind::SyntaxKind::XHead};
-    [!tail] => {$crate::kind::SyntaxKind::XTail};
-    [!size] => {$crate::kind::SyntaxKind::XSize};
-    [!empty] => {$crate::kind::SyntaxKind::XEmpty};
-    [!if] => {$crate::kind::SyntaxKind::XIf};
-    [!cond] => {$crate::kind::SyntaxKind::XCond};
-    [!eq] => {$crate::kind::SyntaxKind::XEq};
-    [!isa] => {$crate::kind::SyntaxKind::XIsA};
-    [!dag] => {$crate::kind::SyntaxKind::XDag};
-    [!ne] => {$crate::kind::SyntaxKind::XNe};
-    [!le] => {$crate::kind::SyntaxKind::XLe};
-    [!lt] => {$crate::kind::SyntaxKind::XLt};
-    [!ge] => {$crate::kind::SyntaxKind::XGe};
-    [!gt] => {$crate::kind::SyntaxKind::XGt};
-    [!setdagop] => {$crate::kind::SyntaxKind::XSetDagOp};
-    [!getdagop] => {$crate::kind::SyntaxKind::XGetDagOp};
-    [!exists] => {$crate::kind::SyntaxKind::XExists};
-    [!listremove] => {$crate::kind::SyntaxKind::XListRemove};
-    [!tolower] => {$crate::kind::SyntaxKind::XToLower};
-    [!toupper] => {$crate::kind::SyntaxKind::XToUpper};
-    [!range] => {$crate::kind::SyntaxKind::XRange};
-    [!getdagarg] => {$crate::kind::SyntaxKind::XGetDagArg};
-    [!getdagname] => {$crate::kind::SyntaxKind::XGetDagName};
-    [!setdagarg] => {$crate::kind::SyntaxKind::XSetDagArg};
-    [!setdagname] => {$crate::kind::SyntaxKind::XSetDagName};
+    [!concat] => {$crate::kind::TokenKind::XConcat};
+    [!add] => {$crate::kind::TokenKind::XAdd};
+    [!sub] => {$crate::kind::TokenKind::XSub};
+    [!mul] => {$crate::kind::TokenKind::XMul};
+    [!div] => {$crate::kind::TokenKind::XDiv};
+    [!not] => {$crate::kind::TokenKind::XNot};
+    [!log2] => {$crate::kind::TokenKind::XLog2};
+    [!and] => {$crate::kind::TokenKind::XAnd};
+    [!or] => {$crate::kind::TokenKind::XOr};
+    [!xor] => {$crate::kind::TokenKind::XXor};
+    [!sra] => {$crate::kind::TokenKind::XSra};
+    [!srl] => {$crate::kind::TokenKind::XSrl};
+    [!shl] => {$crate::kind::TokenKind::XShl};
+    [!listconcat] => {$crate::kind::TokenKind::XListConcat};
+    [!listsplat] => {$crate::kind::TokenKind::XListSplat};
+    [!strconcat] => {$crate::kind::TokenKind::XStrConcat};
+    [!interleave] => {$crate::kind::TokenKind::XInterleave};
+    [!substr] => {$crate::kind::TokenKind::XSubstr};
+    [!find] => {$crate::kind::TokenKind::XFind};
+    [!cast] => {$crate::kind::TokenKind::XCast};
+    [!subst] => {$crate::kind::TokenKind::XSubst};
+    [!foreach] => {$crate::kind::TokenKind::XForEach};
+    [!filter] => {$crate::kind::TokenKind::XFilter};
+    [!foldl] => {$crate::kind::TokenKind::XFoldl};
+    [!head] => {$crate::kind::TokenKind::XHead};
+    [!tail] => {$crate::kind::TokenKind::XTail};
+    [!size] => {$crate::kind::TokenKind::XSize};
+    [!empty] => {$crate::kind::TokenKind::XEmpty};
+    [!if] => {$crate::kind::TokenKind::XIf};
+    [!cond] => {$crate::kind::TokenKind::XCond};
+    [!eq] => {$crate::kind::TokenKind::XEq};
+    [!isa] => {$crate::kind::TokenKind::XIsA};
+    [!dag] => {$crate::kind::TokenKind::XDag};
+    [!ne] => {$crate::kind::TokenKind::XNe};
+    [!le] => {$crate::kind::TokenKind::XLe};
+    [!lt] => {$crate::kind::TokenKind::XLt};
+    [!ge] => {$crate::kind::TokenKind::XGe};
+    [!gt] => {$crate::kind::TokenKind::XGt};
+    [!setdagop] => {$crate::kind::TokenKind::XSetDagOp};
+    [!getdagop] => {$crate::kind::TokenKind::XGetDagOp};
+    [!exists] => {$crate::kind::TokenKind::XExists};
+    [!listremove] => {$crate::kind::TokenKind::XListRemove};
+    [!tolower] => {$crate::kind::TokenKind::XToLower};
+    [!toupper] => {$crate::kind::TokenKind::XToUpper};
+    [!range] => {$crate::kind::TokenKind::XRange};
+    [!getdagarg] => {$crate::kind::TokenKind::XGetDagArg};
+    [!getdagname] => {$crate::kind::TokenKind::XGetDagName};
+    [!setdagarg] => {$crate::kind::TokenKind::XSetDagArg};
+    [!setdagname] => {$crate::kind::TokenKind::XSetDagName};
 
-    [true] => {$crate::kind::SyntaxKind::TrueVal};
-    [false] => {$crate::kind::SyntaxKind::FalseVal};
+    [true] => {$crate::kind::TokenKind::TrueVal};
+    [false] => {$crate::kind::TokenKind::FalseVal};
 
-    [#ifdef] => {$crate::kind::SyntaxKind::Ifdef};
-    [#ifndef] => {$crate::kind::SyntaxKind::Ifndef};
-    [#else] => {$crate::kind::SyntaxKind::Else};
-    [#endif] => {$crate::kind::SyntaxKind::Endif};
-    [#define] => {$crate::kind::SyntaxKind::Define};
+    [#ifdef] => {$crate::kind::TokenKind::Ifdef};
+    [#ifndef] => {$crate::kind::TokenKind::Ifndef};
+    [#else] => {$crate::kind::TokenKind::Else};
+    [#endif] => {$crate::kind::TokenKind::Endif};
+    [#define] => {$crate::kind::TokenKind::Define};
 }
