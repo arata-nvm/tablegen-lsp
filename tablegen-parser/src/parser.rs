@@ -39,6 +39,9 @@ fn tempalte_arg_decl(p: &mut Parser) {
     let m = p.marker();
     r#type(p);
     identifier(p);
+    if p.eat_if(T![=]) {
+        value(p);
+    }
     p.wrap(m, SyntaxKind::TemplateArgDecl);
 }
 
@@ -52,6 +55,12 @@ fn identifier(p: &mut Parser) {
     let m = p.marker();
     p.expect(TokenKind::Id);
     p.wrap(m, SyntaxKind::Identifier);
+}
+
+fn value(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(TokenKind::IntVal);
+    p.wrap(m, SyntaxKind::Value);
 }
 
 #[derive(Debug)]
@@ -152,6 +161,6 @@ mod tests {
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(parse("class Foo<int A, int B>;"));
+        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>;"));
     }
 }

@@ -6,6 +6,7 @@ pub enum SyntaxKind {
     TemplateArgDecl,
     Type,
     Identifier,
+    Value,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/parser.rs
-expression: "parse(\"class Foo<int A, int B>;\")"
+expression: "parse(\"class Foo<int A, int B = 1>;\")"
 ---
 SyntaxNode(
     Node(
@@ -123,6 +123,37 @@ SyntaxNode(
                                                     Token(
                                                         Id,
                                                         "B",
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Token(
+                                                        Whitespace,
+                                                        " ",
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Token(
+                                            Equal,
+                                            "=",
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Token(
+                                            Whitespace,
+                                            " ",
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Node(
+                                            Value,
+                                            [
+                                                SyntaxNode(
+                                                    Token(
+                                                        IntVal,
+                                                        "1",
                                                     ),
                                                 ),
                                             ],
