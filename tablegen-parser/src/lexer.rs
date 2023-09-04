@@ -36,6 +36,7 @@ impl<'a> Lexer<'a> {
             Some('-') => self.number(start, '-'),
             Some('+') => self.number(start, '+'),
             Some('"') => self.string(),
+            Some('$') => self.var_name(),
             Some('[') => T!['['],
             Some(']') => T![']'],
             Some('{') => T!['{'],
@@ -131,6 +132,14 @@ impl<'a> Lexer<'a> {
         }
 
         TokenKind::StrVal
+    }
+
+    fn var_name(&mut self) -> TokenKind {
+        if !self.s.eat_if(is_identifier_start) {
+            return self.error("Invalid variable name");
+        }
+        self.s.eat_while(is_identifier_continue);
+        TokenKind::VarName
     }
 
     fn identifier(&mut self, start: usize) -> TokenKind {
@@ -306,7 +315,7 @@ mod tests {
 
     #[test]
     fn string() {
-        insta::assert_debug_snapshot!(tokenize(r#"hoge "fuga\n\"""#))
+        insta::assert_debug_snapshot!(tokenize(r#"hoge "fuga\n\"" $piyo"#))
     }
 
     #[test]

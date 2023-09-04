@@ -1,10 +1,12 @@
 ---
 source: tablegen-parser/src/lexer.rs
-expression: "tokenize(\"hoge \\\"fuga\\\"\")"
+expression: "tokenize(r#\"hoge \"fuga\\n\\\"\" $piyo\"#)"
 ---
 [
     Id,
     Whitespace,
     StrVal,
+    Whitespace,
+    VarName,
     Eof,
 ]
