@@ -62,7 +62,7 @@ impl<'a> Lexer<'a> {
                 }
             }
             None => TokenKind::Eof,
-            _ => unimplemented!(),
+            _ => self.error("Unexpected character"),
         }
     }
 
@@ -119,12 +119,14 @@ impl<'a> Lexer<'a> {
     }
 
     fn string(&mut self) -> TokenKind {
+        let mut escaped = false;
         loop {
             match self.s.eat() {
-                Some('"') => break,
+                Some('\\') => escaped = true,
+                Some('"') if !escaped => break,
                 Some('\r') | Some('\n') => return self.error("End of line in string literal"),
                 None => return self.error("End of file in string literal"),
-                _ => {}
+                _ => escaped = false,
             }
         }
 
@@ -304,7 +306,7 @@ mod tests {
 
     #[test]
     fn string() {
-        insta::assert_debug_snapshot!(tokenize("hoge \"fuga\""))
+        insta::assert_debug_snapshot!(tokenize(r#"hoge "fuga\n\"""#))
     }
 
     #[test]
