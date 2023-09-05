@@ -7,8 +7,16 @@ use crate::{
 
 pub fn parse(text: &str) -> SyntaxNode {
     let mut parser = Parser::new(text);
-    class(&mut parser);
+    file(&mut parser);
     parser.finish().into_iter().next().unwrap()
+}
+
+fn file(p: &mut Parser) {
+    let m = p.marker();
+    while !p.eof() {
+        class(p);
+    }
+    p.wrap(m, SyntaxKind::File);
 }
 
 fn class(p: &mut Parser) {
@@ -215,6 +223,10 @@ impl<'a> Parser<'a> {
 
     fn at(&self, kind: TokenKind) -> bool {
         self.current == kind
+    }
+
+    fn eof(&self) -> bool {
+        self.at(TokenKind::Eof)
     }
 
     fn assert(&mut self, kind: TokenKind) {

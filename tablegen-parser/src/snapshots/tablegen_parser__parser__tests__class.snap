@@ -4,86 +4,16 @@ expression: "parse(\"class Foo<int A, int B = 1>: Bar<A, 2>;\")"
 ---
 SyntaxNode(
     Node(
-        Class,
+        File,
         [
             SyntaxNode(
-                Token(
+                Node(
                     Class,
-                    "class",
-                ),
-            ),
-            SyntaxNode(
-                Token(
-                    Whitespace,
-                    " ",
-                ),
-            ),
-            SyntaxNode(
-                Node(
-                    Identifier,
                     [
                         SyntaxNode(
                             Token(
-                                Id,
-                                "Foo",
-                            ),
-                        ),
-                    ],
-                ),
-            ),
-            SyntaxNode(
-                Node(
-                    TemplateArgList,
-                    [
-                        SyntaxNode(
-                            Token(
-                                Less,
-                                "<",
-                            ),
-                        ),
-                        SyntaxNode(
-                            Node(
-                                TemplateArgDecl,
-                                [
-                                    SyntaxNode(
-                                        Node(
-                                            Type,
-                                            [
-                                                SyntaxNode(
-                                                    Token(
-                                                        Int,
-                                                        "int",
-                                                    ),
-                                                ),
-                                                SyntaxNode(
-                                                    Token(
-                                                        Whitespace,
-                                                        " ",
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                    SyntaxNode(
-                                        Node(
-                                            Identifier,
-                                            [
-                                                SyntaxNode(
-                                                    Token(
-                                                        Id,
-                                                        "A",
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                ],
-                            ),
-                        ),
-                        SyntaxNode(
-                            Token(
-                                Comma,
-                                ",",
+                                Class,
+                                "class",
                             ),
                         ),
                         SyntaxNode(
@@ -94,121 +24,50 @@ SyntaxNode(
                         ),
                         SyntaxNode(
                             Node(
-                                TemplateArgDecl,
+                                Identifier,
                                 [
                                     SyntaxNode(
-                                        Node(
-                                            Type,
-                                            [
-                                                SyntaxNode(
-                                                    Token(
-                                                        Int,
-                                                        "int",
-                                                    ),
-                                                ),
-                                                SyntaxNode(
-                                                    Token(
-                                                        Whitespace,
-                                                        " ",
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                    SyntaxNode(
-                                        Node(
-                                            Identifier,
-                                            [
-                                                SyntaxNode(
-                                                    Token(
-                                                        Id,
-                                                        "B",
-                                                    ),
-                                                ),
-                                                SyntaxNode(
-                                                    Token(
-                                                        Whitespace,
-                                                        " ",
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                    SyntaxNode(
                                         Token(
-                                            Equal,
-                                            "=",
-                                        ),
-                                    ),
-                                    SyntaxNode(
-                                        Token(
-                                            Whitespace,
-                                            " ",
-                                        ),
-                                    ),
-                                    SyntaxNode(
-                                        Node(
-                                            Value,
-                                            [
-                                                SyntaxNode(
-                                                    Node(
-                                                        SimpleValue,
-                                                        [
-                                                            SyntaxNode(
-                                                                Node(
-                                                                    Integer,
-                                                                    [
-                                                                        SyntaxNode(
-                                                                            Token(
-                                                                                IntVal,
-                                                                                "1",
-                                                                            ),
-                                                                        ),
-                                                                    ],
-                                                                ),
-                                                            ),
-                                                        ],
-                                                    ),
-                                                ),
-                                            ],
+                                            Id,
+                                            "Foo",
                                         ),
                                     ),
                                 ],
                             ),
                         ),
                         SyntaxNode(
-                            Token(
-                                Greater,
-                                ">",
-                            ),
-                        ),
-                    ],
-                ),
-            ),
-            SyntaxNode(
-                Node(
-                    RecordBody,
-                    [
-                        SyntaxNode(
                             Node(
-                                ParentClassList,
+                                TemplateArgList,
                                 [
                                     SyntaxNode(
                                         Token(
-                                            Colon,
-                                            ":",
-                                        ),
-                                    ),
-                                    SyntaxNode(
-                                        Token(
-                                            Whitespace,
-                                            " ",
+                                            Less,
+                                            "<",
                                         ),
                                     ),
                                     SyntaxNode(
                                         Node(
-                                            ClassRef,
+                                            TemplateArgDecl,
                                             [
+                                                SyntaxNode(
+                                                    Node(
+                                                        Type,
+                                                        [
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Int,
+                                                                    "int",
+                                                                ),
+                                                            ),
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Whitespace,
+                                                                    " ",
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
                                                 SyntaxNode(
                                                     Node(
                                                         Identifier,
@@ -216,7 +75,64 @@ SyntaxNode(
                                                             SyntaxNode(
                                                                 Token(
                                                                     Id,
-                                                                    "Bar",
+                                                                    "A",
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Token(
+                                            Comma,
+                                            ",",
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Token(
+                                            Whitespace,
+                                            " ",
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Node(
+                                            TemplateArgDecl,
+                                            [
+                                                SyntaxNode(
+                                                    Node(
+                                                        Type,
+                                                        [
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Int,
+                                                                    "int",
+                                                                ),
+                                                            ),
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Whitespace,
+                                                                    " ",
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Node(
+                                                        Identifier,
+                                                        [
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Id,
+                                                                    "B",
+                                                                ),
+                                                            ),
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Whitespace,
+                                                                    " ",
                                                                 ),
                                                             ),
                                                         ],
@@ -224,34 +140,125 @@ SyntaxNode(
                                                 ),
                                                 SyntaxNode(
                                                     Token(
-                                                        Less,
-                                                        "<",
+                                                        Equal,
+                                                        "=",
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Token(
+                                                        Whitespace,
+                                                        " ",
                                                     ),
                                                 ),
                                                 SyntaxNode(
                                                     Node(
-                                                        ArgValueList,
+                                                        Value,
                                                         [
                                                             SyntaxNode(
                                                                 Node(
-                                                                    PositionalArgValueList,
+                                                                    SimpleValue,
                                                                     [
                                                                         SyntaxNode(
                                                                             Node(
-                                                                                Value,
+                                                                                Integer,
+                                                                                [
+                                                                                    SyntaxNode(
+                                                                                        Token(
+                                                                                            IntVal,
+                                                                                            "1",
+                                                                                        ),
+                                                                                    ),
+                                                                                ],
+                                                                            ),
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    SyntaxNode(
+                                        Token(
+                                            Greater,
+                                            ">",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        SyntaxNode(
+                            Node(
+                                RecordBody,
+                                [
+                                    SyntaxNode(
+                                        Node(
+                                            ParentClassList,
+                                            [
+                                                SyntaxNode(
+                                                    Token(
+                                                        Colon,
+                                                        ":",
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Token(
+                                                        Whitespace,
+                                                        " ",
+                                                    ),
+                                                ),
+                                                SyntaxNode(
+                                                    Node(
+                                                        ClassRef,
+                                                        [
+                                                            SyntaxNode(
+                                                                Node(
+                                                                    Identifier,
+                                                                    [
+                                                                        SyntaxNode(
+                                                                            Token(
+                                                                                Id,
+                                                                                "Bar",
+                                                                            ),
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ),
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Less,
+                                                                    "<",
+                                                                ),
+                                                            ),
+                                                            SyntaxNode(
+                                                                Node(
+                                                                    ArgValueList,
+                                                                    [
+                                                                        SyntaxNode(
+                                                                            Node(
+                                                                                PositionalArgValueList,
                                                                                 [
                                                                                     SyntaxNode(
                                                                                         Node(
-                                                                                            SimpleValue,
+                                                                                            Value,
                                                                                             [
                                                                                                 SyntaxNode(
                                                                                                     Node(
-                                                                                                        Identifier,
+                                                                                                        SimpleValue,
                                                                                                         [
                                                                                                             SyntaxNode(
-                                                                                                                Token(
-                                                                                                                    Id,
-                                                                                                                    "A",
+                                                                                                                Node(
+                                                                                                                    Identifier,
+                                                                                                                    [
+                                                                                                                        SyntaxNode(
+                                                                                                                            Token(
+                                                                                                                                Id,
+                                                                                                                                "A",
+                                                                                                                            ),
+                                                                                                                        ),
+                                                                                                                    ],
                                                                                                                 ),
                                                                                                             ),
                                                                                                         ],
@@ -260,37 +267,37 @@ SyntaxNode(
                                                                                             ],
                                                                                         ),
                                                                                     ),
-                                                                                ],
-                                                                            ),
-                                                                        ),
-                                                                        SyntaxNode(
-                                                                            Token(
-                                                                                Comma,
-                                                                                ",",
-                                                                            ),
-                                                                        ),
-                                                                        SyntaxNode(
-                                                                            Token(
-                                                                                Whitespace,
-                                                                                " ",
-                                                                            ),
-                                                                        ),
-                                                                        SyntaxNode(
-                                                                            Node(
-                                                                                Value,
-                                                                                [
+                                                                                    SyntaxNode(
+                                                                                        Token(
+                                                                                            Comma,
+                                                                                            ",",
+                                                                                        ),
+                                                                                    ),
+                                                                                    SyntaxNode(
+                                                                                        Token(
+                                                                                            Whitespace,
+                                                                                            " ",
+                                                                                        ),
+                                                                                    ),
                                                                                     SyntaxNode(
                                                                                         Node(
-                                                                                            SimpleValue,
+                                                                                            Value,
                                                                                             [
                                                                                                 SyntaxNode(
                                                                                                     Node(
-                                                                                                        Integer,
+                                                                                                        SimpleValue,
                                                                                                         [
                                                                                                             SyntaxNode(
-                                                                                                                Token(
-                                                                                                                    IntVal,
-                                                                                                                    "2",
+                                                                                                                Node(
+                                                                                                                    Integer,
+                                                                                                                    [
+                                                                                                                        SyntaxNode(
+                                                                                                                            Token(
+                                                                                                                                IntVal,
+                                                                                                                                "2",
+                                                                                                                            ),
+                                                                                                                        ),
+                                                                                                                    ],
                                                                                                                 ),
                                                                                                             ),
                                                                                                         ],
@@ -305,29 +312,29 @@ SyntaxNode(
                                                                     ],
                                                                 ),
                                                             ),
+                                                            SyntaxNode(
+                                                                Token(
+                                                                    Greater,
+                                                                    ">",
+                                                                ),
+                                                            ),
                                                         ],
-                                                    ),
-                                                ),
-                                                SyntaxNode(
-                                                    Token(
-                                                        Greater,
-                                                        ">",
                                                     ),
                                                 ),
                                             ],
                                         ),
                                     ),
-                                ],
-                            ),
-                        ),
-                        SyntaxNode(
-                            Node(
-                                Body,
-                                [
                                     SyntaxNode(
-                                        Token(
-                                            Semi,
-                                            ";",
+                                        Node(
+                                            Body,
+                                            [
+                                                SyntaxNode(
+                                                    Token(
+                                                        Semi,
+                                                        ";",
+                                                    ),
+                                                ),
+                                            ],
                                         ),
                                     ),
                                 ],
