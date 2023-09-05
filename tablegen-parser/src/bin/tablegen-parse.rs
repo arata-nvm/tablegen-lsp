@@ -1,15 +1,23 @@
 use std::fs;
 
-use tablegen_parser::{kind::TokenKind, lexer::Lexer};
+use tablegen_parser::{kind::TokenKind, lexer::Lexer, parser::parse};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 2 {
-        println!("usage: tablegen-parse <file>");
+    if args.len() != 3 {
+        println!("usage: tablegen-parse [token|node] <file>");
         return;
     }
 
-    let text = fs::read_to_string(&args[1]).unwrap();
+    let text = fs::read_to_string(&args[2]).unwrap();
+    match args[1].as_str() {
+        "token" => token(&text),
+        "node" => node(&text),
+        _ => unimplemented!(),
+    }
+}
+
+fn token(text: &str) {
     let mut lexer = Lexer::new(&text);
     loop {
         let cursor = lexer.cursor();
@@ -24,4 +32,9 @@ fn main() {
             break;
         }
     }
+}
+
+fn node(text: &str) {
+    let node = parse(&text);
+    println!("{node:?}");
 }
