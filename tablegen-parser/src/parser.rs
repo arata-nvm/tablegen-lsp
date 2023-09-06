@@ -1,3 +1,5 @@
+use ecow::{eco_format, EcoString};
+
 use crate::{
     kind::{SyntaxKind, TokenKind},
     lexer::Lexer,
@@ -62,14 +64,27 @@ impl<'a> Parser<'a> {
         self.at(TokenKind::Eof)
     }
 
+    pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
+        self.nodes
+            .push(SyntaxNode::error(message, self.current_text()))
+    }
+
+    pub(crate) fn error_and_eat(&mut self, message: impl Into<EcoString>) {
+        let m = self.marker();
+        self.eat();
+        self.nodes[m.0] = SyntaxNode::error(message, self.current_text());
+    }
+
     pub(crate) fn assert(&mut self, kind: TokenKind) {
         assert!(self.eat_if(kind));
     }
 
-    pub(crate) fn expect(&mut self, kind: TokenKind) {
-        if !self.eat_if(kind) {
-            unimplemented!("expected {kind:?}");
+    pub(crate) fn expect(&mut self, kind: TokenKind) -> bool {
+        if self.eat_if(kind) {
+            return true;
         }
+        self.error(eco_format!("expected {kind:?}"));
+        false
     }
 
     pub(crate) fn eat(&mut self) {
@@ -81,7 +96,12 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn consume_token(&mut self) {
         let text = self.current_text();
-        self.nodes.push(SyntaxNode::token(self.current, text));
+        if self.at(TokenKind::Error) {
+            let message = self.lexer.take_error().unwrap();
+            self.nodes.push(SyntaxNode::error(message, text));
+        } else {
+            self.nodes.push(SyntaxNode::token(self.current, text));
+        }
 
         self.current_start = self.lexer.cursor();
         self.current = self.lexer.next();

@@ -9,6 +9,7 @@ pub struct SyntaxNode(SyntaxNodeInner);
 enum SyntaxNodeInner {
     Token(TokenKind, EcoString),
     Node(SyntaxKind, Vec<SyntaxNode>),
+    Error(EcoString, EcoString),
 }
 
 impl SyntaxNode {
@@ -20,10 +21,18 @@ impl SyntaxNode {
         Self(SyntaxNodeInner::Node(kind, children))
     }
 
+    pub fn error(message: impl Into<EcoString>, text: impl Into<EcoString>) -> Self {
+        Self(SyntaxNodeInner::Error(message.into(), text.into()))
+    }
+
     pub fn kind(&self) -> SyntaxKind {
         match self.0 {
-            SyntaxNodeInner::Token(kind, _) => todo!(),
+            SyntaxNodeInner::Token(_, _) => todo!(),
             SyntaxNodeInner::Node(kind, _) => kind,
+            SyntaxNodeInner::Error(_, _) => SyntaxKind::Error,
+        }
+    }
+}
         }
     }
 }

@@ -1,6 +1,7 @@
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SyntaxKind {
-    // Nodes
+    Error,
+
     File,
     Class,
     TemplateArgList,
