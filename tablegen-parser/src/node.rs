@@ -1,3 +1,5 @@
+use core::fmt;
+
 use ecow::EcoString;
 
 use crate::kind::{SyntaxKind, TokenKind};
@@ -33,6 +35,25 @@ impl SyntaxNode {
         }
     }
 }
+
+impl fmt::Display for SyntaxNode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        dump(self, 0, f)
+    }
+}
+
+fn dump(node: &SyntaxNode, depth: usize, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{}", "  ".repeat(depth))?;
+
+    match &node.0 {
+        SyntaxNodeInner::Token(kind, text) => writeln!(f, "{kind:?} `{}`", text.escape_default()),
+        SyntaxNodeInner::Node(kind, children) => {
+            writeln!(f, "{kind:?}")?;
+            for child in children {
+                dump(child, depth + 1, f)?;
+            }
+            Ok(())
         }
+        SyntaxNodeInner::Error(message, text) => writeln!(f, "Error({message}, {text})"),
     }
 }

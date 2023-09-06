@@ -171,12 +171,12 @@ mod tests {
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(parse("class Foo<int A, int B = 1>: Bar<A, 2>;"));
+        insta::assert_display_snapshot!(parse("class Foo<int A, int B = 1>: Bar<A, 2>;"));
     }
 
     #[test]
     fn class_with_body() {
-        insta::assert_debug_snapshot!(parse(
+        insta::assert_display_snapshot!(parse(
             "class Foo<int A> {
                 int B;
                 int C = A;

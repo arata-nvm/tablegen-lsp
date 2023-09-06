@@ -36,5 +36,5 @@ fn token(text: &str) {
 
 fn node(text: &str) {
     let node = parse(&text);
-    println!("{node:?}");
+    println!("{node}");
 }
