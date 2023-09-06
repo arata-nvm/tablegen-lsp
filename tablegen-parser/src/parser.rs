@@ -37,16 +37,10 @@ impl<'a> Parser<'a> {
         self.current
     }
 
-    pub(crate) fn current_start(&self) -> usize {
-        self.current_start
-    }
-
-    pub(crate) fn current_end(&self) -> usize {
-        self.lexer.cursor()
-    }
-
     pub(crate) fn current_text(&self) -> &'a str {
-        &self.text[self.current_start()..self.current_end()]
+        let from = self.current_start;
+        let to = self.lexer.cursor();
+        &self.text[from..to]
     }
 
     pub(crate) fn marker(&self) -> Marker {
@@ -69,8 +63,7 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {
-        assert_eq!(self.current, kind);
-        self.eat();
+        assert!(self.eat_if(kind));
     }
 
     pub(crate) fn expect(&mut self, kind: TokenKind) {
