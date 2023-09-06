@@ -14,7 +14,10 @@ pub fn parse(text: &str) -> SyntaxNode {
 fn file(p: &mut Parser) {
     let m = p.marker();
     while !p.eof() {
-        class(p);
+        match p.current() {
+            T![class] => class(p),
+            _ => p.error_and_eat("Expected class, def, defm, defset, multiclass, let or foreach"),
+        }
     }
     p.wrap(m, SyntaxKind::File);
 }
@@ -33,7 +36,7 @@ fn class(p: &mut Parser) {
 fn template_arg_list(p: &mut Parser) {
     let m = p.marker();
     p.assert(T![<]);
-    loop {
+    while !p.eof() {
         tempalte_arg_decl(p);
         if !p.eat_if(T![,]) {
             break;
@@ -67,7 +70,7 @@ fn parent_class_list(p: &mut Parser) {
         return;
     }
 
-    loop {
+    while !p.eof() {
         class_ref(p);
         if !p.eat_if(T![,]) {
             break;
@@ -94,7 +97,7 @@ fn arg_value_list(p: &mut Parser) {
 
 fn positional_arg_value_list(p: &mut Parser) {
     let m = p.marker();
-    loop {
+    while !p.eof() {
         value(p);
         if !p.eat_if(T![,]) {
             break;
@@ -111,10 +114,15 @@ fn body(p: &mut Parser) {
     }
 
     p.expect(T!['{']);
-    loop {
-        body_item(p);
+    while !p.eof() {
         if p.eat_if(T!['}']) {
             break;
+        }
+
+        let prev_cursor = p.current_start();
+        body_item(p);
+        if p.current_start() == prev_cursor {
+            p.error_and_eat("unexpected token");
         }
     }
     p.wrap(m, SyntaxKind::Body);
