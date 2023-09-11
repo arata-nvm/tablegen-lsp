@@ -33,8 +33,34 @@ macro_rules! node {
 node!(File);
 
 impl<'a> File<'a> {
-    pub fn classes(self) -> impl DoubleEndedIterator<Item = Class<'a>> {
+    pub fn classes(self) -> impl DoubleEndedIterator<Item = FileItem<'a>> {
         self.0.children().filter_map(|node| node.cast())
+    }
+}
+
+#[derive(Debug)]
+pub enum FileItem<'a> {
+    Inlcude(Include<'a>),
+    Class(Class<'a>),
+    Def(Def<'a>),
+}
+
+impl<'a> AstNode<'a> for FileItem<'a> {
+    fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
+        match node.kind() {
+            SyntaxKind::Include => node.cast().map(Self::Inlcude),
+            SyntaxKind::Class => node.cast().map(Self::Class),
+            SyntaxKind::Def => node.cast().map(Self::Def),
+            _ => None,
+        }
+    }
+
+    fn to_untyped(self) -> &'a SyntaxNode {
+        match self {
+            Self::Inlcude(v) => v.to_untyped(),
+            Self::Class(v) => v.to_untyped(),
+            Self::Def(v) => v.to_untyped(),
+        }
     }
 }
 
