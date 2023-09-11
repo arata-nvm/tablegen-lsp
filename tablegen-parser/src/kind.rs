@@ -5,6 +5,7 @@ pub enum SyntaxKind {
     File,
     Include,
     Class,
+    Def,
     TemplateArgList,
     TemplateArgDecl,
     RecordBody,

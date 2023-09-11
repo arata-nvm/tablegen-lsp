@@ -62,6 +62,18 @@ impl<'a> Class<'a> {
     }
 }
 
+node!(Def);
+
+impl<'a> Def<'a> {
+    pub fn name(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn record_body(self) -> Option<RecordBody<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
 node!(TemplateArgList);
 
 impl<'a> TemplateArgList<'a> {

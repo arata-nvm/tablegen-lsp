@@ -18,6 +18,7 @@ fn file(p: &mut Parser) {
         match p.current() {
             T![include] => include(p),
             T![class] => class(p),
+            T![def] => def(p),
             _ => p.error_and_eat("Expected class, def, defm, defset, multiclass, let or foreach"),
         }
     }
@@ -40,6 +41,14 @@ fn class(p: &mut Parser) {
     }
     record_body(p);
     p.wrap(m, SyntaxKind::Class);
+}
+
+fn def(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![def]);
+    value(p);
+    record_body(p);
+    p.wrap(m, SyntaxKind::Def);
 }
 
 fn template_arg_list(p: &mut Parser) {
@@ -235,6 +244,11 @@ mod tests {
                 int C = A;
             }"
         ))
+    }
+
+    #[test]
+    fn def() {
+        insta::assert_display_snapshot!(parse("def Foo : Bar;"))
     }
 
     #[test]
