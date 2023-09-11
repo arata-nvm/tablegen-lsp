@@ -54,10 +54,25 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn wrap(&mut self, from: Marker, kind: SyntaxKind) {
-        let from = from.0;
-        let to = self.nodes.len();
+        self.wrap_range(from, Marker(self.cursor_before_trivia()), kind);
+    }
+
+    pub(crate) fn wrap_all(&mut self, from: Marker, kind: SyntaxKind) {
+        self.wrap_range(from, Marker(self.nodes.len()), kind);
+    }
+
+    fn wrap_range(&mut self, Marker(from): Marker, Marker(to): Marker, kind: SyntaxKind) {
+        let to = to.max(from);
         let children = self.nodes.drain(from..to).collect();
         self.nodes.insert(from, SyntaxNode::node(kind, children));
+    }
+
+    fn cursor_before_trivia(&self) -> usize {
+        let mut cursor = self.nodes.len();
+        while cursor > 0 && self.nodes[cursor - 1].token_kind().is_trivia() {
+            cursor -= 1;
+        }
+        cursor
     }
 
     pub(crate) fn at(&self, kind: TokenKind) -> bool {
@@ -93,6 +108,10 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn eat(&mut self) {
         self.consume_token();
+        self.eat_trivia();
+    }
+
+    pub(crate) fn eat_trivia(&mut self) {
         while self.current.is_trivia() {
             self.consume_token();
         }

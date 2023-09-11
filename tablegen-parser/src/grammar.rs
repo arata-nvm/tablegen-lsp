@@ -13,13 +13,14 @@ pub fn parse(text: &str) -> SyntaxNode {
 
 fn file(p: &mut Parser) {
     let m = p.marker();
+    p.eat_trivia();
     while !p.eof() {
         match p.current() {
             T![class] => class(p),
             _ => p.error_and_eat("Expected class, def, defm, defset, multiclass, let or foreach"),
         }
     }
-    p.wrap(m, SyntaxKind::File);
+    p.wrap_all(m, SyntaxKind::File);
 }
 
 fn class(p: &mut Parser) {
