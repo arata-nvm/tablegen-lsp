@@ -16,11 +16,19 @@ fn file(p: &mut Parser) {
     p.eat_trivia();
     while !p.eof() {
         match p.current() {
+            T![include] => include(p),
             T![class] => class(p),
             _ => p.error_and_eat("Expected class, def, defm, defset, multiclass, let or foreach"),
         }
     }
     p.wrap_all(m, SyntaxKind::File);
+}
+
+fn include(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![include]);
+    string(p);
+    p.wrap(m, SyntaxKind::Include);
 }
 
 fn class(p: &mut Parser) {
@@ -198,9 +206,20 @@ fn integer(p: &mut Parser) {
     p.wrap(m, SyntaxKind::Integer);
 }
 
+fn string(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(TokenKind::StrVal);
+    p.wrap(m, SyntaxKind::String);
+}
+
 #[cfg(test)]
 mod tests {
     use super::parse;
+
+    #[test]
+    fn include() {
+        insta::assert_display_snapshot!(parse(r#"include "foo.td""#))
+    }
 
     #[test]
     fn class() {

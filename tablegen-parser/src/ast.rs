@@ -38,6 +38,14 @@ impl<'a> File<'a> {
     }
 }
 
+node!(Include);
+
+impl<'a> Include<'a> {
+    pub fn path(self) -> Option<String<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
 node!(Class);
 
 impl<'a> Class<'a> {
@@ -262,5 +270,13 @@ impl Integer<'_> {
         } else {
             i64::from_str_radix(text, 10).ok()
         }
+    }
+}
+
+node!(String);
+
+impl<'a> String<'a> {
+    pub fn value(self) -> Option<&'a EcoString> {
+        self.0.children().next().map(|node| node.text())
     }
 }

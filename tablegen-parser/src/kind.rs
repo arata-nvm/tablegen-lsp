@@ -3,6 +3,7 @@ pub enum SyntaxKind {
     Error,
 
     File,
+    Include,
     Class,
     TemplateArgList,
     TemplateArgDecl,
@@ -20,6 +21,7 @@ pub enum SyntaxKind {
     SimpleValue,
     Identifier,
     Integer,
+    String,
 }
 
 impl SyntaxKind {
