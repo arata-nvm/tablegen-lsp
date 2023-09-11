@@ -90,8 +90,9 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn error_and_eat(&mut self, message: impl Into<EcoString>) {
         let m = self.marker();
+        let text = self.current_text();
         self.eat();
-        self.nodes[m.0] = SyntaxNode::error(message, self.current_text());
+        self.nodes[m.0] = SyntaxNode::error(message, text);
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {
