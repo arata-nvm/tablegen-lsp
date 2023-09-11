@@ -13,7 +13,7 @@ File
       TemplateArgDecl
         Type
           Int `int`
-          Whitespace ` `
+        Whitespace ` `
         Identifier
           Id `A`
       Comma `,`
@@ -21,10 +21,10 @@ File
       TemplateArgDecl
         Type
           Int `int`
-          Whitespace ` `
+        Whitespace ` `
         Identifier
           Id `B`
-          Whitespace ` `
+        Whitespace ` `
         Equal `=`
         Whitespace ` `
         Value

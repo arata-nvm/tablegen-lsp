@@ -13,11 +13,11 @@ File
       TemplateArgDecl
         Type
           Int `int`
-          Whitespace ` `
+        Whitespace ` `
         Identifier
           Id `A`
       Greater `>`
-      Whitespace ` `
+    Whitespace ` `
     RecordBody
       ParentClassList
       Body
@@ -26,18 +26,18 @@ File
         BodyItem
           Type
             Int `int`
-            Whitespace ` `
+          Whitespace ` `
           Identifier
             Id `B`
           Semi `;`
-          Whitespace `\n                `
+        Whitespace `\n                `
         BodyItem
           Type
             Int `int`
-            Whitespace ` `
+          Whitespace ` `
           Identifier
             Id `C`
-            Whitespace ` `
+          Whitespace ` `
           Equal `=`
           Whitespace ` `
           Value
@@ -45,6 +45,6 @@ File
               Identifier
                 Id `A`
           Semi `;`
-          Whitespace `\n            `
+        Whitespace `\n            `
         RBrace `}`
 
