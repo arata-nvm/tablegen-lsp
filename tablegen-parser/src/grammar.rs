@@ -157,7 +157,7 @@ fn simple_value(p: &mut Parser) {
     match p.current() {
         TokenKind::IntVal => integer(p),
         TokenKind::Id => identifier(p),
-        _ => unimplemented!(),
+        _ => p.error_and_eat("unexpected"),
     }
     p.wrap(m, SyntaxKind::SimpleValue);
 }
