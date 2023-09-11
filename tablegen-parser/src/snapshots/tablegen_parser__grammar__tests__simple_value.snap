@@ -1,0 +1,61 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"class Foo<int A = 1, int B = A, string C = \\\"hoge\\\">;\")"
+---
+File
+  Class
+    Class `class`
+    Whitespace ` `
+    Identifier
+      Id `Foo`
+    TemplateArgList
+      Less `<`
+      TemplateArgDecl
+        Type
+          Int `int`
+        Whitespace ` `
+        Identifier
+          Id `A`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            Integer
+              IntVal `1`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Int `int`
+        Whitespace ` `
+        Identifier
+          Id `B`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            Identifier
+              Id `A`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          String `string`
+        Whitespace ` `
+        Identifier
+          Id `C`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            String
+              StrVal `\"hoge\"`
+      Greater `>`
+    RecordBody
+      ParentClassList
+      Body
+        Semi `;`
+

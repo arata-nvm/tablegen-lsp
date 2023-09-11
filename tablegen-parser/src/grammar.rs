@@ -189,6 +189,7 @@ fn simple_value(p: &mut Parser) {
     match p.current() {
         TokenKind::IntVal => integer(p),
         TokenKind::Id => identifier(p),
+        TokenKind::StrVal => string(p),
         _ => p.error_and_eat("unexpected"),
     }
     p.wrap(m, SyntaxKind::SimpleValue);
@@ -240,6 +241,13 @@ mod tests {
     fn r#type() {
         insta::assert_display_snapshot!(parse(
             "class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;"
+        ))
+    }
+
+    #[test]
+    fn simple_value() {
+        insta::assert_display_snapshot!(parse(
+            "class Foo<int A = 1, int B = A, string C = \"hoge\">;"
         ))
     }
 }

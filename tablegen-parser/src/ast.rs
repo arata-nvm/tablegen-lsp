@@ -233,6 +233,7 @@ impl<'a> AstNode<'a> for Value<'a> {
 pub enum SimpleValue<'a> {
     Identifier(Identifier<'a>),
     Integer(Integer<'a>),
+    String(String<'a>),
 }
 
 impl<'a> AstNode<'a> for SimpleValue<'a> {
@@ -240,6 +241,7 @@ impl<'a> AstNode<'a> for SimpleValue<'a> {
         match node.kind() {
             SyntaxKind::Identifier => node.cast().map(Self::Identifier),
             SyntaxKind::Integer => node.cast().map(Self::Identifier),
+            SyntaxKind::String => node.cast().map(Self::String),
             _ => None,
         }
     }
@@ -248,6 +250,7 @@ impl<'a> AstNode<'a> for SimpleValue<'a> {
         match self {
             Self::Identifier(node) => node.to_untyped(),
             Self::Integer(node) => node.to_untyped(),
+            Self::String(node) => node.to_untyped(),
         }
     }
 }
