@@ -1,0 +1,84 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;\")"
+---
+File
+  Class
+    Class `class`
+    Whitespace ` `
+    Identifier
+      Id `Foo`
+    TemplateArgList
+      Less `<`
+      TemplateArgDecl
+        Type
+          Bit `bit`
+        Whitespace ` `
+        Identifier
+          Id `A`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Int `int`
+        Whitespace ` `
+        Identifier
+          Id `B`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          String `string`
+        Whitespace ` `
+        Identifier
+          Id `C`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Dag `dag`
+        Whitespace ` `
+        Identifier
+          Id `D`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          BitsType
+            Bits `bits`
+            Less `<`
+            Integer
+              IntVal `32`
+            Greater `>`
+        Whitespace ` `
+        Identifier
+          Id `E`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          ListType
+            List `list`
+            Less `<`
+            Type
+              Int `int`
+            Greater `>`
+        Whitespace ` `
+        Identifier
+          Id `F`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          ClassRef
+            Identifier
+              Id `Bar`
+        Whitespace ` `
+        Identifier
+          Id `G`
+      Greater `>`
+    RecordBody
+      ParentClassList
+      Body
+        Semi `;`
+

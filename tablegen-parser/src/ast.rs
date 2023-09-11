@@ -1,10 +1,6 @@
 use ecow::EcoString;
 
-use crate::{
-    kind::SyntaxKind,
-    node::{self, SyntaxNode},
-    T,
-};
+use crate::{kind::SyntaxKind, node::SyntaxNode, T};
 
 pub trait AstNode<'a>: Sized {
     fn from_untyped(node: &'a SyntaxNode) -> Option<Self>;
@@ -150,7 +146,60 @@ impl<'a> BodyItem<'a> {
     }
 }
 
-node!(Type);
+#[derive(Debug)]
+pub enum Type<'a> {
+    Bit(&'a SyntaxNode),
+    Int(&'a SyntaxNode),
+    String(&'a SyntaxNode),
+    Dag(&'a SyntaxNode),
+    Bits(BitsType<'a>),
+    List(ListType<'a>),
+    ClassRef(ClassRef<'a>),
+}
+
+impl<'a> AstNode<'a> for Type<'a> {
+    fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
+        match node.token_kind() {
+            T![bit] => return Some(Self::Bit(node)),
+            T![int] => return Some(Self::Int(node)),
+            T![string] => return Some(Self::String(node)),
+            T![dag] => return Some(Self::Dag(node)),
+            _ => {}
+        }
+
+        match node.kind() {
+            SyntaxKind::BitsType => node.cast().map(Self::Bits),
+            SyntaxKind::ListType => node.cast().map(Self::List),
+            SyntaxKind::ClassRef => node.cast().map(Self::ClassRef),
+            _ => None,
+        }
+    }
+
+    fn to_untyped(self) -> &'a SyntaxNode {
+        match self {
+            Self::Bit(n) | Self::Int(n) | Self::String(n) | Self::Dag(n) => n,
+            Self::Bits(v) => v.to_untyped(),
+            Self::List(v) => v.to_untyped(),
+            Self::ClassRef(v) => v.to_untyped(),
+        }
+    }
+}
+
+node!(BitsType);
+
+impl<'a> BitsType<'a> {
+    pub fn length(self) -> Option<Integer<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(ListType);
+
+impl<'a> ListType<'a> {
+    pub fn inner_type(self) -> Option<Type<'a>> {
+        self.0.cast_first_match()
+    }
+}
 
 #[derive(Debug)]
 pub enum Value<'a> {

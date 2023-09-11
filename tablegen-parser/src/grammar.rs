@@ -142,8 +142,32 @@ fn body_item(p: &mut Parser) {
 
 fn r#type(p: &mut Parser) {
     let m = p.marker();
-    p.expect(T![int]);
+    match p.current() {
+        T![bit] | T![int] | T![string] | T![dag] => p.eat(),
+        T![bits] => bits_type(p),
+        T![list] => list_type(p),
+        TokenKind::Id => class_ref(p),
+        _ => p.error_and_eat("expected type"),
+    }
     p.wrap(m, SyntaxKind::Type);
+}
+
+fn bits_type(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![bits]);
+    p.expect(T![<]);
+    integer(p);
+    p.expect(T![>]);
+    p.wrap(m, SyntaxKind::BitsType);
+}
+
+fn list_type(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![list]);
+    p.expect(T![<]);
+    r#type(p);
+    p.expect(T![>]);
+    p.wrap(m, SyntaxKind::ListType);
 }
 
 fn value(p: &mut Parser) {
@@ -190,6 +214,13 @@ mod tests {
                 int B;
                 int C = A;
             }"
+        ))
+    }
+
+    #[test]
+    fn r#type() {
+        insta::assert_display_snapshot!(parse(
+            "class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;"
         ))
     }
 }

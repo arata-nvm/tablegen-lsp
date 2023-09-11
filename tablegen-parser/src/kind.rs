@@ -14,6 +14,8 @@ pub enum SyntaxKind {
     Body,
     BodyItem,
     Type,
+    BitsType,
+    ListType,
     Value,
     SimpleValue,
     Identifier,
