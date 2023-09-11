@@ -102,8 +102,16 @@ impl<'a> Parser<'a> {
         if self.eat_if(kind) {
             return true;
         }
-        self.error(eco_format!("expected {kind:?}"));
+
+        if !self.after_error() {
+            self.error(eco_format!("expected {kind:?}"));
+        }
         false
+    }
+
+    pub(crate) fn after_error(&self) -> bool {
+        let cursor = self.cursor_before_trivia();
+        self.nodes[cursor - 1].kind().is_error()
     }
 
     pub(crate) fn eat(&mut self) {

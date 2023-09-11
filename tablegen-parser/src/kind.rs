@@ -20,6 +20,12 @@ pub enum SyntaxKind {
     Integer,
 }
 
+impl SyntaxKind {
+    pub fn is_error(&self) -> bool {
+        matches!(self, Self::Error)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenKind {
     // Markers
