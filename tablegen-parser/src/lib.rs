@@ -1,3 +1,4 @@
+pub mod ast;
 pub mod grammar;
 pub mod kind;
 pub mod lexer;

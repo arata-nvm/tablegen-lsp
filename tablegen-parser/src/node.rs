@@ -2,7 +2,10 @@ use core::fmt;
 
 use ecow::EcoString;
 
-use crate::kind::{SyntaxKind, TokenKind};
+use crate::{
+    ast::AstNode,
+    kind::{SyntaxKind, TokenKind},
+};
 
 #[derive(Debug)]
 pub struct SyntaxNode(SyntaxNodeInner);
@@ -29,10 +32,22 @@ impl SyntaxNode {
 
     pub fn kind(&self) -> SyntaxKind {
         match self.0 {
-            SyntaxNodeInner::Token(_, _) => todo!(),
+            SyntaxNodeInner::Token(_, _) => SyntaxKind::Error,
             SyntaxNodeInner::Node(kind, _) => kind,
             SyntaxNodeInner::Error(_, _) => SyntaxKind::Error,
         }
+    }
+
+    pub fn token_kind(&self) -> TokenKind {
+      match self.0 {
+          SyntaxNodeInner::Token(kind, _) => kind,
+          SyntaxNodeInner::Node(_, _) => TokenKind::Error,
+          SyntaxNodeInner::Error(_, _) => TokenKind::Error,
+      }
+  }
+
+    pub fn cast<'a, T: AstNode<'a>>(&'a self) -> Option<T> {
+        T::from_untyped(self)
     }
 }
 
