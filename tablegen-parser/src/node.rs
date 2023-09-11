@@ -46,8 +46,28 @@ impl SyntaxNode {
       }
   }
 
+    pub fn text(&self) -> &EcoString {
+        static EMPTY: EcoString = EcoString::new();
+        match self.0 {
+            SyntaxNodeInner::Token(_, ref text) => text,
+            SyntaxNodeInner::Node(_, _) => &EMPTY,
+            SyntaxNodeInner::Error(_, ref text) => text,
+        }
+    }
+
+    pub fn children(&self) -> std::slice::Iter<'_, SyntaxNode> {
+        match self.0 {
+            SyntaxNodeInner::Token(_, _) | SyntaxNodeInner::Error(_, _) => [].iter(),
+            SyntaxNodeInner::Node(_, ref children) => children.iter(),
+        }
+    }
+
     pub fn cast<'a, T: AstNode<'a>>(&'a self) -> Option<T> {
         T::from_untyped(self)
+    }
+
+    pub fn cast_first_match<'a, T: AstNode<'a>>(&'a self) -> Option<T> {
+        self.children().find_map(Self::cast)
     }
 }
 
