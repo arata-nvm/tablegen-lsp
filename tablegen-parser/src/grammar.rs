@@ -54,7 +54,7 @@ fn def(p: &mut Parser) {
 fn template_arg_list(p: &mut Parser) {
     let m = p.marker();
     p.assert(T![<]);
-    while !p.eof() {
+    while !p.eof() && !p.at(T![>]) {
         tempalte_arg_decl(p);
         if !p.eat_if(T![,]) {
             break;
@@ -88,7 +88,7 @@ fn parent_class_list(p: &mut Parser) {
         return;
     }
 
-    while !p.eof() {
+    while !p.eof() && p.at(TokenKind::Id) {
         class_ref(p);
         if !p.eat_if(T![,]) {
             break;
@@ -115,7 +115,7 @@ fn arg_value_list(p: &mut Parser) {
 
 fn positional_arg_value_list(p: &mut Parser) {
     let m = p.marker();
-    while !p.eof() {
+    while !p.eof() && !p.at(T![>]) {
         value(p);
         if !p.eat_if(T![,]) {
             break;
@@ -132,17 +132,14 @@ fn body(p: &mut Parser) {
     }
 
     p.expect(T!['{']);
-    while !p.eof() {
-        if p.eat_if(T!['}']) {
-            break;
-        }
-
+    while !p.eof() && !p.at(T!['}']) {
         let prev_cursor = p.current_start();
         body_item(p);
         if p.current_start() == prev_cursor {
             p.error_and_eat("unexpected token");
         }
     }
+    p.expect(T!['}']);
     p.wrap(m, SyntaxKind::Body);
 }
 
