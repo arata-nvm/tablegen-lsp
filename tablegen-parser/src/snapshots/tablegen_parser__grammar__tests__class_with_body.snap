@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/grammar.rs
-expression: "parse(\"class Foo<int A> {\n                int B;\n                int C = A;\n            }\")"
+expression: "parse(\"class Foo<int A> {\n                int B;\n                int C = A;\n                let D = A;\n            }\")"
 ---
 File
   Class
@@ -39,6 +39,21 @@ File
             Whitespace ` `
             Identifier
               Id `C`
+            Whitespace ` `
+            Equal `=`
+            Whitespace ` `
+            Value
+              SimpleValue
+                Identifier
+                  Id `A`
+            Semi `;`
+        Whitespace `\n                `
+        BodyItem
+          Let
+            Let `let`
+            Whitespace ` `
+            Identifier
+              Id `D`
             Whitespace ` `
             Equal `=`
             Whitespace ` `

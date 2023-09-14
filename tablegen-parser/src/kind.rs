@@ -16,6 +16,7 @@ pub enum SyntaxKind {
     Body,
     BodyItem,
     Define,
+    Let,
     Type,
     BitsType,
     ListType,

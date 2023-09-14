@@ -186,7 +186,7 @@ impl<'a> Body<'a> {
     }
 }
 
-node_enum!(BodyItem, [Define]);
+node_enum!(BodyItem, [Define, Let]);
 
 node!(Define);
 
@@ -195,6 +195,18 @@ impl<'a> Define<'a> {
         self.0.cast_first_match()
     }
 
+    pub fn name(self) -> Option<Identifier<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn value(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(Let);
+
+impl<'a> Let<'a> {
     pub fn name(self) -> Option<Identifier<'a>> {
         self.0.cast_first_match()
     }

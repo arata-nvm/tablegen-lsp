@@ -145,7 +145,10 @@ fn body(p: &mut Parser) {
 
 fn body_item(p: &mut Parser) {
     let m = p.marker();
-    define(p);
+    match p.current() {
+        T![let] => r#let(p),
+        _ => define(p),
+    }
     p.wrap(m, SyntaxKind::BodyItem);
 }
 
@@ -158,6 +161,16 @@ fn define(p: &mut Parser) {
     }
     p.expect(T![;]);
     p.wrap(m, SyntaxKind::Define);
+}
+
+fn r#let(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![let]);
+    identifier(p);
+    p.expect(T![=]);
+    value(p);
+    p.expect(T![;]);
+    p.wrap(m, SyntaxKind::Let);
 }
 
 fn r#type(p: &mut Parser) {
@@ -397,6 +410,7 @@ mod tests {
             "class Foo<int A> {
                 int B;
                 int C = A;
+                let D = A;
             }"
         ))
     }
