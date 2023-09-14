@@ -172,7 +172,8 @@ File
                     Identifier
                       Id `A`
                 Colon `:`
-                VarName `$hoge`
+                VarName
+                  VarName `$hoge`
               RParen `)`
       Comma `,`
       Whitespace ` `
