@@ -3,34 +3,33 @@ source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<int A = Hoge.Fuga>;\")"
 ---
 File
-  Class
-    Class `class`
-    Whitespace ` `
-    Identifier
-      Id `Foo`
-    TemplateArgList
-      Less `<`
-      TemplateArgDecl
-        Type
-          Int `int`
-        Whitespace ` `
-        Identifier
-          Id `A`
-        Whitespace ` `
-        Equal `=`
-        Whitespace ` `
-        Value
-          SimpleValue
+  StatementList
+    Class
+      Class `class`
+      Whitespace ` `
+      Identifier
+        Id `Foo`
+      TemplateArgList
+        Less `<`
+        TemplateArgDecl
+          IntType
+            Int `int`
+          Whitespace ` `
+          Identifier
+            Id `A`
+          Whitespace ` `
+          Equal `=`
+          Whitespace ` `
+          Value
             Identifier
               Id `Hoge`
-          ValueSuffix
-            Field
+            FieldSuffix
               Dot `.`
               Identifier
                 Id `Fuga`
-      Greater `>`
-    RecordBody
-      ParentClassList
-      Body
-        Semi `;`
+        Greater `>`
+      RecordBody
+        ParentClassList
+        Body
+          Semi `;`
 

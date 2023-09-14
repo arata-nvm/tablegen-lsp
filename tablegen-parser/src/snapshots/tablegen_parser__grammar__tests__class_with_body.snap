@@ -3,38 +3,37 @@ source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<int A> {\n                int B;\n                int C = A;\n                let D = A;\n            }\")"
 ---
 File
-  Class
-    Class `class`
-    Whitespace ` `
-    Identifier
-      Id `Foo`
-    TemplateArgList
-      Less `<`
-      TemplateArgDecl
-        Type
-          Int `int`
-        Whitespace ` `
-        Identifier
-          Id `A`
-      Greater `>`
-    Whitespace ` `
-    RecordBody
-      ParentClassList
-      Body
-        LBrace `{`
-        Whitespace `\n                `
-        BodyItem
-          Define
-            Type
+  StatementList
+    Class
+      Class `class`
+      Whitespace ` `
+      Identifier
+        Id `Foo`
+      TemplateArgList
+        Less `<`
+        TemplateArgDecl
+          IntType
+            Int `int`
+          Whitespace ` `
+          Identifier
+            Id `A`
+        Greater `>`
+      Whitespace ` `
+      RecordBody
+        ParentClassList
+        Body
+          LBrace `{`
+          Whitespace `\n                `
+          FieldDef
+            IntType
               Int `int`
             Whitespace ` `
             Identifier
               Id `B`
             Semi `;`
-        Whitespace `\n                `
-        BodyItem
-          Define
-            Type
+          Whitespace `\n                `
+          FieldDef
+            IntType
               Int `int`
             Whitespace ` `
             Identifier
@@ -43,13 +42,11 @@ File
             Equal `=`
             Whitespace ` `
             Value
-              SimpleValue
-                Identifier
-                  Id `A`
+              Identifier
+                Id `A`
             Semi `;`
-        Whitespace `\n                `
-        BodyItem
-          Let
+          Whitespace `\n                `
+          FieldLet
             Let `let`
             Whitespace ` `
             Identifier
@@ -58,10 +55,9 @@ File
             Equal `=`
             Whitespace ` `
             Value
-              SimpleValue
-                Identifier
-                  Id `A`
+              Identifier
+                Id `A`
             Semi `;`
-        Whitespace `\n            `
-        RBrace `}`
+          Whitespace `\n            `
+          RBrace `}`
 

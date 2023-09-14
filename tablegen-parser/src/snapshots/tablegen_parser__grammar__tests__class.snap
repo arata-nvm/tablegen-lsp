@@ -3,56 +3,54 @@ source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<int A, int B = 1>: Bar<A, 2>;\")"
 ---
 File
-  Class
-    Class `class`
-    Whitespace ` `
-    Identifier
-      Id `Foo`
-    TemplateArgList
-      Less `<`
-      TemplateArgDecl
-        Type
-          Int `int`
-        Whitespace ` `
-        Identifier
-          Id `A`
-      Comma `,`
+  StatementList
+    Class
+      Class `class`
       Whitespace ` `
-      TemplateArgDecl
-        Type
-          Int `int`
+      Identifier
+        Id `Foo`
+      TemplateArgList
+        Less `<`
+        TemplateArgDecl
+          IntType
+            Int `int`
+          Whitespace ` `
+          Identifier
+            Id `A`
+        Comma `,`
         Whitespace ` `
-        Identifier
-          Id `B`
-        Whitespace ` `
-        Equal `=`
-        Whitespace ` `
-        Value
-          SimpleValue
+        TemplateArgDecl
+          IntType
+            Int `int`
+          Whitespace ` `
+          Identifier
+            Id `B`
+          Whitespace ` `
+          Equal `=`
+          Whitespace ` `
+          Value
             Integer
               IntVal `1`
-      Greater `>`
-    RecordBody
-      ParentClassList
-        Colon `:`
-        Whitespace ` `
-        ClassRef
-          Identifier
-            Id `Bar`
-          Less `<`
-          ArgValueList
-            PositionalArgValueList
-              Value
-                SimpleValue
+        Greater `>`
+      RecordBody
+        ParentClassList
+          Colon `:`
+          Whitespace ` `
+          ClassRef
+            Identifier
+              Id `Bar`
+            Less `<`
+            ArgValueList
+              PositionalArgValueList
+                Value
                   Identifier
                     Id `A`
-              Comma `,`
-              Whitespace ` `
-              Value
-                SimpleValue
+                Comma `,`
+                Whitespace ` `
+                Value
                   Integer
                     IntVal `2`
-          Greater `>`
-      Body
-        Semi `;`
+            Greater `>`
+        Body
+          Semi `;`
 

@@ -3,7 +3,6 @@ use ecow::EcoString;
 use crate::{
     kind::{SyntaxKind, TokenKind},
     node::SyntaxNode,
-    T,
 };
 
 pub trait AstNode<'a>: Sized {
@@ -63,12 +62,20 @@ macro_rules! node_enum {
 node!(File);
 
 impl<'a> File<'a> {
-    pub fn items(self) -> impl DoubleEndedIterator<Item = FileItem<'a>> {
+    pub fn statement_list(self) -> Option<StatementList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(StatementList);
+
+impl<'a> StatementList<'a> {
+    pub fn statements(self) -> impl DoubleEndedIterator<Item = Statement<'a>> {
         self.0.cast_all_matches()
     }
 }
 
-node_enum!(FileItem, [Include, Class, Def]);
+node_enum!(Statement, [Include, Class, Def, Let]);
 
 node!(Include);
 
@@ -85,7 +92,7 @@ impl<'a> Class<'a> {
         self.0.cast_first_match()
     }
 
-    pub fn template_args(self) -> Option<TemplateArgList<'a>> {
+    pub fn template_arg_list(self) -> Option<TemplateArgList<'a>> {
         self.0.cast_first_match()
     }
 
@@ -106,14 +113,14 @@ impl<'a> Def<'a> {
     }
 }
 
-node!(LetInst);
+node!(Let);
 
-impl<'a> LetInst<'a> {
-    pub fn list(self) -> Option<LetList<'a>> {
+impl<'a> Let<'a> {
+    pub fn let_list(self) -> Option<LetList<'a>> {
         self.0.cast_first_match()
     }
 
-    pub fn body(self) -> impl DoubleEndedIterator<Item = FileItem<'a>> {
+    pub fn body(self) -> impl DoubleEndedIterator<Item = Statement<'a>> {
         self.0.cast_all_matches()
     }
 }
@@ -165,7 +172,7 @@ impl<'a> TemplateArgDecl<'a> {
 node!(RecordBody);
 
 impl<'a> RecordBody<'a> {
-    pub fn parent_classes(self) -> Option<ParentClassList<'a>> {
+    pub fn parent_class_list(self) -> Option<ParentClassList<'a>> {
         self.0.cast_first_match()
     }
 
@@ -189,7 +196,7 @@ impl<'a> ClassRef<'a> {
         self.0.cast_first_match()
     }
 
-    pub fn args(self) -> Option<ArgValueList<'a>> {
+    pub fn arg_value_list(self) -> Option<ArgValueList<'a>> {
         self.0.cast_first_match()
     }
 }
@@ -197,7 +204,7 @@ impl<'a> ClassRef<'a> {
 node!(ArgValueList);
 
 impl<'a> ArgValueList<'a> {
-    pub fn positional_args(self) -> Option<PositionalArgValueList<'a>> {
+    pub fn positional(self) -> Option<PositionalArgValueList<'a>> {
         self.0.cast_first_match()
     }
 }
@@ -205,7 +212,7 @@ impl<'a> ArgValueList<'a> {
 node!(PositionalArgValueList);
 
 impl<'a> PositionalArgValueList<'a> {
-    pub fn args(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
+    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
         self.0.cast_all_matches()
     }
 }
@@ -218,11 +225,11 @@ impl<'a> Body<'a> {
     }
 }
 
-node_enum!(BodyItem, [Define, Let]);
+node_enum!(BodyItem, [FieldDef, FieldLet]);
 
-node!(Define);
+node!(FieldDef);
 
-impl<'a> Define<'a> {
+impl<'a> FieldDef<'a> {
     pub fn r#type(self) -> Option<Type<'a>> {
         self.0.cast_first_match()
     }
@@ -236,9 +243,11 @@ impl<'a> Define<'a> {
     }
 }
 
-node!(Let);
+node!(CodeType);
 
-impl<'a> Let<'a> {
+node!(FieldLet);
+
+impl<'a> FieldLet<'a> {
     pub fn name(self) -> Option<Identifier<'a>> {
         self.0.cast_first_match()
     }
@@ -248,46 +257,15 @@ impl<'a> Let<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum Type<'a> {
-    Bit(&'a SyntaxNode),
-    Int(&'a SyntaxNode),
-    String(&'a SyntaxNode),
-    Dag(&'a SyntaxNode),
-    Code(&'a SyntaxNode),
-    Bits(BitsType<'a>),
-    List(ListType<'a>),
-    ClassRef(ClassRef<'a>),
-}
+node_enum!(
+    Type,
+    [BitType, IntType, StringType, DagType, BitsType, ListType, ClassId, CodeType]
+);
 
-impl<'a> AstNode<'a> for Type<'a> {
-    fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
-        match node.token_kind() {
-            T![bit] => return Some(Self::Bit(node)),
-            T![int] => return Some(Self::Int(node)),
-            T![string] => return Some(Self::String(node)),
-            T![dag] => return Some(Self::Dag(node)),
-            T![code] => return Some(Self::Code(node)),
-            _ => {}
-        }
-
-        match node.kind() {
-            SyntaxKind::BitsType => node.cast().map(Self::Bits),
-            SyntaxKind::ListType => node.cast().map(Self::List),
-            SyntaxKind::ClassRef => node.cast().map(Self::ClassRef),
-            _ => None,
-        }
-    }
-
-    fn to_untyped(self) -> &'a SyntaxNode {
-        match self {
-            Self::Bit(n) | Self::Int(n) | Self::String(n) | Self::Dag(n) | Self::Code(n) => n,
-            Self::Bits(v) => v.to_untyped(),
-            Self::List(v) => v.to_untyped(),
-            Self::ClassRef(v) => v.to_untyped(),
-        }
-    }
-}
+node!(BitType);
+node!(IntType);
+node!(StringType);
+node!(DagType);
 
 node!(BitsType);
 
@@ -305,6 +283,8 @@ impl<'a> ListType<'a> {
     }
 }
 
+node!(ClassId);
+
 node!(Value);
 
 impl<'a> Value<'a> {
@@ -317,29 +297,11 @@ impl<'a> Value<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum ValueSuffix<'a> {
-    Field(Field<'a>),
-}
+node_enum!(ValueSuffix, [FieldSuffix]);
 
-impl<'a> AstNode<'a> for ValueSuffix<'a> {
-    fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
-        match node.kind() {
-            SyntaxKind::Field => node.cast().map(Self::Field),
-            _ => None,
-        }
-    }
+node!(FieldSuffix);
 
-    fn to_untyped(self) -> &'a SyntaxNode {
-        match self {
-            Self::Field(v) => v.to_untyped(),
-        }
-    }
-}
-
-node!(Field);
-
-impl<'a> Field<'a> {
+impl<'a> FieldSuffix<'a> {
     pub fn name(self) -> Option<Identifier<'a>> {
         self.0.cast_first_match()
     }
@@ -432,6 +394,14 @@ impl<'a> List<'a> {
 node!(Dag);
 
 impl<'a> Dag<'a> {
+    pub fn arg_list(self) -> Option<DagArgList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(DagArgList);
+
+impl<'a> DagArgList<'a> {
     pub fn args(self) -> impl DoubleEndedIterator<Item = DagArg<'a>> {
         self.0.cast_all_matches()
     }

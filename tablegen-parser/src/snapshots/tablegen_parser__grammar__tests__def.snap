@@ -3,21 +3,21 @@ source: tablegen-parser/src/grammar.rs
 expression: "parse(\"def Foo : Bar;\")"
 ---
 File
-  Def
-    Def `def`
-    Whitespace ` `
-    Value
-      SimpleValue
+  StatementList
+    Def
+      Def `def`
+      Whitespace ` `
+      Value
         Identifier
           Id `Foo`
-    Whitespace ` `
-    RecordBody
-      ParentClassList
-        Colon `:`
-        Whitespace ` `
-        ClassRef
-          Identifier
-            Id `Bar`
-      Body
-        Semi `;`
+      Whitespace ` `
+      RecordBody
+        ParentClassList
+          Colon `:`
+          Whitespace ` `
+          ClassRef
+            Identifier
+              Id `Bar`
+        Body
+          Semi `;`
 

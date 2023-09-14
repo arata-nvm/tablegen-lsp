@@ -3,82 +3,80 @@ source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;\")"
 ---
 File
-  Class
-    Class `class`
-    Whitespace ` `
-    Identifier
-      Id `Foo`
-    TemplateArgList
-      Less `<`
-      TemplateArgDecl
-        Type
-          Bit `bit`
-        Whitespace ` `
-        Identifier
-          Id `A`
-      Comma `,`
+  StatementList
+    Class
+      Class `class`
       Whitespace ` `
-      TemplateArgDecl
-        Type
-          Int `int`
+      Identifier
+        Id `Foo`
+      TemplateArgList
+        Less `<`
+        TemplateArgDecl
+          BitType
+            Bit `bit`
+          Whitespace ` `
+          Identifier
+            Id `A`
+        Comma `,`
         Whitespace ` `
-        Identifier
-          Id `B`
-      Comma `,`
-      Whitespace ` `
-      TemplateArgDecl
-        Type
-          String `string`
+        TemplateArgDecl
+          IntType
+            Int `int`
+          Whitespace ` `
+          Identifier
+            Id `B`
+        Comma `,`
         Whitespace ` `
-        Identifier
-          Id `C`
-      Comma `,`
-      Whitespace ` `
-      TemplateArgDecl
-        Type
-          Dag `dag`
+        TemplateArgDecl
+          StringType
+            String `string`
+          Whitespace ` `
+          Identifier
+            Id `C`
+        Comma `,`
         Whitespace ` `
-        Identifier
-          Id `D`
-      Comma `,`
-      Whitespace ` `
-      TemplateArgDecl
-        Type
+        TemplateArgDecl
+          DagType
+            Dag `dag`
+          Whitespace ` `
+          Identifier
+            Id `D`
+        Comma `,`
+        Whitespace ` `
+        TemplateArgDecl
           BitsType
             Bits `bits`
             Less `<`
             Integer
               IntVal `32`
             Greater `>`
+          Whitespace ` `
+          Identifier
+            Id `E`
+        Comma `,`
         Whitespace ` `
-        Identifier
-          Id `E`
-      Comma `,`
-      Whitespace ` `
-      TemplateArgDecl
-        Type
+        TemplateArgDecl
           ListType
             List `list`
             Less `<`
-            Type
+            IntType
               Int `int`
             Greater `>`
+          Whitespace ` `
+          Identifier
+            Id `F`
+        Comma `,`
         Whitespace ` `
-        Identifier
-          Id `F`
-      Comma `,`
-      Whitespace ` `
-      TemplateArgDecl
-        Type
-          ClassRef
+        TemplateArgDecl
+          ClassId
             Identifier
               Id `Bar`
-        Whitespace ` `
-        Identifier
-          Id `G`
-      Greater `>`
-    RecordBody
-      ParentClassList
-      Body
-        Semi `;`
+          Whitespace ` `
+          Identifier
+            Id `G`
+        Greater `>`
+      RecordBody
+        ParentClassList
+        Body
+          Semi `;`
 

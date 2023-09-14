@@ -1,0 +1,36 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"let A = 1 in { class Foo; }\")"
+---
+File
+  StatementList
+    Let
+      Let `let`
+      Whitespace ` `
+      LetList
+        LetItem
+          Identifier
+            Id `A`
+          Whitespace ` `
+          Equal `=`
+          Whitespace ` `
+          Value
+            Integer
+              IntVal `1`
+      Whitespace ` `
+      In `in`
+      Whitespace ` `
+      LBrace `{`
+      Whitespace ` `
+      Class
+        Class `class`
+        Whitespace ` `
+        Identifier
+          Id `Foo`
+        RecordBody
+          ParentClassList
+          Body
+            Semi `;`
+      Whitespace ` `
+      RBrace `}`
+
