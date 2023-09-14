@@ -32,7 +32,7 @@ impl SyntaxNode {
 
     pub fn kind(&self) -> SyntaxKind {
         match self.0 {
-            SyntaxNodeInner::Token(_, _) => SyntaxKind::Error,
+            SyntaxNodeInner::Token(_, _) => SyntaxKind::Token,
             SyntaxNodeInner::Node(kind, _) => kind,
             SyntaxNodeInner::Error(_, _) => SyntaxKind::Error,
         }

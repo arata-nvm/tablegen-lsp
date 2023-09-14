@@ -1,5 +1,6 @@
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SyntaxKind {
+    Token,
     Error,
 
     File,
