@@ -63,7 +63,7 @@ macro_rules! node_enum {
 node!(File);
 
 impl<'a> File<'a> {
-    pub fn classes(self) -> impl DoubleEndedIterator<Item = FileItem<'a>> {
+    pub fn items(self) -> impl DoubleEndedIterator<Item = FileItem<'a>> {
         self.0.cast_all_matches()
     }
 }
@@ -102,6 +102,38 @@ impl<'a> Def<'a> {
     }
 
     pub fn record_body(self) -> Option<RecordBody<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(LetInst);
+
+impl<'a> LetInst<'a> {
+    pub fn list(self) -> Option<LetList<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn body(self) -> impl DoubleEndedIterator<Item = FileItem<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(LetList);
+
+impl<'a> LetList<'a> {
+    pub fn items(self) -> impl DoubleEndedIterator<Item = LetItem<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(LetItem);
+
+impl<'a> LetItem<'a> {
+    pub fn name(self) -> Option<Identifier<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn value(self) -> Option<Value<'a>> {
         self.0.cast_first_match()
     }
 }

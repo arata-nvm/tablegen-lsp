@@ -15,14 +15,19 @@ fn file(p: &mut Parser) {
     let m = p.marker();
     p.eat_trivia();
     while !p.eof() {
-        match p.current() {
-            T![include] => include(p),
-            T![class] => class(p),
-            T![def] => def(p),
-            _ => p.error_and_eat("Expected class, def, defm, defset, multiclass, let or foreach"),
-        }
+        statement(p);
     }
     p.wrap_all(m, SyntaxKind::File);
+}
+
+fn statement(p: &mut Parser) {
+    match p.current() {
+        T![include] => include(p),
+        T![class] => class(p),
+        T![def] => def(p),
+        T![let] => let_inst(p),
+        _ => p.error_and_eat("Expected class, def, defm, defset, multiclass, let or foreach"),
+    }
 }
 
 fn include(p: &mut Parser) {
@@ -49,6 +54,41 @@ fn def(p: &mut Parser) {
     value(p);
     record_body(p);
     p.wrap(m, SyntaxKind::Def);
+}
+
+fn let_inst(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![let]);
+    let_list(p);
+    p.expect(T![in]);
+    if p.eat_if(T!['{']) {
+        while !p.eof() && !p.at(T!['}']) {
+            statement(p);
+        }
+        p.expect(T!['}']);
+    } else {
+        statement(p);
+    }
+    p.wrap_all(m, SyntaxKind::LetInst);
+}
+
+fn let_list(p: &mut Parser) {
+    let m = p.marker();
+    while !p.eof() {
+        let_item(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.wrap(m, SyntaxKind::LetList);
+}
+
+fn let_item(p: &mut Parser) {
+    let m = p.marker();
+    identifier(p);
+    p.expect(T![=]);
+    value(p);
+    p.wrap(m, SyntaxKind::LetItem);
 }
 
 fn template_arg_list(p: &mut Parser) {
@@ -418,6 +458,11 @@ mod tests {
     #[test]
     fn def() {
         insta::assert_display_snapshot!(parse("def Foo : Bar;"))
+    }
+
+    #[test]
+    fn r#let() {
+        insta::assert_display_snapshot!(parse("let A = 1 in { class Foo; }"))
     }
 
     #[test]
