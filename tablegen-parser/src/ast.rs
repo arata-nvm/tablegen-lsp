@@ -195,6 +195,10 @@ impl<'a> Define<'a> {
         self.0.cast_first_match()
     }
 
+    pub fn name(self) -> Option<Identifier<'a>> {
+        self.0.cast_first_match()
+    }
+
     pub fn value(self) -> Option<Value<'a>> {
         self.0.cast_first_match()
     }
