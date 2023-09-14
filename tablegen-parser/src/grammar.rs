@@ -186,6 +186,7 @@ fn positional_arg_value_list(p: &mut Parser) {
     p.wrap(m, SyntaxKind::PositionalArgValueList);
 }
 
+// Body ::= ";" | "{" BodyItem* "}"
 fn body(p: &mut Parser) {
     let m = p.marker();
     if p.eat_if(T![;]) {
@@ -205,7 +206,7 @@ fn body(p: &mut Parser) {
     p.wrap(m, SyntaxKind::Body);
 }
 
-// Body ::= ";" | "{" BodyItem* "}"
+// BodyItem ::= FieldDef | FieldLet | Defvar | Assert
 fn body_item(p: &mut Parser) {
     match p.current() {
         T![let] => field_let(p),
