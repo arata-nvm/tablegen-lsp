@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/grammar.rs
-expression: "parse(\"class Foo<int A = 1, int B = A, string C = \\\"hoge\\\">;\")"
+expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", code C = [{ true }], bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2)>;\")"
 ---
 File
   Class
@@ -27,10 +27,161 @@ File
       Whitespace ` `
       TemplateArgDecl
         Type
-          Int `int`
+          String `string`
         Whitespace ` `
         Identifier
           Id `B`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            String
+              StrVal `\"hoge\"`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Code `code`
+        Whitespace ` `
+        Identifier
+          Id `C`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            Code
+              CodeFragment `[{ true }]`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Bit `bit`
+        Whitespace ` `
+        Identifier
+          Id `D`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            Boolean
+              FalseVal `false`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Int `int`
+        Whitespace ` `
+        Identifier
+          Id `E`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            Uninitialized
+              Question `?`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          BitsType
+            Bits `bits`
+            Less `<`
+            Integer
+              IntVal `2`
+            Greater `>`
+        Whitespace ` `
+        Identifier
+          Id `F`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            Bits
+              LBrace `{`
+              Value
+                SimpleValue
+                  Integer
+                    IntVal `0`
+              Comma `,`
+              Whitespace ` `
+              Value
+                SimpleValue
+                  Integer
+                    IntVal `1`
+              RBrace `}`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          ListType
+            List `list`
+            Less `<`
+            Type
+              Int `int`
+            Greater `>`
+        Whitespace ` `
+        Identifier
+          Id `G`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            List
+              LSquare `[`
+              Value
+                SimpleValue
+                  Integer
+                    IntVal `1`
+              Comma `,`
+              Whitespace ` `
+              Value
+                SimpleValue
+                  Integer
+                    IntVal `2`
+              RSquare `]`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Dag `dag`
+        Whitespace ` `
+        Identifier
+          Id `H`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            Dag
+              LParen `(`
+              DagArg
+                Value
+                  SimpleValue
+                    Identifier
+                      Id `add`
+              Whitespace ` `
+              DagArg
+                Value
+                  SimpleValue
+                    Identifier
+                      Id `A`
+                Colon `:`
+                VarName `$hoge`
+              RParen `)`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Int `int`
+        Whitespace ` `
+        Identifier
+          Id `I`
         Whitespace ` `
         Equal `=`
         Whitespace ` `
@@ -42,17 +193,70 @@ File
       Whitespace ` `
       TemplateArgDecl
         Type
-          String `string`
+          Int `int`
         Whitespace ` `
         Identifier
-          Id `C`
+          Id `J`
         Whitespace ` `
         Equal `=`
         Whitespace ` `
         Value
           SimpleValue
-            String
-              StrVal `\"hoge\"`
+            BangOperator
+              XAdd `!add`
+              LParen `(`
+              Value
+                SimpleValue
+                  Identifier
+                    Id `A`
+              Comma `,`
+              Whitespace ` `
+              Value
+                SimpleValue
+                  Identifier
+                    Id `B`
+              RParen `)`
+      Comma `,`
+      Whitespace ` `
+      TemplateArgDecl
+        Type
+          Int `int`
+        Whitespace ` `
+        Identifier
+          Id `K`
+        Whitespace ` `
+        Equal `=`
+        Whitespace ` `
+        Value
+          SimpleValue
+            CondOperator
+              XCond `!cond`
+              LParen `(`
+              CondClause
+                Value
+                  SimpleValue
+                    Boolean
+                      FalseVal `false`
+                Colon `:`
+                Whitespace ` `
+                Value
+                  SimpleValue
+                    Integer
+                      IntVal `1`
+              Comma `,`
+              Whitespace ` `
+              CondClause
+                Value
+                  SimpleValue
+                    Boolean
+                      TrueVal `true`
+                Colon `:`
+                Whitespace ` `
+                Value
+                  SimpleValue
+                    Integer
+                      IntVal `2`
+              RParen `)`
       Greater `>`
     RecordBody
       ParentClassList

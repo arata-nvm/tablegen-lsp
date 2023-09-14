@@ -157,7 +157,7 @@ fn body_item(p: &mut Parser) {
 fn r#type(p: &mut Parser) {
     let m = p.marker();
     match p.current() {
-        T![bit] | T![int] | T![string] | T![dag] => p.eat(),
+        T![bit] | T![int] | T![string] | T![dag] | T![code] => p.eat(),
         T![bits] => bits_type(p),
         T![list] => list_type(p),
         TokenKind::Id => class_ref(p),
@@ -194,17 +194,19 @@ fn simple_value(p: &mut Parser) {
     let m = p.marker();
     match p.current() {
         TokenKind::IntVal => integer(p),
-        TokenKind::Id => identifier(p),
         TokenKind::StrVal => string(p),
+        TokenKind::CodeFragment => code(p),
+        T![true] | T![false] => boolean(p),
+        T![?] => uninitialized(p),
+        T!['{'] => bits(p),
+        T!['['] => list(p),
+        T!['('] => dag(p),
+        TokenKind::Id => identifier(p),
+        kind if kind.is_bang_operator() => bang_operator(p),
+        kind if kind.is_cond_operator() => cond_operator(p),
         _ => p.error_and_eat("unexpected"),
     }
     p.wrap(m, SyntaxKind::SimpleValue);
-}
-
-fn identifier(p: &mut Parser) {
-    let m = p.marker();
-    p.expect(TokenKind::Id);
-    p.wrap(m, SyntaxKind::Identifier);
 }
 
 fn integer(p: &mut Parser) {
@@ -217,6 +219,141 @@ fn string(p: &mut Parser) {
     let m = p.marker();
     p.expect(TokenKind::StrVal);
     p.wrap(m, SyntaxKind::String);
+}
+
+fn code(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(TokenKind::CodeFragment);
+    p.wrap(m, SyntaxKind::Code);
+}
+
+fn boolean(p: &mut Parser) {
+    let m = p.marker();
+    if !(p.eat_if(T![true]) || p.eat_if(T![false])) {
+        p.error_and_eat("expected true or false");
+    }
+    p.wrap(m, SyntaxKind::Boolean);
+}
+
+fn uninitialized(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(T![?]);
+    p.wrap(m, SyntaxKind::Uninitialized);
+}
+
+fn bits(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(T!['{']);
+    while !p.eof() && !p.at(T!['}']) {
+        value(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.expect(T!['}']);
+    p.wrap(m, SyntaxKind::Bits);
+}
+
+fn list(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(T!['[']);
+    while !p.eof() && !p.at(T![']']) {
+        value(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.expect(T![']']);
+    p.wrap(m, SyntaxKind::List);
+}
+
+fn dag(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(T!['(']);
+    dagarg(p);
+
+    if p.eat_if(T![')']) {
+        p.wrap(m, SyntaxKind::Dag);
+        return;
+    }
+
+    while !p.eof() && !p.at(T![')']) {
+        dagarg(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.expect(T![')']);
+    p.wrap(m, SyntaxKind::Dag);
+}
+
+fn dagarg(p: &mut Parser) {
+    let m = p.marker();
+    if p.eat_if(TokenKind::VarName) {
+        p.wrap(m, SyntaxKind::DagArg);
+        return;
+    }
+
+    value(p);
+    if p.eat_if(T![:]) {
+        var_name(p);
+    }
+    p.wrap(m, SyntaxKind::DagArg);
+}
+
+fn var_name(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(TokenKind::VarName);
+    p.wrap(m, SyntaxKind::VarName);
+}
+
+fn identifier(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(TokenKind::Id);
+    p.wrap(m, SyntaxKind::Identifier);
+}
+
+fn bang_operator(p: &mut Parser) {
+    let m = p.marker();
+    if !p.current().is_bang_operator() {
+        p.error_and_eat("expected bang operator");
+    } else {
+        p.eat();
+        p.expect(T!['(']);
+        while !p.eof() && !p.at(T![')']) {
+            value(p);
+            if !p.eat_if(T![,]) {
+                break;
+            }
+        }
+        p.expect(T![')']);
+    }
+    p.wrap(m, SyntaxKind::BangOperator);
+}
+
+fn cond_operator(p: &mut Parser) {
+    let m = p.marker();
+    p.expect(T![!cond]);
+    p.expect(T!['(']);
+    while !p.eof() && !p.at(T![')']) {
+        cond_clause(p);
+        if !p.eat_if(T![,]) {
+            break;
+        }
+    }
+    p.expect(T![')']);
+    p.wrap(m, SyntaxKind::CondOperator);
+}
+
+fn cond_clause(p: &mut Parser) {
+    let m = p.marker();
+    if !p.eat_if(TokenKind::VarName) {
+        value(p);
+        p.expect(T![:]);
+        value(p);
+    }
+
+    p.wrap(m, SyntaxKind::CondClause);
 }
 
 #[cfg(test)]
@@ -258,7 +395,7 @@ mod tests {
     #[test]
     fn simple_value() {
         insta::assert_display_snapshot!(parse(
-            "class Foo<int A = 1, int B = A, string C = \"hoge\">;"
+            "class Foo<int A = 1, string B = \"hoge\", code C = [{ true }], bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2)>;"
         ))
     }
 }

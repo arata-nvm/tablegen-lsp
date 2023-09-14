@@ -20,9 +20,20 @@ pub enum SyntaxKind {
     ListType,
     Value,
     SimpleValue,
-    Identifier,
     Integer,
     String,
+    Code,
+    Boolean,
+    Uninitialized,
+    Bits,
+    List,
+    Dag,
+    DagArg,
+    Identifier,
+    BangOperator,
+    CondOperator,
+    CondClause,
+    VarName,
 }
 
 impl SyntaxKind {
@@ -162,6 +173,64 @@ impl TokenKind {
             self,
             Self::Whitespace | Self::LineComment | Self::BlockComment
         )
+    }
+
+    pub fn is_bang_operator(&self) -> bool {
+        matches!(
+            self,
+            Self::XConcat
+                | Self::XAdd
+                | Self::XSub
+                | Self::XMul
+                | Self::XDiv
+                | Self::XNot
+                | Self::XLog2
+                | Self::XAnd
+                | Self::XOr
+                | Self::XXor
+                | Self::XSra
+                | Self::XSrl
+                | Self::XShl
+                | Self::XListConcat
+                | Self::XListSplat
+                | Self::XStrConcat
+                | Self::XInterleave
+                | Self::XSubstr
+                | Self::XFind
+                | Self::XCast
+                | Self::XSubst
+                | Self::XForEach
+                | Self::XFilter
+                | Self::XFoldl
+                | Self::XHead
+                | Self::XTail
+                | Self::XSize
+                | Self::XEmpty
+                | Self::XIf
+                | Self::XEq
+                | Self::XIsA
+                | Self::XDag
+                | Self::XNe
+                | Self::XLe
+                | Self::XLt
+                | Self::XGe
+                | Self::XGt
+                | Self::XSetDagOp
+                | Self::XGetDagOp
+                | Self::XExists
+                | Self::XListRemove
+                | Self::XToLower
+                | Self::XToUpper
+                | Self::XRange
+                | Self::XGetDagArg
+                | Self::XGetDagName
+                | Self::XSetDagArg
+                | Self::XSetDagName
+        )
+    }
+
+    pub fn is_cond_operator(&self) -> bool {
+        matches!(self, Self::XCond)
     }
 }
 

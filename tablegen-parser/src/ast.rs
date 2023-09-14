@@ -1,6 +1,10 @@
 use ecow::EcoString;
 
-use crate::{kind::SyntaxKind, node::SyntaxNode, T};
+use crate::{
+    kind::{SyntaxKind, TokenKind},
+    node::SyntaxNode,
+    T,
+};
 
 pub trait AstNode<'a>: Sized {
     fn from_untyped(node: &'a SyntaxNode) -> Option<Self>;
@@ -198,6 +202,7 @@ pub enum Type<'a> {
     Int(&'a SyntaxNode),
     String(&'a SyntaxNode),
     Dag(&'a SyntaxNode),
+    Code(&'a SyntaxNode),
     Bits(BitsType<'a>),
     List(ListType<'a>),
     ClassRef(ClassRef<'a>),
@@ -210,6 +215,7 @@ impl<'a> AstNode<'a> for Type<'a> {
             T![int] => return Some(Self::Int(node)),
             T![string] => return Some(Self::String(node)),
             T![dag] => return Some(Self::Dag(node)),
+            T![code] => return Some(Self::Code(node)),
             _ => {}
         }
 
@@ -223,7 +229,7 @@ impl<'a> AstNode<'a> for Type<'a> {
 
     fn to_untyped(self) -> &'a SyntaxNode {
         match self {
-            Self::Bit(n) | Self::Int(n) | Self::String(n) | Self::Dag(n) => n,
+            Self::Bit(n) | Self::Int(n) | Self::String(n) | Self::Dag(n) | Self::Code(n) => n,
             Self::Bits(v) => v.to_untyped(),
             Self::List(v) => v.to_untyped(),
             Self::ClassRef(v) => v.to_untyped(),
@@ -269,35 +275,54 @@ impl<'a> AstNode<'a> for Value<'a> {
 
 #[derive(Debug)]
 pub enum SimpleValue<'a> {
-    Identifier(Identifier<'a>),
     Integer(Integer<'a>),
     String(String<'a>),
+    Code(Code<'a>),
+    Boolean(Boolean<'a>),
+    Uninitialized(Uninitialized<'a>),
+    Bits(Bits<'a>),
+    List(List<'a>),
+    Dag(Dag<'a>),
+    Identifier(Identifier<'a>),
+    ClassRef(ClassRef<'a>),
+    BangOperator(BangOperator<'a>),
+    CondOperator(CondOperator<'a>),
 }
 
 impl<'a> AstNode<'a> for SimpleValue<'a> {
     fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
         match node.kind() {
-            SyntaxKind::Identifier => node.cast().map(Self::Identifier),
             SyntaxKind::Integer => node.cast().map(Self::Identifier),
             SyntaxKind::String => node.cast().map(Self::String),
+            SyntaxKind::Code => node.cast().map(Self::Code),
+            SyntaxKind::Boolean => node.cast().map(Self::Boolean),
+            SyntaxKind::Uninitialized => node.cast().map(Self::Uninitialized),
+            SyntaxKind::Bits => node.cast().map(Self::Bits),
+            SyntaxKind::List => node.cast().map(Self::List),
+            SyntaxKind::Dag => node.cast().map(Self::Dag),
+            SyntaxKind::Identifier => node.cast().map(Self::Identifier),
+            SyntaxKind::ClassRef => node.cast().map(Self::ClassRef),
+            SyntaxKind::BangOperator => node.cast().map(Self::BangOperator),
+            SyntaxKind::CondOperator => node.cast().map(Self::CondOperator),
             _ => None,
         }
     }
 
     fn to_untyped(self) -> &'a SyntaxNode {
         match self {
-            Self::Identifier(node) => node.to_untyped(),
             Self::Integer(node) => node.to_untyped(),
             Self::String(node) => node.to_untyped(),
+            Self::Code(node) => node.to_untyped(),
+            Self::Boolean(node) => node.to_untyped(),
+            Self::Uninitialized(node) => node.to_untyped(),
+            Self::Bits(node) => node.to_untyped(),
+            Self::List(node) => node.to_untyped(),
+            Self::Dag(node) => node.to_untyped(),
+            Self::Identifier(node) => node.to_untyped(),
+            Self::ClassRef(node) => node.to_untyped(),
+            Self::BangOperator(node) => node.to_untyped(),
+            Self::CondOperator(node) => node.to_untyped(),
         }
-    }
-}
-
-node!(Identifier);
-
-impl<'a> Identifier<'a> {
-    pub fn value(self) -> Option<&'a EcoString> {
-        self.0.children().next().map(|node| node.text())
     }
 }
 
@@ -318,6 +343,119 @@ node!(String);
 
 impl<'a> String<'a> {
     pub fn value(self) -> Option<&'a EcoString> {
-        self.0.children().next().map(|node| node.text())
+        self.0.first_child_text()
+    }
+}
+
+node!(Code);
+
+impl<'a> Code<'a> {
+    pub fn value(self) -> Option<EcoString> {
+        self.0.children().next().map(|node| {
+            node.text()
+                .trim_start_matches("[{")
+                .trim_end_matches("}]")
+                .trim()
+                .into()
+        })
+    }
+}
+
+node!(Boolean);
+
+impl<'a> Boolean<'a> {
+    pub fn value(self) -> Option<bool> {
+        let text = self.0.text();
+        match text.as_str() {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    }
+}
+
+node!(Uninitialized);
+
+node!(Bits);
+
+impl<'a> Bits<'a> {
+    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(List);
+
+impl<'a> List<'a> {
+    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(Dag);
+
+impl<'a> Dag<'a> {
+    pub fn args(self) -> impl DoubleEndedIterator<Item = DagArg<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(DagArg);
+
+impl<'a> DagArg<'a> {
+    pub fn value(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn var_name(self) -> Option<VarName<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(VarName);
+
+impl<'a> VarName<'a> {
+    pub fn value(self) -> Option<&'a EcoString> {
+        self.0.first_child_text()
+    }
+}
+
+node!(Identifier);
+
+impl<'a> Identifier<'a> {
+    pub fn value(self) -> Option<&'a EcoString> {
+        self.0.first_child_text()
+    }
+}
+
+node!(BangOperator);
+
+impl<'a> BangOperator<'a> {
+    pub fn kind(self) -> Option<TokenKind> {
+        self.0.children().next().map(|node| node.token_kind())
+    }
+
+    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(CondOperator);
+
+impl<'a> CondOperator<'a> {
+    pub fn clauses(self) -> impl DoubleEndedIterator<Item = CondClause<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(CondClause);
+
+impl<'a> CondClause<'a> {
+    pub fn condition(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(0)
+    }
+
+    pub fn value(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(1)
     }
 }
