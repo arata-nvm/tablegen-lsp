@@ -39,12 +39,12 @@ impl SyntaxNode {
     }
 
     pub fn token_kind(&self) -> TokenKind {
-      match self.0 {
-          SyntaxNodeInner::Token(kind, _) => kind,
-          SyntaxNodeInner::Node(_, _) => TokenKind::Error,
-          SyntaxNodeInner::Error(_, _) => TokenKind::Error,
-      }
-  }
+        match self.0 {
+            SyntaxNodeInner::Token(kind, _) => kind,
+            SyntaxNodeInner::Node(_, _) => TokenKind::Error,
+            SyntaxNodeInner::Error(_, _) => TokenKind::Error,
+        }
+    }
 
     pub fn text(&self) -> &EcoString {
         static EMPTY: EcoString = EcoString::new();
