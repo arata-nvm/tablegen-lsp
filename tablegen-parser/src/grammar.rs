@@ -428,6 +428,11 @@ mod tests {
     }
 
     #[test]
+    fn value() {
+        insta::assert_display_snapshot!(parse("class Foo<int A = Hoge.Fuga>;"));
+    }
+
+    #[test]
     fn simple_value() {
         insta::assert_display_snapshot!(parse(
             "class Foo<int A = 1, string B = \"hoge\", code C = [{ true }], bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2)>;"
