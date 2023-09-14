@@ -24,27 +24,29 @@ File
         LBrace `{`
         Whitespace `\n                `
         BodyItem
-          Type
-            Int `int`
-          Whitespace ` `
-          Identifier
-            Id `B`
-          Semi `;`
+          Define
+            Type
+              Int `int`
+            Whitespace ` `
+            Identifier
+              Id `B`
+            Semi `;`
         Whitespace `\n                `
         BodyItem
-          Type
-            Int `int`
-          Whitespace ` `
-          Identifier
-            Id `C`
-          Whitespace ` `
-          Equal `=`
-          Whitespace ` `
-          Value
-            SimpleValue
-              Identifier
-                Id `A`
-          Semi `;`
+          Define
+            Type
+              Int `int`
+            Whitespace ` `
+            Identifier
+              Id `C`
+            Whitespace ` `
+            Equal `=`
+            Whitespace ` `
+            Value
+              SimpleValue
+                Identifier
+                  Id `A`
+            Semi `;`
         Whitespace `\n            `
         RBrace `}`
 

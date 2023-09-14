@@ -145,13 +145,19 @@ fn body(p: &mut Parser) {
 
 fn body_item(p: &mut Parser) {
     let m = p.marker();
+    define(p);
+    p.wrap(m, SyntaxKind::BodyItem);
+}
+
+fn define(p: &mut Parser) {
+    let m = p.marker();
     r#type(p);
     identifier(p);
     if p.eat_if(T![=]) {
         value(p);
     }
     p.expect(T![;]);
-    p.wrap(m, SyntaxKind::BodyItem);
+    p.wrap(m, SyntaxKind::Define);
 }
 
 fn r#type(p: &mut Parser) {
