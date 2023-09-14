@@ -15,6 +15,7 @@ pub enum SyntaxKind {
     PositionalArgValueList,
     Body,
     BodyItem,
+    Define,
     Type,
     BitsType,
     ListType,

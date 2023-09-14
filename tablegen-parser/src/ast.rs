@@ -34,6 +34,32 @@ macro_rules! node {
     };
 }
 
+macro_rules! node_enum {
+    ($name:ident, [$($item:ident),*]) => {
+        #[derive(Debug)]
+        pub enum $name<'a> {
+            $($item($item<'a>),)*
+        }
+
+        impl<'a> AstNode<'a> for $name<'a> {
+            #[inline]
+            fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
+                match node.kind() {
+                    $(SyntaxKind::$item => node.cast().map(Self::$item),)*
+                    _ => None,
+                }
+            }
+
+            #[inline]
+            fn to_untyped(self) -> &'a SyntaxNode {
+                match self {
+                    $(Self::$item(v) => v.to_untyped(),)*
+                }
+            }
+        }
+    };
+}
+
 node!(File);
 
 impl<'a> File<'a> {
@@ -42,31 +68,7 @@ impl<'a> File<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum FileItem<'a> {
-    Include(Include<'a>),
-    Class(Class<'a>),
-    Def(Def<'a>),
-}
-
-impl<'a> AstNode<'a> for FileItem<'a> {
-    fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
-        match node.kind() {
-            SyntaxKind::Include => node.cast().map(Self::Include),
-            SyntaxKind::Class => node.cast().map(Self::Class),
-            SyntaxKind::Def => node.cast().map(Self::Def),
-            _ => None,
-        }
-    }
-
-    fn to_untyped(self) -> &'a SyntaxNode {
-        match self {
-            Self::Include(v) => v.to_untyped(),
-            Self::Class(v) => v.to_untyped(),
-            Self::Def(v) => v.to_untyped(),
-        }
-    }
-}
+node_enum!(FileItem, [Include, Class, Def]);
 
 node!(Include);
 
@@ -184,9 +186,11 @@ impl<'a> Body<'a> {
     }
 }
 
-node!(BodyItem);
+node_enum!(BodyItem, [Define]);
 
-impl<'a> BodyItem<'a> {
+node!(Define);
+
+impl<'a> Define<'a> {
     pub fn r#type(self) -> Option<Type<'a>> {
         self.0.cast_first_match()
     }
@@ -293,58 +297,23 @@ impl<'a> Field<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum SimpleValue<'a> {
-    Integer(Integer<'a>),
-    String(String<'a>),
-    Code(Code<'a>),
-    Boolean(Boolean<'a>),
-    Uninitialized(Uninitialized<'a>),
-    Bits(Bits<'a>),
-    List(List<'a>),
-    Dag(Dag<'a>),
-    Identifier(Identifier<'a>),
-    ClassRef(ClassRef<'a>),
-    BangOperator(BangOperator<'a>),
-    CondOperator(CondOperator<'a>),
-}
-
-impl<'a> AstNode<'a> for SimpleValue<'a> {
-    fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
-        match node.kind() {
-            SyntaxKind::Integer => node.cast().map(Self::Identifier),
-            SyntaxKind::String => node.cast().map(Self::String),
-            SyntaxKind::Code => node.cast().map(Self::Code),
-            SyntaxKind::Boolean => node.cast().map(Self::Boolean),
-            SyntaxKind::Uninitialized => node.cast().map(Self::Uninitialized),
-            SyntaxKind::Bits => node.cast().map(Self::Bits),
-            SyntaxKind::List => node.cast().map(Self::List),
-            SyntaxKind::Dag => node.cast().map(Self::Dag),
-            SyntaxKind::Identifier => node.cast().map(Self::Identifier),
-            SyntaxKind::ClassRef => node.cast().map(Self::ClassRef),
-            SyntaxKind::BangOperator => node.cast().map(Self::BangOperator),
-            SyntaxKind::CondOperator => node.cast().map(Self::CondOperator),
-            _ => None,
-        }
-    }
-
-    fn to_untyped(self) -> &'a SyntaxNode {
-        match self {
-            Self::Integer(node) => node.to_untyped(),
-            Self::String(node) => node.to_untyped(),
-            Self::Code(node) => node.to_untyped(),
-            Self::Boolean(node) => node.to_untyped(),
-            Self::Uninitialized(node) => node.to_untyped(),
-            Self::Bits(node) => node.to_untyped(),
-            Self::List(node) => node.to_untyped(),
-            Self::Dag(node) => node.to_untyped(),
-            Self::Identifier(node) => node.to_untyped(),
-            Self::ClassRef(node) => node.to_untyped(),
-            Self::BangOperator(node) => node.to_untyped(),
-            Self::CondOperator(node) => node.to_untyped(),
-        }
-    }
-}
+node_enum!(
+    SimpleValue,
+    [
+        Integer,
+        String,
+        Code,
+        Boolean,
+        Uninitialized,
+        Bits,
+        List,
+        Dag,
+        Identifier,
+        ClassRef,
+        BangOperator,
+        CondOperator
+    ]
+);
 
 node!(Integer);
 
