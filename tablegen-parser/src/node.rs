@@ -69,6 +69,16 @@ impl SyntaxNode {
     pub fn cast_first_match<'a, T: AstNode<'a>>(&'a self) -> Option<T> {
         self.children().find_map(Self::cast)
     }
+
+    pub fn cast_all_matches<'a, T: AstNode<'a>>(
+        &'a self,
+    ) -> impl DoubleEndedIterator<Item = T> + 'a {
+        self.children().filter_map(|node| node.cast())
+    }
+
+    pub fn first_child_text<'a>(&'a self) -> Option<&'a EcoString> {
+        self.children().next().map(|node| node.text())
+    }
 }
 
 impl fmt::Display for SyntaxNode {

@@ -34,7 +34,7 @@ node!(File);
 
 impl<'a> File<'a> {
     pub fn classes(self) -> impl DoubleEndedIterator<Item = FileItem<'a>> {
-        self.0.children().filter_map(|node| node.cast())
+        self.0.cast_all_matches()
     }
 }
 
@@ -104,7 +104,7 @@ node!(TemplateArgList);
 
 impl<'a> TemplateArgList<'a> {
     pub fn args(self) -> impl DoubleEndedIterator<Item = TemplateArgDecl<'a>> {
-        self.0.children().filter_map(|node| node.cast())
+        self.0.cast_all_matches()
     }
 }
 
@@ -140,7 +140,7 @@ node!(ParentClassList);
 
 impl<'a> ParentClassList<'a> {
     pub fn classes(self) -> impl DoubleEndedIterator<Item = ClassRef<'a>> {
-        self.0.children().filter_map(|node| node.cast())
+        self.0.cast_all_matches()
     }
 }
 
@@ -168,7 +168,7 @@ node!(PositionalArgValueList);
 
 impl<'a> PositionalArgValueList<'a> {
     pub fn args(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
-        self.0.children().filter_map(|node| node.cast())
+        self.0.cast_all_matches()
     }
 }
 
@@ -176,7 +176,7 @@ node!(Body);
 
 impl<'a> Body<'a> {
     pub fn items(self) -> impl DoubleEndedIterator<Item = BodyItem<'a>> {
-        self.0.children().filter_map(|node| node.cast())
+        self.0.cast_all_matches()
     }
 }
 
