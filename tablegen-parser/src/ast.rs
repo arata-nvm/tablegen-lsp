@@ -253,23 +253,43 @@ impl<'a> ListType<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum Value<'a> {
-    SimpleValue(SimpleValue<'a>),
+node!(Value);
+
+impl<'a> Value<'a> {
+    pub fn simple_value(self) -> Option<SimpleValue<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn suffixes(self) -> impl DoubleEndedIterator<Item = ValueSuffix<'a>> {
+        self.0.cast_all_matches()
+    }
 }
 
-impl<'a> AstNode<'a> for Value<'a> {
+#[derive(Debug)]
+pub enum ValueSuffix<'a> {
+    Field(Field<'a>),
+}
+
+impl<'a> AstNode<'a> for ValueSuffix<'a> {
     fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
         match node.kind() {
-            SyntaxKind::SimpleValue => node.cast().map(Self::SimpleValue),
+            SyntaxKind::Field => node.cast().map(Self::Field),
             _ => None,
         }
     }
 
     fn to_untyped(self) -> &'a SyntaxNode {
         match self {
-            Self::SimpleValue(node) => node.to_untyped(),
+            Self::Field(v) => v.to_untyped(),
         }
+    }
+}
+
+node!(Field);
+
+impl<'a> Field<'a> {
+    pub fn name(self) -> Option<Identifier<'a>> {
+        self.0.cast_first_match()
     }
 }
 

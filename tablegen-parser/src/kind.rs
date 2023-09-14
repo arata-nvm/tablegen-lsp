@@ -19,6 +19,8 @@ pub enum SyntaxKind {
     BitsType,
     ListType,
     Value,
+    ValueSuffix,
+    Field,
     SimpleValue,
     Integer,
     String,

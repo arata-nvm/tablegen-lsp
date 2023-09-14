@@ -187,7 +187,22 @@ fn list_type(p: &mut Parser) {
 fn value(p: &mut Parser) {
     let m = p.marker();
     simple_value(p);
+    loop {
+        let m = p.marker();
+        match p.current() {
+            T![.] => field(p),
+            _ => break,
+        }
+        p.wrap(m, SyntaxKind::ValueSuffix);
+    }
     p.wrap(m, SyntaxKind::Value);
+}
+
+fn field(p: &mut Parser) {
+    let m = p.marker();
+    p.assert(T![.]);
+    identifier(p);
+    p.wrap(m, SyntaxKind::Field);
 }
 
 fn simple_value(p: &mut Parser) {
