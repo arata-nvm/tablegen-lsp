@@ -40,7 +40,7 @@ impl<'a> File<'a> {
 
 #[derive(Debug)]
 pub enum FileItem<'a> {
-    Inlcude(Include<'a>),
+    Include(Include<'a>),
     Class(Class<'a>),
     Def(Def<'a>),
 }
@@ -48,7 +48,7 @@ pub enum FileItem<'a> {
 impl<'a> AstNode<'a> for FileItem<'a> {
     fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
         match node.kind() {
-            SyntaxKind::Include => node.cast().map(Self::Inlcude),
+            SyntaxKind::Include => node.cast().map(Self::Include),
             SyntaxKind::Class => node.cast().map(Self::Class),
             SyntaxKind::Def => node.cast().map(Self::Def),
             _ => None,
@@ -57,7 +57,7 @@ impl<'a> AstNode<'a> for FileItem<'a> {
 
     fn to_untyped(self) -> &'a SyntaxNode {
         match self {
-            Self::Inlcude(v) => v.to_untyped(),
+            Self::Include(v) => v.to_untyped(),
             Self::Class(v) => v.to_untyped(),
             Self::Def(v) => v.to_untyped(),
         }
