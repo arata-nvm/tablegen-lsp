@@ -1,6 +1,7 @@
 use ecow::{eco_format, EcoString};
 
 use crate::{
+    error::Span,
     kind::{SyntaxKind, TokenKind},
     lexer::Lexer,
     node::SyntaxNode,
@@ -12,6 +13,7 @@ pub(crate) struct Parser<'a> {
     lexer: Lexer<'a>,
     current: TokenKind,
     current_start: usize,
+    prev_start: usize,
     nodes: Vec<SyntaxNode>,
 }
 
@@ -27,6 +29,7 @@ impl<'a> Parser<'a> {
             lexer,
             current,
             current_start: 0,
+            prev_start: 0,
             nodes: vec![],
         }
     }
@@ -43,10 +46,16 @@ impl<'a> Parser<'a> {
         self.current_start
     }
 
+    pub(crate) fn current_span(&self) -> Span {
+        self.current_start..self.lexer.cursor()
+    }
+
     pub(crate) fn current_text(&self) -> &'a str {
-        let from = self.current_start;
-        let to = self.lexer.cursor();
-        &self.text[from..to]
+        &self.text[self.current_span()]
+    }
+
+    pub(crate) fn prev_span(&self) -> Span {
+        self.prev_start..self.current_start
     }
 
     pub(crate) fn marker(&self) -> Marker {
@@ -84,15 +93,18 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
-        self.nodes
-            .push(SyntaxNode::error(message, self.current_text()))
+        self.nodes.push(SyntaxNode::error(
+            self.prev_span(),
+            message,
+            self.current_text(),
+        ))
     }
 
     pub(crate) fn error_and_eat(&mut self, message: impl Into<EcoString>) {
         let m = self.marker();
         let text = self.current_text();
         self.eat();
-        self.nodes[m.0] = SyntaxNode::error(message, text);
+        self.nodes[m.0] = SyntaxNode::error(self.prev_span(), message, text);
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {
@@ -127,14 +139,15 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn consume_token(&mut self) {
-        let text = self.current_text();
         if self.at(TokenKind::Error) {
             let message = self.lexer.take_error().unwrap();
-            self.nodes.push(SyntaxNode::error(message, text));
+            self.error(message);
         } else {
+            let text = self.current_text();
             self.nodes.push(SyntaxNode::token(self.current, text));
         }
 
+        self.prev_start = self.current_start;
         self.current_start = self.lexer.cursor();
         self.current = self.lexer.next();
     }

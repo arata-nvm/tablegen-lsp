@@ -4,6 +4,7 @@ use ecow::EcoString;
 
 use crate::{
     ast::AstNode,
+    error::{Span, SyntaxError},
     kind::{SyntaxKind, TokenKind},
 };
 
@@ -14,7 +15,7 @@ pub struct SyntaxNode(SyntaxNodeInner);
 enum SyntaxNodeInner {
     Token(TokenKind, EcoString),
     Node(SyntaxKind, Vec<SyntaxNode>),
-    Error(EcoString, EcoString),
+    Error(SyntaxError, EcoString),
 }
 
 impl SyntaxNode {
@@ -26,8 +27,11 @@ impl SyntaxNode {
         Self(SyntaxNodeInner::Node(kind, children))
     }
 
-    pub fn error(message: impl Into<EcoString>, text: impl Into<EcoString>) -> Self {
-        Self(SyntaxNodeInner::Error(message.into(), text.into()))
+    pub fn error(span: Span, message: impl Into<EcoString>, text: impl Into<EcoString>) -> Self {
+        Self(SyntaxNodeInner::Error(
+            SyntaxError::new(span, message),
+            text.into(),
+        ))
     }
 
     pub fn kind(&self) -> SyntaxKind {
@@ -78,6 +82,13 @@ impl SyntaxNode {
 
     pub fn first_child_text<'a>(&'a self) -> Option<&'a EcoString> {
         self.children().next().map(|node| node.text())
+    }
+
+    pub fn errors(&self) -> Vec<&SyntaxError> {
+        match &self.0 {
+            SyntaxNodeInner::Error(error, _) => vec![error],
+            _ => self.children().flat_map(|node| node.errors()).collect(),
+        }
     }
 }
 
