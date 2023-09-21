@@ -2,18 +2,19 @@ use std::fmt;
 
 use ecow::EcoString;
 
-pub type Span = std::ops::Range<usize>;
+pub type Position = usize;
+pub type Range = std::ops::Range<Position>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SyntaxError {
-    pub span: Span,
+    pub range: Range,
     pub message: EcoString,
 }
 
 impl SyntaxError {
-    pub fn new(span: Span, message: impl Into<EcoString>) -> Self {
+    pub fn new(range: Range, message: impl Into<EcoString>) -> Self {
         Self {
-            span,
+            range,
             message: message.into(),
         }
     }
@@ -21,6 +22,10 @@ impl SyntaxError {
 
 impl fmt::Display for SyntaxError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}:{}", self.span.start, self.span.end, self.message)
+        write!(
+            f,
+            "{}:{}:{}",
+            self.range.start, self.range.end, self.message
+        )
     }
 }

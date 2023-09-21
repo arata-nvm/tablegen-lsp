@@ -1,7 +1,7 @@
 use ecow::EcoString;
 
 use crate::{
-    error::Span,
+    error::Range,
     kind::{SyntaxKind, TokenKind},
     node::SyntaxNode,
 };
@@ -18,8 +18,8 @@ macro_rules! node {
         pub struct $name<'a>(&'a SyntaxNode);
 
         impl<'a> $name<'a> {
-            pub fn span(&self) -> Span {
-                self.0.span()
+            pub fn range(&self) -> Range {
+                self.0.range()
             }
         }
 

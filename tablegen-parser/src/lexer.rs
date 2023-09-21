@@ -1,7 +1,7 @@
 use ecow::EcoString;
 use unscanny::Scanner;
 
-use crate::{kind::TokenKind, T};
+use crate::{error::Position, kind::TokenKind, T};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -21,7 +21,7 @@ impl<'a> Lexer<'a> {
         self.error.take()
     }
 
-    pub fn cursor(&self) -> usize {
+    pub fn cursor(&self) -> Position {
         self.s.cursor()
     }
 
@@ -91,7 +91,7 @@ impl<'a> Lexer<'a> {
         TokenKind::BlockComment
     }
 
-    fn number(&mut self, mut start: usize, c: char) -> TokenKind {
+    fn number(&mut self, mut start: Position, c: char) -> TokenKind {
         match self.s.peek() {
             Some(c2) if !c2.is_ascii_digit() => match c {
                 '+' => return TokenKind::Plus,
@@ -138,7 +138,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn identifier(&mut self, start: usize) -> TokenKind {
+    fn identifier(&mut self, start: Position) -> TokenKind {
         self.s.eat_while(is_identifier_continue);
         let ident = self.s.from(start);
 
@@ -262,7 +262,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn preprocessor(&mut self, start: usize) -> TokenKind {
+    fn preprocessor(&mut self, start: Position) -> TokenKind {
         match self.s.peek() {
             Some(c) if c.is_alphabetic() => {}
             _ => return T![#],

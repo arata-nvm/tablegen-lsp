@@ -4,7 +4,7 @@ use ecow::EcoString;
 
 use crate::{
     ast::AstNode,
-    error::{Span, SyntaxError},
+    error::{Range, SyntaxError},
     kind::{SyntaxKind, TokenKind},
 };
 
@@ -13,23 +13,23 @@ pub struct SyntaxNode(SyntaxNodeInner);
 
 #[derive(Debug)]
 enum SyntaxNodeInner {
-    Token(TokenKind, EcoString, Span),
+    Token(TokenKind, EcoString, Range),
     Node(SyntaxKind, Vec<SyntaxNode>),
     Error(SyntaxError, EcoString),
 }
 
 impl SyntaxNode {
-    pub fn token(kind: TokenKind, text: impl Into<EcoString>, span: Span) -> Self {
-        Self(SyntaxNodeInner::Token(kind, text.into(), span))
+    pub fn token(kind: TokenKind, text: impl Into<EcoString>, range: Range) -> Self {
+        Self(SyntaxNodeInner::Token(kind, text.into(), range))
     }
 
     pub fn node(kind: SyntaxKind, children: Vec<SyntaxNode>) -> Self {
         Self(SyntaxNodeInner::Node(kind, children))
     }
 
-    pub fn error(span: Span, message: impl Into<EcoString>, text: impl Into<EcoString>) -> Self {
+    pub fn error(range: Range, message: impl Into<EcoString>, text: impl Into<EcoString>) -> Self {
         Self(SyntaxNodeInner::Error(
-            SyntaxError::new(span, message),
+            SyntaxError::new(range, message),
             text.into(),
         ))
     }
@@ -59,21 +59,21 @@ impl SyntaxNode {
         }
     }
 
-    pub fn span(&self) -> Span {
+    pub fn range(&self) -> Range {
         match self.0 {
-            SyntaxNodeInner::Token(_, _, ref span) => span.clone(),
+            SyntaxNodeInner::Token(_, _, ref range) => range.clone(),
             SyntaxNodeInner::Node(_, ref children) => {
                 let start = children
                     .first()
-                    .map(|node| node.span().start)
+                    .map(|node| node.range().start)
                     .unwrap_or_default();
                 let end = children
                     .last()
-                    .map(|node| node.span().end)
+                    .map(|node| node.range().end)
                     .unwrap_or_default();
                 start..end
             }
-            SyntaxNodeInner::Error(ref error, _) => error.span.clone(),
+            SyntaxNodeInner::Error(ref error, _) => error.range.clone(),
         }
     }
 
@@ -120,8 +120,8 @@ fn dump(node: &SyntaxNode, depth: usize, f: &mut fmt::Formatter) -> fmt::Result 
     write!(f, "{}", "  ".repeat(depth))?;
 
     match &node.0 {
-        SyntaxNodeInner::Token(kind, text, span) => {
-            writeln!(f, "{span:?} {kind:?} `{}`", text.escape_default())
+        SyntaxNodeInner::Token(kind, text, range) => {
+            writeln!(f, "{range:?} {kind:?} `{}`", text.escape_default())
         }
         SyntaxNodeInner::Node(kind, children) => {
             writeln!(f, "{kind:?}")?;

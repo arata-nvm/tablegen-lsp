@@ -1,7 +1,7 @@
 use ecow::{eco_format, EcoString};
 
 use crate::{
-    error::Span,
+    error::{Position, Range},
     kind::{SyntaxKind, TokenKind},
     lexer::Lexer,
     node::SyntaxNode,
@@ -12,8 +12,8 @@ pub(crate) struct Parser<'a> {
     text: &'a str,
     lexer: Lexer<'a>,
     current: TokenKind,
-    current_start: usize,
-    current_end: usize,
+    current_start: Position,
+    current_end: Position,
     nodes: Vec<SyntaxNode>,
 }
 
@@ -45,12 +45,12 @@ impl<'a> Parser<'a> {
         self.current
     }
 
-    pub(crate) fn current_span(&self) -> Span {
+    pub(crate) fn current_range(&self) -> Range {
         self.current_start..self.current_end
     }
 
     pub(crate) fn current_text(&self) -> &'a str {
-        &self.text[self.current_span()]
+        &self.text[self.current_range()]
     }
 
     pub(crate) fn marker(&self) -> Marker {
@@ -89,18 +89,18 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
         self.nodes.push(SyntaxNode::error(
-            self.current_span(),
+            self.current_range(),
             message,
             self.current_text(),
         ))
     }
 
     pub(crate) fn error_and_eat(&mut self, message: impl Into<EcoString>) {
-        let span = self.current_span();
+        let range = self.current_range();
         let m = self.marker();
         let text = self.current_text();
         self.eat();
-        self.nodes[m.0] = SyntaxNode::error(span, message, text);
+        self.nodes[m.0] = SyntaxNode::error(range, message, text);
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {
@@ -150,7 +150,7 @@ impl<'a> Parser<'a> {
             self.nodes.push(SyntaxNode::token(
                 self.current,
                 self.current_text(),
-                self.current_span(),
+                self.current_range(),
             ));
         }
 
