@@ -1,7 +1,7 @@
 use crate::{
     kind::{SyntaxKind, TokenKind},
     node::SyntaxNode,
-    parser::Parser,
+    parser::{Parser, Result, ResultExt},
     T,
 };
 
@@ -15,199 +15,220 @@ pub fn parse(text: &str) -> SyntaxNode {
 fn file(p: &mut Parser) {
     let m = p.marker();
     p.eat_trivia();
-    statement_list(p);
+    if statement_list(p).is_err() || !p.eof() {
+        p.error("unexpected input at top level");
+    }
     p.wrap_all(m, SyntaxKind::File);
 }
 
 // StatementList ::= Statement*
-fn statement_list(p: &mut Parser) {
+fn statement_list(p: &mut Parser) -> Result {
     let m = p.marker();
     while !p.eof() {
-        statement(p);
+        statement(p)?;
     }
     p.wrap(m, SyntaxKind::StatementList);
+    Ok(())
 }
 
 // Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Foreach | If | Let | MultiClass
-fn statement(p: &mut Parser) {
+fn statement(p: &mut Parser) -> Result {
     match p.current() {
         T![include] => include(p),
         T![class] => class(p),
         T![def] => def(p),
         T![let] => r#let(p),
-        _ => p.error_and_eat("Expected class, def, defm, defset, multiclass, let or foreach"),
+        _ => {
+            p.error_and_eat("expected class, def, defm, defset, multiclass, let or foreach");
+            Err(())
+        }
     }
 }
 
 // Include ::= "include" String
-fn include(p: &mut Parser) {
+fn include(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![include]);
-    string(p);
+    string(p).or_error(p, "expected filename after include")?;
     p.wrap(m, SyntaxKind::Include);
+    Ok(())
 }
 
 // Class ::= "class" Identifier TemplateArgList? RecordBody
-fn class(p: &mut Parser) {
+fn class(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![class]);
-    identifier(p);
-    if p.at(T![<]) {
-        template_arg_list(p);
-    }
-    record_body(p);
+    identifier(p).or_error(p, "expected class name after 'class' keyword")?;
+    opt_template_arg_list(p)?;
+    record_body(p)?;
     p.wrap(m, SyntaxKind::Class);
+    Ok(())
 }
 
 // Def ::= "def" Value? RecordBody
-fn def(p: &mut Parser) {
+fn def(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![def]);
-    value(p);
-    record_body(p);
+    value(p)?;
+    record_body(p)?;
     p.wrap(m, SyntaxKind::Def);
+    Ok(())
 }
 
 // Let ::= "let" LetList "in" ( "{" Statement* "}" | Statement )
-fn r#let(p: &mut Parser) {
+fn r#let(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![let]);
-    let_list(p);
-    p.expect(T![in]);
+    let_list(p)?;
+    if !p.eat_if(T![in]) {
+        p.error("expected 'in' at end of top-level 'let'");
+        p.wrap_all(m, SyntaxKind::Let);
+        return Err(());
+    }
     if p.eat_if(T!['{']) {
         while !p.eof() && !p.at(T!['}']) {
-            statement(p);
+            statement(p)?;
         }
-        p.expect(T!['}']);
+        p.expect_with_msg(T!['}'], "expected '}' at end of top-level let command")?;
     } else {
-        statement(p);
+        statement(p)?;
     }
     p.wrap_all(m, SyntaxKind::Let);
+    Ok(())
 }
 
 // LetList ::= LetItem ( "," LetItem )*
-fn let_list(p: &mut Parser) {
+fn let_list(p: &mut Parser) -> Result {
     let m = p.marker();
     while !p.eof() {
-        let_item(p);
+        let_item(p)?;
         if !p.eat_if(T![,]) {
             break;
         }
     }
     p.wrap(m, SyntaxKind::LetList);
+    Ok(())
 }
 
 // LetItem ::= Identifier ( "<" RangeList ">" )? "=" Value
-fn let_item(p: &mut Parser) {
+fn let_item(p: &mut Parser) -> Result {
     let m = p.marker();
-    identifier(p);
-    p.expect(T![=]);
-    value(p);
+    identifier(p).or_error(p, "expected identifier in let expression")?;
+    if !p.eat_if(T![=]) {
+        p.error("expected '=' in let expression");
+        return Err(());
+    }
+    value(p)?;
     p.wrap(m, SyntaxKind::LetItem);
+    Ok(())
+}
+
+fn opt_template_arg_list(p: &mut Parser) -> Result {
+    if p.at(T![<]) {
+        template_arg_list(p)?;
+    }
+    Ok(())
 }
 
 // TemplateArgList ::= "<" TemplateArgDecl ( "," TemplateArgDecl )* ">"
-fn template_arg_list(p: &mut Parser) {
+fn template_arg_list(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.assert(T![<]);
-    while !p.eof() && !p.at(T![>]) {
-        tempalte_arg_decl(p);
-        if !p.eat_if(T![,]) {
-            break;
-        }
-    }
-    p.expect(T![>]);
+    delimited(p, T![<], T![>], T![,], template_arg_decl)?;
     p.wrap(m, SyntaxKind::TemplateArgList);
+    Ok(())
 }
 
 // TemplateArgDecl ::= Type Identifier ( "=" Value )?
-fn tempalte_arg_decl(p: &mut Parser) {
+fn template_arg_decl(p: &mut Parser) -> Result {
     let m = p.marker();
-    r#type(p);
-    identifier(p);
+    r#type(p)?;
+    identifier(p).or_error(p, "expected identifier in declaration")?;
     if p.eat_if(T![=]) {
-        value(p);
+        value(p)?;
     }
     p.wrap(m, SyntaxKind::TemplateArgDecl);
+    Ok(())
 }
 
 // RecordBody ::= ParentClassList Body
-fn record_body(p: &mut Parser) {
+fn record_body(p: &mut Parser) -> Result {
     let m = p.marker();
-    parent_class_list(p);
-    body(p);
+    parent_class_list(p)?;
+    body(p)?;
     p.wrap(m, SyntaxKind::RecordBody);
+    Ok(())
 }
 
 // ParentClassList ::= ( ":" ClassRef ( "," ClassRef )* )?
-fn parent_class_list(p: &mut Parser) {
+fn parent_class_list(p: &mut Parser) -> Result {
     let m = p.marker();
     if !p.eat_if(T![:]) {
         p.wrap(m, SyntaxKind::ParentClassList);
-        return;
+        return Ok(());
     }
 
     while !p.eof() && p.at(TokenKind::Id) {
-        class_ref(p);
+        class_ref(p)?;
         if !p.eat_if(T![,]) {
             break;
         }
     }
     p.wrap(m, SyntaxKind::ParentClassList);
+    Ok(())
 }
 
 // ClassRef ::= Identifier ( "<" ArgValueList? ">" )?
-fn class_ref(p: &mut Parser) {
+fn class_ref(p: &mut Parser) -> Result {
     let m = p.marker();
-    identifier(p);
+    identifier(p)?;
     if p.eat_if(T![<]) {
-        arg_value_list(p);
-        p.expect(T![>]);
+        arg_value_list(p)?;
+        p.expect_with_msg(T![>], "expected '>' in template value list")?;
     }
     p.wrap(m, SyntaxKind::ClassRef);
+    Ok(())
 }
 
 // ArgValueList ::= PositionalArgValueList ","? NamedArgValueList
-fn arg_value_list(p: &mut Parser) {
+fn arg_value_list(p: &mut Parser) -> Result {
     let m = p.marker();
-    positional_arg_value_list(p);
+    positional_arg_value_list(p)?;
     p.wrap(m, SyntaxKind::ArgValueList);
+    Ok(())
 }
 
 // PositionalArgValueList ::= ( Value ( "," Value )* ) ?
-fn positional_arg_value_list(p: &mut Parser) {
+fn positional_arg_value_list(p: &mut Parser) -> Result {
     let m = p.marker();
     while !p.eof() && !p.at(T![>]) {
-        value(p);
+        value(p)?;
         if !p.eat_if(T![,]) {
             break;
         }
     }
     p.wrap(m, SyntaxKind::PositionalArgValueList);
+    Ok(())
 }
 
 // Body ::= ";" | "{" BodyItem* "}"
-fn body(p: &mut Parser) {
+fn body(p: &mut Parser) -> Result {
     let m = p.marker();
     if p.eat_if(T![;]) {
         p.wrap(m, SyntaxKind::Body);
-        return;
+        return Ok(());
     }
 
-    p.expect(T!['{']);
+    p.expect_with_msg(T!['{'], "expected ';' or '{' to start body")?;
     while !p.eof() && !p.at(T!['}']) {
-        let prev_cursor = p.current_start();
-        body_item(p);
-        if p.current_start() == prev_cursor {
-            p.error_and_eat("unexpected token");
-        }
+        body_item(p)?;
     }
-    p.expect(T!['}']);
+    p.expect(T!['}'])?;
     p.wrap(m, SyntaxKind::Body);
+    Ok(())
 }
 
 // BodyItem ::= FieldDef | FieldLet | Defvar | Assert
-fn body_item(p: &mut Parser) {
+fn body_item(p: &mut Parser) -> Result {
     match p.current() {
         T![let] => field_let(p),
         _ => field_def(p),
@@ -215,41 +236,44 @@ fn body_item(p: &mut Parser) {
 }
 
 // FieldDef ::= ( Type | CodeType ) Identifier ( "=" Value )? ";"
-fn field_def(p: &mut Parser) {
+fn field_def(p: &mut Parser) -> Result {
     let m = p.marker();
     if p.at(T![code]) {
-        code_type(p);
+        code_type(p)?;
     } else {
-        r#type(p);
+        r#type(p)?;
     }
-    identifier(p);
+    identifier(p).or_error(p, "expected identifier in declaration")?;
     if p.eat_if(T![=]) {
-        value(p);
+        value(p)?;
     }
-    p.expect(T![;]);
+    p.expect_with_msg(T![;], "expected ';' after declaration")?;
     p.wrap(m, SyntaxKind::FieldDef);
+    Ok(())
 }
 
 // CodeType ::= "code"
-fn code_type(p: &mut Parser) {
+fn code_type(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![code]);
     p.wrap(m, SyntaxKind::CodeType);
+    Ok(())
 }
 
 // FieldLet ::= "let" Identitfer ( "{" RangeList "}" )? "=" Value ";"
-fn field_let(p: &mut Parser) {
+fn field_let(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![let]);
-    identifier(p);
-    p.expect(T![=]);
-    value(p);
-    p.expect(T![;]);
+    identifier(p).or_error(p, "expected field identifier after let")?;
+    p.expect(T![=])?;
+    value(p).or_error(p, "expected '=' in let expression")?;
+    p.expect_with_msg(T![;], "expected ';' after let expression")?;
     p.wrap(m, SyntaxKind::FieldLet);
+    Ok(())
 }
 
 // Type ::= BitType | IntType | StringType | DagType | BitsType | ListType | ClassId
-fn r#type(p: &mut Parser) {
+fn r#type(p: &mut Parser) -> Result {
     match p.current() {
         T![bit] => bit_type(p),
         T![int] => int_type(p),
@@ -258,91 +282,103 @@ fn r#type(p: &mut Parser) {
         T![bits] => bits_type(p),
         T![list] => list_type(p),
         TokenKind::Id => class_id(p),
-        _ => p.error_and_eat("expected type"),
+        _ => {
+            p.error_and_eat("unknown token when expecting a type");
+            Err(())
+        }
     }
 }
 
 // BitType ::= "bit"
-fn bit_type(p: &mut Parser) {
+fn bit_type(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![bit]);
     p.wrap(m, SyntaxKind::BitType);
+    Ok(())
 }
 
 // IntType ::= "int"
-fn int_type(p: &mut Parser) {
+fn int_type(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![int]);
     p.wrap(m, SyntaxKind::IntType);
+    Ok(())
 }
 
 // StringType ::= "string"
-fn string_type(p: &mut Parser) {
+fn string_type(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![string]);
     p.wrap(m, SyntaxKind::StringType);
+    Ok(())
 }
 
 // DagType ::= "dag"
-fn dag_type(p: &mut Parser) {
+fn dag_type(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![dag]);
     p.wrap(m, SyntaxKind::DagType);
+    Ok(())
 }
 
 // BitsType ::= "bits" "<" Integer ">"
-fn bits_type(p: &mut Parser) {
+fn bits_type(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![bits]);
-    p.expect(T![<]);
-    integer(p);
-    p.expect(T![>]);
+    p.expect_with_msg(T![<], "expected '<' after bits type")?;
+    integer(p).or_error(p, "expected integer in bits<n> type")?;
+    p.expect_with_msg(T![>], "expected '>' at end of bits<n> type")?;
     p.wrap(m, SyntaxKind::BitsType);
+    Ok(())
 }
 
 // ListType ::= "list" "<" Type ">"
-fn list_type(p: &mut Parser) {
+fn list_type(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![list]);
-    p.expect(T![<]);
-    r#type(p);
-    p.expect(T![>]);
+    p.expect_with_msg(T![<], "expected '<' after list type")?;
+    r#type(p)?;
+    p.expect_with_msg(T![>], "expected '>' at end of list<ty> type")?;
     p.wrap(m, SyntaxKind::ListType);
+    Ok(())
 }
 
 // ClassId ::= Identifier
-fn class_id(p: &mut Parser) {
+fn class_id(p: &mut Parser) -> Result {
     let m = p.marker();
-    identifier(p);
+    identifier(p).or_error(p, "expected name for ClassID")?;
     p.wrap(m, SyntaxKind::ClassId);
+    Ok(())
 }
 
 // Value ::= SimpleValue ValueSuffix* | Value "#" Value?
-fn value(p: &mut Parser) {
+fn value(p: &mut Parser) -> Result {
     let m = p.marker();
-    simple_value(p);
+    simple_value(p)?;
 
     loop {
         // ValueSuffix ::= RangeSuffix | SliceSuffix | FieldSuffix
         match p.current() {
-            T![.] => field_suffix(p),
+            T![.] => field_suffix(p)?,
             _ => break,
         }
     }
 
     p.wrap(m, SyntaxKind::Value);
+    Ok(())
 }
 
 // FieldSuffix ::= "." Identifier
-fn field_suffix(p: &mut Parser) {
+fn field_suffix(p: &mut Parser) -> Result {
     let m = p.marker();
     p.assert(T![.]);
-    identifier(p);
+    identifier(p).or_error(p, "expected field identifier after '.'")?;
     p.wrap(m, SyntaxKind::FieldSuffix);
+    Ok(())
 }
 
 // SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator
-fn simple_value(p: &mut Parser) {
+fn simple_value(p: &mut Parser) -> Result {
     match p.current() {
         TokenKind::IntVal => integer(p),
         TokenKind::StrVal => string(p),
@@ -355,173 +391,195 @@ fn simple_value(p: &mut Parser) {
         TokenKind::Id => identifier(p),
         kind if kind.is_bang_operator() => bang_operator(p),
         kind if kind.is_cond_operator() => cond_operator(p),
-        _ => p.error_and_eat("unexpected"),
+        _ => {
+            p.error_and_eat("unknown token when parsing a value");
+            Err(())
+        }
     }
 }
 
 // Integer ::= INT
-fn integer(p: &mut Parser) {
+fn integer(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(TokenKind::IntVal);
+    p.expect(TokenKind::IntVal)?;
     p.wrap(m, SyntaxKind::Integer);
+    Ok(())
 }
 
 // String ::= STRING
-fn string(p: &mut Parser) {
+fn string(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(TokenKind::StrVal);
+    p.expect(TokenKind::StrVal)?;
     p.wrap(m, SyntaxKind::String);
+    Ok(())
 }
 
 // Code ::= CODE
-fn code(p: &mut Parser) {
+fn code(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(TokenKind::CodeFragment);
+    p.expect(TokenKind::CodeFragment)?;
     p.wrap(m, SyntaxKind::Code);
+    Ok(())
 }
 
 // Boolean ::= "true" | "false"
-fn boolean(p: &mut Parser) {
+fn boolean(p: &mut Parser) -> Result {
     let m = p.marker();
     if !(p.eat_if(T![true]) || p.eat_if(T![false])) {
-        p.error_and_eat("expected true or false");
+        p.error("expected true or false");
+        return Err(());
     }
     p.wrap(m, SyntaxKind::Boolean);
+    Ok(())
 }
 
 // Uninitialized ::= "?"
-fn uninitialized(p: &mut Parser) {
+fn uninitialized(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(T![?]);
+    p.expect(T![?])?;
     p.wrap(m, SyntaxKind::Uninitialized);
+    Ok(())
 }
 
 // Bits ::= "{" ValueList "}"
-fn bits(p: &mut Parser) {
+fn bits(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(T!['{']);
-    value_list(p, T!['}']);
+    value_list(p, T!['{'], T!['}'])?;
     p.wrap(m, SyntaxKind::Bits);
-}
-
-// ValueList ::= Value ( "," Value )*
-fn value_list(p: &mut Parser, terminator: TokenKind) {
-    let m = p.marker();
-    while !p.eof() && !p.at(terminator) {
-        value(p);
-        if !p.eat_if(T![,]) {
-            break;
-        }
-    }
-    p.wrap(m, SyntaxKind::ValueList);
-    p.expect(terminator);
+    Ok(())
 }
 
 // List ::= "[" ValueList "]"
-fn list(p: &mut Parser) {
+fn list(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(T!['[']);
-    value_list(p, T![']']);
+    value_list(p, T!['['], T![']'])?;
     p.wrap(m, SyntaxKind::List);
+    Ok(())
+}
+
+// ValueList ::= Value ( "," Value )*
+fn value_list(p: &mut Parser, bra: TokenKind, ket: TokenKind) -> Result {
+    let m = p.marker();
+    delimited(p, bra, ket, T![,], value)?;
+    p.wrap(m, SyntaxKind::ValueList);
+    Ok(())
 }
 
 // Dag ::= ( DagArg DagArgList? )
-fn dag(p: &mut Parser) {
+fn dag(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(T!['(']);
-    dagarg(p);
-    if !p.at(T![')']) {
-        dagarg_list(p);
+    p.expect(T!['('])?;
+    if !p.at(TokenKind::Id) {
+        p.error("expected identifier in dag init");
+        return Err(());
     }
-    p.expect(T![')']);
+    dagarg(p)?;
+    if !p.at(T![')']) {
+        dagarg_list(p)?;
+    }
+    p.expect_with_msg(T![')'], "expected ')' in dag init")?;
     p.wrap(m, SyntaxKind::Dag);
+    Ok(())
 }
 
 // DagArgList ::= DagArg ( "," DagArg )*
-fn dagarg_list(p: &mut Parser) {
+fn dagarg_list(p: &mut Parser) -> Result {
     let m = p.marker();
     while !p.eof() {
-        dagarg(p);
+        dagarg(p)?;
         if !p.eat_if(T![,]) {
             break;
         }
     }
     p.wrap(m, SyntaxKind::DagArgList);
+    Ok(())
 }
 
 // DagArg ::= Value ( ":" VARNAME ) | VARNAME
-fn dagarg(p: &mut Parser) {
+fn dagarg(p: &mut Parser) -> Result {
     let m = p.marker();
     if p.eat_if(TokenKind::VarName) {
         p.wrap(m, SyntaxKind::DagArg);
-        return;
+        return Ok(());
     }
 
-    value(p);
+    value(p)?;
     if p.eat_if(T![:]) {
-        var_name(p);
+        var_name(p).or_error(p, "expected variable name in dag literal")?;
     }
     p.wrap(m, SyntaxKind::DagArg);
+    Ok(())
 }
 
 // VarName ::= VARNAME
-fn var_name(p: &mut Parser) {
+fn var_name(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(TokenKind::VarName);
+    p.expect(TokenKind::VarName)?;
     p.wrap(m, SyntaxKind::VarName);
+    Ok(())
 }
 
 // Identifier ::= ID
-fn identifier(p: &mut Parser) {
+fn identifier(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(TokenKind::Id);
+    p.expect(TokenKind::Id)?;
     p.wrap(m, SyntaxKind::Identifier);
+    Ok(())
 }
 
 // BangOperator ::= BANGOP "(" ValueList ")"
-fn bang_operator(p: &mut Parser) {
-    let m = p.marker();
+fn bang_operator(p: &mut Parser) -> Result {
     if !p.current().is_bang_operator() {
         p.error_and_eat("expected bang operator");
-    } else {
-        p.eat();
-        p.expect(T!['(']);
-        while !p.eof() && !p.at(T![')']) {
-            value(p);
-            if !p.eat_if(T![,]) {
-                break;
-            }
-        }
-        p.expect(T![')']);
+        return Err(());
     }
+
+    let m = p.marker();
+    p.eat(); // eat bang operator
+    delimited(p, T!['('], T![')'], T![,], value)?;
     p.wrap(m, SyntaxKind::BangOperator);
+    Ok(())
 }
 
 // CondOperator ::= CONDOP "(" CondClause ( "," CondClause )* ")"
-fn cond_operator(p: &mut Parser) {
+fn cond_operator(p: &mut Parser) -> Result {
     let m = p.marker();
-    p.expect(T![!cond]);
-    p.expect(T!['(']);
-    while !p.eof() && !p.at(T![')']) {
-        cond_clause(p);
-        if !p.eat_if(T![,]) {
-            break;
-        }
-    }
-    p.expect(T![')']);
+    p.expect(T![!cond])?;
+    delimited(p, T!['('], T![')'], T![,], |p| cond_clause(p))?;
     p.wrap(m, SyntaxKind::CondOperator);
+    Ok(())
 }
 
 // CondClause ::= Value ":" Value
-fn cond_clause(p: &mut Parser) {
+fn cond_clause(p: &mut Parser) -> Result {
     let m = p.marker();
-    if !p.eat_if(TokenKind::VarName) {
-        value(p);
-        p.expect(T![:]);
-        value(p);
-    }
-
+    value(p)?;
+    p.expect(T![:])?;
+    value(p)?;
     p.wrap(m, SyntaxKind::CondClause);
+    Ok(())
+}
+
+fn delimited<F>(
+    p: &mut Parser,
+    bra: TokenKind,
+    ket: TokenKind,
+    delim: TokenKind,
+    mut parser: F,
+) -> Result
+where
+    F: FnMut(&mut Parser<'_>) -> Result,
+{
+    p.expect(bra)?;
+    while !p.at(ket) && !p.eof() {
+        parser(p)?;
+
+        if !p.eat_if(delim) {
+            break;
+        }
+    }
+    p.expect(ket)?;
+    Ok(())
 }
 
 #[cfg(test)]

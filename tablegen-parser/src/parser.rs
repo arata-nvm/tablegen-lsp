@@ -20,6 +20,8 @@ pub(crate) struct Parser<'a> {
 #[derive(Debug)]
 pub(crate) struct Marker(usize);
 
+pub type Result = std::result::Result<(), ()>;
+
 impl<'a> Parser<'a> {
     pub(crate) fn new(text: &'a str) -> Self {
         let mut lexer = Lexer::new(text);
@@ -111,15 +113,23 @@ impl<'a> Parser<'a> {
         assert!(self.eat_if(kind));
     }
 
-    pub(crate) fn expect(&mut self, kind: TokenKind) -> bool {
+    pub(crate) fn expect(&mut self, kind: TokenKind) -> Result {
+        self.expect_with_msg(kind, eco_format!("expected {kind:?}"))
+    }
+
+    pub(crate) fn expect_with_msg(
+        &mut self,
+        kind: TokenKind,
+        message: impl Into<EcoString>,
+    ) -> Result {
         if self.eat_if(kind) {
-            return true;
+            return Ok(());
         }
 
         if !self.after_error() {
-            self.error(eco_format!("expected {kind:?}"));
+            self.error(message);
         }
-        false
+        Err(())
     }
 
     pub(crate) fn after_error(&self) -> bool {
@@ -159,5 +169,18 @@ impl<'a> Parser<'a> {
         } else {
             false
         }
+    }
+}
+
+pub(crate) trait ResultExt {
+    fn or_error(self, parser: &mut Parser, message: impl Into<EcoString>) -> Self;
+}
+
+impl ResultExt for Result {
+    fn or_error(self, parser: &mut Parser, message: impl Into<EcoString>) -> Self {
+        if self.is_err() {
+            parser.error(message);
+        }
+        self
     }
 }

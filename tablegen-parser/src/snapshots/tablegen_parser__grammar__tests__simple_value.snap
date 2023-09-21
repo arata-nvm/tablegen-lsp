@@ -82,8 +82,8 @@ File
           Whitespace ` `
           Value
             Bits
-              LBrace `{`
               ValueList
+                LBrace `{`
                 Value
                   Integer
                     IntVal `0`
@@ -92,7 +92,7 @@ File
                 Value
                   Integer
                     IntVal `1`
-              RBrace `}`
+                RBrace `}`
         Comma `,`
         Whitespace ` `
         TemplateArgDecl
@@ -110,8 +110,8 @@ File
           Whitespace ` `
           Value
             List
-              LSquare `[`
               ValueList
+                LSquare `[`
                 Value
                   Integer
                     IntVal `1`
@@ -120,7 +120,7 @@ File
                 Value
                   Integer
                     IntVal `2`
-              RSquare `]`
+                RSquare `]`
         Comma `,`
         Whitespace ` `
         TemplateArgDecl
