@@ -1,3 +1,5 @@
+pub mod index;
+
 use ropey::Rope;
 use tablegen_parser::{
     error::{Span, SyntaxError},
@@ -5,25 +7,30 @@ use tablegen_parser::{
 };
 use tower_lsp::lsp_types::{Diagnostic, Position, Range, Url};
 
+use self::index::TableGenDocumentIndex;
+
 #[derive(Debug)]
 pub struct TableGenDocument {
     pub uri: Url,
     pub text: Rope,
     pub diagnostics: Vec<Diagnostic>,
+    pub index: TableGenDocumentIndex,
 }
 
 impl TableGenDocument {
-    fn new(uri: Url, text: &str) -> Self {
+    fn new(uri: Url, text: &str, index: TableGenDocumentIndex) -> Self {
         Self {
             uri,
             text: Rope::from_str(text),
             diagnostics: Vec::new(),
+            index,
         }
     }
 
     pub fn parse(uri: Url, text: String) -> Self {
-        let mut document = Self::new(uri, &text);
         let file = grammar::parse(&text);
+        let index = TableGenDocumentIndex::create_index(uri.clone(), &file);
+        let mut document = Self::new(uri, &text, index);
         document.add_syntax_errors(file.errors());
         document
     }
