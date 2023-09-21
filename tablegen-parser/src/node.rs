@@ -13,14 +13,14 @@ pub struct SyntaxNode(SyntaxNodeInner);
 
 #[derive(Debug)]
 enum SyntaxNodeInner {
-    Token(TokenKind, EcoString),
+    Token(TokenKind, EcoString, Span),
     Node(SyntaxKind, Vec<SyntaxNode>),
     Error(SyntaxError, EcoString),
 }
 
 impl SyntaxNode {
-    pub fn token(kind: TokenKind, text: impl Into<EcoString>) -> Self {
-        Self(SyntaxNodeInner::Token(kind, text.into()))
+    pub fn token(kind: TokenKind, text: impl Into<EcoString>, span: Span) -> Self {
+        Self(SyntaxNodeInner::Token(kind, text.into(), span))
     }
 
     pub fn node(kind: SyntaxKind, children: Vec<SyntaxNode>) -> Self {
@@ -36,7 +36,7 @@ impl SyntaxNode {
 
     pub fn kind(&self) -> SyntaxKind {
         match self.0 {
-            SyntaxNodeInner::Token(_, _) => SyntaxKind::Token,
+            SyntaxNodeInner::Token(_, _, _) => SyntaxKind::Token,
             SyntaxNodeInner::Node(kind, _) => kind,
             SyntaxNodeInner::Error(_, _) => SyntaxKind::Error,
         }
@@ -44,7 +44,7 @@ impl SyntaxNode {
 
     pub fn token_kind(&self) -> TokenKind {
         match self.0 {
-            SyntaxNodeInner::Token(kind, _) => kind,
+            SyntaxNodeInner::Token(kind, _, _) => kind,
             SyntaxNodeInner::Node(_, _) => TokenKind::Error,
             SyntaxNodeInner::Error(_, _) => TokenKind::Error,
         }
@@ -53,15 +53,33 @@ impl SyntaxNode {
     pub fn text(&self) -> &EcoString {
         static EMPTY: EcoString = EcoString::new();
         match self.0 {
-            SyntaxNodeInner::Token(_, ref text) => text,
+            SyntaxNodeInner::Token(_, ref text, _) => text,
             SyntaxNodeInner::Node(_, _) => &EMPTY,
             SyntaxNodeInner::Error(_, ref text) => text,
         }
     }
 
+    pub fn span(&self) -> Span {
+        match self.0 {
+            SyntaxNodeInner::Token(_, _, ref span) => span.clone(),
+            SyntaxNodeInner::Node(_, ref children) => {
+                let start = children
+                    .first()
+                    .map(|node| node.span().start)
+                    .unwrap_or_default();
+                let end = children
+                    .last()
+                    .map(|node| node.span().end)
+                    .unwrap_or_default();
+                start..end
+            }
+            SyntaxNodeInner::Error(ref error, _) => error.span.clone(),
+        }
+    }
+
     pub fn children(&self) -> std::slice::Iter<'_, SyntaxNode> {
         match self.0 {
-            SyntaxNodeInner::Token(_, _) | SyntaxNodeInner::Error(_, _) => [].iter(),
+            SyntaxNodeInner::Token(_, _, _) | SyntaxNodeInner::Error(_, _) => [].iter(),
             SyntaxNodeInner::Node(_, ref children) => children.iter(),
         }
     }
@@ -102,7 +120,9 @@ fn dump(node: &SyntaxNode, depth: usize, f: &mut fmt::Formatter) -> fmt::Result 
     write!(f, "{}", "  ".repeat(depth))?;
 
     match &node.0 {
-        SyntaxNodeInner::Token(kind, text) => writeln!(f, "{kind:?} `{}`", text.escape_default()),
+        SyntaxNodeInner::Token(kind, text, span) => {
+            writeln!(f, "{span:?} {kind:?} `{}`", text.escape_default())
+        }
         SyntaxNodeInner::Node(kind, children) => {
             writeln!(f, "{kind:?}")?;
             for child in children {

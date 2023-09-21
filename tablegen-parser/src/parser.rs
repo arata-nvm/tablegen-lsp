@@ -147,8 +147,11 @@ impl<'a> Parser<'a> {
             let message = self.lexer.take_error().unwrap();
             self.error(message);
         } else {
-            let text = self.current_text();
-            self.nodes.push(SyntaxNode::token(self.current, text));
+            self.nodes.push(SyntaxNode::token(
+                self.current,
+                self.current_text(),
+                self.current_span(),
+            ));
         }
 
         self.current_start = self.lexer.cursor();
