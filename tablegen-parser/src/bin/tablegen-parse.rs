@@ -5,7 +5,7 @@ use tablegen_parser::{grammar::parse, kind::TokenKind, lexer::Lexer};
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
-        println!("usage: tablegen-parse [token|node] <file>");
+        println!("usage: tablegen-parse [token|node|error] <file>");
         return;
     }
 
@@ -13,6 +13,7 @@ fn main() {
     match args[1].as_str() {
         "token" => token(&text),
         "node" => node(&text),
+        "error" => error(&text),
         _ => unimplemented!(),
     }
 }
@@ -35,6 +36,12 @@ fn token(text: &str) {
 }
 
 fn node(text: &str) {
-    let node = parse(&text);
+    let node = parse(text);
     println!("{node}");
+}
+
+fn error(text: &str) {
+    for error in parse(text).errors() {
+        println!("{error}");
+    }
 }
