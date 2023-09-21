@@ -2,8 +2,9 @@ use dashmap::DashMap;
 use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
-        DidChangeTextDocumentParams, DidOpenTextDocumentParams, InitializeParams, InitializeResult,
-        ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        DidChangeTextDocumentParams, DidOpenTextDocumentParams, GotoDefinitionParams,
+        GotoDefinitionResponse, InitializeParams, InitializeResult, OneOf, ServerCapabilities,
+        TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
     Client, LanguageServer,
 };
@@ -41,6 +42,7 @@ impl LanguageServer for TableGenLanguageServer {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
+                definition_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
         })
@@ -66,5 +68,17 @@ impl LanguageServer for TableGenLanguageServer {
             std::mem::take(&mut params.content_changes[0].text),
         )
         .await;
+    }
+
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let uri = params.text_document_position_params.text_document.uri;
+        let position = params.text_document_position_params.position;
+
+        let Some(document) = self.documents.get(&uri) else { return Ok(None); };
+        let definition = document.get_definition(position);
+        Ok(definition.map(GotoDefinitionResponse::Scalar))
     }
 }
