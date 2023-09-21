@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use tablegen_analyzer::document::TableGenDocument;
 use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
@@ -8,8 +9,6 @@ use tower_lsp::{
     },
     Client, LanguageServer,
 };
-
-use crate::document::TableGenDocument;
 
 pub struct TableGenLanguageServer {
     client: Client,

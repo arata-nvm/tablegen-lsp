@@ -1,5 +1,5 @@
 [package]
-name = "tablegen-lsp"
+name = "tablegen-analyzer"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 dashmap = "5.5.3"
-tablegen-analyzer = { path = "../tablegen-analyzer" }
+ecow = "0.1.2"
+id-arena = "2.2.1"
+iset = "0.2.2"
+ropey = "1.6.0"
 tablegen-parser = { path = "../tablegen-parser" }
-tokio = { version = "1.32.0", features = ["full"] }
 tower-lsp = "0.20.0"

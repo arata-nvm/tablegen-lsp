@@ -619,7 +619,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tablegen-lsp"
+name = "tablegen-analyzer"
 version = "0.1.0"
 dependencies = [
  "dashmap",
@@ -627,6 +627,16 @@ dependencies = [
  "id-arena",
  "iset",
  "ropey",
+ "tablegen-parser",
+ "tower-lsp",
+]
+
+[[package]]
+name = "tablegen-lsp"
+version = "0.1.0"
+dependencies = [
+ "dashmap",
+ "tablegen-analyzer",
  "tablegen-parser",
  "tokio",
  "tower-lsp",
