@@ -7,7 +7,10 @@ use tablegen_parser::{
 };
 use tower_lsp::lsp_types::{Diagnostic, Position, Range, Url};
 
-use self::index::TableGenDocumentIndex;
+use self::{
+    compat::{position_to_loc, source_location_to_location, span_to_range},
+    index::TableGenDocumentIndex,
+};
 
 #[derive(Debug)]
 pub struct TableGenDocument {
@@ -41,22 +44,9 @@ impl TableGenDocument {
 
     fn add_syntax_errors(&mut self, errors: Vec<&SyntaxError>) {
         for error in errors {
-            let range = self.span_to_range(&error.span);
+            let range = span_to_range(&self.text, error.span.clone());
             let diagnostic = Diagnostic::new_simple(range, error.message.to_string());
             self.diagnostics.push(diagnostic);
         }
-    }
-
-    fn span_to_range(&self, span: &Span) -> Range {
-        let start = self.loc_to_position(span.start);
-        let end = self.loc_to_position(span.end);
-        Range::new(start, end)
-    }
-
-    fn loc_to_position(&self, loc: usize) -> Position {
-        let line = self.text.try_char_to_line(loc).unwrap_or_default();
-        let line_first = self.text.try_line_to_char(line).unwrap_or_default();
-        let character = loc - line_first;
-        Position::new(line as u32, character as u32)
     }
 }
