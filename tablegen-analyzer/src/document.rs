@@ -1,60 +1,65 @@
-pub mod compat;
 pub mod index;
 pub mod symbol;
 
 use ropey::Rope;
-use tablegen_parser::{error::SyntaxError, grammar};
-use tower_lsp::lsp_types::{Diagnostic, Location, Position, Url};
-
-use self::{
-    compat::{position_to_loc, source_location_to_location, span_to_range},
-    index::TableGenDocumentIndex,
+use tablegen_parser::{
+    error::{Position, SyntaxError},
+    grammar,
 };
+
+use self::{index::TableGenDocumentIndex, symbol::Location};
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct TableGenDocumentId(usize);
+
+impl TableGenDocumentId {
+    pub fn new(doc_id: usize) -> Self {
+        Self(doc_id)
+    }
+}
+
+impl From<TableGenDocumentId> for usize {
+    fn from(value: TableGenDocumentId) -> Self {
+        value.0
+    }
+}
 
 #[derive(Debug)]
 pub struct TableGenDocument {
-    pub uri: Url,
-    pub text: Rope,
-    pub diagnostics: Vec<Diagnostic>,
-    pub index: TableGenDocumentIndex,
+    doc_id: TableGenDocumentId,
+    text: Rope,
+    errors: Vec<SyntaxError>,
+    index: TableGenDocumentIndex,
 }
 
 impl TableGenDocument {
-    fn new(uri: Url, text: &str, index: TableGenDocumentIndex) -> Self {
+    pub fn parse(doc_id: TableGenDocumentId, text: String) -> Self {
+        let file = grammar::parse(&text);
+        let errors = file.errors().into_iter().cloned().collect();
+        let index = TableGenDocumentIndex::create_index(doc_id, &file);
+
         Self {
-            uri,
-            text: Rope::from_str(text),
-            diagnostics: Vec::new(),
+            doc_id,
+            text: Rope::from_str(&text),
+            errors,
             index,
         }
     }
 
-    pub fn parse(uri: Url, text: String) -> Self {
-        let file = grammar::parse(&text);
-        let index = TableGenDocumentIndex::create_index(uri.clone(), &file);
-        let mut document = Self::new(uri, &text, index);
-        document.add_syntax_errors(file.errors());
-        document
+    pub fn take_errors(&mut self) -> Vec<SyntaxError> {
+        std::mem::take(&mut self.errors)
     }
 
-    pub fn take_diagnostics(&mut self) -> Vec<Diagnostic> {
-        std::mem::take(&mut self.diagnostics)
+    pub fn pos_to_line(&self, pos: Position) -> ropey::Result<usize> {
+        self.text.try_char_to_line(pos)
     }
 
-    pub fn get_definition(&self, position: Position) -> Option<Location> {
-        let loc = position_to_loc(&self.text, position);
-        let Some(symbol) = self.index.get_symbol_at(loc) else { return None; };
-        Some(source_location_to_location(
-            &self.text,
-            symbol.define_loc.clone(),
-        ))
+    pub fn line_to_pos(&self, line: usize) -> ropey::Result<Position> {
+        self.text.try_line_to_char(line)
     }
 
-    fn add_syntax_errors(&mut self, errors: Vec<&SyntaxError>) {
-        for error in errors {
-            let range = span_to_range(&self.text, error.span.clone());
-            let diagnostic = Diagnostic::new_simple(range, error.message.to_string());
-            self.diagnostics.push(diagnostic);
-        }
+    pub fn get_definition(&self, pos: Position) -> Option<Location> {
+        let Some(symbol) = self.index.get_symbol_at(pos) else { return None; };
+        Some(symbol.define_loc())
     }
 }

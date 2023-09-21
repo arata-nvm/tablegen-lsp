@@ -628,7 +628,6 @@ dependencies = [
  "iset",
  "ropey",
  "tablegen-parser",
- "tower-lsp",
 ]
 
 [[package]]

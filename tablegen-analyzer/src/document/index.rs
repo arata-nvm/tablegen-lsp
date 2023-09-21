@@ -1,39 +1,45 @@
 use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
-use tablegen_parser::{ast, error::Span, node::SyntaxNode};
-use tower_lsp::lsp_types::Url;
+use tablegen_parser::{
+    ast,
+    error::{Position, Range},
+    node::SyntaxNode,
+};
 
-use super::symbol::{TableGenSymbol, TableGenSymbolId};
+use super::{
+    symbol::{TableGenSymbol, TableGenSymbolId},
+    TableGenDocumentId,
+};
 
 #[derive(Debug)]
 pub struct TableGenDocumentIndex {
-    uri: Url,
+    doc_id: TableGenDocumentId,
     symbols: Arena<TableGenSymbol>,
-    symbol_map: IntervalMap<usize, TableGenSymbolId>,
+    symbol_map: IntervalMap<Position, TableGenSymbolId>,
 }
 
 impl TableGenDocumentIndex {
-    pub fn get_symbol_at(&self, loc: usize) -> Option<&TableGenSymbol> {
+    pub fn get_symbol_at(&self, pos: Position) -> Option<&TableGenSymbol> {
         self.symbol_map
-            .values_overlap(loc)
+            .values_overlap(pos)
             .next()
             .and_then(|&id| self.symbols.get(id))
     }
 }
 
 impl TableGenDocumentIndex {
-    fn new(uri: Url) -> Self {
+    fn new(doc_id: TableGenDocumentId) -> Self {
         Self {
-            uri,
+            doc_id,
             symbols: Arena::new(),
             symbol_map: IntervalMap::new(),
         }
     }
 
     // TODO: wrap SyntaxNode
-    pub fn create_index(uri: Url, file: &SyntaxNode) -> Self {
-        let mut index = Self::new(uri);
+    pub fn create_index(doc_id: TableGenDocumentId, file: &SyntaxNode) -> Self {
+        let mut index = Self::new(doc_id);
         index.analyze_file(file);
         index
     }
@@ -54,12 +60,12 @@ impl TableGenDocumentIndex {
 
     fn analyze_class(&mut self, class: ast::Class) -> Option<()> {
         let name = class.name()?;
-        self.add_symbol(name.value()?, name.span());
+        self.add_symbol(name.value()?, name.range());
         None
     }
 
-    fn add_symbol(&mut self, name: &EcoString, span: Span) {
-        let symbol = TableGenSymbol::new(name.clone(), self.uri.clone(), span.clone());
+    fn add_symbol(&mut self, name: &EcoString, span: Range) {
+        let symbol = TableGenSymbol::new(name.clone(), self.doc_id, span.clone());
         let symbol_id = self.symbols.alloc(symbol);
         self.symbol_map.insert(span, symbol_id);
     }

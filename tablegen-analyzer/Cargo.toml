@@ -12,4 +12,3 @@ id-arena = "2.2.1"
 iset = "0.2.2"
 ropey = "1.6.0"
 tablegen-parser = { path = "../tablegen-parser" }
-tower-lsp = "0.20.0"

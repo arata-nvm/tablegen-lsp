@@ -1,5 +1,5 @@
-use dashmap::DashMap;
 use tablegen_analyzer::document::TableGenDocument;
+use tokio::sync::Mutex;
 use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
@@ -10,25 +10,39 @@ use tower_lsp::{
     Client, LanguageServer,
 };
 
+use crate::{
+    compat::{analyzer2lsp, lsp2analyzer},
+    document_map::TableGenDocumentMap,
+};
+
 pub struct TableGenLanguageServer {
     client: Client,
-    documents: DashMap<Url, TableGenDocument>,
+    document_map: Mutex<TableGenDocumentMap>,
 }
 
 impl TableGenLanguageServer {
     pub fn new(client: Client) -> Self {
         Self {
             client,
-            documents: DashMap::new(),
+            document_map: Mutex::new(TableGenDocumentMap::new()),
         }
     }
 
     async fn on_change(&self, uri: Url, version: i32, text: String) {
-        let mut document = TableGenDocument::parse(uri.clone(), text);
+        let mut document_map = self.document_map.lock().await;
+        let doc_id = document_map.assign_document_id(uri.clone());
+        let mut document = TableGenDocument::parse(doc_id, text);
+
+        let diags = document
+            .take_errors()
+            .into_iter()
+            .map(|error| analyzer2lsp::error(&document, error))
+            .collect();
         self.client
-            .publish_diagnostics(uri.clone(), document.take_diagnostics(), Some(version))
+            .publish_diagnostics(uri, diags, Some(version))
             .await;
-        self.documents.insert(uri, document);
+
+        document_map.update_document(doc_id, document);
     }
 }
 
@@ -76,8 +90,14 @@ impl LanguageServer for TableGenLanguageServer {
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
 
-        let Some(document) = self.documents.get(&uri) else { return Ok(None); };
-        let definition = document.get_definition(position);
-        Ok(definition.map(GotoDefinitionResponse::Scalar))
+        let document_map = self.document_map.lock().await;
+        let Some(doc_id) = document_map.to_document_id(&uri) else { return Ok(None); };
+        let Some(document) = document_map.find_document(&doc_id) else { return Ok(None); };
+
+        let position = lsp2analyzer::position(document, position);
+        let Some(definition )= document.get_definition(position) else { return Ok(None);};
+
+        let definition = analyzer2lsp::location(&*document_map, document, definition);
+        Ok(Some(GotoDefinitionResponse::Scalar(definition)))
     }
 }
