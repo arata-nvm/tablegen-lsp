@@ -1,6 +1,7 @@
 use ecow::EcoString;
 
 use crate::{
+    error::Span,
     kind::{SyntaxKind, TokenKind},
     node::SyntaxNode,
 };
@@ -13,8 +14,14 @@ pub trait AstNode<'a>: Sized {
 
 macro_rules! node {
     ($name:ident) => {
-        #[derive(Debug)]
+        #[derive(Debug, Clone, Copy)]
         pub struct $name<'a>(&'a SyntaxNode);
+
+        impl<'a> $name<'a> {
+            pub fn span(&self) -> Span {
+                self.0.span()
+            }
+        }
 
         impl<'a> AstNode<'a> for $name<'a> {
             #[inline]
