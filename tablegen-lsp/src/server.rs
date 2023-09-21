@@ -1,3 +1,4 @@
+use dashmap::DashMap;
 use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
@@ -11,18 +12,23 @@ use crate::document::TableGenDocument;
 
 pub struct TableGenLanguageServer {
     client: Client,
+    documents: DashMap<Url, TableGenDocument>,
 }
 
 impl TableGenLanguageServer {
     pub fn new(client: Client) -> Self {
-        Self { client }
+        Self {
+            client,
+            documents: DashMap::new(),
+        }
     }
 
     async fn on_change(&self, uri: Url, version: i32, text: String) {
         let mut document = TableGenDocument::parse(uri.clone(), text);
         self.client
-            .publish_diagnostics(uri, document.take_diagnostics(), Some(version))
+            .publish_diagnostics(uri.clone(), document.take_diagnostics(), Some(version))
             .await;
+        self.documents.insert(uri, document);
     }
 }
 

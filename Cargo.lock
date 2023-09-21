@@ -610,6 +610,7 @@ dependencies = [
 name = "tablegen-lsp"
 version = "0.1.0"
 dependencies = [
+ "dashmap",
  "ropey",
  "tablegen-parser",
  "tokio",
