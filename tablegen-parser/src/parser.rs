@@ -13,7 +13,7 @@ pub(crate) struct Parser<'a> {
     lexer: Lexer<'a>,
     current: TokenKind,
     current_start: usize,
-    prev_start: usize,
+    current_end: usize,
     nodes: Vec<SyntaxNode>,
 }
 
@@ -26,12 +26,13 @@ impl<'a> Parser<'a> {
     pub(crate) fn new(text: &'a str) -> Self {
         let mut lexer = Lexer::new(text);
         let current = lexer.next();
+        let current_end = lexer.cursor();
         Self {
             text,
             lexer,
             current,
             current_start: 0,
-            prev_start: 0,
+            current_end,
             nodes: vec![],
         }
     }
@@ -44,20 +45,12 @@ impl<'a> Parser<'a> {
         self.current
     }
 
-    pub(crate) fn current_start(&self) -> usize {
-        self.current_start
-    }
-
     pub(crate) fn current_span(&self) -> Span {
-        self.current_start..self.lexer.cursor()
+        self.current_start..self.current_end
     }
 
     pub(crate) fn current_text(&self) -> &'a str {
         &self.text[self.current_span()]
-    }
-
-    pub(crate) fn prev_span(&self) -> Span {
-        self.prev_start..self.current_start
     }
 
     pub(crate) fn marker(&self) -> Marker {
@@ -96,17 +89,18 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
         self.nodes.push(SyntaxNode::error(
-            self.prev_span(),
+            self.current_span(),
             message,
             self.current_text(),
         ))
     }
 
     pub(crate) fn error_and_eat(&mut self, message: impl Into<EcoString>) {
+        let span = self.current_span();
         let m = self.marker();
         let text = self.current_text();
         self.eat();
-        self.nodes[m.0] = SyntaxNode::error(self.prev_span(), message, text);
+        self.nodes[m.0] = SyntaxNode::error(span, message, text);
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {
@@ -157,9 +151,9 @@ impl<'a> Parser<'a> {
             self.nodes.push(SyntaxNode::token(self.current, text));
         }
 
-        self.prev_start = self.current_start;
         self.current_start = self.lexer.cursor();
         self.current = self.lexer.next();
+        self.current_end = self.lexer.cursor();
     }
 
     pub(crate) fn eat_if(&mut self, kind: TokenKind) -> bool {
