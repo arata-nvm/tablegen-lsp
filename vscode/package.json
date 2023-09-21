@@ -12,10 +12,20 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
+    "languages": [
       {
-        "command": "tablegen-lsp.helloWorld",
-        "title": "Hello World"
+        "id": "tablegen",
+        "extensions": [
+          ".td"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "tablegen",
+        "scopeName": "source.tablegen",
+        "path": "./language-grammar.json"
       }
     ]
   },
@@ -38,5 +48,8 @@
     "mocha": "^10.2.0",
     "typescript": "^5.1.6",
     "@vscode/test-electron": "^2.3.4"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0"
   }
 }
