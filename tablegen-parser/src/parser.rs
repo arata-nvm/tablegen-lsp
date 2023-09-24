@@ -8,6 +8,34 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub(crate) struct Marker(usize);
+
+#[derive(Debug)]
+pub struct CompletedMarker {
+    success: bool,
+}
+
+impl CompletedMarker {
+    pub(crate) fn success() -> Self {
+        Self { success: true }
+    }
+
+    pub(crate) fn fail() -> Self {
+        Self { success: false }
+    }
+
+    pub(crate) fn is_success(&self) -> bool {
+        self.success
+    }
+
+    pub(crate) fn or_error(self, parser: &mut Parser, message: impl Into<EcoString>) {
+        if !self.success {
+            parser.error(message);
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct Parser<'a> {
     text: &'a str,
     lexer: Lexer<'a>,
@@ -16,11 +44,6 @@ pub(crate) struct Parser<'a> {
     current_end: Position,
     nodes: Vec<SyntaxNode>,
 }
-
-#[derive(Debug)]
-pub(crate) struct Marker(usize);
-
-pub type Result = std::result::Result<(), ()>;
 
 impl<'a> Parser<'a> {
     pub(crate) fn new(text: &'a str) -> Self {
@@ -57,18 +80,28 @@ impl<'a> Parser<'a> {
         Marker(self.nodes.len())
     }
 
-    pub(crate) fn wrap(&mut self, from: Marker, kind: SyntaxKind) {
-        self.wrap_range(from, Marker(self.cursor_before_trivia()), kind);
+    pub(crate) fn abandon(&self, _m: Marker) -> CompletedMarker {
+        CompletedMarker::fail()
     }
 
-    pub(crate) fn wrap_all(&mut self, from: Marker, kind: SyntaxKind) {
-        self.wrap_range(from, Marker(self.nodes.len()), kind);
+    pub(crate) fn wrap(&mut self, from: Marker, kind: SyntaxKind) -> CompletedMarker {
+        self.wrap_range(from, Marker(self.cursor_before_trivia()), kind)
     }
 
-    fn wrap_range(&mut self, Marker(from): Marker, Marker(to): Marker, kind: SyntaxKind) {
+    pub(crate) fn wrap_all(&mut self, from: Marker, kind: SyntaxKind) -> CompletedMarker {
+        self.wrap_range(from, Marker(self.nodes.len()), kind)
+    }
+
+    fn wrap_range(
+        &mut self,
+        Marker(from): Marker,
+        Marker(to): Marker,
+        kind: SyntaxKind,
+    ) -> CompletedMarker {
         let to = to.max(from);
         let children = self.nodes.drain(from..to).collect();
         self.nodes.insert(from, SyntaxNode::node(kind, children));
+        CompletedMarker::success()
     }
 
     fn cursor_before_trivia(&self) -> usize {
@@ -107,23 +140,18 @@ impl<'a> Parser<'a> {
         assert!(self.eat_if(kind));
     }
 
-    pub(crate) fn expect(&mut self, kind: TokenKind) -> Result {
+    pub(crate) fn expect(&mut self, kind: TokenKind) {
         self.expect_with_msg(kind, eco_format!("expected {kind:?}"))
     }
 
-    pub(crate) fn expect_with_msg(
-        &mut self,
-        kind: TokenKind,
-        message: impl Into<EcoString>,
-    ) -> Result {
+    pub(crate) fn expect_with_msg(&mut self, kind: TokenKind, message: impl Into<EcoString>) {
         if self.eat_if(kind) {
-            return Ok(());
+            return;
         }
 
         if !self.after_error() {
             self.error(message);
         }
-        Err(())
     }
 
     pub(crate) fn after_error(&self) -> bool {
@@ -166,18 +194,5 @@ impl<'a> Parser<'a> {
         } else {
             false
         }
-    }
-}
-
-pub(crate) trait ResultExt {
-    fn or_error(self, parser: &mut Parser, message: impl Into<EcoString>) -> Self;
-}
-
-impl ResultExt for Result {
-    fn or_error(self, parser: &mut Parser, message: impl Into<EcoString>) -> Self {
-        if self.is_err() {
-            parser.error(message);
-        }
-        self
     }
 }
