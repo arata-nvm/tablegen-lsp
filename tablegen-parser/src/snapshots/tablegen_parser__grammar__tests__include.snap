@@ -5,8 +5,8 @@ expression: "parse(r#\"include \"foo.td\"\"#)"
 File
   StatementList
     Include
-      Include `include`
-      Whitespace ` `
+      Include@0..7 `include`
+      Whitespace@7..8 ` `
       String
-        StrVal `\"foo.td\"`
+        StrVal@8..16 `\"foo.td\"`
 

@@ -5,31 +5,31 @@ expression: "parse(\"class Foo<int A = Hoge.Fuga>;\")"
 File
   StatementList
     Class
-      Class `class`
-      Whitespace ` `
+      Class@0..5 `class`
+      Whitespace@5..6 ` `
       Identifier
-        Id `Foo`
+        Id@6..9 `Foo`
       TemplateArgList
-        Less `<`
+        Less@9..10 `<`
         TemplateArgDecl
           IntType
-            Int `int`
-          Whitespace ` `
+            Int@10..13 `int`
+          Whitespace@13..14 ` `
           Identifier
-            Id `A`
-          Whitespace ` `
-          Equal `=`
-          Whitespace ` `
+            Id@14..15 `A`
+          Whitespace@15..16 ` `
+          Equal@16..17 `=`
+          Whitespace@17..18 ` `
           Value
             Identifier
-              Id `Hoge`
+              Id@18..22 `Hoge`
             FieldSuffix
-              Dot `.`
+              Dot@22..23 `.`
               Identifier
-                Id `Fuga`
-        Greater `>`
+                Id@23..27 `Fuga`
+        Greater@27..28 `>`
       RecordBody
         ParentClassList
         Body
-          Semi `;`
+          Semi@28..29 `;`
 

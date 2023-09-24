@@ -5,19 +5,19 @@ expression: "parse(\"def Foo : Bar;\")"
 File
   StatementList
     Def
-      Def `def`
-      Whitespace ` `
+      Def@0..3 `def`
+      Whitespace@3..4 ` `
       Value
         Identifier
-          Id `Foo`
-      Whitespace ` `
+          Id@4..7 `Foo`
+      Whitespace@7..8 ` `
       RecordBody
         ParentClassList
-          Colon `:`
-          Whitespace ` `
+          Colon@8..9 `:`
+          Whitespace@9..10 ` `
           ClassRef
             Identifier
-              Id `Bar`
+              Id@10..13 `Bar`
         Body
-          Semi `;`
+          Semi@13..14 `;`
 

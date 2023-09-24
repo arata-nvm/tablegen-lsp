@@ -5,59 +5,59 @@ expression: "parse(\"class Foo<int A> {\n                int B;\n               
 File
   StatementList
     Class
-      Class `class`
-      Whitespace ` `
+      Class@0..5 `class`
+      Whitespace@5..6 ` `
       Identifier
-        Id `Foo`
+        Id@6..9 `Foo`
       TemplateArgList
-        Less `<`
+        Less@9..10 `<`
         TemplateArgDecl
           IntType
-            Int `int`
-          Whitespace ` `
+            Int@10..13 `int`
+          Whitespace@13..14 ` `
           Identifier
-            Id `A`
-        Greater `>`
-      Whitespace ` `
+            Id@14..15 `A`
+        Greater@15..16 `>`
+      Whitespace@16..17 ` `
       RecordBody
         ParentClassList
         Body
-          LBrace `{`
-          Whitespace `\n                `
+          LBrace@17..18 `{`
+          Whitespace@18..35 `\n                `
           FieldDef
             IntType
-              Int `int`
-            Whitespace ` `
+              Int@35..38 `int`
+            Whitespace@38..39 ` `
             Identifier
-              Id `B`
-            Semi `;`
-          Whitespace `\n                `
+              Id@39..40 `B`
+            Semi@40..41 `;`
+          Whitespace@41..58 `\n                `
           FieldDef
             IntType
-              Int `int`
-            Whitespace ` `
+              Int@58..61 `int`
+            Whitespace@61..62 ` `
             Identifier
-              Id `C`
-            Whitespace ` `
-            Equal `=`
-            Whitespace ` `
+              Id@62..63 `C`
+            Whitespace@63..64 ` `
+            Equal@64..65 `=`
+            Whitespace@65..66 ` `
             Value
               Identifier
-                Id `A`
-            Semi `;`
-          Whitespace `\n                `
+                Id@66..67 `A`
+            Semi@67..68 `;`
+          Whitespace@68..85 `\n                `
           FieldLet
-            Let `let`
-            Whitespace ` `
+            Let@85..88 `let`
+            Whitespace@88..89 ` `
             Identifier
-              Id `D`
-            Whitespace ` `
-            Equal `=`
-            Whitespace ` `
+              Id@89..90 `D`
+            Whitespace@90..91 ` `
+            Equal@91..92 `=`
+            Whitespace@92..93 ` `
             Value
               Identifier
-                Id `A`
-            Semi `;`
-          Whitespace `\n            `
-          RBrace `}`
+                Id@93..94 `A`
+            Semi@94..95 `;`
+          Whitespace@95..108 `\n            `
+          RBrace@108..109 `}`
 

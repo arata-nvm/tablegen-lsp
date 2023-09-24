@@ -121,7 +121,7 @@ fn dump(node: &SyntaxNode, depth: usize, f: &mut fmt::Formatter) -> fmt::Result 
 
     match &node.0 {
         SyntaxNodeInner::Token(kind, text, range) => {
-            writeln!(f, "{range:?} {kind:?} `{}`", text.escape_default())
+            writeln!(f, "{kind:?}@{range:?} `{}`", text.escape_default())
         }
         SyntaxNodeInner::Node(kind, children) => {
             writeln!(f, "{kind:?}")?;

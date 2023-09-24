@@ -5,78 +5,78 @@ expression: "parse(\"class Foo<bit A, int B, string C, dag D, bits<32> E, list<i
 File
   StatementList
     Class
-      Class `class`
-      Whitespace ` `
+      Class@0..5 `class`
+      Whitespace@5..6 ` `
       Identifier
-        Id `Foo`
+        Id@6..9 `Foo`
       TemplateArgList
-        Less `<`
+        Less@9..10 `<`
         TemplateArgDecl
           BitType
-            Bit `bit`
-          Whitespace ` `
+            Bit@10..13 `bit`
+          Whitespace@13..14 ` `
           Identifier
-            Id `A`
-        Comma `,`
-        Whitespace ` `
+            Id@14..15 `A`
+        Comma@15..16 `,`
+        Whitespace@16..17 ` `
         TemplateArgDecl
           IntType
-            Int `int`
-          Whitespace ` `
+            Int@17..20 `int`
+          Whitespace@20..21 ` `
           Identifier
-            Id `B`
-        Comma `,`
-        Whitespace ` `
+            Id@21..22 `B`
+        Comma@22..23 `,`
+        Whitespace@23..24 ` `
         TemplateArgDecl
           StringType
-            String `string`
-          Whitespace ` `
+            String@24..30 `string`
+          Whitespace@30..31 ` `
           Identifier
-            Id `C`
-        Comma `,`
-        Whitespace ` `
+            Id@31..32 `C`
+        Comma@32..33 `,`
+        Whitespace@33..34 ` `
         TemplateArgDecl
           DagType
-            Dag `dag`
-          Whitespace ` `
+            Dag@34..37 `dag`
+          Whitespace@37..38 ` `
           Identifier
-            Id `D`
-        Comma `,`
-        Whitespace ` `
+            Id@38..39 `D`
+        Comma@39..40 `,`
+        Whitespace@40..41 ` `
         TemplateArgDecl
           BitsType
-            Bits `bits`
-            Less `<`
+            Bits@41..45 `bits`
+            Less@45..46 `<`
             Integer
-              IntVal `32`
-            Greater `>`
-          Whitespace ` `
+              IntVal@46..48 `32`
+            Greater@48..49 `>`
+          Whitespace@49..50 ` `
           Identifier
-            Id `E`
-        Comma `,`
-        Whitespace ` `
+            Id@50..51 `E`
+        Comma@51..52 `,`
+        Whitespace@52..53 ` `
         TemplateArgDecl
           ListType
-            List `list`
-            Less `<`
+            List@53..57 `list`
+            Less@57..58 `<`
             IntType
-              Int `int`
-            Greater `>`
-          Whitespace ` `
+              Int@58..61 `int`
+            Greater@61..62 `>`
+          Whitespace@62..63 ` `
           Identifier
-            Id `F`
-        Comma `,`
-        Whitespace ` `
+            Id@63..64 `F`
+        Comma@64..65 `,`
+        Whitespace@65..66 ` `
         TemplateArgDecl
           ClassId
             Identifier
-              Id `Bar`
-          Whitespace ` `
+              Id@66..69 `Bar`
+          Whitespace@69..70 ` `
           Identifier
-            Id `G`
-        Greater `>`
+            Id@70..71 `G`
+        Greater@71..72 `>`
       RecordBody
         ParentClassList
         Body
-          Semi `;`
+          Semi@72..73 `;`
 

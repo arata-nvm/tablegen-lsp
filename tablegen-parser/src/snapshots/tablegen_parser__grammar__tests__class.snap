@@ -5,52 +5,52 @@ expression: "parse(\"class Foo<int A, int B = 1>: Bar<A, 2>;\")"
 File
   StatementList
     Class
-      Class `class`
-      Whitespace ` `
+      Class@0..5 `class`
+      Whitespace@5..6 ` `
       Identifier
-        Id `Foo`
+        Id@6..9 `Foo`
       TemplateArgList
-        Less `<`
+        Less@9..10 `<`
         TemplateArgDecl
           IntType
-            Int `int`
-          Whitespace ` `
+            Int@10..13 `int`
+          Whitespace@13..14 ` `
           Identifier
-            Id `A`
-        Comma `,`
-        Whitespace ` `
+            Id@14..15 `A`
+        Comma@15..16 `,`
+        Whitespace@16..17 ` `
         TemplateArgDecl
           IntType
-            Int `int`
-          Whitespace ` `
+            Int@17..20 `int`
+          Whitespace@20..21 ` `
           Identifier
-            Id `B`
-          Whitespace ` `
-          Equal `=`
-          Whitespace ` `
+            Id@21..22 `B`
+          Whitespace@22..23 ` `
+          Equal@23..24 `=`
+          Whitespace@24..25 ` `
           Value
             Integer
-              IntVal `1`
-        Greater `>`
+              IntVal@25..26 `1`
+        Greater@26..27 `>`
       RecordBody
         ParentClassList
-          Colon `:`
-          Whitespace ` `
+          Colon@27..28 `:`
+          Whitespace@28..29 ` `
           ClassRef
             Identifier
-              Id `Bar`
-            Less `<`
+              Id@29..32 `Bar`
+            Less@32..33 `<`
             ArgValueList
               PositionalArgValueList
                 Value
                   Identifier
-                    Id `A`
-                Comma `,`
-                Whitespace ` `
+                    Id@33..34 `A`
+                Comma@34..35 `,`
+                Whitespace@35..36 ` `
                 Value
                   Integer
-                    IntVal `2`
-            Greater `>`
+                    IntVal@36..37 `2`
+            Greater@37..38 `>`
         Body
-          Semi `;`
+          Semi@38..39 `;`
 
