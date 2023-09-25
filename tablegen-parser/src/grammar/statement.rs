@@ -1,4 +1,8 @@
-use crate::{kind::SyntaxKind, parser::Parser, T};
+use crate::{
+    kind::{SyntaxKind, TokenKind},
+    parser::Parser,
+    T,
+};
 
 use super::{delimited, r#type, value};
 
@@ -176,18 +180,22 @@ pub(super) fn body(p: &mut Parser) {
 
     p.expect_with_msg(T!['{'], "expected ';' or '{' to start body");
     while !p.at(T!['}']) && !p.eof() {
-        body_item(p);
+        if !body_item(p) {
+            break;
+        }
     }
     p.expect(T!['}']);
     p.wrap(m, SyntaxKind::Body);
 }
 
 // BodyItem ::= FieldDef | FieldLet | Defvar | Assert
-pub(super) fn body_item(p: &mut Parser) {
+pub(super) fn body_item(p: &mut Parser) -> bool {
     match p.current() {
         T![let] => field_let(p),
-        _ => field_def(p),
+        T![code] | TokenKind::Id => field_def(p),
+        _ => return false,
     }
+    true
 }
 
 // FieldDef ::= ( Type | CodeType ) Identifier ( "=" Value )? ";"
