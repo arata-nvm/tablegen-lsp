@@ -6,6 +6,17 @@ use crate::{
 
 use super::value;
 
+pub(super) const TYPE_FIRST_TOKENS: [TokenKind; 8] = [
+    T![bit],
+    T![int],
+    T![string],
+    T![dag],
+    T![bits],
+    T![list],
+    T![code],
+    TokenKind::Id,
+];
+
 // Type ::= BitType | IntType | StringType | DagType | BitsType | ListType | ClassId
 pub(super) fn r#type(p: &mut Parser) {
     match p.current() {

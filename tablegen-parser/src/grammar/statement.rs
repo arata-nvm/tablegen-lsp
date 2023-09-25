@@ -1,8 +1,4 @@
-use crate::{
-    kind::{SyntaxKind, TokenKind},
-    parser::Parser,
-    T,
-};
+use crate::{kind::SyntaxKind, parser::Parser, T};
 
 use super::{delimited, r#type, value};
 
@@ -190,12 +186,15 @@ pub(super) fn body(p: &mut Parser) {
 
 // BodyItem ::= FieldDef | FieldLet | Defvar | Assert
 pub(super) fn body_item(p: &mut Parser) -> bool {
-    match p.current() {
-        T![let] => field_let(p),
-        T![code] | TokenKind::Id => field_def(p),
-        _ => return false,
+    if p.at(T![let]) {
+        field_let(p);
+        true
+    } else if p.at_set(&r#type::TYPE_FIRST_TOKENS) {
+        field_def(p);
+        true
+    } else {
+        false
     }
-    true
 }
 
 // FieldDef ::= ( Type | CodeType ) Identifier ( "=" Value )? ";"

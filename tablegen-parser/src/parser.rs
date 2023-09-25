@@ -137,6 +137,10 @@ impl<'a> Parser<'a> {
         self.current == kind
     }
 
+    pub(crate) fn at_set(&self, set: &[TokenKind]) -> bool {
+        set.contains(&self.current)
+    }
+
     pub(crate) fn eof(&self) -> bool {
         self.at(TokenKind::Eof)
     }
@@ -160,7 +164,7 @@ impl<'a> Parser<'a> {
     pub(crate) fn error_and_recover(&mut self, message: impl Into<EcoString>) {
         self.error(message);
 
-        if !self.recover_tokens.contains(&self.current) {
+        if self.at_set(self.recover_tokens) {
             let m = self.marker();
             self.eat();
             self.wrap(m, SyntaxKind::Error);
