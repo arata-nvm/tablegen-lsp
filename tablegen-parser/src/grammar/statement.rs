@@ -58,11 +58,7 @@ pub(super) fn r#let(p: &mut Parser) {
     let m = p.marker();
     p.assert(T![let]);
     let_list(p);
-    if !p.eat_if(T![in]) {
-        p.error("expected 'in' at end of top-level 'let'");
-        p.abandon(m);
-        return;
-    }
+    p.expect_with_msg(T![in], "expected 'in' at end of top-level 'let'");
     if p.eat_if(T!['{']) {
         while !p.eof() && !p.at(T!['}']) {
             statement(p);
@@ -90,11 +86,7 @@ pub(super) fn let_list(p: &mut Parser) {
 pub(super) fn let_item(p: &mut Parser) {
     let m = p.marker();
     value::identifier(p).or_error(p, "expected identifier in let expression");
-    if !p.eat_if(T![=]) {
-        p.error("expected '=' in let expression");
-        p.abandon(m);
-        return;
-    }
+    p.expect_with_msg(T![=], "expected '=' in let expression");
     value::value(p);
     p.wrap(m, SyntaxKind::LetItem);
 }
