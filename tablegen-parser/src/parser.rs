@@ -26,6 +26,11 @@ impl Marker {
         self.bomb.defuse();
         CompletedMarker::success()
     }
+
+    pub fn abandon(mut self) -> CompletedMarker {
+        self.bomb.defuse();
+        CompletedMarker::fail()
+    }
 }
 
 #[derive(Debug)]
@@ -98,8 +103,8 @@ impl<'a> Parser<'a> {
         Marker::new(self.nodes.len())
     }
 
-    pub(crate) fn abandon(&self, _m: Marker) -> CompletedMarker {
-        CompletedMarker::fail()
+    pub(crate) fn abandon(&self, m: Marker) -> CompletedMarker {
+        m.abandon()
     }
 
     pub(crate) fn wrap(&mut self, from: Marker, kind: SyntaxKind) -> CompletedMarker {
@@ -143,11 +148,11 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn error_and_eat(&mut self, message: impl Into<EcoString>) {
-        let range = self.current_range();
+        self.error(message);
+
         let m = self.marker();
-        let text = self.current_text();
         self.eat();
-        self.nodes[m.pos] = SyntaxNode::error(range, message, text);
+        self.wrap(m, SyntaxKind::Error);
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {
