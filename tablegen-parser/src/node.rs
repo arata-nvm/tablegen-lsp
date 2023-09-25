@@ -98,7 +98,7 @@ impl SyntaxNode {
         self.children().filter_map(|node| node.cast())
     }
 
-    pub fn first_child_text<'a>(&'a self) -> Option<&'a EcoString> {
+    pub fn first_child_text(&self) -> Option<&EcoString> {
         self.children().next().map(|node| node.text())
     }
 

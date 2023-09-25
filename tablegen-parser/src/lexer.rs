@@ -122,7 +122,7 @@ impl<'a> Lexer<'a> {
         };
 
         let number = self.s.get(start..self.s.cursor());
-        if let Err(_) = i64::from_str_radix(number, base) {
+        if i64::from_str_radix(number, base).is_err() {
             match base {
                 2 => return self.error("Invalid number"),
                 10 => return self.error("Invalid binary number"),

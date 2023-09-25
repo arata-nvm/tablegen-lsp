@@ -92,12 +92,12 @@ impl LanguageServer for TableGenLanguageServer {
 
         let document_map = self.document_map.lock().await;
         let Some(doc_id) = document_map.to_document_id(&uri) else { return Ok(None); };
-        let Some(document) = document_map.find_document(&doc_id) else { return Ok(None); };
+        let Some(document) = document_map.find_document(doc_id) else { return Ok(None); };
 
         let position = lsp2analyzer::position(document, position);
         let Some(definition )= document.get_definition(position) else { return Ok(None);};
 
-        let definition = analyzer2lsp::location(&*document_map, document, definition);
+        let definition = analyzer2lsp::location(&document_map, document, definition);
         Ok(Some(GotoDefinitionResponse::Scalar(definition)))
     }
 }

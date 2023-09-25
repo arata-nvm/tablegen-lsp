@@ -24,7 +24,7 @@ pub mod analyzer2lsp {
         loc: Location,
     ) -> lsp_types::Location {
         let uri = doc_map.to_uri(loc.0).unwrap().clone();
-        let range = range(doc, loc.1.clone());
+        let range = range(doc, loc.1);
         lsp_types::Location::new(uri, range)
     }
 

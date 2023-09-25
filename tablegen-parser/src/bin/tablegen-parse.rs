@@ -19,7 +19,7 @@ fn main() {
 }
 
 fn token(text: &str) {
-    let mut lexer = Lexer::new(&text);
+    let mut lexer = Lexer::new(text);
     loop {
         let cursor = lexer.cursor();
         let token = lexer.next();
