@@ -1,5 +1,8 @@
 pub mod analyzer2lsp {
-    use tablegen_analyzer::document::{symbol::Location, TableGenDocument};
+    use tablegen_analyzer::{
+        analyzer::document_symbol,
+        document::{symbol::Location, TableGenDocument},
+    };
     use tablegen_parser::error;
     use tower_lsp::lsp_types::{self, Diagnostic};
 
@@ -32,6 +35,41 @@ pub mod analyzer2lsp {
         let range = range(doc, error.range);
         let message = error.message.to_string();
         Diagnostic::new_simple(range, message)
+    }
+
+    #[allow(deprecated)]
+    pub fn document_symbol(
+        doc: &TableGenDocument,
+        symbol: document_symbol::Symbol,
+    ) -> lsp_types::DocumentSymbol {
+        let children: Vec<lsp_types::DocumentSymbol> = symbol
+            .children
+            .into_iter()
+            .map(|symbol| document_symbol(doc, symbol))
+            .collect();
+
+        lsp_types::DocumentSymbol {
+            name: symbol.name.to_string(),
+            detail: None,
+            kind: symbol_kind(symbol.kind),
+            tags: None,
+            deprecated: None,
+            range: range(doc, symbol.define_loc.1.clone()),
+            selection_range: range(doc, symbol.define_loc.1),
+            children: if children.len() > 0 {
+                Some(children)
+            } else {
+                None
+            },
+        }
+    }
+
+    pub fn symbol_kind(kind: document_symbol::SymbolKind) -> lsp_types::SymbolKind {
+        match kind {
+            document_symbol::SymbolKind::Class => lsp_types::SymbolKind::CLASS,
+            document_symbol::SymbolKind::TemplateArg => lsp_types::SymbolKind::PROPERTY,
+            document_symbol::SymbolKind::Field => lsp_types::SymbolKind::FIELD,
+        }
     }
 }
 

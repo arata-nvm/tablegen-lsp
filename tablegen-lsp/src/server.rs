@@ -1,11 +1,12 @@
-use tablegen_analyzer::document::TableGenDocument;
+use tablegen_analyzer::{analyzer, document::TableGenDocument};
 use tokio::sync::Mutex;
 use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
-        DidChangeTextDocumentParams, DidOpenTextDocumentParams, GotoDefinitionParams,
-        GotoDefinitionResponse, InitializeParams, InitializeResult, OneOf, ServerCapabilities,
-        TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
+        DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, InitializeParams,
+        InitializeResult, OneOf, ServerCapabilities, TextDocumentSyncCapability,
+        TextDocumentSyncKind, Url,
     },
     Client, LanguageServer,
 };
@@ -56,6 +57,7 @@ impl LanguageServer for TableGenLanguageServer {
                     TextDocumentSyncKind::FULL,
                 )),
                 definition_provider: Some(OneOf::Left(true)),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
         })
@@ -99,5 +101,23 @@ impl LanguageServer for TableGenLanguageServer {
 
         let definition = analyzer2lsp::location(&document_map, document, definition);
         Ok(Some(GotoDefinitionResponse::Scalar(definition)))
+    }
+
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let uri = params.text_document.uri;
+
+        let document_map = self.document_map.lock().await;
+        let Some(doc_id) = document_map.to_document_id(&uri) else { return Ok(None); };
+        let Some(document) = document_map.find_document(doc_id) else { return Ok(None); };
+
+        let Some(symbols) = analyzer::document_symbol::document_symbol(document) else { return Ok(None); };
+        let lsp_symbols = symbols
+            .into_iter()
+            .map(|symbol| analyzer2lsp::document_symbol(&document, symbol))
+            .collect();
+        Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
     }
 }

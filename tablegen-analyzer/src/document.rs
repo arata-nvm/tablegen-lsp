@@ -5,6 +5,7 @@ use ropey::Rope;
 use tablegen_parser::{
     error::{Position, SyntaxError},
     grammar,
+    node::SyntaxNode,
 };
 
 use self::{index::TableGenDocumentIndex, symbol::Location};
@@ -28,22 +29,32 @@ impl From<TableGenDocumentId> for usize {
 pub struct TableGenDocument {
     doc_id: TableGenDocumentId,
     text: Rope,
+    root: SyntaxNode,
     errors: Vec<SyntaxError>,
     index: TableGenDocumentIndex,
 }
 
 impl TableGenDocument {
     pub fn parse(doc_id: TableGenDocumentId, text: String) -> Self {
-        let file = grammar::parse(&text);
-        let errors = file.errors().into_iter().cloned().collect();
-        let index = TableGenDocumentIndex::create_index(doc_id, &file);
+        let root = grammar::parse(&text);
+        let errors = root.errors().into_iter().cloned().collect();
+        let index = TableGenDocumentIndex::create_index(doc_id, &root);
 
         Self {
             doc_id,
             text: Rope::from_str(&text),
+            root,
             errors,
             index,
         }
+    }
+
+    pub fn id(&self) -> TableGenDocumentId {
+        self.doc_id
+    }
+
+    pub fn root(&self) -> &SyntaxNode {
+        &self.root
     }
 
     pub fn take_errors(&mut self) -> Vec<SyntaxError> {
