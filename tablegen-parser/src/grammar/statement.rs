@@ -56,7 +56,7 @@ pub(super) fn r#let(p: &mut Parser) {
     let_list(p);
     p.expect_with_msg(T![in], "expected 'in' at end of top-level 'let'");
     if p.eat_if(T!['{']) {
-        while !p.eof() && !p.at(T!['}']) {
+        while !p.at(T!['}']) && !p.eof() {
             statement(p);
         }
         p.expect_with_msg(T!['}'], "expected '}' at end of top-level let command");
@@ -175,7 +175,7 @@ pub(super) fn body(p: &mut Parser) {
     }
 
     p.expect_with_msg(T!['{'], "expected ';' or '{' to start body");
-    while !p.eof() && !p.at(T!['}']) {
+    while !p.at(T!['}']) && !p.eof() {
         body_item(p);
     }
     p.expect(T!['}']);
