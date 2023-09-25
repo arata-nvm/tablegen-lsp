@@ -48,24 +48,28 @@ mod tests {
     use super::parse;
 
     #[test]
+    fn statement() {
+        insta::assert_display_snapshot!(parse("a"));
+    }
+
+    #[test]
     fn include() {
-        insta::assert_display_snapshot!(parse(r#"include "foo.td""#))
+        insta::assert_display_snapshot!(parse(r#"include "foo.td""#));
+
+        insta::assert_display_snapshot!(parse("include"));
     }
 
     #[test]
     fn class() {
         insta::assert_display_snapshot!(parse("class Foo<int A, int B = 1>: Bar<A, 2>;"));
-    }
-
-    #[test]
-    fn class_with_body() {
         insta::assert_display_snapshot!(parse(
             "class Foo<int A> {
                 int B;
                 int C = A;
                 let D = A;
             }"
-        ))
+        ));
+        insta::assert_display_snapshot!(parse("class"));
     }
 
     #[test]
@@ -75,14 +79,51 @@ mod tests {
 
     #[test]
     fn r#let() {
-        insta::assert_display_snapshot!(parse("let A = 1 in { class Foo; }"))
+        insta::assert_display_snapshot!(parse("let A = 1 in { class Foo; }"));
+
+        insta::assert_display_snapshot!(parse("let A = 1"));
+        insta::assert_display_snapshot!(parse("let A = 1 {"));
+    }
+
+    #[test]
+    fn let_item() {
+        insta::assert_display_snapshot!(parse("let"));
+        insta::assert_display_snapshot!(parse("let A"));
+    }
+
+    #[test]
+    fn template_arg_decl() {
+        insta::assert_display_snapshot!(parse("class Foo<int"));
+    }
+
+    #[test]
+    fn class_ref() {
+        insta::assert_display_snapshot!(parse("class Foo : Bar<"));
     }
 
     #[test]
     fn r#type() {
         insta::assert_display_snapshot!(parse(
             "class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;"
-        ))
+        ));
+    }
+
+    #[test]
+    fn body() {
+        insta::assert_display_snapshot!(parse("class Foo"));
+    }
+
+    #[test]
+    fn field_def() {
+        insta::assert_display_snapshot!(parse("class Foo { int"));
+        insta::assert_display_snapshot!(parse("class Foo { int A"));
+    }
+
+    #[test]
+    fn field_let() {
+        insta::assert_display_snapshot!(parse("class Foo { let"));
+        insta::assert_display_snapshot!(parse("class Foo { let A"));
+        insta::assert_display_snapshot!(parse("class Foo { let A = 1"));
     }
 
     #[test]
@@ -96,6 +137,6 @@ mod tests {
             "class Foo<int A = 1, string B = \"hoge\", bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2)> {
                 code C = [{ true }];
             }"
-        ))
+        ));
     }
 }

@@ -1,0 +1,14 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"class\")"
+---
+File
+  StatementList
+    Class
+      Class@0..5 `class`
+      Error(5:5:expected class name after 'class' keyword, )
+      RecordBody
+        ParentClassList
+        Body
+          Error(5:5:expected ';' or '{' to start body, )
+

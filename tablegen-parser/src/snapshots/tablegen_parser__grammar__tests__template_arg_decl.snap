@@ -1,0 +1,23 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"class Foo<int\")"
+---
+File
+  StatementList
+    Class
+      Class@0..5 `class`
+      Whitespace@5..6 ` `
+      Identifier
+        Id@6..9 `Foo`
+      TemplateArgList
+        Less@9..10 `<`
+        TemplateArgDecl
+          IntType
+            Int@10..13 `int`
+          Error(13:13:expected identifier in declaration, )
+        Error(13:13:expected Greater, )
+      RecordBody
+        ParentClassList
+        Body
+          Error(13:13:expected ';' or '{' to start body, )
+

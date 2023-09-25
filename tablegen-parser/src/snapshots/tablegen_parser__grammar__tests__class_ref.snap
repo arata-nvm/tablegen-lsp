@@ -1,0 +1,26 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"class Foo : Bar<\")"
+---
+File
+  StatementList
+    Class
+      Class@0..5 `class`
+      Whitespace@5..6 ` `
+      Identifier
+        Id@6..9 `Foo`
+      Whitespace@9..10 ` `
+      RecordBody
+        ParentClassList
+          Colon@10..11 `:`
+          Whitespace@11..12 ` `
+          ClassRef
+            Identifier
+              Id@12..15 `Bar`
+            Less@15..16 `<`
+            ArgValueList
+              PositionalArgValueList
+            Error(16:16:expected '>' in template value list, )
+        Body
+          Error(16:16:expected ';' or '{' to start body, )
+

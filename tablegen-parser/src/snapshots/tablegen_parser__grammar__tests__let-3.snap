@@ -1,0 +1,24 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"let A = 1 {\")"
+---
+File
+  StatementList
+    Let
+      Let@0..3 `let`
+      Whitespace@3..4 ` `
+      LetList
+        LetItem
+          Identifier
+            Id@4..5 `A`
+          Whitespace@5..6 ` `
+          Equal@6..7 `=`
+          Whitespace@7..8 ` `
+          Value
+            Integer
+              IntVal@8..9 `1`
+      Whitespace@9..10 ` `
+      Error(10:11:expected 'in' at end of top-level 'let', {)
+      LBrace@10..11 `{`
+      Error(11:11:expected '}' at end of top-level let command, )
+
