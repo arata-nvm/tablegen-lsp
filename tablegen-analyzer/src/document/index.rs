@@ -2,7 +2,7 @@ use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::{
-    ast,
+    ast::{self, TemplateArgDecl},
     error::{Position, Range},
     node::SyntaxNode,
 };
@@ -61,6 +61,18 @@ impl TableGenDocumentIndex {
     fn analyze_class(&mut self, class: ast::Class) -> Option<()> {
         let name = class.name()?;
         self.add_symbol(name.value()?, name.range(), TableGenSymbolKind::Class);
+
+        let template_arg_list = class.template_arg_list()?;
+        for arg in template_arg_list.args() {
+            self.analyze_template_arg(arg);
+        }
+
+        None
+    }
+
+    fn analyze_template_arg(&mut self, arg: TemplateArgDecl) -> Option<()> {
+        let name = arg.name()?;
+        self.add_symbol(name.value()?, name.range(), TableGenSymbolKind::TemplateArg);
         None
     }
 

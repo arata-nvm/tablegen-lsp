@@ -18,6 +18,7 @@ pub struct TableGenSymbol {
 #[derive(Debug)]
 pub enum TableGenSymbolKind {
     Class,
+    TemplateArg,
 }
 
 impl TableGenSymbol {
