@@ -9,7 +9,9 @@ use super::delimited;
 // Value ::= SimpleValue ValueSuffix* | Value "#" Value?
 pub(super) fn value(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    simple_value(p);
+    if !simple_value(p).is_success() {
+        return p.abandon(m);
+    }
 
     loop {
         // ValueSuffix ::= RangeSuffix | SliceSuffix | FieldSuffix
@@ -31,7 +33,7 @@ pub(super) fn field_suffix(p: &mut Parser) -> CompletedMarker {
 }
 
 // SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator
-pub(super) fn simple_value(p: &mut Parser) {
+pub(super) fn simple_value(p: &mut Parser) -> CompletedMarker {
     match p.current() {
         TokenKind::IntVal => integer(p),
         TokenKind::StrVal => string(p),
@@ -46,47 +48,59 @@ pub(super) fn simple_value(p: &mut Parser) {
         kind if kind.is_cond_operator() => cond_operator(p),
         _ => {
             p.error_and_eat("unknown token when parsing a value");
-            return;
+            CompletedMarker::fail()
         }
-    };
+    }
 }
 
 // Integer ::= INT
 pub(super) fn integer(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    p.expect(TokenKind::IntVal);
-    p.wrap(m, SyntaxKind::Integer)
+    if p.eat_if(TokenKind::IntVal) {
+        p.wrap(m, SyntaxKind::Integer)
+    } else {
+        p.abandon(m)
+    }
 }
 
 // String ::= STRING
 pub(super) fn string(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    p.expect(TokenKind::StrVal);
-    p.wrap(m, SyntaxKind::String)
+    if p.eat_if(TokenKind::StrVal) {
+        p.wrap(m, SyntaxKind::String)
+    } else {
+        p.abandon(m)
+    }
 }
 
 // Code ::= CODE
 pub(super) fn code(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    p.expect(TokenKind::CodeFragment);
-    p.wrap(m, SyntaxKind::Code)
+    if p.eat_if(TokenKind::CodeFragment) {
+        p.wrap(m, SyntaxKind::Code)
+    } else {
+        p.abandon(m)
+    }
 }
 
 // Boolean ::= "true" | "false"
 pub(super) fn boolean(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    if !(p.eat_if(T![true]) || p.eat_if(T![false])) {
-        p.error("expected true or false");
-        return p.abandon(m);
+    if p.eat_if(T![true]) || p.eat_if(T![false]) {
+        p.wrap(m, SyntaxKind::Boolean)
+    } else {
+        p.abandon(m)
     }
-    p.wrap(m, SyntaxKind::Boolean)
 }
 
 // Uninitialized ::= "?"
 pub(super) fn uninitialized(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    p.expect(T![?]);
-    p.wrap(m, SyntaxKind::Uninitialized)
+    if p.eat_if(T![?]) {
+        p.wrap(m, SyntaxKind::Uninitialized)
+    } else {
+        p.abandon(m)
+    }
 }
 
 // Bits ::= "{" ValueList "}"
@@ -106,7 +120,9 @@ pub(super) fn list(p: &mut Parser) -> CompletedMarker {
 // ValueList ::= Value ( "," Value )*
 pub(super) fn value_list(p: &mut Parser, bra: TokenKind, ket: TokenKind) -> CompletedMarker {
     let m = p.marker();
-    delimited(p, bra, ket, T![,], value);
+    delimited(p, bra, ket, T![,], |p| {
+        value(p);
+    });
     p.wrap(m, SyntaxKind::ValueList)
 }
 
@@ -155,15 +171,21 @@ pub(super) fn dagarg(p: &mut Parser) -> CompletedMarker {
 // VarName ::= VARNAME
 pub(super) fn var_name(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    p.expect(TokenKind::VarName);
-    p.wrap(m, SyntaxKind::VarName)
+    if p.eat_if(TokenKind::VarName) {
+        p.wrap(m, SyntaxKind::VarName)
+    } else {
+        p.abandon(m)
+    }
 }
 
 // Identifier ::= ID
 pub(super) fn identifier(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    p.expect(TokenKind::Id);
-    p.wrap(m, SyntaxKind::Identifier)
+    if p.eat_if(TokenKind::Id) {
+        p.wrap(m, SyntaxKind::Identifier)
+    } else {
+        p.abandon(m)
+    }
 }
 
 // BangOperator ::= BANGOP "(" ValueList ")"
@@ -174,7 +196,9 @@ pub(super) fn bang_operator(p: &mut Parser) -> CompletedMarker {
         return p.abandon(m);
     }
     p.eat(); // eat bang operator
-    delimited(p, T!['('], T![')'], T![,], value);
+    delimited(p, T!['('], T![')'], T![,], |p| {
+        value(p);
+    });
     p.wrap(m, SyntaxKind::BangOperator)
 }
 
@@ -182,7 +206,9 @@ pub(super) fn bang_operator(p: &mut Parser) -> CompletedMarker {
 pub(super) fn cond_operator(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
     p.expect(T![!cond]);
-    delimited(p, T!['('], T![')'], T![,], |p| cond_clause(p));
+    delimited(p, T!['('], T![')'], T![,], |p| {
+        cond_clause(p);
+    });
     p.wrap(m, SyntaxKind::CondOperator)
 }
 

@@ -5,7 +5,7 @@ pub mod value;
 use crate::{
     kind::{SyntaxKind, TokenKind},
     node::SyntaxNode,
-    parser::{CompletedMarker, Parser},
+    parser::Parser,
 };
 
 pub fn parse(text: &str) -> SyntaxNode {
@@ -18,7 +18,8 @@ pub fn parse(text: &str) -> SyntaxNode {
 fn file(p: &mut Parser) {
     let m = p.marker();
     p.eat_trivia();
-    if !statement::statement_list(p).is_success() || !p.eof() {
+    statement::statement_list(p);
+    if !p.eof() {
         p.error("unexpected input at top level");
     }
     p.wrap_all(m, SyntaxKind::File);
@@ -26,7 +27,7 @@ fn file(p: &mut Parser) {
 
 fn delimited<F>(p: &mut Parser, bra: TokenKind, ket: TokenKind, delim: TokenKind, mut parser: F)
 where
-    F: FnMut(&mut Parser<'_>) -> CompletedMarker,
+    F: FnMut(&mut Parser<'_>),
 {
     p.expect(bra);
     while !p.at(ket) && !p.eof() {
