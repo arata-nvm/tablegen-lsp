@@ -17,7 +17,7 @@ pub(super) fn r#type(p: &mut Parser) {
         T![list] => list_type(p),
         TokenKind::Id => class_id(p),
         _ => {
-            p.error_and_eat("unknown token when expecting a type");
+            p.error_and_recover("unknown token when expecting a type");
             return;
         }
     };

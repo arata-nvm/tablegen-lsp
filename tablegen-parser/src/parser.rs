@@ -66,10 +66,11 @@ pub(crate) struct Parser<'a> {
     current_start: Position,
     current_end: Position,
     nodes: Vec<SyntaxNode>,
+    recover_tokens: &'a [TokenKind],
 }
 
 impl<'a> Parser<'a> {
-    pub(crate) fn new(text: &'a str) -> Self {
+    pub(crate) fn new(text: &'a str, recover_tokens: &'a [TokenKind]) -> Self {
         let mut lexer = Lexer::new(text);
         let current = lexer.next();
         let current_end = lexer.cursor();
@@ -80,6 +81,7 @@ impl<'a> Parser<'a> {
             current_start: 0,
             current_end,
             nodes: vec![],
+            recover_tokens,
         }
     }
 
@@ -153,6 +155,16 @@ impl<'a> Parser<'a> {
         let m = self.marker();
         self.eat();
         self.wrap(m, SyntaxKind::Error);
+    }
+
+    pub(crate) fn error_and_recover(&mut self, message: impl Into<EcoString>) {
+        self.error(message);
+
+        if !self.recover_tokens.contains(&self.current) {
+            let m = self.marker();
+            self.eat();
+            self.wrap(m, SyntaxKind::Error);
+        }
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {

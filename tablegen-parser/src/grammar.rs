@@ -6,10 +6,13 @@ use crate::{
     kind::{SyntaxKind, TokenKind},
     node::SyntaxNode,
     parser::Parser,
+    T,
 };
 
+const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
+
 pub fn parse(text: &str) -> SyntaxNode {
-    let mut parser = Parser::new(text);
+    let mut parser = Parser::new(text, &RECOVER_TOKENS);
     file(&mut parser);
     parser.finish().into_iter().next().unwrap()
 }

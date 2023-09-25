@@ -47,7 +47,7 @@ pub(super) fn simple_value(p: &mut Parser) -> CompletedMarker {
         kind if kind.is_bang_operator() => bang_operator(p),
         kind if kind.is_cond_operator() => cond_operator(p),
         _ => {
-            p.error_and_eat("unknown token when parsing a value");
+            p.error_and_recover("unknown token when parsing a value");
             CompletedMarker::fail()
         }
     }
@@ -192,7 +192,7 @@ pub(super) fn identifier(p: &mut Parser) -> CompletedMarker {
 pub(super) fn bang_operator(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
     if !p.current().is_bang_operator() {
-        p.error_and_eat("expected bang operator");
+        p.error_and_recover("expected bang operator");
         return p.abandon(m);
     }
     p.eat(); // eat bang operator
