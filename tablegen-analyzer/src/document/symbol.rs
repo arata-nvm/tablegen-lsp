@@ -11,12 +11,22 @@ pub type TableGenSymbolId = Id<TableGenSymbol>;
 #[derive(Debug)]
 pub struct TableGenSymbol {
     name: EcoString,
+    kind: TableGenSymbolKind,
     define_loc: Location,
 }
 
+#[derive(Debug)]
+pub enum TableGenSymbolKind {
+    Class,
+}
+
 impl TableGenSymbol {
-    pub fn new(name: EcoString, define_loc: Location) -> Self {
-        Self { name, define_loc }
+    pub fn new(name: EcoString, kind: TableGenSymbolKind, define_loc: Location) -> Self {
+        Self {
+            name,
+            kind,
+            define_loc,
+        }
     }
 
     pub fn define_loc(&self) -> Location {

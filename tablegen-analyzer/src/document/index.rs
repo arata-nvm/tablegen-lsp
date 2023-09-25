@@ -8,7 +8,7 @@ use tablegen_parser::{
 };
 
 use super::{
-    symbol::{TableGenSymbol, TableGenSymbolId},
+    symbol::{TableGenSymbol, TableGenSymbolId, TableGenSymbolKind},
     TableGenDocumentId,
 };
 
@@ -60,13 +60,13 @@ impl TableGenDocumentIndex {
 
     fn analyze_class(&mut self, class: ast::Class) -> Option<()> {
         let name = class.name()?;
-        self.add_symbol(name.value()?, name.range());
+        self.add_symbol(name.value()?, name.range(), TableGenSymbolKind::Class);
         None
     }
 
-    fn add_symbol(&mut self, name: &EcoString, span: Range) {
+    fn add_symbol(&mut self, name: &EcoString, span: Range, kind: TableGenSymbolKind) {
         let define_loc = (self.doc_id, span.clone());
-        let symbol = TableGenSymbol::new(name.clone(), define_loc);
+        let symbol = TableGenSymbol::new(name.clone(), kind, define_loc);
         let symbol_id = self.symbols.alloc(symbol);
         self.symbol_map.insert(span, symbol_id);
     }
