@@ -2,7 +2,7 @@ use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::{
-    ast::{self, TemplateArgDecl},
+    ast::{self, Body, FieldDef, TemplateArgDecl},
     error::{Position, Range},
     node::SyntaxNode,
 };
@@ -67,6 +67,10 @@ impl TableGenDocumentIndex {
             self.analyze_template_arg(arg);
         }
 
+        let record_body = class.record_body()?;
+        let body = record_body.body()?;
+        self.analyze_body(body);
+
         None
     }
 
@@ -76,10 +80,27 @@ impl TableGenDocumentIndex {
         None
     }
 
-    fn add_symbol(&mut self, name: &EcoString, span: Range, kind: TableGenSymbolKind) {
-        let define_loc = (self.doc_id, span.clone());
+    fn analyze_body(&mut self, body: Body) {
+        for item in body.items() {
+            match item {
+                ast::BodyItem::FieldDef(field_def) => {
+                    self.analyze_field_def(field_def);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn analyze_field_def(&mut self, field_def: FieldDef) -> Option<()> {
+        let name = field_def.name()?;
+        self.add_symbol(name.value()?, name.range(), TableGenSymbolKind::Field);
+        None
+    }
+
+    fn add_symbol(&mut self, name: &EcoString, range: Range, kind: TableGenSymbolKind) {
+        let define_loc = (self.doc_id, range.clone());
         let symbol = TableGenSymbol::new(name.clone(), kind, define_loc);
         let symbol_id = self.symbols.alloc(symbol);
-        self.symbol_map.insert(span, symbol_id);
+        self.symbol_map.insert(range, symbol_id);
     }
 }

@@ -19,6 +19,7 @@ pub struct TableGenSymbol {
 pub enum TableGenSymbolKind {
     Class,
     TemplateArg,
+    Field,
 }
 
 impl TableGenSymbol {
