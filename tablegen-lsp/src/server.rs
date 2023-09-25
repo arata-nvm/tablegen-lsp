@@ -45,6 +45,17 @@ impl TableGenLanguageServer {
 
         document_map.update_document(doc_id, document);
     }
+
+    async fn with_document<T>(
+        &self,
+        uri: Url,
+        f: impl FnOnce(&TableGenDocumentMap, &TableGenDocument) -> Option<T>,
+    ) -> Option<T> {
+        let document_map = self.document_map.lock().await;
+        let Some(doc_id) = document_map.to_document_id(&uri) else { return None; };
+        let Some(document) = document_map.find_document(doc_id) else { return None; };
+        f(&document_map, document)
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -90,17 +101,17 @@ impl LanguageServer for TableGenLanguageServer {
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let uri = params.text_document_position_params.text_document.uri;
-        let position = params.text_document_position_params.position;
+        let definition = self
+            .with_document(uri, |doc_map, doc| {
+                let lsp_position = params.text_document_position_params.position;
+                let position = lsp2analyzer::position(doc, lsp_position);
+                let definition = doc.get_definition(position)?;
+                let lsp_definition = analyzer2lsp::location(doc_map, doc, definition);
+                Some(GotoDefinitionResponse::Scalar(lsp_definition))
+            })
+            .await;
 
-        let document_map = self.document_map.lock().await;
-        let Some(doc_id) = document_map.to_document_id(&uri) else { return Ok(None); };
-        let Some(document) = document_map.find_document(doc_id) else { return Ok(None); };
-
-        let position = lsp2analyzer::position(document, position);
-        let Some(definition )= document.get_definition(position) else { return Ok(None);};
-
-        let definition = analyzer2lsp::location(&document_map, document, definition);
-        Ok(Some(GotoDefinitionResponse::Scalar(definition)))
+        Ok(definition)
     }
 
     async fn document_symbol(
@@ -108,16 +119,17 @@ impl LanguageServer for TableGenLanguageServer {
         params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
         let uri = params.text_document.uri;
+        let symbols = self
+            .with_document(uri, |_, doc| {
+                let symbols = analyzer::document_symbol::document_symbol(doc)?;
+                let lsp_symbols = symbols
+                    .into_iter()
+                    .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
+                    .collect();
+                Some(DocumentSymbolResponse::Nested(lsp_symbols))
+            })
+            .await;
 
-        let document_map = self.document_map.lock().await;
-        let Some(doc_id) = document_map.to_document_id(&uri) else { return Ok(None); };
-        let Some(document) = document_map.find_document(doc_id) else { return Ok(None); };
-
-        let Some(symbols) = analyzer::document_symbol::document_symbol(document) else { return Ok(None); };
-        let lsp_symbols = symbols
-            .into_iter()
-            .map(|symbol| analyzer2lsp::document_symbol(&document, symbol))
-            .collect();
-        Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
+        Ok(symbols)
     }
 }
