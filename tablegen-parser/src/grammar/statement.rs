@@ -1,8 +1,4 @@
-use crate::{
-    kind::{SyntaxKind, TokenKind},
-    parser::Parser,
-    T,
-};
+use crate::{kind::SyntaxKind, parser::Parser, T};
 
 use super::{delimited, r#type, value};
 
@@ -131,7 +127,7 @@ pub(super) fn parent_class_list(p: &mut Parser) {
         return;
     }
 
-    while !p.eof() && p.at(TokenKind::Id) {
+    while !p.eof() {
         class_ref(p);
         if !p.eat_if(T![,]) {
             break;
@@ -161,7 +157,7 @@ pub(super) fn arg_value_list(p: &mut Parser) {
 // PositionalArgValueList ::= ( Value ( "," Value )* ) ?
 pub(super) fn positional_arg_value_list(p: &mut Parser) {
     let m = p.marker();
-    while !p.eof() && !p.at(T![>]) {
+    while !p.eof() {
         value::value(p);
         if !p.eat_if(T![,]) {
             break;
