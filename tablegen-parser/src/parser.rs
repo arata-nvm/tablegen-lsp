@@ -91,11 +91,11 @@ impl<'a> Parser<'a> {
         self.current
     }
 
-    pub(crate) fn current_range(&self) -> Range {
+    fn current_range(&self) -> Range {
         self.current_start..self.current_end
     }
 
-    pub(crate) fn current_text(&self) -> &'a str {
+    fn current_text(&self) -> &'a str {
         &self.text[self.current_range()]
     }
 
@@ -178,15 +178,18 @@ impl<'a> Parser<'a> {
         self.nodes[cursor - 1].kind().is_error()
     }
 
+    pub(crate) fn eat_if(&mut self, kind: TokenKind) -> bool {
+        if self.at(kind) {
+            self.eat();
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn eat(&mut self) {
         self.consume_token();
         self.eat_trivia();
-    }
-
-    pub(crate) fn eat_trivia(&mut self) {
-        while self.current.is_trivia() {
-            self.consume_token();
-        }
     }
 
     pub(crate) fn consume_token(&mut self) {
@@ -206,12 +209,9 @@ impl<'a> Parser<'a> {
         self.current_end = self.lexer.cursor();
     }
 
-    pub(crate) fn eat_if(&mut self, kind: TokenKind) -> bool {
-        if self.at(kind) {
-            self.eat();
-            true
-        } else {
-            false
+    pub(crate) fn eat_trivia(&mut self) {
+        while self.current.is_trivia() {
+            self.consume_token();
         }
     }
 }
