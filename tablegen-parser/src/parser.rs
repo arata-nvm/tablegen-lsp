@@ -1,3 +1,4 @@
+use drop_bomb::DropBomb;
 use ecow::{eco_format, EcoString};
 
 use crate::{
@@ -8,7 +9,24 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(crate) struct Marker(usize);
+pub(crate) struct Marker {
+    pos: usize,
+    bomb: DropBomb,
+}
+
+impl Marker {
+    pub fn new(pos: usize) -> Self {
+        Self {
+            pos,
+            bomb: DropBomb::new("Marker must be explicitly completed"),
+        }
+    }
+
+    pub fn complete(mut self) -> CompletedMarker {
+        self.bomb.defuse();
+        CompletedMarker::success()
+    }
+}
 
 #[derive(Debug)]
 pub struct CompletedMarker {
@@ -77,7 +95,7 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn marker(&self) -> Marker {
-        Marker(self.nodes.len())
+        Marker::new(self.nodes.len())
     }
 
     pub(crate) fn abandon(&self, _m: Marker) -> CompletedMarker {
@@ -85,23 +103,19 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn wrap(&mut self, from: Marker, kind: SyntaxKind) -> CompletedMarker {
-        self.wrap_range(from, Marker(self.cursor_before_trivia()), kind)
+        self.wrap_range(from, self.cursor_before_trivia(), kind)
     }
 
     pub(crate) fn wrap_all(&mut self, from: Marker, kind: SyntaxKind) -> CompletedMarker {
-        self.wrap_range(from, Marker(self.nodes.len()), kind)
+        self.wrap_range(from, self.nodes.len(), kind)
     }
 
-    fn wrap_range(
-        &mut self,
-        Marker(from): Marker,
-        Marker(to): Marker,
-        kind: SyntaxKind,
-    ) -> CompletedMarker {
+    fn wrap_range(&mut self, from_marker: Marker, to: usize, kind: SyntaxKind) -> CompletedMarker {
+        let from = from_marker.pos;
         let to = to.max(from);
         let children = self.nodes.drain(from..to).collect();
         self.nodes.insert(from, SyntaxNode::node(kind, children));
-        CompletedMarker::success()
+        from_marker.complete()
     }
 
     fn cursor_before_trivia(&self) -> usize {
@@ -133,7 +147,7 @@ impl<'a> Parser<'a> {
         let m = self.marker();
         let text = self.current_text();
         self.eat();
-        self.nodes[m.0] = SyntaxNode::error(range, message, text);
+        self.nodes[m.pos] = SyntaxNode::error(range, message, text);
     }
 
     pub(crate) fn assert(&mut self, kind: TokenKind) {
