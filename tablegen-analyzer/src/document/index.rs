@@ -65,7 +65,8 @@ impl TableGenDocumentIndex {
     }
 
     fn add_symbol(&mut self, name: &EcoString, span: Range) {
-        let symbol = TableGenSymbol::new(name.clone(), self.doc_id, span.clone());
+        let define_loc = (self.doc_id, span.clone());
+        let symbol = TableGenSymbol::new(name.clone(), define_loc);
         let symbol_id = self.symbols.alloc(symbol);
         self.symbol_map.insert(span, symbol_id);
     }

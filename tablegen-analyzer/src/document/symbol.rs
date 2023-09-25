@@ -15,11 +15,8 @@ pub struct TableGenSymbol {
 }
 
 impl TableGenSymbol {
-    pub fn new(name: EcoString, doc_id: TableGenDocumentId, define_loc: Range) -> Self {
-        Self {
-            name,
-            define_loc: (doc_id, define_loc),
-        }
+    pub fn new(name: EcoString, define_loc: Location) -> Self {
+        Self { name, define_loc }
     }
 
     pub fn define_loc(&self) -> Location {
