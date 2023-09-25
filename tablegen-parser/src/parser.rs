@@ -164,7 +164,7 @@ impl<'a> Parser<'a> {
     pub(crate) fn error_and_recover(&mut self, message: impl Into<EcoString>) {
         self.error(message);
 
-        if self.at_set(self.recover_tokens) {
+        if !self.at_set(self.recover_tokens) && !self.eof() {
             let m = self.marker();
             self.eat();
             self.wrap(m, SyntaxKind::Error);
