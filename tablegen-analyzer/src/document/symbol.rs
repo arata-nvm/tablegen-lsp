@@ -34,6 +34,14 @@ impl TableGenSymbol {
         }
     }
 
+    pub fn name(&self) -> EcoString {
+        self.name.clone()
+    }
+
+    pub fn kind(&self) -> TableGenSymbolKind {
+        self.kind
+    }
+
     pub fn define_loc(&self) -> Location {
         self.define_loc.clone()
     }
