@@ -1,4 +1,4 @@
-use tablegen_analyzer::{analyzer, document::TableGenDocument};
+use tablegen_analyzer::document::TableGenDocument;
 use tokio::sync::Mutex;
 use tower_lsp::{
     jsonrpc::Result,
@@ -140,9 +140,10 @@ impl LanguageServer for TableGenLanguageServer {
         let uri = params.text_document.uri;
         let symbols = self
             .with_document(uri, |_, doc| {
-                let symbols = analyzer::document_symbol::document_symbol(doc)?;
-                let lsp_symbols = symbols
+                let symbol_ids = doc.index().symbols();
+                let lsp_symbols = symbol_ids
                     .into_iter()
+                    .filter_map(|symbol_id| doc.index().symbol(symbol_id))
                     .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
                     .collect();
                 Some(DocumentSymbolResponse::Nested(lsp_symbols))

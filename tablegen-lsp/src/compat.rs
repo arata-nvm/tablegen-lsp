@@ -1,7 +1,7 @@
 pub mod analyzer2lsp {
-    use tablegen_analyzer::{
-        analyzer::document_symbol,
-        document::{symbol::Location, TableGenDocument},
+    use tablegen_analyzer::document::{
+        symbol::{Location, TableGenSymbol, TableGenSymbolKind},
+        TableGenDocument,
     };
     use tablegen_parser::error;
     use tower_lsp::lsp_types::{self, Diagnostic};
@@ -40,22 +40,25 @@ pub mod analyzer2lsp {
     #[allow(deprecated)]
     pub fn document_symbol(
         doc: &TableGenDocument,
-        symbol: document_symbol::Symbol,
+        symbol: &TableGenSymbol,
     ) -> lsp_types::DocumentSymbol {
         let children: Vec<lsp_types::DocumentSymbol> = symbol
-            .children
+            .children()
             .into_iter()
-            .map(|symbol| document_symbol(doc, symbol))
+            .filter_map(|id| doc.index().symbol(id))
+            .map(|child| document_symbol(doc, child))
             .collect();
 
+        let define_loc = range(doc, symbol.define_loc().1);
+
         lsp_types::DocumentSymbol {
-            name: symbol.name.to_string(),
+            name: symbol.name().to_string(),
             detail: None,
-            kind: symbol_kind(symbol.kind),
+            kind: symbol_kind(symbol.kind()),
             tags: None,
             deprecated: None,
-            range: range(doc, symbol.define_loc.1.clone()),
-            selection_range: range(doc, symbol.define_loc.1),
+            range: define_loc,
+            selection_range: define_loc,
             children: if children.len() > 0 {
                 Some(children)
             } else {
@@ -64,11 +67,12 @@ pub mod analyzer2lsp {
         }
     }
 
-    pub fn symbol_kind(kind: document_symbol::SymbolKind) -> lsp_types::SymbolKind {
+    pub fn symbol_kind(kind: TableGenSymbolKind) -> lsp_types::SymbolKind {
         match kind {
-            document_symbol::SymbolKind::Class => lsp_types::SymbolKind::CLASS,
-            document_symbol::SymbolKind::TemplateArg => lsp_types::SymbolKind::PROPERTY,
-            document_symbol::SymbolKind::Field => lsp_types::SymbolKind::FIELD,
+            TableGenSymbolKind::Class => lsp_types::SymbolKind::CLASS,
+            TableGenSymbolKind::TemplateArg => lsp_types::SymbolKind::PROPERTY,
+            TableGenSymbolKind::Field => lsp_types::SymbolKind::FIELD,
+            TableGenSymbolKind::Def => lsp_types::SymbolKind::CLASS,
         }
     }
 }
