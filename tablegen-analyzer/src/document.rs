@@ -37,8 +37,10 @@ pub struct TableGenDocument {
 impl TableGenDocument {
     pub fn parse(doc_id: TableGenDocumentId, text: String) -> Self {
         let root = grammar::parse(&text);
-        let errors = root.errors().into_iter().cloned().collect();
-        let index = TableGenDocumentIndex::create_index(doc_id, &root);
+        let mut index = TableGenDocumentIndex::create_index(doc_id, &root);
+
+        let mut errors: Vec<SyntaxError> = root.errors().into_iter().cloned().collect();
+        errors.extend(index.take_errors());
 
         Self {
             doc_id,

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use ecow::EcoString;
+use ecow::{EcoString, eco_format};
 use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::{
     ast::{self, Identifier},
-    error::Position,
+    error::{Position, SyntaxError},
     node::SyntaxNode,
 };
 
@@ -20,6 +20,7 @@ pub struct TableGenDocumentIndex {
     symbols: Arena<TableGenSymbol>,
     symbol_map: IntervalMap<Position, TableGenSymbolId>,
     top_level_symbols: HashMap<EcoString, TableGenSymbolId>,
+    errors: Vec<SyntaxError>,
 }
 
 impl TableGenDocumentIndex {
@@ -37,6 +38,10 @@ impl TableGenDocumentIndex {
     pub fn symbols(&self) -> Vec<TableGenSymbolId> {
         self.top_level_symbols.values().cloned().collect()
     }
+
+    pub fn take_errors(&mut self) -> Vec<SyntaxError> {
+        std::mem::take(&mut self.errors)
+    }
 }
 
 impl TableGenDocumentIndex {
@@ -46,6 +51,7 @@ impl TableGenDocumentIndex {
             symbols: Arena::new(),
             symbol_map: IntervalMap::new(),
             top_level_symbols: HashMap::new(),
+            errors: Vec::new(),
         }
     }
 
@@ -219,7 +225,10 @@ impl TableGenDocumentIndex {
         let range = name_id.range();
 
         let reference_loc = (self.doc_id, range.clone());
-        let Some(symbol_id) = ctx.find_symbol(name) else { return None; }; // TODO
+        let Some(symbol_id) = ctx.find_symbol(name) else { 
+            self.errors.push(SyntaxError::new(range, eco_format!("variable not found: {}", name)));
+            return None;
+        };
         let symbol = self.symbols.get_mut(symbol_id).unwrap();
         symbol.add_reference(reference_loc);
         self.symbol_map.insert(range, symbol_id);
