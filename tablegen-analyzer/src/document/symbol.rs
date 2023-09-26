@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ecow::EcoString;
 use id_arena::Id;
 use tablegen_parser::error::Range;
@@ -14,6 +16,7 @@ pub struct TableGenSymbol {
     kind: TableGenSymbolKind,
     define_loc: Location,
     reference_locs: Vec<Location>,
+    children: HashMap<EcoString, TableGenSymbolId>,
 }
 
 #[derive(Debug)]
@@ -31,6 +34,7 @@ impl TableGenSymbol {
             kind,
             define_loc,
             reference_locs: Vec::new(),
+            children: HashMap::new(),
         }
     }
 
@@ -52,5 +56,13 @@ impl TableGenSymbol {
 
     pub fn reference_locs(&self) -> Vec<Location> {
         self.reference_locs.clone()
+    }
+
+    pub fn add_child(&mut self, name: EcoString, child: TableGenSymbolId) {
+        self.children.insert(name, child);
+    }
+
+    pub fn children(&self) -> Vec<TableGenSymbolId> {
+        self.children.values().cloned().collect()
     }
 }
