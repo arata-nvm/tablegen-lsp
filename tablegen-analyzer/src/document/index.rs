@@ -4,7 +4,7 @@ use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::{
-    ast::{self, FieldLet, Identifier},
+    ast::{self, Identifier},
     error::Position,
     node::SyntaxNode,
 };
@@ -53,9 +53,8 @@ impl TableGenDocumentIndex {
         let list = file.statement_list()?;
         for stmt in list.statements() {
             match stmt {
-                ast::Statement::Class(class) => {
-                    let _ = self.analyze_class(class, ctx);
-                }
+                ast::Statement::Class(class) => self.analyze_class(class, ctx),
+                ast::Statement::Def(def) => self.analyze_def(def, ctx),
                 _ => {}
             }
         }
@@ -128,6 +127,22 @@ impl TableGenDocumentIndex {
         if let Some(value) = field_let.value() {
             self.analyze_value(value, ctx);
         }
+    }
+
+    fn analyze_def(&mut self, def: ast::Def, ctx: &mut IndexContext) {
+        if let Some(name) = def.name() {
+            if let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() {
+                self.add_symbol(id, TableGenSymbolKind::Def, ctx);
+            } else {
+                // TODO
+            }
+        }
+
+        ctx.push();
+        if let Some(record_body) = def.record_body() {
+            self.analyze_record_body(record_body, ctx);
+        }
+        ctx.pop();
     }
 
     fn analyze_type(&mut self, typ: ast::Type, ctx: &mut IndexContext) -> Option<()> {

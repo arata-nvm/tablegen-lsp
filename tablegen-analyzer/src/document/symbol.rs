@@ -21,6 +21,7 @@ pub enum TableGenSymbolKind {
     Class,
     TemplateArg,
     Field,
+    Def,
 }
 
 impl TableGenSymbol {
