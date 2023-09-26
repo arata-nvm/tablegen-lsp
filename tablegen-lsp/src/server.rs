@@ -5,8 +5,8 @@ use tower_lsp::{
     lsp_types::{
         DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
         DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, InitializeParams,
-        InitializeResult, OneOf, ServerCapabilities, TextDocumentSyncCapability,
-        TextDocumentSyncKind, Url,
+        InitializeResult, Location, OneOf, ReferenceParams, ServerCapabilities,
+        TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
     Client, LanguageServer,
 };
@@ -68,6 +68,7 @@ impl LanguageServer for TableGenLanguageServer {
                     TextDocumentSyncKind::FULL,
                 )),
                 definition_provider: Some(OneOf::Left(true)),
+                references_provider: Some(OneOf::Left(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
@@ -112,6 +113,24 @@ impl LanguageServer for TableGenLanguageServer {
             .await;
 
         Ok(definition)
+    }
+
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let uri = params.text_document_position.text_document.uri;
+        let references = self
+            .with_document(uri, |doc_map, doc| {
+                let lsp_position = params.text_document_position.position;
+                let position = lsp2analyzer::position(doc, lsp_position);
+                let references = doc.get_references(position)?;
+                let lsp_references = references
+                    .into_iter()
+                    .map(|reference| analyzer2lsp::location(doc_map, doc, reference))
+                    .collect();
+                Some(lsp_references)
+            })
+            .await;
+
+        Ok(references)
     }
 
     async fn document_symbol(

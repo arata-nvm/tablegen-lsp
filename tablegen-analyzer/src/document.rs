@@ -70,7 +70,12 @@ impl TableGenDocument {
     }
 
     pub fn get_definition(&self, pos: Position) -> Option<Location> {
-        let Some(symbol) = self.index.get_symbol_at(pos) else { return None; };
+        let symbol = self.index.get_symbol_at(pos)?;
         Some(symbol.define_loc())
+    }
+
+    pub fn get_references(&self, pos: Position) -> Option<Vec<Location>> {
+        let symbol = self.index.get_symbol_at(pos)?;
+        Some(symbol.reference_locs())
     }
 }

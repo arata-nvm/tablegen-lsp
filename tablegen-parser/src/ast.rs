@@ -292,6 +292,12 @@ impl<'a> ListType<'a> {
 
 node!(ClassId);
 
+impl<'a> ClassId<'a> {
+    pub fn name(self) -> Option<Identifier<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
 node!(Value);
 
 impl<'a> Value<'a> {
