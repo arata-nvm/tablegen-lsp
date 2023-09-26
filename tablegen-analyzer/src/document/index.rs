@@ -62,7 +62,7 @@ impl TableGenDocumentIndex {
         None
     }
 
-    fn analyze_class(&mut self, class: ast::Class, ctx: &mut IndexContext) -> Option<()> {
+    fn analyze_class(&mut self, class: ast::Class, ctx: &mut IndexContext) {
         if let Some(name) = class.name() {
             self.add_symbol(name, TableGenSymbolKind::Class, ctx);
         }
@@ -77,29 +77,18 @@ impl TableGenDocumentIndex {
             self.analyze_record_body(record_body, ctx);
         }
         ctx.pop();
-
-        None
     }
 
-    fn analyze_template_arg(
-        &mut self,
-        arg: ast::TemplateArgDecl,
-        ctx: &mut IndexContext,
-    ) -> Option<()> {
+    fn analyze_template_arg(&mut self, arg: ast::TemplateArgDecl, ctx: &mut IndexContext) {
         if let Some(name) = arg.name() {
             self.add_symbol(name, TableGenSymbolKind::TemplateArg, ctx);
         }
         if let Some(typ) = arg.r#type() {
             self.analyze_type(typ, ctx);
         }
-        None
     }
 
-    fn analyze_record_body(
-        &mut self,
-        record_body: ast::RecordBody,
-        ctx: &mut IndexContext,
-    ) -> Option<()> {
+    fn analyze_record_body(&mut self, record_body: ast::RecordBody, ctx: &mut IndexContext) {
         if let Some(parent_class_list) = record_body.parent_class_list() {
             for class_ref in parent_class_list.classes() {
                 self.analyze_class_ref(class_ref, ctx);
@@ -108,7 +97,6 @@ impl TableGenDocumentIndex {
         if let Some(body) = record_body.body() {
             self.analyze_body(body, ctx);
         }
-        None
     }
 
     fn analyze_body(&mut self, body: ast::Body, ctx: &mut IndexContext) {
