@@ -19,6 +19,7 @@ pub struct TableGenDocumentIndex {
     doc_id: TableGenDocumentId,
     symbols: Arena<TableGenSymbol>,
     symbol_map: IntervalMap<Position, TableGenSymbolId>,
+    top_level_symbols: HashMap<EcoString, TableGenSymbolId>,
 }
 
 impl TableGenDocumentIndex {
@@ -28,6 +29,14 @@ impl TableGenDocumentIndex {
             .next()
             .and_then(|&id| self.symbols.get(id))
     }
+
+    pub fn symbol(&self, id: TableGenSymbolId) -> Option<&TableGenSymbol> {
+        self.symbols.get(id)
+    }
+
+    pub fn symbols(&self) -> Vec<TableGenSymbolId> {
+        self.top_level_symbols.values().cloned().collect()
+    }
 }
 
 impl TableGenDocumentIndex {
@@ -36,6 +45,7 @@ impl TableGenDocumentIndex {
             doc_id,
             symbols: Arena::new(),
             symbol_map: IntervalMap::new(),
+            top_level_symbols: HashMap::new(),
         }
     }
 
@@ -182,16 +192,26 @@ impl TableGenDocumentIndex {
         name_id: Identifier,
         kind: TableGenSymbolKind,
         ctx: &mut IndexContext,
-    ) -> Option<()> {
-        let name = name_id.value()?;
+    ) -> Option<TableGenSymbolId> {
+        let parent_id = ctx.current_symbol();
+
+        let Some(name) = name_id.value() else { return None; };
         let range = name_id.range();
 
         let define_loc = (self.doc_id, range.clone());
         let symbol = TableGenSymbol::new(name.clone(), kind, define_loc);
         let symbol_id = self.symbols.alloc(symbol);
+        if parent_id.is_none() {
+            self.top_level_symbols.insert(name.clone(), symbol_id);
+        }
         self.symbol_map.insert(range, symbol_id);
         ctx.add_symbol(name.clone(), symbol_id);
-        None
+
+        if let Some(parent_id) = parent_id {
+            let parent_symbol = self.symbols.get_mut(parent_id).unwrap();
+            parent_symbol.add_child(name.clone(), symbol_id);
+        }
+        Some(symbol_id)
     }
 
     fn add_symbol_reference(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<()> {
