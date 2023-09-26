@@ -4,31 +4,31 @@ use ecow::EcoString;
 use id_arena::Id;
 use tablegen_parser::error::Range;
 
-use super::TableGenDocumentId;
+use super::DocumentId;
 
-pub type Location = (TableGenDocumentId, Range);
+pub type Location = (DocumentId, Range);
 
-pub type TableGenSymbolId = Id<TableGenSymbol>;
+pub type SymbolId = Id<Symbol>;
 
 #[derive(Debug)]
-pub struct TableGenSymbol {
+pub struct Symbol {
     name: EcoString,
-    kind: TableGenSymbolKind,
+    kind: SymbolKind,
     define_loc: Location,
     reference_locs: Vec<Location>,
-    children: HashMap<EcoString, TableGenSymbolId>,
+    children: HashMap<EcoString, SymbolId>,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum TableGenSymbolKind {
+pub enum SymbolKind {
     Class,
     TemplateArg,
     Field,
     Def,
 }
 
-impl TableGenSymbol {
-    pub fn new(name: EcoString, kind: TableGenSymbolKind, define_loc: Location) -> Self {
+impl Symbol {
+    pub fn new(name: EcoString, kind: SymbolKind, define_loc: Location) -> Self {
         Self {
             name,
             kind,
@@ -42,7 +42,7 @@ impl TableGenSymbol {
         self.name.clone()
     }
 
-    pub fn kind(&self) -> TableGenSymbolKind {
+    pub fn kind(&self) -> SymbolKind {
         self.kind
     }
 
@@ -58,11 +58,11 @@ impl TableGenSymbol {
         self.reference_locs.clone()
     }
 
-    pub fn add_child(&mut self, name: EcoString, child: TableGenSymbolId) {
+    pub fn add_child(&mut self, name: EcoString, child: SymbolId) {
         self.children.insert(name, child);
     }
 
-    pub fn children(&self) -> Vec<TableGenSymbolId> {
+    pub fn children(&self) -> Vec<SymbolId> {
         self.children.values().cloned().collect()
     }
 }

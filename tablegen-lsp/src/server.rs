@@ -1,4 +1,4 @@
-use tablegen_analyzer::document::TableGenDocument;
+use tablegen_analyzer::document::Document;
 use tokio::sync::Mutex;
 use tower_lsp::{
     jsonrpc::Result,
@@ -13,26 +13,26 @@ use tower_lsp::{
 
 use crate::{
     compat::{analyzer2lsp, lsp2analyzer},
-    document_map::TableGenDocumentMap,
+    document_map::DocumentMap,
 };
 
 pub struct TableGenLanguageServer {
     client: Client,
-    document_map: Mutex<TableGenDocumentMap>,
+    document_map: Mutex<DocumentMap>,
 }
 
 impl TableGenLanguageServer {
     pub fn new(client: Client) -> Self {
         Self {
             client,
-            document_map: Mutex::new(TableGenDocumentMap::new()),
+            document_map: Mutex::new(DocumentMap::new()),
         }
     }
 
     async fn on_change(&self, uri: Url, version: i32, text: String) {
         let mut document_map = self.document_map.lock().await;
         let doc_id = document_map.assign_document_id(uri.clone());
-        let mut document = TableGenDocument::parse(doc_id, text);
+        let mut document = Document::parse(doc_id, text);
 
         let diags = document
             .take_errors()
@@ -49,7 +49,7 @@ impl TableGenLanguageServer {
     async fn with_document<T>(
         &self,
         uri: Url,
-        f: impl FnOnce(&TableGenDocumentMap, &TableGenDocument) -> Option<T>,
+        f: impl FnOnce(&DocumentMap, &Document) -> Option<T>,
     ) -> Option<T> {
         let document_map = self.document_map.lock().await;
         let Some(doc_id) = document_map.to_document_id(&uri) else { return None; };

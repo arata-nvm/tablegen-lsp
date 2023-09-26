@@ -10,32 +10,32 @@ use tablegen_parser::{
 };
 
 use super::{
-    symbol::{TableGenSymbol, TableGenSymbolId, TableGenSymbolKind},
-    TableGenDocumentId,
+    symbol::{Symbol, SymbolId, SymbolKind},
+    DocumentId,
 };
 
 #[derive(Debug)]
-pub struct TableGenDocumentIndex {
-    doc_id: TableGenDocumentId,
-    symbols: Arena<TableGenSymbol>,
-    symbol_map: IntervalMap<Position, TableGenSymbolId>,
-    top_level_symbols: HashMap<EcoString, TableGenSymbolId>,
+pub struct DocumentIndex {
+    doc_id: DocumentId,
+    symbols: Arena<Symbol>,
+    symbol_map: IntervalMap<Position, SymbolId>,
+    top_level_symbols: HashMap<EcoString, SymbolId>,
     errors: Vec<SyntaxError>,
 }
 
-impl TableGenDocumentIndex {
-    pub fn get_symbol_at(&self, pos: Position) -> Option<&TableGenSymbol> {
+impl DocumentIndex {
+    pub fn get_symbol_at(&self, pos: Position) -> Option<&Symbol> {
         self.symbol_map
             .values_overlap(pos)
             .next()
             .and_then(|&id| self.symbols.get(id))
     }
 
-    pub fn symbol(&self, id: TableGenSymbolId) -> Option<&TableGenSymbol> {
+    pub fn symbol(&self, id: SymbolId) -> Option<&Symbol> {
         self.symbols.get(id)
     }
 
-    pub fn symbols(&self) -> Vec<TableGenSymbolId> {
+    pub fn symbols(&self) -> Vec<SymbolId> {
         self.top_level_symbols.values().cloned().collect()
     }
 
@@ -44,8 +44,8 @@ impl TableGenDocumentIndex {
     }
 }
 
-impl TableGenDocumentIndex {
-    fn new(doc_id: TableGenDocumentId) -> Self {
+impl DocumentIndex {
+    fn new(doc_id: DocumentId) -> Self {
         Self {
             doc_id,
             symbols: Arena::new(),
@@ -56,7 +56,7 @@ impl TableGenDocumentIndex {
     }
 
     // TODO: wrap SyntaxNode
-    pub fn create_index(doc_id: TableGenDocumentId, file: &SyntaxNode) -> Self {
+    pub fn create_index(doc_id: DocumentId, file: &SyntaxNode) -> Self {
         let mut index = Self::new(doc_id);
 
         let mut ctx = IndexContext::new();
@@ -79,7 +79,7 @@ impl TableGenDocumentIndex {
 
     fn analyze_class(&mut self, class: ast::Class, ctx: &mut IndexContext) {
         let Some(name) = class.name() else { return; };
-        let Some(symbol_id) = self.add_symbol(name, TableGenSymbolKind::Class, ctx) else { return; };
+        let Some(symbol_id) = self.add_symbol(name, SymbolKind::Class, ctx) else { return; };
 
         ctx.push(symbol_id);
         if let Some(template_arg_list) = class.template_arg_list() {
@@ -95,7 +95,7 @@ impl TableGenDocumentIndex {
 
     fn analyze_template_arg(&mut self, arg: ast::TemplateArgDecl, ctx: &mut IndexContext) {
         if let Some(name) = arg.name() {
-            self.add_symbol(name, TableGenSymbolKind::TemplateArg, ctx);
+            self.add_symbol(name, SymbolKind::TemplateArg, ctx);
         }
         if let Some(typ) = arg.r#type() {
             self.analyze_type(typ, ctx);
@@ -131,7 +131,7 @@ impl TableGenDocumentIndex {
             self.analyze_type(typ, ctx);
         }
         if let Some(name) = field_def.name() {
-            self.add_symbol(name, TableGenSymbolKind::Field, ctx);
+            self.add_symbol(name, SymbolKind::Field, ctx);
         }
         if let Some(value) = field_def.value() {
             self.analyze_value(value, ctx);
@@ -147,7 +147,7 @@ impl TableGenDocumentIndex {
     fn analyze_def(&mut self, def: ast::Def, ctx: &mut IndexContext) {
         let Some(name) = def.name() else { return; };
         let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() else { return; };
-        let Some(symbol_id) = self.add_symbol(id, TableGenSymbolKind::Def, ctx) else { return; };
+        let Some(symbol_id) = self.add_symbol(id, SymbolKind::Def, ctx) else { return; };
 
         ctx.push(symbol_id);
         if let Some(record_body) = def.record_body() {
@@ -196,16 +196,16 @@ impl TableGenDocumentIndex {
     fn add_symbol(
         &mut self,
         name_id: Identifier,
-        kind: TableGenSymbolKind,
+        kind: SymbolKind,
         ctx: &mut IndexContext,
-    ) -> Option<TableGenSymbolId> {
+    ) -> Option<SymbolId> {
         let parent_id = ctx.current_symbol();
 
         let Some(name) = name_id.value() else { return None; };
         let range = name_id.range();
 
         let define_loc = (self.doc_id, range.clone());
-        let symbol = TableGenSymbol::new(name.clone(), kind, define_loc);
+        let symbol = Symbol::new(name.clone(), kind, define_loc);
         let symbol_id = self.symbols.alloc(symbol);
         if parent_id.is_none() {
             self.top_level_symbols.insert(name.clone(), symbol_id);
@@ -237,8 +237,8 @@ impl TableGenDocumentIndex {
 }
 
 struct IndexContext {
-    scopes: Vec<HashMap<EcoString, TableGenSymbolId>>,
-    current_symbol: Vec<TableGenSymbolId>,
+    scopes: Vec<HashMap<EcoString, SymbolId>>,
+    current_symbol: Vec<SymbolId>,
 }
 
 impl IndexContext {
@@ -249,7 +249,7 @@ impl IndexContext {
         }
     }
 
-    pub fn push(&mut self, symbol_id: TableGenSymbolId) {
+    pub fn push(&mut self, symbol_id: SymbolId) {
         self.scopes.push(HashMap::new());
         self.current_symbol.push(symbol_id);
     }
@@ -259,11 +259,11 @@ impl IndexContext {
         self.current_symbol.pop();
     }
 
-    pub fn add_symbol(&mut self, name: EcoString, symbol_id: TableGenSymbolId) {
+    pub fn add_symbol(&mut self, name: EcoString, symbol_id: SymbolId) {
         self.scopes.last_mut().unwrap().insert(name, symbol_id);
     }
 
-    pub fn find_symbol(&self, name: &EcoString) -> Option<TableGenSymbolId> {
+    pub fn find_symbol(&self, name: &EcoString) -> Option<SymbolId> {
         for scope in self.scopes.iter().rev() {
             if let Some(symbol_id) = scope.get(name) {
                 return Some(*symbol_id);
@@ -272,7 +272,7 @@ impl IndexContext {
         None
     }
 
-    pub fn current_symbol(&self) -> Option<TableGenSymbolId> {
+    pub fn current_symbol(&self) -> Option<SymbolId> {
         self.current_symbol.last().cloned()
     }
 }

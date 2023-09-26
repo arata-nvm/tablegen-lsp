@@ -8,36 +8,36 @@ use tablegen_parser::{
     node::SyntaxNode,
 };
 
-use self::{index::TableGenDocumentIndex, symbol::Location};
+use self::{index::DocumentIndex, symbol::Location};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct TableGenDocumentId(usize);
+pub struct DocumentId(usize);
 
-impl TableGenDocumentId {
+impl DocumentId {
     pub fn new(doc_id: usize) -> Self {
         Self(doc_id)
     }
 }
 
-impl From<TableGenDocumentId> for usize {
-    fn from(value: TableGenDocumentId) -> Self {
+impl From<DocumentId> for usize {
+    fn from(value: DocumentId) -> Self {
         value.0
     }
 }
 
 #[derive(Debug)]
-pub struct TableGenDocument {
-    doc_id: TableGenDocumentId,
+pub struct Document {
+    doc_id: DocumentId,
     text: Rope,
     root: SyntaxNode,
     errors: Vec<SyntaxError>,
-    index: TableGenDocumentIndex,
+    index: DocumentIndex,
 }
 
-impl TableGenDocument {
-    pub fn parse(doc_id: TableGenDocumentId, text: String) -> Self {
+impl Document {
+    pub fn parse(doc_id: DocumentId, text: String) -> Self {
         let root = grammar::parse(&text);
-        let mut index = TableGenDocumentIndex::create_index(doc_id, &root);
+        let mut index = DocumentIndex::create_index(doc_id, &root);
 
         let mut errors: Vec<SyntaxError> = root.errors().into_iter().cloned().collect();
         errors.extend(index.take_errors());
@@ -51,7 +51,7 @@ impl TableGenDocument {
         }
     }
 
-    pub fn id(&self) -> TableGenDocumentId {
+    pub fn id(&self) -> DocumentId {
         self.doc_id
     }
 
@@ -63,7 +63,7 @@ impl TableGenDocument {
         std::mem::take(&mut self.errors)
     }
 
-    pub fn index(&self) -> &TableGenDocumentIndex {
+    pub fn index(&self) -> &DocumentIndex {
         &self.index
     }
 
