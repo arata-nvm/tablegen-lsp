@@ -19,7 +19,7 @@ pub struct TableGenSymbol {
     children: HashMap<EcoString, TableGenSymbolId>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TableGenSymbolKind {
     Class,
     TemplateArg,
