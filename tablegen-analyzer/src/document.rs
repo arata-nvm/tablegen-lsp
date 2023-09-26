@@ -61,6 +61,10 @@ impl TableGenDocument {
         std::mem::take(&mut self.errors)
     }
 
+    pub fn index(&self) -> &TableGenDocumentIndex {
+        &self.index
+    }
+
     pub fn pos_to_line(&self, pos: Position) -> ropey::Result<usize> {
         self.text.try_char_to_line(pos)
     }
