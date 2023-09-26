@@ -62,11 +62,10 @@ impl TableGenDocumentIndex {
     }
 
     fn analyze_class(&mut self, class: ast::Class, ctx: &mut IndexContext) {
-        if let Some(name) = class.name() {
-            self.add_symbol(name, TableGenSymbolKind::Class, ctx);
-        }
+        let Some(name) = class.name() else { return; };
+        let Some(symbol_id) = self.add_symbol(name, TableGenSymbolKind::Class, ctx) else { return; };
 
-        ctx.push();
+        ctx.push(symbol_id);
         if let Some(template_arg_list) = class.template_arg_list() {
             for arg in template_arg_list.args() {
                 self.analyze_template_arg(arg, ctx);
@@ -130,15 +129,11 @@ impl TableGenDocumentIndex {
     }
 
     fn analyze_def(&mut self, def: ast::Def, ctx: &mut IndexContext) {
-        if let Some(name) = def.name() {
-            if let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() {
-                self.add_symbol(id, TableGenSymbolKind::Def, ctx);
-            } else {
-                // TODO
-            }
-        }
+        let Some(name) = def.name() else { return; };
+        let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() else { return; };
+        let Some(symbol_id) = self.add_symbol(id, TableGenSymbolKind::Def, ctx) else { return; };
 
-        ctx.push();
+        ctx.push(symbol_id);
         if let Some(record_body) = def.record_body() {
             self.analyze_record_body(record_body, ctx);
         }
@@ -214,21 +209,25 @@ impl TableGenDocumentIndex {
 
 struct IndexContext {
     scopes: Vec<HashMap<EcoString, TableGenSymbolId>>,
+    current_symbol: Vec<TableGenSymbolId>,
 }
 
 impl IndexContext {
     pub fn new() -> Self {
         Self {
             scopes: vec![HashMap::new()],
+            current_symbol: Vec::new(),
         }
     }
 
-    pub fn push(&mut self) {
+    pub fn push(&mut self, symbol_id: TableGenSymbolId) {
         self.scopes.push(HashMap::new());
+        self.current_symbol.push(symbol_id);
     }
 
     pub fn pop(&mut self) {
         self.scopes.pop();
+        self.current_symbol.pop();
     }
 
     pub fn add_symbol(&mut self, name: EcoString, symbol_id: TableGenSymbolId) {
@@ -242,5 +241,9 @@ impl IndexContext {
             }
         }
         None
+    }
+
+    pub fn current_symbol(&self) -> Option<TableGenSymbolId> {
+        self.current_symbol.last().cloned()
     }
 }
