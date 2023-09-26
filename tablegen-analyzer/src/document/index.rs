@@ -4,7 +4,7 @@ use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::{
-    ast::{self, Identifier},
+    ast::{self, FieldLet, Identifier},
     error::Position,
     node::SyntaxNode,
 };
@@ -117,23 +117,29 @@ impl TableGenDocumentIndex {
                 ast::BodyItem::FieldDef(field_def) => {
                     self.analyze_field_def(field_def, ctx);
                 }
-                _ => {}
+                ast::BodyItem::FieldLet(field_let) => {
+                    self.analyze_field_let(field_let, ctx);
+                }
             }
         }
     }
 
-    fn analyze_field_def(
-        &mut self,
-        field_def: ast::FieldDef,
-        ctx: &mut IndexContext,
-    ) -> Option<()> {
-        if let Some(name) = field_def.name() {
-            self.add_symbol(name, TableGenSymbolKind::Field, ctx);
-        }
+    fn analyze_field_def(&mut self, field_def: ast::FieldDef, ctx: &mut IndexContext) {
         if let Some(typ) = field_def.r#type() {
             self.analyze_type(typ, ctx);
         }
-        None
+        if let Some(name) = field_def.name() {
+            self.add_symbol(name, TableGenSymbolKind::Field, ctx);
+        }
+        if let Some(value) = field_def.value() {
+            self.analyze_value(value, ctx);
+        }
+    }
+
+    fn analyze_field_let(&mut self, field_let: ast::FieldLet, ctx: &mut IndexContext) {
+        if let Some(value) = field_let.value() {
+            self.analyze_value(value, ctx);
+        }
     }
 
     fn analyze_type(&mut self, typ: ast::Type, ctx: &mut IndexContext) -> Option<()> {
@@ -149,15 +155,27 @@ impl TableGenDocumentIndex {
         None
     }
 
-    fn analyze_class_ref(
-        &mut self,
-        class_ref: ast::ClassRef,
-        ctx: &mut IndexContext,
-    ) -> Option<()> {
+    fn analyze_class_ref(&mut self, class_ref: ast::ClassRef, ctx: &mut IndexContext) {
         if let Some(name) = class_ref.name() {
             self.add_symbol_reference(name, ctx);
         }
+        if let Some(arg_value_list) = class_ref.arg_value_list() {
+            if let Some(positional) = arg_value_list.positional() {
+                for arg in positional.values() {
+                    self.analyze_value(arg, ctx);
+                }
+            }
+        }
+    }
 
+    fn analyze_value(&mut self, value: ast::Value, ctx: &mut IndexContext) -> Option<()> {
+        let simple_value = value.simple_value()?;
+        match simple_value {
+            ast::SimpleValue::Identifier(id) => {
+                self.add_symbol_reference(id, ctx);
+            }
+            _ => {}
+        }
         None
     }
 
