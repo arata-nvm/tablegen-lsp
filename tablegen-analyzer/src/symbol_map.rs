@@ -3,15 +3,15 @@ use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::error::Position;
 
-use crate::symbol::{self, SymbolType};
+use crate::symbol::{Record, RecordField, RecordFieldType, Symbol, SymbolId};
 
-use super::symbol::{Location, OldSymbol, OldSymbolId, SymbolKind};
+use super::symbol::Location;
 
 #[derive(Debug)]
 pub struct SymbolMap {
-    symbols: Arena<OldSymbol>,
-    symbol_map: IntervalMap<Position, OldSymbolId>,
-    records: Vec<OldSymbolId>,
+    symbols: Arena<Symbol>,
+    symbol_map: IntervalMap<Position, SymbolId>,
+    records: Vec<SymbolId>,
 }
 
 impl SymbolMap {
@@ -23,46 +23,48 @@ impl SymbolMap {
         }
     }
 
-    pub fn new_symbol(
-        &mut self,
-        name: EcoString,
-        kind: SymbolKind,
-        define_loc: Location,
-        typ: SymbolType,
-    ) -> OldSymbolId {
-        let symbol = OldSymbol::new(name, kind, define_loc.clone(), typ);
-        let symbol_id = self.symbols.alloc(symbol);
+    pub fn new_record(&mut self, name: EcoString, define_loc: Location) -> SymbolId {
+        let record = Record::new(name, define_loc.clone());
+        let symbol_id = self.symbols.alloc(Symbol::Record(record));
         self.symbol_map.insert(define_loc.1, symbol_id);
-
-        if let SymbolKind::Record = kind {
-            self.records.push(symbol_id);
-        }
-
+        self.records.push(symbol_id);
         symbol_id
     }
 
-    pub fn symbol(&self, symbol_id: OldSymbolId) -> Option<&OldSymbol> {
+    pub fn new_record_field(
+        &mut self,
+        name: EcoString,
+        define_loc: Location,
+        typ: RecordFieldType,
+    ) -> SymbolId {
+        let field = RecordField::new(name, define_loc.clone(), typ);
+        let symbol_id = self.symbols.alloc(Symbol::RecordField(field));
+        self.symbol_map.insert(define_loc.1, symbol_id);
+        symbol_id
+    }
+
+    pub fn symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
         self.symbols.get(symbol_id)
     }
 
-    pub fn symbol_mut(&mut self, symbol_id: OldSymbolId) -> Option<&mut OldSymbol> {
+    pub fn symbol_mut(&mut self, symbol_id: SymbolId) -> Option<&mut Symbol> {
         self.symbols.get_mut(symbol_id)
     }
 
-    pub fn add_reference(&mut self, symbol_id: OldSymbolId, loc: Location) {
+    pub fn add_reference(&mut self, symbol_id: SymbolId, loc: Location) {
         let symbol = self.symbol_mut(symbol_id).unwrap();
         symbol.add_reference(loc.clone());
         self.symbol_map.insert(loc.1, symbol_id);
     }
 
-    pub fn get_symbol_at(&self, pos: Position) -> Option<&OldSymbol> {
+    pub fn get_symbol_at(&self, pos: Position) -> Option<&Symbol> {
         self.symbol_map
             .values_overlap(pos)
             .next()
             .and_then(|&id| self.symbols.get(id))
     }
 
-    pub fn records(&self) -> &[OldSymbolId] {
+    pub fn records(&self) -> &[SymbolId] {
         &self.records
     }
 }

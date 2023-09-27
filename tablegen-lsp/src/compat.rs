@@ -1,7 +1,7 @@
 pub mod analyzer2lsp {
     use tablegen_analyzer::{
         document::Document,
-        symbol::{Location, OldSymbol, SymbolKind},
+        symbol::{Location, Symbol},
     };
     use tablegen_parser::error;
     use tower_lsp::lsp_types::{self, Diagnostic};
@@ -34,27 +34,47 @@ pub mod analyzer2lsp {
     }
 
     #[allow(deprecated)]
-    pub fn document_symbol(doc: &Document, symbol: &OldSymbol) -> lsp_types::DocumentSymbol {
+    pub fn document_symbol(doc: &Document, symbol: &Symbol) -> lsp_types::DocumentSymbol {
         let template_args = symbol
+            .as_record()
             .template_args()
             .into_iter()
             .filter_map(|id| doc.symbol_map().symbol(*id))
-            .map(|child| document_symbol(doc, child));
+            .map(|child| lsp_types::DocumentSymbol {
+                name: child.name().to_string(),
+                detail: None,
+                kind: lsp_types::SymbolKind::PROPERTY,
+                tags: None,
+                deprecated: None,
+                range: range(doc, child.define_loc().1.clone()),
+                selection_range: range(doc, child.define_loc().1.clone()),
+                children: None,
+            });
 
         let fields = symbol
+            .as_record()
             .fields()
             .into_iter()
             .filter_map(|id| doc.symbol_map().symbol(*id))
-            .map(|child| document_symbol(doc, child));
+            .map(|child| lsp_types::DocumentSymbol {
+                name: child.name().to_string(),
+                detail: None,
+                kind: lsp_types::SymbolKind::FIELD,
+                tags: None,
+                deprecated: None,
+                range: range(doc, child.define_loc().1.clone()),
+                selection_range: range(doc, child.define_loc().1.clone()),
+                children: None,
+            });
 
         let children: Vec<lsp_types::DocumentSymbol> = template_args.chain(fields).collect();
 
-        let define_loc = range(doc, symbol.define_loc().1);
+        let define_loc = range(doc, symbol.define_loc().1.clone());
 
         lsp_types::DocumentSymbol {
             name: symbol.name().to_string(),
             detail: None,
-            kind: symbol_kind(symbol.kind()),
+            kind: lsp_types::SymbolKind::CLASS, // TODO
             tags: None,
             deprecated: None,
             range: define_loc,
@@ -64,14 +84,6 @@ pub mod analyzer2lsp {
             } else {
                 None
             },
-        }
-    }
-
-    pub fn symbol_kind(kind: SymbolKind) -> lsp_types::SymbolKind {
-        match kind {
-            SymbolKind::Record => lsp_types::SymbolKind::CLASS,
-            SymbolKind::TemplateArg => lsp_types::SymbolKind::PROPERTY,
-            SymbolKind::Field => lsp_types::SymbolKind::FIELD,
         }
     }
 }

@@ -6,7 +6,7 @@ use tablegen_parser::{
 };
 
 use crate::{
-    document::DocumentId, indexer::DocumentIndexer, symbol::SymbolType, symbol_map::SymbolMap,
+    document::DocumentId, indexer::DocumentIndexer, symbol::RecordFieldType, symbol_map::SymbolMap,
 };
 
 pub fn analyze(doc_id: DocumentId, file: &SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
@@ -110,16 +110,16 @@ fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
     i.pop();
 }
 
-fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<SymbolType> {
+fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<RecordFieldType> {
     match typ {
         ast::Type::ListType(list_typ) => analyze_type(list_typ.inner_type()?, i),
         ast::Type::ClassId(class_id) => {
             let symbol_id = with_id(class_id.name(), |name, range| {
                 i.add_symbol_reference(name, range)
             })?;
-            Some(SymbolType::Record(symbol_id))
+            Some(RecordFieldType::Record(symbol_id))
         }
-        _ => Some(SymbolType::Primitive),
+        _ => Some(RecordFieldType::Primitive),
     }
 }
 

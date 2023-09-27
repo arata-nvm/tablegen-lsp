@@ -8,86 +8,170 @@ use crate::document::DocumentId;
 
 pub type Location = (DocumentId, Range);
 
-pub type OldSymbolId = Id<OldSymbol>;
+pub type SymbolId = Id<Symbol>;
 
 #[derive(Debug)]
-pub struct OldSymbol {
+pub enum Symbol {
+    Record(Record),
+    RecordField(RecordField),
+}
+
+impl Symbol {
+    pub fn name(&self) -> &EcoString {
+        match self {
+            Self::Record(record) => record.name(),
+            Self::RecordField(field) => field.name(),
+        }
+    }
+
+    pub fn define_loc(&self) -> &Location {
+        match self {
+            Self::Record(record) => record.define_loc(),
+            Self::RecordField(field) => field.define_loc(),
+        }
+    }
+
+    pub fn add_reference(&mut self, loc: Location) {
+        match self {
+            Self::Record(record) => record.add_reference(loc),
+            Self::RecordField(field) => field.add_reference(loc),
+        }
+    }
+
+    pub fn reference_locs(&self) -> &[Location] {
+        match self {
+            Self::Record(record) => record.reference_locs(),
+            Self::RecordField(field) => field.reference_locs(),
+        }
+    }
+
+    pub fn as_record(&self) -> &Record {
+        match self {
+            Self::Record(record) => record,
+            Self::RecordField(_) => panic!(),
+        }
+    }
+
+    pub fn as_record_mut(&mut self) -> &mut Record {
+        match self {
+            Self::Record(record) => record,
+            Self::RecordField(_) => panic!(),
+        }
+    }
+
+    pub fn as_field(&self) -> &RecordField {
+        match self {
+            Self::Record(_) => panic!(),
+            Self::RecordField(field) => field,
+        }
+    }
+
+    pub fn as_field_mut(&mut self) -> &mut RecordField {
+        match self {
+            Self::Record(_) => panic!(),
+            Self::RecordField(field) => field,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Record {
     name: EcoString,
-    kind: SymbolKind,
     define_loc: Location,
     reference_locs: Vec<Location>,
-    template_args: HashMap<EcoString, OldSymbolId>,
-    fields: HashMap<EcoString, OldSymbolId>,
-    typ: SymbolType,
+    template_args: HashMap<EcoString, SymbolId>,
+    fields: HashMap<EcoString, SymbolId>,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum SymbolKind {
-    Record,
-    TemplateArg,
-    Field,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum SymbolType {
-    Primitive,
-    Record(OldSymbolId),
-}
-
-impl OldSymbol {
-    pub fn new(name: EcoString, kind: SymbolKind, define_loc: Location, typ: SymbolType) -> Self {
+impl Record {
+    pub fn new(name: EcoString, define_loc: Location) -> Self {
         Self {
             name,
-            kind,
             define_loc,
             reference_locs: Vec::new(),
             template_args: HashMap::new(),
             fields: HashMap::new(),
-            typ,
         }
     }
 
-    pub fn name(&self) -> EcoString {
-        self.name.clone()
+    pub fn name(&self) -> &EcoString {
+        &self.name
     }
 
-    pub fn kind(&self) -> SymbolKind {
-        self.kind
-    }
-
-    pub fn define_loc(&self) -> Location {
-        self.define_loc.clone()
+    pub fn define_loc(&self) -> &Location {
+        &self.define_loc
     }
 
     pub fn add_reference(&mut self, loc: Location) {
         self.reference_locs.push(loc);
     }
 
-    pub fn reference_locs(&self) -> Vec<Location> {
-        self.reference_locs.clone()
+    pub fn reference_locs(&self) -> &[Location] {
+        &self.reference_locs
     }
 
-    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: OldSymbolId) {
+    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: SymbolId) {
         self.template_args.insert(name, template_arg_id);
     }
 
-    pub fn template_args(&self) -> Vec<&OldSymbolId> {
+    pub fn template_args(&self) -> Vec<&SymbolId> {
         self.template_args.values().collect()
     }
 
-    pub fn add_field(&mut self, name: EcoString, field_id: OldSymbolId) {
+    pub fn add_field(&mut self, name: EcoString, field_id: SymbolId) {
         self.fields.insert(name, field_id);
     }
 
-    pub fn fields(&self) -> Vec<&OldSymbolId> {
+    pub fn fields(&self) -> Vec<&SymbolId> {
         self.fields.values().collect()
     }
 
-    pub fn find_field(&self, name: &EcoString) -> Option<&OldSymbolId> {
+    pub fn find_field(&self, name: &EcoString) -> Option<&SymbolId> {
         self.fields.get(name)
     }
+}
 
-    pub fn r#type(&self) -> SymbolType {
-        self.typ
+#[derive(Debug)]
+pub struct RecordField {
+    name: EcoString,
+    define_loc: Location,
+    reference_locs: Vec<Location>,
+    typ: RecordFieldType,
+}
+
+impl RecordField {
+    pub fn new(name: EcoString, define_loc: Location, typ: RecordFieldType) -> Self {
+        Self {
+            name,
+            define_loc,
+            reference_locs: Vec::new(),
+            typ,
+        }
     }
+
+    pub fn name(&self) -> &EcoString {
+        &self.name
+    }
+
+    pub fn define_loc(&self) -> &Location {
+        &self.define_loc
+    }
+
+    pub fn add_reference(&mut self, loc: Location) {
+        self.reference_locs.push(loc);
+    }
+
+    pub fn reference_locs(&self) -> &[Location] {
+        &self.reference_locs
+    }
+
+    pub fn r#type(&self) -> &RecordFieldType {
+        &self.typ
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum RecordFieldType {
+    Primitive,
+    Record(SymbolId),
 }
