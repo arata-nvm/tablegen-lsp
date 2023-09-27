@@ -124,7 +124,7 @@ impl DocumentIndex {
             self.analyze_type(typ, ctx);
         }
         if let Some(name) = field_def.name() {
-            self.add_symbol(name, SymbolKind::Field, ctx);
+            self.add_field(name, ctx);
         }
         if let Some(value) = field_def.value() {
             self.analyze_value(value, ctx);
@@ -249,6 +249,21 @@ impl DocumentIndex {
         let parent_id = ctx.current_symbol()?;
         let parent = self.symbols.symbol_mut(parent_id).unwrap();
         parent.add_template_arg(name.clone(), template_arg_id);
+
+        None
+    }
+
+    fn add_field(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<()> {
+        let name = name_id.value()?;
+        let range = name_id.range();
+
+        let define_loc = (self.doc_id, range.clone());
+        let field_id = self.symbols.new_symbol(name.clone(), SymbolKind::Field, define_loc);
+        ctx.add_symbol(name.clone(), field_id);
+
+        let parent_id = ctx.current_symbol()?;
+        let parent = self.symbols.symbol_mut(parent_id).unwrap();
+        parent.add_field(name.clone(), field_id);
 
         None
     }

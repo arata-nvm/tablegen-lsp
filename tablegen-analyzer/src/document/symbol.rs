@@ -19,6 +19,7 @@ pub struct Symbol {
     children: HashMap<EcoString, SymbolId>,
 
     template_args: HashMap<EcoString, SymbolId>,
+    fields: HashMap<EcoString, SymbolId>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -39,6 +40,7 @@ impl Symbol {
             children: HashMap::new(),
 
             template_args: HashMap::new(),
+            fields: HashMap::new(),
         }
     }
 
@@ -72,5 +74,9 @@ impl Symbol {
 
     pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: SymbolId) {
         self.template_args.insert(name, template_arg_id);
+    }
+
+    pub fn add_field(&mut self, name: EcoString, field_id: SymbolId) {
+        self.fields.insert(name, field_id);
     }
 }
