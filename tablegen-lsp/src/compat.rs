@@ -35,12 +35,19 @@ pub mod analyzer2lsp {
 
     #[allow(deprecated)]
     pub fn document_symbol(doc: &Document, symbol: &Symbol) -> lsp_types::DocumentSymbol {
-        let children: Vec<lsp_types::DocumentSymbol> = symbol
-            .children()
+        let template_args = symbol
+            .template_args()
             .into_iter()
-            .filter_map(|id| doc.index().symbol(id))
-            .map(|child| document_symbol(doc, child))
-            .collect();
+            .filter_map(|id| doc.index().symbol(*id))
+            .map(|child| document_symbol(doc, child));
+
+        let fields = symbol
+            .fields()
+            .into_iter()
+            .filter_map(|id| doc.index().symbol(*id))
+            .map(|child| document_symbol(doc, child));
+
+        let children: Vec<lsp_types::DocumentSymbol> = template_args.chain(fields).collect();
 
         let define_loc = range(doc, symbol.define_loc().1);
 

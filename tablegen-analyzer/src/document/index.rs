@@ -140,7 +140,7 @@ impl DocumentIndex {
     fn analyze_def(&mut self, def: ast::Def, ctx: &mut IndexContext) {
         let Some(name) = def.name() else { return; };
         let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() else { return; };
-        let Some(symbol_id) = self.add_symbol(id, SymbolKind::Def, ctx) else { return; };
+        let Some(symbol_id) = self.add_record(id, ctx) else { return; };
 
         ctx.push(symbol_id);
         if let Some(record_body) = def.record_body() {
@@ -184,31 +184,6 @@ impl DocumentIndex {
             _ => {}
         }
         None
-    }
-
-    fn add_symbol(
-        &mut self,
-        name_id: Identifier,
-        kind: SymbolKind,
-        ctx: &mut IndexContext,
-    ) -> Option<SymbolId> {
-        let parent_id = ctx.current_symbol();
-
-        let Some(name) = name_id.value() else { return None; };
-        let range = name_id.range();
-
-        let define_loc = (self.doc_id, range.clone());
-        let symbol_id = self.symbols.new_symbol(name.clone(), kind, define_loc);
-        ctx.add_symbol(name.clone(), symbol_id);
-        if parent_id.is_none() {
-            self.top_level_symbols.insert(name.clone(), symbol_id);
-        }
-
-        if let Some(parent_id) = parent_id {
-            let parent_symbol = self.symbols.symbol_mut(parent_id).unwrap();
-            parent_symbol.add_child(name.clone(), symbol_id);
-        }
-        Some(symbol_id)
     }
 
     fn add_symbol_reference(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<()> {
