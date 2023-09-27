@@ -15,7 +15,6 @@ use super::{
 #[derive(Debug)]
 pub struct DocumentIndex {
     doc_id: DocumentId,
-    top_level_symbols: HashMap<EcoString, SymbolId>,
     symbols: SymbolMap,
     errors: Vec<SyntaxError>,
 }
@@ -29,8 +28,8 @@ impl DocumentIndex {
         self.symbols.symbol(id)
     }
 
-    pub fn symbols(&self) -> Vec<SymbolId> {
-        self.top_level_symbols.values().cloned().collect()
+    pub fn symbols(&self) -> &[SymbolId] {
+        self.symbols.records()
     }
 
     pub fn take_errors(&mut self) -> Vec<SyntaxError> {
@@ -42,7 +41,6 @@ impl DocumentIndex {
     fn new(doc_id: DocumentId) -> Self {
         Self {
             doc_id,
-            top_level_symbols: HashMap::new(),
             symbols: SymbolMap::new(),
             errors: Vec::new(),
         }
@@ -195,31 +193,27 @@ impl DocumentIndex {
             self.errors.push(SyntaxError::new(range, eco_format!("variable not found: {}", name)));
             return None;
         };
-        let symbol = self.symbols.symbol_mut(symbol_id).unwrap();
-        symbol.add_reference(reference_loc);
-        self.symbols.add_reference(symbol_id, range);
+        self.symbols.add_reference(symbol_id, reference_loc);
         None
     }
 
-    fn add_record(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<SymbolId> {
+    fn add_symbol(&mut self, name_id: Identifier, kind: SymbolKind, ctx: &mut IndexContext) -> Option<SymbolId> {
         let name = name_id.value()?;
         let range = name_id.range();
 
         let define_loc = (self.doc_id, range.clone());
-        let symbol_id = self.symbols.new_symbol(name.clone(), SymbolKind::Class, define_loc);
+        let symbol_id = self.symbols.new_symbol(name.clone(), kind, define_loc);
         ctx.add_symbol(name.clone(), symbol_id);
-        self.top_level_symbols.insert(name.clone(), symbol_id);
-
         Some(symbol_id)
+    }
+
+    fn add_record(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<SymbolId> {
+        self.add_symbol(name_id, SymbolKind::Record, ctx)
     }
 
     fn add_template_arg(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<()> {
         let name = name_id.value()?;
-        let range = name_id.range();
-
-        let define_loc = (self.doc_id, range.clone());
-        let template_arg_id = self.symbols.new_symbol(name.clone(), SymbolKind::TemplateArg, define_loc);
-        ctx.add_symbol(name.clone(), template_arg_id);
+        let template_arg_id = self.add_symbol(name_id, SymbolKind::TemplateArg, ctx)?;
 
         let parent_id = ctx.current_symbol()?;
         let parent = self.symbols.symbol_mut(parent_id).unwrap();
@@ -230,11 +224,7 @@ impl DocumentIndex {
 
     fn add_field(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<()> {
         let name = name_id.value()?;
-        let range = name_id.range();
-
-        let define_loc = (self.doc_id, range.clone());
-        let field_id = self.symbols.new_symbol(name.clone(), SymbolKind::Field, define_loc);
-        ctx.add_symbol(name.clone(), field_id);
+        let field_id = self.add_symbol(name_id, SymbolKind::Field, ctx)?;
 
         let parent_id = ctx.current_symbol()?;
         let parent = self.symbols.symbol_mut(parent_id).unwrap();

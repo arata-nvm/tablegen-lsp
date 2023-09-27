@@ -22,10 +22,9 @@ pub struct Symbol {
 
 #[derive(Debug, Clone, Copy)]
 pub enum SymbolKind {
-    Class,
+    Record,
     TemplateArg,
     Field,
-    Def,
 }
 
 impl Symbol {

@@ -143,7 +143,7 @@ impl LanguageServer for TableGenLanguageServer {
                 let symbol_ids = doc.index().symbols();
                 let lsp_symbols = symbol_ids
                     .into_iter()
-                    .filter_map(|symbol_id| doc.index().symbol(symbol_id))
+                    .filter_map(|symbol_id| doc.index().symbol(*symbol_id))
                     .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
                     .collect();
                 Some(DocumentSymbolResponse::Nested(lsp_symbols))

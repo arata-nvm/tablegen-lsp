@@ -1,7 +1,7 @@
 use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
-use tablegen_parser::error::{Position, Range};
+use tablegen_parser::error::Position;
 
 use super::symbol::{Location, Symbol, SymbolId, SymbolKind};
 
@@ -9,6 +9,7 @@ use super::symbol::{Location, Symbol, SymbolId, SymbolKind};
 pub struct SymbolMap {
     symbols: Arena<Symbol>,
     symbol_map: IntervalMap<Position, SymbolId>,
+    records: Vec<SymbolId>,
 }
 
 impl SymbolMap {
@@ -16,6 +17,7 @@ impl SymbolMap {
         Self {
             symbols: Arena::new(),
             symbol_map: IntervalMap::new(),
+            records: Vec::new(),
         }
     }
 
@@ -28,6 +30,11 @@ impl SymbolMap {
         let symbol = Symbol::new(name, kind, define_loc.clone());
         let symbol_id = self.symbols.alloc(symbol);
         self.symbol_map.insert(define_loc.1, symbol_id);
+
+        if let SymbolKind::Record = kind {
+            self.records.push(symbol_id);
+        }
+
         symbol_id
     }
 
@@ -39,8 +46,10 @@ impl SymbolMap {
         self.symbols.get_mut(symbol_id)
     }
 
-    pub fn add_reference(&mut self, symbol_id: SymbolId, range: Range) {
-        self.symbol_map.insert(range, symbol_id);
+    pub fn add_reference(&mut self, symbol_id: SymbolId, loc: Location) {
+        let symbol = self.symbol_mut(symbol_id).unwrap();
+        symbol.add_reference(loc.clone());
+        self.symbol_map.insert(loc.1, symbol_id);
     }
 
     pub fn get_symbol_at(&self, pos: Position) -> Option<&Symbol> {
@@ -48,5 +57,9 @@ impl SymbolMap {
             .values_overlap(pos)
             .next()
             .and_then(|&id| self.symbols.get(id))
+    }
+
+    pub fn records(&self) -> &[SymbolId] {
+        &self.records
     }
 }

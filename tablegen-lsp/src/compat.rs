@@ -69,10 +69,9 @@ pub mod analyzer2lsp {
 
     pub fn symbol_kind(kind: SymbolKind) -> lsp_types::SymbolKind {
         match kind {
-            SymbolKind::Class => lsp_types::SymbolKind::CLASS,
+            SymbolKind::Record => lsp_types::SymbolKind::CLASS,
             SymbolKind::TemplateArg => lsp_types::SymbolKind::PROPERTY,
             SymbolKind::Field => lsp_types::SymbolKind::FIELD,
-            SymbolKind::Def => lsp_types::SymbolKind::CLASS,
         }
     }
 }
