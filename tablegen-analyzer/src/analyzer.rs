@@ -5,7 +5,9 @@ use tablegen_parser::{
     node::SyntaxNode,
 };
 
-use crate::{document::DocumentId, indexer::DocumentIndexer, symbol_map::SymbolMap};
+use crate::{
+    document::DocumentId, indexer::DocumentIndexer, symbol::SymbolType, symbol_map::SymbolMap,
+};
 
 pub fn analyze(doc_id: DocumentId, file: &SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
     let mut indexer = DocumentIndexer::new(doc_id);
@@ -28,7 +30,7 @@ fn analyze_file(file: &SyntaxNode, i: &mut DocumentIndexer) -> Option<()> {
 
 fn analyze_class(class: ast::Class, i: &mut DocumentIndexer) {
     let Some(symbol_id) = with_id(class.name(), |name, range| {
-        i.add_record(name, range)
+        Some(i.add_record(name, range))
     }) else { return; };
 
     i.push(symbol_id);
@@ -44,10 +46,11 @@ fn analyze_class(class: ast::Class, i: &mut DocumentIndexer) {
 }
 
 fn analyze_template_arg(arg: ast::TemplateArgDecl, i: &mut DocumentIndexer) {
-    with_id(arg.name(), |name, range| i.add_template_arg(name, range));
-    if let Some(typ) = arg.r#type() {
-        analyze_type(typ, i);
-    }
+    with_id(arg.name(), |name, range| {
+        let typ = analyze_type(arg.r#type()?, i)?;
+        i.add_template_arg(name, range, typ);
+        Some(())
+    });
 }
 
 fn analyze_record_body(record_body: ast::RecordBody, i: &mut DocumentIndexer) {
@@ -75,13 +78,16 @@ fn analyze_body(body: ast::Body, i: &mut DocumentIndexer) {
 }
 
 fn analyze_field_def(field_def: ast::FieldDef, i: &mut DocumentIndexer) {
-    if let Some(typ) = field_def.r#type() {
-        analyze_type(typ, i);
-    }
-    with_id(field_def.name(), |name, range| i.add_field(name, range));
-    if let Some(value) = field_def.value() {
-        analyze_value(value, i);
-    }
+    with_id(field_def.name(), |name, range| {
+        let typ = analyze_type(field_def.r#type()?, i)?;
+        i.add_field(name, range, typ);
+
+        if let Some(value) = field_def.value() {
+            analyze_value(value, i);
+        }
+
+        Some(())
+    });
 }
 
 fn analyze_field_let(field_let: ast::FieldLet, i: &mut DocumentIndexer) {
@@ -94,7 +100,7 @@ fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
     let Some(name) = def.name() else { return; };
     let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() else { return; };
     let Some(symbol_id) = with_id(Some(id), |name, range| {
-        i.add_record(name, range)
+        Some(i.add_record(name, range))
     }) else { return; };
 
     i.push(symbol_id);
@@ -104,19 +110,17 @@ fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
     i.pop();
 }
 
-fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<()> {
+fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<SymbolType> {
     match typ {
-        ast::Type::ListType(list_typ) => {
-            analyze_type(list_typ.inner_type()?, i);
-        }
+        ast::Type::ListType(list_typ) => analyze_type(list_typ.inner_type()?, i),
         ast::Type::ClassId(class_id) => {
-            with_id(class_id.name(), |name, range| {
+            let symbol_id = with_id(class_id.name(), |name, range| {
                 i.add_symbol_reference(name, range)
-            });
+            })?;
+            Some(SymbolType::Record(symbol_id))
         }
-        _ => {}
+        _ => Some(SymbolType::Primitive),
     }
-    None
 }
 
 fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {
@@ -134,18 +138,24 @@ fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {
 
 fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> Option<()> {
     let simple_value = value.simple_value()?;
-    match simple_value {
-        ast::SimpleValue::Identifier(id) => {
-            with_id(Some(id), |name, range| i.add_symbol_reference(name, range));
-        }
-        _ => {}
-    }
+    let ast::SimpleValue::Identifier(id) = simple_value else { return None; };
+    let symbol_id = with_id(Some(id), |name, range| i.add_symbol_reference(name, range))?;
+
+    let suffix = value.suffixes().next()?;
+    let ast::ValueSuffix::FieldSuffix(field_name) = suffix;
+    with_id(field_name.name(), |name, range| {
+        i.access_field(symbol_id, name.clone(), range)
+    });
+
     None
 }
 
-fn with_id<T>(id: Option<ast::Identifier>, f: impl FnOnce(&EcoString, Range) -> T) -> Option<T> {
+fn with_id<T>(
+    id: Option<ast::Identifier>,
+    f: impl FnOnce(&EcoString, Range) -> Option<T>,
+) -> Option<T> {
     let Some(id) = id else { return None; };
     let Some(name) = id.value() else { return None; };
     let range = id.range();
-    Some(f(name, range))
+    f(name, range)
 }

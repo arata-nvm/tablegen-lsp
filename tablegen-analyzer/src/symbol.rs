@@ -18,6 +18,7 @@ pub struct Symbol {
     reference_locs: Vec<Location>,
     template_args: HashMap<EcoString, SymbolId>,
     fields: HashMap<EcoString, SymbolId>,
+    typ: SymbolType,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -27,8 +28,14 @@ pub enum SymbolKind {
     Field,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum SymbolType {
+    Primitive,
+    Record(SymbolId),
+}
+
 impl Symbol {
-    pub fn new(name: EcoString, kind: SymbolKind, define_loc: Location) -> Self {
+    pub fn new(name: EcoString, kind: SymbolKind, define_loc: Location, typ: SymbolType) -> Self {
         Self {
             name,
             kind,
@@ -36,6 +43,7 @@ impl Symbol {
             reference_locs: Vec::new(),
             template_args: HashMap::new(),
             fields: HashMap::new(),
+            typ,
         }
     }
 
@@ -73,5 +81,13 @@ impl Symbol {
 
     pub fn fields(&self) -> Vec<&SymbolId> {
         self.fields.values().collect()
+    }
+
+    pub fn find_field(&self, name: &EcoString) -> Option<&SymbolId> {
+        self.fields.get(name)
+    }
+
+    pub fn r#type(&self) -> SymbolType {
+        self.typ
     }
 }

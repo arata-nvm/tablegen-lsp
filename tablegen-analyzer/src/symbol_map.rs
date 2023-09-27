@@ -3,6 +3,8 @@ use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::error::Position;
 
+use crate::symbol::{self, SymbolType};
+
 use super::symbol::{Location, Symbol, SymbolId, SymbolKind};
 
 #[derive(Debug)]
@@ -26,8 +28,9 @@ impl SymbolMap {
         name: EcoString,
         kind: SymbolKind,
         define_loc: Location,
+        typ: SymbolType,
     ) -> SymbolId {
-        let symbol = Symbol::new(name, kind, define_loc.clone());
+        let symbol = Symbol::new(name, kind, define_loc.clone(), typ);
         let symbol_id = self.symbols.alloc(symbol);
         self.symbol_map.insert(define_loc.1, symbol_id);
 
