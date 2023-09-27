@@ -5,7 +5,7 @@ use tablegen_parser::{
     node::SyntaxNode,
 };
 
-use crate::{index::DocumentIndexer, symbol::Location, symbol_map::SymbolMap};
+use crate::{analyzer, symbol::Location, symbol_map::SymbolMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentId(usize);
@@ -34,7 +34,7 @@ pub struct Document {
 impl Document {
     pub fn parse(doc_id: DocumentId, text: String) -> Self {
         let root = grammar::parse(&text);
-        let (symbol_map, index_errors) = DocumentIndexer::create_index(doc_id, &root);
+        let (symbol_map, index_errors) = analyzer::analyze(doc_id, &root);
 
         let mut errors: Vec<SyntaxError> = root.errors().into_iter().cloned().collect();
         errors.extend(index_errors);
