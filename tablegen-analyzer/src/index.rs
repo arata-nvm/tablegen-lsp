@@ -8,8 +8,9 @@ use tablegen_parser::{
 };
 
 use super::{
+    document::DocumentId,
     symbol::{SymbolId, SymbolKind},
-    DocumentId, symbol_map::SymbolMap,
+    symbol_map::SymbolMap,
 };
 
 #[derive(Debug)]

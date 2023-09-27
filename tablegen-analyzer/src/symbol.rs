@@ -4,7 +4,7 @@ use ecow::EcoString;
 use id_arena::Id;
 use tablegen_parser::error::Range;
 
-use super::DocumentId;
+use crate::document::DocumentId;
 
 pub type Location = (DocumentId, Range);
 

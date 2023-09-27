@@ -1,7 +1,7 @@
 pub mod analyzer2lsp {
-    use tablegen_analyzer::document::{
+    use tablegen_analyzer::{
+        document::Document,
         symbol::{Location, Symbol, SymbolKind},
-        Document,
     };
     use tablegen_parser::error;
     use tower_lsp::lsp_types::{self, Diagnostic};

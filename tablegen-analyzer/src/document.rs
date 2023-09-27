@@ -1,7 +1,3 @@
-pub mod index;
-pub mod symbol;
-pub mod symbol_map;
-
 use ropey::Rope;
 use tablegen_parser::{
     error::{Position, SyntaxError},
@@ -9,7 +5,7 @@ use tablegen_parser::{
     node::SyntaxNode,
 };
 
-use self::{index::DocumentIndexer, symbol::Location, symbol_map::SymbolMap};
+use crate::{index::DocumentIndexer, symbol::Location, symbol_map::SymbolMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentId(usize);
