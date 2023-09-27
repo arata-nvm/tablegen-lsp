@@ -8,16 +8,16 @@ use crate::document::DocumentId;
 
 pub type Location = (DocumentId, Range);
 
-pub type SymbolId = Id<Symbol>;
+pub type OldSymbolId = Id<OldSymbol>;
 
 #[derive(Debug)]
-pub struct Symbol {
+pub struct OldSymbol {
     name: EcoString,
     kind: SymbolKind,
     define_loc: Location,
     reference_locs: Vec<Location>,
-    template_args: HashMap<EcoString, SymbolId>,
-    fields: HashMap<EcoString, SymbolId>,
+    template_args: HashMap<EcoString, OldSymbolId>,
+    fields: HashMap<EcoString, OldSymbolId>,
     typ: SymbolType,
 }
 
@@ -31,10 +31,10 @@ pub enum SymbolKind {
 #[derive(Debug, Clone, Copy)]
 pub enum SymbolType {
     Primitive,
-    Record(SymbolId),
+    Record(OldSymbolId),
 }
 
-impl Symbol {
+impl OldSymbol {
     pub fn new(name: EcoString, kind: SymbolKind, define_loc: Location, typ: SymbolType) -> Self {
         Self {
             name,
@@ -67,23 +67,23 @@ impl Symbol {
         self.reference_locs.clone()
     }
 
-    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: SymbolId) {
+    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: OldSymbolId) {
         self.template_args.insert(name, template_arg_id);
     }
 
-    pub fn template_args(&self) -> Vec<&SymbolId> {
+    pub fn template_args(&self) -> Vec<&OldSymbolId> {
         self.template_args.values().collect()
     }
 
-    pub fn add_field(&mut self, name: EcoString, field_id: SymbolId) {
+    pub fn add_field(&mut self, name: EcoString, field_id: OldSymbolId) {
         self.fields.insert(name, field_id);
     }
 
-    pub fn fields(&self) -> Vec<&SymbolId> {
+    pub fn fields(&self) -> Vec<&OldSymbolId> {
         self.fields.values().collect()
     }
 
-    pub fn find_field(&self, name: &EcoString) -> Option<&SymbolId> {
+    pub fn find_field(&self, name: &EcoString) -> Option<&OldSymbolId> {
         self.fields.get(name)
     }
 

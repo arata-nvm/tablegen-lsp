@@ -5,13 +5,13 @@ use tablegen_parser::error::Position;
 
 use crate::symbol::{self, SymbolType};
 
-use super::symbol::{Location, Symbol, SymbolId, SymbolKind};
+use super::symbol::{Location, OldSymbol, OldSymbolId, SymbolKind};
 
 #[derive(Debug)]
 pub struct SymbolMap {
-    symbols: Arena<Symbol>,
-    symbol_map: IntervalMap<Position, SymbolId>,
-    records: Vec<SymbolId>,
+    symbols: Arena<OldSymbol>,
+    symbol_map: IntervalMap<Position, OldSymbolId>,
+    records: Vec<OldSymbolId>,
 }
 
 impl SymbolMap {
@@ -29,8 +29,8 @@ impl SymbolMap {
         kind: SymbolKind,
         define_loc: Location,
         typ: SymbolType,
-    ) -> SymbolId {
-        let symbol = Symbol::new(name, kind, define_loc.clone(), typ);
+    ) -> OldSymbolId {
+        let symbol = OldSymbol::new(name, kind, define_loc.clone(), typ);
         let symbol_id = self.symbols.alloc(symbol);
         self.symbol_map.insert(define_loc.1, symbol_id);
 
@@ -41,28 +41,28 @@ impl SymbolMap {
         symbol_id
     }
 
-    pub fn symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
+    pub fn symbol(&self, symbol_id: OldSymbolId) -> Option<&OldSymbol> {
         self.symbols.get(symbol_id)
     }
 
-    pub fn symbol_mut(&mut self, symbol_id: SymbolId) -> Option<&mut Symbol> {
+    pub fn symbol_mut(&mut self, symbol_id: OldSymbolId) -> Option<&mut OldSymbol> {
         self.symbols.get_mut(symbol_id)
     }
 
-    pub fn add_reference(&mut self, symbol_id: SymbolId, loc: Location) {
+    pub fn add_reference(&mut self, symbol_id: OldSymbolId, loc: Location) {
         let symbol = self.symbol_mut(symbol_id).unwrap();
         symbol.add_reference(loc.clone());
         self.symbol_map.insert(loc.1, symbol_id);
     }
 
-    pub fn get_symbol_at(&self, pos: Position) -> Option<&Symbol> {
+    pub fn get_symbol_at(&self, pos: Position) -> Option<&OldSymbol> {
         self.symbol_map
             .values_overlap(pos)
             .next()
             .and_then(|&id| self.symbols.get(id))
     }
 
-    pub fn records(&self) -> &[SymbolId] {
+    pub fn records(&self) -> &[OldSymbolId] {
         &self.records
     }
 }

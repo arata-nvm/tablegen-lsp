@@ -1,7 +1,7 @@
 pub mod analyzer2lsp {
     use tablegen_analyzer::{
         document::Document,
-        symbol::{Location, Symbol, SymbolKind},
+        symbol::{Location, OldSymbol, SymbolKind},
     };
     use tablegen_parser::error;
     use tower_lsp::lsp_types::{self, Diagnostic};
@@ -34,7 +34,7 @@ pub mod analyzer2lsp {
     }
 
     #[allow(deprecated)]
-    pub fn document_symbol(doc: &Document, symbol: &Symbol) -> lsp_types::DocumentSymbol {
+    pub fn document_symbol(doc: &Document, symbol: &OldSymbol) -> lsp_types::DocumentSymbol {
         let template_args = symbol
             .template_args()
             .into_iter()
