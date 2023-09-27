@@ -88,7 +88,7 @@ impl DocumentIndex {
 
     fn analyze_template_arg(&mut self, arg: ast::TemplateArgDecl, ctx: &mut IndexContext) {
         if let Some(name) = arg.name() {
-            self.add_symbol(name, SymbolKind::TemplateArg, ctx);
+            self.add_template_arg(name, ctx);
         }
         if let Some(typ) = arg.r#type() {
             self.analyze_type(typ, ctx);
@@ -236,6 +236,21 @@ impl DocumentIndex {
         self.top_level_symbols.insert(name.clone(), symbol_id);
 
         Some(symbol_id)
+    }
+
+    fn add_template_arg(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<()> {
+        let name = name_id.value()?;
+        let range = name_id.range();
+
+        let define_loc = (self.doc_id, range.clone());
+        let template_arg_id = self.symbols.new_symbol(name.clone(), SymbolKind::TemplateArg, define_loc);
+        ctx.add_symbol(name.clone(), template_arg_id);
+
+        let parent_id = ctx.current_symbol()?;
+        let parent = self.symbols.symbol_mut(parent_id).unwrap();
+        parent.add_template_arg(name.clone(), template_arg_id);
+
+        None
     }
 }
 

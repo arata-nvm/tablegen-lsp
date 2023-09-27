@@ -17,6 +17,8 @@ pub struct Symbol {
     define_loc: Location,
     reference_locs: Vec<Location>,
     children: HashMap<EcoString, SymbolId>,
+
+    template_args: HashMap<EcoString, SymbolId>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -35,6 +37,8 @@ impl Symbol {
             define_loc,
             reference_locs: Vec::new(),
             children: HashMap::new(),
+
+            template_args: HashMap::new(),
         }
     }
 
@@ -64,5 +68,9 @@ impl Symbol {
 
     pub fn children(&self) -> Vec<SymbolId> {
         self.children.values().cloned().collect()
+    }
+
+    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: SymbolId) {
+        self.template_args.insert(name, template_arg_id);
     }
 }
