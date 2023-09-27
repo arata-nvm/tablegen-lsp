@@ -3,41 +3,23 @@ use std::collections::HashMap;
 use ecow::{EcoString, eco_format};
 use tablegen_parser::{
     ast::{self, Identifier},
-    error::{Position, SyntaxError},
+    error::SyntaxError,
     node::SyntaxNode,
 };
 
 use super::{
-    symbol::{Symbol, SymbolId, SymbolKind},
+    symbol::{SymbolId, SymbolKind},
     DocumentId, symbol_map::SymbolMap,
 };
 
 #[derive(Debug)]
-pub struct DocumentIndex {
+pub struct DocumentIndexer {
     doc_id: DocumentId,
     symbols: SymbolMap,
     errors: Vec<SyntaxError>,
 }
 
-impl DocumentIndex {
-    pub fn get_symbol_at(&self, pos: Position) -> Option<&Symbol> {
-        self.symbols.get_symbol_at(pos)
-    }
-
-    pub fn symbol(&self, id: SymbolId) -> Option<&Symbol> {
-        self.symbols.symbol(id)
-    }
-
-    pub fn symbols(&self) -> &[SymbolId] {
-        self.symbols.records()
-    }
-
-    pub fn take_errors(&mut self) -> Vec<SyntaxError> {
-        std::mem::take(&mut self.errors)
-    }
-}
-
-impl DocumentIndex {
+impl DocumentIndexer {
     fn new(doc_id: DocumentId) -> Self {
         Self {
             doc_id,
@@ -47,12 +29,10 @@ impl DocumentIndex {
     }
 
     // TODO: wrap SyntaxNode
-    pub fn create_index(doc_id: DocumentId, file: &SyntaxNode) -> Self {
+    pub fn create_index(doc_id: DocumentId, file: &SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
         let mut index = Self::new(doc_id);
-
-        let mut ctx = IndexContext::new();
-        index.analyze_file(file, &mut ctx);
-        index
+        index.analyze_file(file, &mut IndexContext::new());
+        (index.symbols, index.errors)
     }
 
     fn analyze_file(&mut self, file: &SyntaxNode, ctx: &mut IndexContext) -> Option<()> {

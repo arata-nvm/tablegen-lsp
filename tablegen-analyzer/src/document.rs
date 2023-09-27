@@ -9,7 +9,7 @@ use tablegen_parser::{
     node::SyntaxNode,
 };
 
-use self::{index::DocumentIndex, symbol::Location};
+use self::{index::DocumentIndexer, symbol::Location, symbol_map::SymbolMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentId(usize);
@@ -32,23 +32,23 @@ pub struct Document {
     text: Rope,
     root: SyntaxNode,
     errors: Vec<SyntaxError>,
-    index: DocumentIndex,
+    symbol_map: SymbolMap,
 }
 
 impl Document {
     pub fn parse(doc_id: DocumentId, text: String) -> Self {
         let root = grammar::parse(&text);
-        let mut index = DocumentIndex::create_index(doc_id, &root);
+        let (symbol_map, index_errors) = DocumentIndexer::create_index(doc_id, &root);
 
         let mut errors: Vec<SyntaxError> = root.errors().into_iter().cloned().collect();
-        errors.extend(index.take_errors());
+        errors.extend(index_errors);
 
         Self {
             doc_id,
             text: Rope::from_str(&text),
             root,
             errors,
-            index,
+            symbol_map,
         }
     }
 
@@ -64,8 +64,8 @@ impl Document {
         std::mem::take(&mut self.errors)
     }
 
-    pub fn index(&self) -> &DocumentIndex {
-        &self.index
+    pub fn symbol_map(&self) -> &SymbolMap {
+        &self.symbol_map
     }
 
     pub fn pos_to_line(&self, pos: Position) -> ropey::Result<usize> {
@@ -77,12 +77,12 @@ impl Document {
     }
 
     pub fn get_definition(&self, pos: Position) -> Option<Location> {
-        let symbol = self.index.get_symbol_at(pos)?;
+        let symbol = self.symbol_map.get_symbol_at(pos)?;
         Some(symbol.define_loc())
     }
 
     pub fn get_references(&self, pos: Position) -> Option<Vec<Location>> {
-        let symbol = self.index.get_symbol_at(pos)?;
+        let symbol = self.symbol_map.get_symbol_at(pos)?;
         Some(symbol.reference_locs())
     }
 }

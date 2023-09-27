@@ -38,13 +38,13 @@ pub mod analyzer2lsp {
         let template_args = symbol
             .template_args()
             .into_iter()
-            .filter_map(|id| doc.index().symbol(*id))
+            .filter_map(|id| doc.symbol_map().symbol(*id))
             .map(|child| document_symbol(doc, child));
 
         let fields = symbol
             .fields()
             .into_iter()
-            .filter_map(|id| doc.index().symbol(*id))
+            .filter_map(|id| doc.symbol_map().symbol(*id))
             .map(|child| document_symbol(doc, child));
 
         let children: Vec<lsp_types::DocumentSymbol> = template_args.chain(fields).collect();
