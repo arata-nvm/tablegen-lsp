@@ -1,5 +1,6 @@
 pub mod index;
 pub mod symbol;
+pub mod symbol_map;
 
 use ropey::Rope;
 use tablegen_parser::{

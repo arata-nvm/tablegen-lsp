@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
 use ecow::{EcoString, eco_format};
-use id_arena::Arena;
-use iset::IntervalMap;
 use tablegen_parser::{
     ast::{self, Identifier},
     error::{Position, SyntaxError},
@@ -11,28 +9,24 @@ use tablegen_parser::{
 
 use super::{
     symbol::{Symbol, SymbolId, SymbolKind},
-    DocumentId,
+    DocumentId, symbol_map::SymbolMap,
 };
 
 #[derive(Debug)]
 pub struct DocumentIndex {
     doc_id: DocumentId,
-    symbols: Arena<Symbol>,
-    symbol_map: IntervalMap<Position, SymbolId>,
     top_level_symbols: HashMap<EcoString, SymbolId>,
+    symbols: SymbolMap,
     errors: Vec<SyntaxError>,
 }
 
 impl DocumentIndex {
     pub fn get_symbol_at(&self, pos: Position) -> Option<&Symbol> {
-        self.symbol_map
-            .values_overlap(pos)
-            .next()
-            .and_then(|&id| self.symbols.get(id))
+        self.symbols.get_symbol_at(pos)
     }
 
     pub fn symbol(&self, id: SymbolId) -> Option<&Symbol> {
-        self.symbols.get(id)
+        self.symbols.symbol(id)
     }
 
     pub fn symbols(&self) -> Vec<SymbolId> {
@@ -48,9 +42,8 @@ impl DocumentIndex {
     fn new(doc_id: DocumentId) -> Self {
         Self {
             doc_id,
-            symbols: Arena::new(),
-            symbol_map: IntervalMap::new(),
             top_level_symbols: HashMap::new(),
+            symbols: SymbolMap::new(),
             errors: Vec::new(),
         }
     }
@@ -205,16 +198,14 @@ impl DocumentIndex {
         let range = name_id.range();
 
         let define_loc = (self.doc_id, range.clone());
-        let symbol = Symbol::new(name.clone(), kind, define_loc);
-        let symbol_id = self.symbols.alloc(symbol);
+        let symbol_id = self.symbols.new_symbol(name.clone(), kind, define_loc);
+        ctx.add_symbol(name.clone(), symbol_id);
         if parent_id.is_none() {
             self.top_level_symbols.insert(name.clone(), symbol_id);
         }
-        self.symbol_map.insert(range, symbol_id);
-        ctx.add_symbol(name.clone(), symbol_id);
 
         if let Some(parent_id) = parent_id {
-            let parent_symbol = self.symbols.get_mut(parent_id).unwrap();
+            let parent_symbol = self.symbols.symbol_mut(parent_id).unwrap();
             parent_symbol.add_child(name.clone(), symbol_id);
         }
         Some(symbol_id)
@@ -229,9 +220,9 @@ impl DocumentIndex {
             self.errors.push(SyntaxError::new(range, eco_format!("variable not found: {}", name)));
             return None;
         };
-        let symbol = self.symbols.get_mut(symbol_id).unwrap();
+        let symbol = self.symbols.symbol_mut(symbol_id).unwrap();
         symbol.add_reference(reference_loc);
-        self.symbol_map.insert(range, symbol_id);
+        self.symbols.add_reference(symbol_id, range);
         None
     }
 }
