@@ -72,7 +72,7 @@ impl DocumentIndex {
 
     fn analyze_class(&mut self, class: ast::Class, ctx: &mut IndexContext) {
         let Some(name) = class.name() else { return; };
-        let Some(symbol_id) = self.add_symbol(name, SymbolKind::Class, ctx) else { return; };
+        let Some(symbol_id) = self.add_record(name, ctx) else { return; };
 
         ctx.push(symbol_id);
         if let Some(template_arg_list) = class.template_arg_list() {
@@ -224,6 +224,18 @@ impl DocumentIndex {
         symbol.add_reference(reference_loc);
         self.symbols.add_reference(symbol_id, range);
         None
+    }
+
+    fn add_record(&mut self, name_id: Identifier, ctx: &mut IndexContext) -> Option<SymbolId> {
+        let name = name_id.value()?;
+        let range = name_id.range();
+
+        let define_loc = (self.doc_id, range.clone());
+        let symbol_id = self.symbols.new_symbol(name.clone(), SymbolKind::Class, define_loc);
+        ctx.add_symbol(name.clone(), symbol_id);
+        self.top_level_symbols.insert(name.clone(), symbol_id);
+
+        Some(symbol_id)
     }
 }
 
