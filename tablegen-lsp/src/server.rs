@@ -4,9 +4,9 @@ use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
         DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
-        DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, InitializeParams,
-        InitializeResult, Location, OneOf, ReferenceParams, ServerCapabilities,
-        TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
+        HoverProviderCapability, InitializeParams, InitializeResult, Location, OneOf,
+        ReferenceParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
     Client, LanguageServer,
 };
@@ -70,6 +70,7 @@ impl LanguageServer for TableGenLanguageServer {
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
                 ..Default::default()
             },
         })
@@ -151,5 +152,19 @@ impl LanguageServer for TableGenLanguageServer {
             .await;
 
         Ok(symbols)
+    }
+
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let uri = params.text_document_position_params.text_document.uri;
+        let hover = self
+            .with_document(uri, |_, doc| {
+                let lsp_position = params.text_document_position_params.position;
+                let position = lsp2analyzer::position(doc, lsp_position);
+                let hover = doc.get_hover(position)?;
+                let lsp_hover = analyzer2lsp::hover(hover);
+                Some(lsp_hover)
+            })
+            .await;
+        Ok(hover)
     }
 }

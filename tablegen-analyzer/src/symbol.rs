@@ -24,6 +24,13 @@ impl Symbol {
         }
     }
 
+    pub fn description(&self) -> &EcoString {
+        match self {
+            Self::Record(record) => record.description(),
+            Self::RecordField(field) => field.description(),
+        }
+    }
+
     pub fn define_loc(&self) -> &Location {
         match self {
             Self::Record(record) => record.define_loc(),
@@ -77,6 +84,7 @@ impl Symbol {
 #[derive(Debug)]
 pub struct Record {
     name: EcoString,
+    description: EcoString,
     define_loc: Location,
     reference_locs: Vec<Location>,
     template_args: HashMap<EcoString, SymbolId>,
@@ -87,6 +95,7 @@ impl Record {
     pub fn new(name: EcoString, define_loc: Location) -> Self {
         Self {
             name,
+            description: EcoString::new(),
             define_loc,
             reference_locs: Vec::new(),
             template_args: HashMap::new(),
@@ -96,6 +105,10 @@ impl Record {
 
     pub fn name(&self) -> &EcoString {
         &self.name
+    }
+
+    pub fn description(&self) -> &EcoString {
+        &self.description
     }
 
     pub fn define_loc(&self) -> &Location {
@@ -134,6 +147,7 @@ impl Record {
 #[derive(Debug)]
 pub struct RecordField {
     name: EcoString,
+    description: EcoString,
     define_loc: Location,
     reference_locs: Vec<Location>,
     typ: RecordFieldType,
@@ -143,6 +157,7 @@ impl RecordField {
     pub fn new(name: EcoString, define_loc: Location, typ: RecordFieldType) -> Self {
         Self {
             name,
+            description: EcoString::new(),
             define_loc,
             reference_locs: Vec::new(),
             typ,
@@ -151,6 +166,10 @@ impl RecordField {
 
     pub fn name(&self) -> &EcoString {
         &self.name
+    }
+
+    pub fn description(&self) -> &EcoString {
+        &self.description
     }
 
     pub fn define_loc(&self) -> &Location {

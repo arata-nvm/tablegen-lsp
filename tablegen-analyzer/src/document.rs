@@ -81,4 +81,9 @@ impl Document {
         let symbol = self.symbol_map.get_symbol_at(pos)?;
         Some(symbol.reference_locs().to_vec())
     }
+
+    pub fn get_hover(&self, pos: Position) -> Option<String> {
+        let symbol = self.symbol_map.get_symbol_at(pos)?;
+        Some(symbol.description().to_string())
+    }
 }

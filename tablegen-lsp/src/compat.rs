@@ -76,6 +76,13 @@ pub mod analyzer2lsp {
                 children: None,
             })
     }
+
+    pub fn hover(hover: String) -> lsp_types::Hover {
+        lsp_types::Hover {
+            contents: lsp_types::HoverContents::Scalar(lsp_types::MarkedString::String(hover)),
+            range: None,
+        }
+    }
 }
 
 pub mod lsp2analyzer {
