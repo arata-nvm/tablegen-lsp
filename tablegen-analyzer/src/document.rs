@@ -84,7 +84,6 @@ impl Document {
 
     pub fn get_hover(&self, pos: Position) -> Option<String> {
         let symbol = self.symbol_map.get_symbol_at(pos)?;
-        let (_, symbol_range) = symbol.define_loc().clone();
-        hover::hover(symbol_range, &self.root)
+        hover::hover(symbol, &self.root)
     }
 }
