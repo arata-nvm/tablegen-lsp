@@ -40,12 +40,14 @@ fn extract_symbol_info(symbol: &Symbol) -> String {
 
 fn extract_doc_comments(range: Range, node: LinkedNode<'_>) -> Option<String> {
     let id_node = node.find(range)?;
-    let class_node = id_node.parent()?;
+    let parent_node = id_node.parent()?;
 
-    let mut sibling = class_node.prev_sibling()?;
+    let mut sibling = parent_node.prev_sibling()?;
     let mut comments = Vec::new();
     loop {
-        if sibling.node().token_kind() != TokenKind::Whitespace || sibling.node().text() != "\n" {
+        if sibling.node().token_kind() != TokenKind::Whitespace
+            || sibling.node().text().matches("\n").count() != 1
+        {
             break;
         }
 
@@ -55,7 +57,7 @@ fn extract_doc_comments(range: Range, node: LinkedNode<'_>) -> Option<String> {
         }
 
         let comment = sibling.node().text();
-        let comment_content = comment.trim_start_matches("// ").to_string();
+        let comment_content = comment.trim_start_matches("//").trim_start().to_string();
         comments.push(comment_content);
         sibling = sibling.prev_sibling()?;
     }
