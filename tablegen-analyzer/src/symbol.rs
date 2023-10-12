@@ -81,16 +81,24 @@ pub struct Record {
     reference_locs: Vec<Location>,
     template_args: HashMap<EcoString, SymbolId>,
     fields: HashMap<EcoString, SymbolId>,
+    kind: RecordKind,
+}
+
+#[derive(Debug, Clone)]
+pub enum RecordKind {
+    Class,
+    Def,
 }
 
 impl Record {
-    pub fn new(name: EcoString, define_loc: Location) -> Self {
+    pub fn new(name: EcoString, define_loc: Location, kind: RecordKind) -> Self {
         Self {
             name,
             define_loc,
             reference_locs: Vec::new(),
             template_args: HashMap::new(),
             fields: HashMap::new(),
+            kind,
         }
     }
 
@@ -129,6 +137,10 @@ impl Record {
     pub fn find_field(&self, name: &EcoString) -> Option<&SymbolId> {
         self.fields.get(name)
     }
+
+    pub fn kind(&self) -> RecordKind {
+        self.kind.clone()
+    }
 }
 
 #[derive(Debug)]
@@ -136,15 +148,22 @@ pub struct RecordField {
     name: EcoString,
     define_loc: Location,
     reference_locs: Vec<Location>,
+    kind: RecordFieldKind,
     typ: RecordFieldType,
 }
 
 impl RecordField {
-    pub fn new(name: EcoString, define_loc: Location, typ: RecordFieldType) -> Self {
+    pub fn new(
+        name: EcoString,
+        define_loc: Location,
+        kind: RecordFieldKind,
+        typ: RecordFieldType,
+    ) -> Self {
         Self {
             name,
             define_loc,
             reference_locs: Vec::new(),
+            kind,
             typ,
         }
     }
@@ -165,9 +184,19 @@ impl RecordField {
         &self.reference_locs
     }
 
+    pub fn kind(&self) -> RecordFieldKind {
+        self.kind.clone()
+    }
+
     pub fn r#type(&self) -> &RecordFieldType {
         &self.typ
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum RecordFieldKind {
+    TemplateArg,
+    Field,
 }
 
 #[derive(Debug, Clone, Copy)]

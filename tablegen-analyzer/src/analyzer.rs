@@ -6,7 +6,10 @@ use tablegen_parser::{
 };
 
 use crate::{
-    document::DocumentId, indexer::DocumentIndexer, symbol::RecordFieldType, symbol_map::SymbolMap,
+    document::DocumentId,
+    indexer::DocumentIndexer,
+    symbol::{RecordFieldType, RecordKind},
+    symbol_map::SymbolMap,
 };
 
 pub fn analyze(doc_id: DocumentId, file: &SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
@@ -30,7 +33,7 @@ fn analyze_file(file: &SyntaxNode, i: &mut DocumentIndexer) -> Option<()> {
 
 fn analyze_class(class: ast::Class, i: &mut DocumentIndexer) {
     let Some(symbol_id) = with_id(class.name(), |name, range| {
-        Some(i.add_record(name, range))
+        Some(i.add_record(name, range, RecordKind::Class))
     }) else { return; };
 
     i.push(symbol_id);
@@ -100,7 +103,7 @@ fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
     let Some(name) = def.name() else { return; };
     let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() else { return; };
     let Some(symbol_id) = with_id(Some(id), |name, range| {
-        Some(i.add_record(name, range))
+        Some(i.add_record(name, range, RecordKind::Def))
     }) else { return; };
 
     i.push(symbol_id);

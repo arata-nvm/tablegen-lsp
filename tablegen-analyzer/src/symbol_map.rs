@@ -3,7 +3,9 @@ use id_arena::Arena;
 use iset::IntervalMap;
 use tablegen_parser::error::Position;
 
-use crate::symbol::{Record, RecordField, RecordFieldType, Symbol, SymbolId};
+use crate::symbol::{
+    Record, RecordField, RecordFieldKind, RecordFieldType, RecordKind, Symbol, SymbolId,
+};
 
 use super::symbol::Location;
 
@@ -23,8 +25,13 @@ impl SymbolMap {
         }
     }
 
-    pub fn new_record(&mut self, name: EcoString, define_loc: Location) -> SymbolId {
-        let record = Record::new(name, define_loc.clone());
+    pub fn new_record(
+        &mut self,
+        name: EcoString,
+        define_loc: Location,
+        kind: RecordKind,
+    ) -> SymbolId {
+        let record = Record::new(name, define_loc.clone(), kind);
         let symbol_id = self.symbols.alloc(Symbol::Record(record));
         self.symbol_map.insert(define_loc.1, symbol_id);
         self.records.push(symbol_id);
@@ -35,9 +42,10 @@ impl SymbolMap {
         &mut self,
         name: EcoString,
         define_loc: Location,
+        kind: RecordFieldKind,
         typ: RecordFieldType,
     ) -> SymbolId {
-        let field = RecordField::new(name, define_loc.clone(), typ);
+        let field = RecordField::new(name, define_loc.clone(), kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::RecordField(field));
         self.symbol_map.insert(define_loc.1, symbol_id);
         symbol_id

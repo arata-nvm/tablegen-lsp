@@ -5,7 +5,7 @@ use tablegen_parser::error::{Range, SyntaxError};
 
 use crate::{
     document::DocumentId,
-    symbol::{Location, Record, RecordFieldType, SymbolId},
+    symbol::{Location, Record, RecordFieldKind, RecordFieldType, RecordKind, SymbolId},
     symbol_map::SymbolMap,
 };
 
@@ -62,16 +62,21 @@ impl DocumentIndexer {
         }
     }
 
-    pub fn add_record(&mut self, name: &EcoString, range: Range) -> SymbolId {
+    pub fn add_record(&mut self, name: &EcoString, range: Range, kind: RecordKind) -> SymbolId {
         let define_loc = self.to_location(range);
-        let symbol_id = self.symbols.new_record(name.clone(), define_loc);
+        let symbol_id = self.symbols.new_record(name.clone(), define_loc, kind);
         self.add_symbol_scope(name.clone(), symbol_id);
         symbol_id
     }
 
     pub fn add_template_arg(&mut self, name: &EcoString, range: Range, typ: RecordFieldType) {
         let define_loc = self.to_location(range);
-        let symbol_id = self.symbols.new_record_field(name.clone(), define_loc, typ);
+        let symbol_id = self.symbols.new_record_field(
+            name.clone(),
+            define_loc,
+            RecordFieldKind::TemplateArg,
+            typ,
+        );
         self.add_symbol_scope(name.clone(), symbol_id);
 
         let parent = self.scope_symbol_mut();
@@ -80,7 +85,9 @@ impl DocumentIndexer {
 
     pub fn add_field(&mut self, name: &EcoString, range: Range, typ: RecordFieldType) {
         let define_loc = self.to_location(range);
-        let symbol_id = self.symbols.new_record_field(name.clone(), define_loc, typ);
+        let symbol_id =
+            self.symbols
+                .new_record_field(name.clone(), define_loc, RecordFieldKind::Field, typ);
         self.add_symbol_scope(name.clone(), symbol_id);
 
         let parent = self.scope_symbol_mut();
