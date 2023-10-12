@@ -5,7 +5,7 @@ use tablegen_parser::{
     node::SyntaxNode,
 };
 
-use crate::{analyzer, symbol::Location, symbol_map::SymbolMap};
+use crate::{analyzer, hover, symbol::Location, symbol_map::SymbolMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentId(usize);
@@ -84,6 +84,7 @@ impl Document {
 
     pub fn get_hover(&self, pos: Position) -> Option<String> {
         let symbol = self.symbol_map.get_symbol_at(pos)?;
-        Some(symbol.description().to_string())
+        let (_, symbol_range) = symbol.define_loc().clone();
+        hover::hover(symbol_range, &self.root)
     }
 }
