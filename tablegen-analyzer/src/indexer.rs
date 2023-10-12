@@ -132,7 +132,7 @@ impl DocumentIndexer {
 
     pub fn find_field_of(&self, symbol_id: SymbolId, name: &EcoString) -> Option<SymbolId> {
         let field = self.symbols.symbol(symbol_id)?.as_field();
-        let RecordFieldType::Record(typ_id) = field.r#type() else { return None; };
+        let RecordFieldType::Class(typ_id, _) = field.r#type() else { return None; };
         let typ = self.symbols.symbol(*typ_id)?.as_record();
         let field_id = typ.find_field(name)?;
         Some(*field_id)

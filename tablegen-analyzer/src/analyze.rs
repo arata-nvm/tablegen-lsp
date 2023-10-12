@@ -114,16 +114,26 @@ fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
 }
 
 fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<RecordFieldType> {
-    match typ {
-        ast::Type::ListType(list_typ) => analyze_type(list_typ.inner_type()?, i),
-        ast::Type::ClassId(class_id) => {
-            let symbol_id = with_id(class_id.name(), |name, range| {
-                i.add_symbol_reference(name, range)
-            })?;
-            Some(RecordFieldType::Record(symbol_id))
+    let typ = match typ {
+        ast::Type::BitType(_) => RecordFieldType::Bit,
+        ast::Type::IntType(_) => RecordFieldType::Int,
+        ast::Type::StringType(_) => RecordFieldType::String,
+        ast::Type::DagType(_) => RecordFieldType::Dag,
+        ast::Type::BitsType(bits_typ) => {
+            let len = bits_typ.length()?.value()?;
+            RecordFieldType::Bits(len)
         }
-        _ => Some(RecordFieldType::Primitive),
-    }
+        ast::Type::ListType(list_typ) => {
+            let inner_typ = analyze_type(list_typ.inner_type()?, i)?;
+            RecordFieldType::List(Box::new(inner_typ))
+        }
+        ast::Type::ClassId(class_id) => with_id(class_id.name(), |name, range| {
+            let symbol_id = i.add_symbol_reference(name, range)?;
+            Some(RecordFieldType::Class(symbol_id, name.clone()))
+        })?,
+        ast::Type::CodeType(_) => RecordFieldType::Code,
+    };
+    Some(typ)
 }
 
 fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {

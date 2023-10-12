@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use ecow::EcoString;
 use id_arena::Id;
@@ -199,8 +199,29 @@ pub enum RecordFieldKind {
     Field,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum RecordFieldType {
-    Primitive,
-    Record(SymbolId),
+    Bit,
+    Int,
+    String,
+    Dag,
+    Bits(i64),
+    List(Box<RecordFieldType>),
+    Class(SymbolId, EcoString),
+    Code,
+}
+
+impl fmt::Display for RecordFieldType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RecordFieldType::Bit => write!(f, "bit"),
+            RecordFieldType::Int => write!(f, "int"),
+            RecordFieldType::String => write!(f, "string"),
+            RecordFieldType::Dag => write!(f, "dag"),
+            RecordFieldType::Bits(len) => write!(f, "bits<{len}>"),
+            RecordFieldType::List(inner_typ) => write!(f, "list<{}>", inner_typ),
+            RecordFieldType::Class(_, name) => write!(f, "{}", name),
+            RecordFieldType::Code => write!(f, "code"),
+        }
+    }
 }
