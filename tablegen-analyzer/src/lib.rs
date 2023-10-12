@@ -1,4 +1,4 @@
-pub mod analyzer;
+pub mod analyze;
 pub mod document;
 pub mod hover;
 pub mod indexer;
