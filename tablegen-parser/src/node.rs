@@ -77,7 +77,7 @@ impl SyntaxNode {
         }
     }
 
-    pub fn children(&self) -> std::slice::Iter<'_, SyntaxNode> {
+    pub fn children(&self) -> std::slice::Iter<SyntaxNode> {
         match self.0 {
             SyntaxNodeInner::Token(_, _, _) | SyntaxNodeInner::Error(_, _) => [].iter(),
             SyntaxNodeInner::Node(_, ref children) => children.iter(),
