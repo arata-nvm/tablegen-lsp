@@ -2,8 +2,7 @@ use std::fmt;
 
 use ecow::EcoString;
 
-pub type Position = usize;
-pub type Range = std::ops::Range<Position>;
+use crate::parser::Range;
 
 #[derive(Debug, Clone)]
 pub struct SyntaxError {

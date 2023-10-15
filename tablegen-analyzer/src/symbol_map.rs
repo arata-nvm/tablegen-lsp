@@ -1,7 +1,7 @@
 use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
-use tablegen_parser::error::Position;
+use tablegen_parser::parser::Position;
 
 use crate::symbol::{
     Record, RecordField, RecordFieldKind, RecordFieldType, RecordKind, Symbol, SymbolId,

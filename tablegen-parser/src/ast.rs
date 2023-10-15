@@ -1,9 +1,9 @@
 use ecow::EcoString;
 
 use crate::{
-    error::Range,
     kind::{SyntaxKind, TokenKind},
     node::SyntaxNode,
+    parser::Range,
 };
 
 pub trait AstNode<'a>: Sized {

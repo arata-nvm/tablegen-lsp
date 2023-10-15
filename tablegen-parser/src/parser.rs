@@ -2,7 +2,6 @@ use drop_bomb::DropBomb;
 use ecow::{eco_format, EcoString};
 
 use crate::{
-    error::{Position, Range},
     kind::{SyntaxKind, TokenKind},
     lexer::Lexer,
     node::SyntaxNode,
@@ -57,6 +56,9 @@ impl CompletedMarker {
         }
     }
 }
+
+pub type Position = usize;
+pub type Range = std::ops::Range<Position>;
 
 #[derive(Debug)]
 pub(crate) struct Parser<'a> {

@@ -1,4 +1,4 @@
-use tablegen_parser::{error::Range, kind::TokenKind, linked_node::LinkedNode, node::SyntaxNode};
+use tablegen_parser::{kind::TokenKind, linked_node::LinkedNode, node::SyntaxNode, parser::Range};
 
 use crate::symbol::{RecordFieldKind, RecordKind, Symbol};
 

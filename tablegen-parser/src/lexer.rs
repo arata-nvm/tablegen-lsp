@@ -1,7 +1,7 @@
 use ecow::EcoString;
 use unscanny::Scanner;
 
-use crate::{error::Position, kind::TokenKind, T};
+use crate::{kind::TokenKind, parser::Position, T};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {

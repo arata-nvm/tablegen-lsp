@@ -4,8 +4,9 @@ use ecow::EcoString;
 
 use crate::{
     ast::AstNode,
-    error::{Range, SyntaxError},
+    error::SyntaxError,
     kind::{SyntaxKind, TokenKind},
+    parser::Range,
 };
 
 #[derive(Debug)]

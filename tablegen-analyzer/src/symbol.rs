@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt};
 
 use ecow::EcoString;
 use id_arena::Id;
-use tablegen_parser::error::Range;
+use tablegen_parser::parser::Range;
 
 use crate::document::DocumentId;
 

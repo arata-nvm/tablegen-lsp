@@ -1,9 +1,5 @@
 use ecow::EcoString;
-use tablegen_parser::{
-    ast,
-    error::{Range, SyntaxError},
-    node::SyntaxNode,
-};
+use tablegen_parser::{ast, error::SyntaxError, node::SyntaxNode, parser::Range};
 
 use crate::{
     document::DocumentId,

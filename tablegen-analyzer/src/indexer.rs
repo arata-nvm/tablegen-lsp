@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ecow::{eco_format, EcoString};
-use tablegen_parser::error::{Range, SyntaxError};
+use tablegen_parser::{error::SyntaxError, parser::Range};
 
 use crate::{
     document::DocumentId,

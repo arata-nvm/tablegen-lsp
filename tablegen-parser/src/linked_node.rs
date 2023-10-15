@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{error::Range, node::SyntaxNode};
+use crate::{node::SyntaxNode, parser::Range};
 
 #[derive(Debug, Clone)]
 pub struct LinkedNode<'a> {

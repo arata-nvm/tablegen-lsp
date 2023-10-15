@@ -1,9 +1,5 @@
 use ropey::Rope;
-use tablegen_parser::{
-    error::{Position, SyntaxError},
-    grammar,
-    node::SyntaxNode,
-};
+use tablegen_parser::{error::SyntaxError, grammar, node::SyntaxNode, parser::Position};
 
 use crate::{analyze, hover, symbol::Location, symbol_map::SymbolMap};
 
