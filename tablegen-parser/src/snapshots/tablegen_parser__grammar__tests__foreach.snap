@@ -32,39 +32,40 @@ File
       Whitespace@18..19 ` `
       In@19..21 `in`
       Whitespace@21..22 ` `
-      LBrace@22..23 `{`
-      Whitespace@23..40 `\n                `
-      Def
-        Def@40..43 `def`
-        Whitespace@43..44 ` `
-        Value
-          InnerValue
-            Identifier
-              Id@44..47 `Foo`
-          Whitespace@47..48 ` `
-          Paste@48..49 `#`
-          Whitespace@49..50 ` `
-          InnerValue
-            Identifier
-              Id@50..51 `i`
-        Whitespace@51..52 ` `
-        RecordBody
-          ParentClassList
-            Colon@52..53 `:`
-            Whitespace@53..54 ` `
-            ClassRef
+      StatementList
+        LBrace@22..23 `{`
+        Whitespace@23..40 `\n                `
+        Def
+          Def@40..43 `def`
+          Whitespace@43..44 ` `
+          Value
+            InnerValue
               Identifier
-                Id@54..58 `Base`
-              Less@58..59 `<`
-              ArgValueList
-                PositionalArgValueList
-                  Value
-                    InnerValue
-                      Identifier
-                        Id@59..60 `i`
-              Greater@60..61 `>`
-          Body
-            Semi@61..62 `;`
-      Whitespace@62..75 `\n            `
-      RBrace@75..76 `}`
+                Id@44..47 `Foo`
+            Whitespace@47..48 ` `
+            Paste@48..49 `#`
+            Whitespace@49..50 ` `
+            InnerValue
+              Identifier
+                Id@50..51 `i`
+          Whitespace@51..52 ` `
+          RecordBody
+            ParentClassList
+              Colon@52..53 `:`
+              Whitespace@53..54 ` `
+              ClassRef
+                Identifier
+                  Id@54..58 `Base`
+                Less@58..59 `<`
+                ArgValueList
+                  PositionalArgValueList
+                    Value
+                      InnerValue
+                        Identifier
+                          Id@59..60 `i`
+                Greater@60..61 `>`
+            Body
+              Semi@61..62 `;`
+        Whitespace@62..75 `\n            `
+        RBrace@75..76 `}`
 

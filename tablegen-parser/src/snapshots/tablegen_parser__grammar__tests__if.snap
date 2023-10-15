@@ -14,17 +14,18 @@ File
       Whitespace@7..8 ` `
       Then@8..12 `then`
       Whitespace@12..13 ` `
-      LBrace@13..14 `{`
-      Whitespace@14..15 ` `
-      Class
-        Class@15..20 `class`
-        Whitespace@20..21 ` `
-        Identifier
-          Id@21..24 `Foo`
-        RecordBody
-          ParentClassList
-          Body
-            Semi@24..25 `;`
-      Whitespace@25..26 ` `
-      RBrace@26..27 `}`
+      StatementList
+        LBrace@13..14 `{`
+        Whitespace@14..15 ` `
+        Class
+          Class@15..20 `class`
+          Whitespace@20..21 ` `
+          Identifier
+            Id@21..24 `Foo`
+          RecordBody
+            ParentClassList
+            Body
+              Semi@24..25 `;`
+        Whitespace@25..26 ` `
+        RBrace@26..27 `}`
 

@@ -9,6 +9,8 @@ use crate::{
     T,
 };
 
+use self::statement::StatementListType;
+
 const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
 
 pub fn parse(text: &str) -> SyntaxNode {
@@ -21,7 +23,7 @@ pub fn parse(text: &str) -> SyntaxNode {
 fn file(p: &mut Parser) {
     let m = p.marker();
     p.eat_trivia();
-    statement::statement_list(p);
+    statement::statement_list(p, StatementListType::TopLevel);
     if !p.eof() {
         p.error("unexpected input at top level");
     }

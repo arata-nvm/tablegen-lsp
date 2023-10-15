@@ -15,7 +15,8 @@ File
           Value
             Error(5:5:unknown token when parsing a value, )
       Error(5:5:expected 'in' at end of top-level 'let', )
-      Error(5:5:expected class, def, defm, defset, multiclass, let or foreach, )
-      Error
-        Eof@5..5 ``
+      StatementList
+        Error(5:5:expected class, def, defm, defset, multiclass, let or foreach, )
+        Error
+          Eof@5..5 ``
 

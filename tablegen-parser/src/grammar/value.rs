@@ -76,7 +76,7 @@ pub(super) fn opt_value(p: &mut Parser) {
     }
 }
 
-// Value ::= SimpleValue ValueSuffix* | Value "#" Value?
+// Value ::= InnerValue ( "#" InnerValue )*
 pub(super) fn value(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
     inner_value(p);
@@ -86,6 +86,7 @@ pub(super) fn value(p: &mut Parser) -> CompletedMarker {
     p.wrap(m, SyntaxKind::Value)
 }
 
+// InnerValue ::= SimpleValue ValueSuffix*
 pub(super) fn inner_value(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
     if !simple_value(p).is_success() {

@@ -19,7 +19,8 @@ File
               Integer
                 IntVal@8..9 `1`
       Error(9:9:expected 'in' at end of top-level 'let', )
-      Error(9:9:expected class, def, defm, defset, multiclass, let or foreach, )
-      Error
-        Eof@9..9 ``
+      StatementList
+        Error(9:9:expected class, def, defm, defset, multiclass, let or foreach, )
+        Error
+          Eof@9..9 ``
 

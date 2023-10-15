@@ -24,7 +24,8 @@ File
                 RangeList
                 Error(11:11:expected '}' at end of bit range list, )
       Error(11:11:expected 'in' at end of top-level 'let', )
-      Error(11:11:expected class, def, defm, defset, multiclass, let or foreach, )
-      Error
-        Eof@11..11 ``
+      StatementList
+        Error(11:11:expected class, def, defm, defset, multiclass, let or foreach, )
+        Error
+          Eof@11..11 ``
 

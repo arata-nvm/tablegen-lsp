@@ -42,17 +42,18 @@ File
       Whitespace@27..28 ` `
       In@28..30 `in`
       Whitespace@30..31 ` `
-      LBrace@31..32 `{`
-      Whitespace@32..33 ` `
-      Class
-        Class@33..38 `class`
-        Whitespace@38..39 ` `
-        Identifier
-          Id@39..42 `Foo`
-        RecordBody
-          ParentClassList
-          Body
-            Semi@42..43 `;`
-      Whitespace@43..44 ` `
-      RBrace@44..45 `}`
+      StatementList
+        LBrace@31..32 `{`
+        Whitespace@32..33 ` `
+        Class
+          Class@33..38 `class`
+          Whitespace@38..39 ` `
+          Identifier
+            Id@39..42 `Foo`
+          RecordBody
+            ParentClassList
+            Body
+              Semi@42..43 `;`
+        Whitespace@43..44 ` `
+        RBrace@44..45 `}`
 

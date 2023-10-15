@@ -9,11 +9,38 @@ use super::{
     value::{self, VALUE_START},
 };
 
+pub(super) enum StatementListType {
+    TopLevel,
+    Block,
+    SingleOrBlock,
+}
+
 // StatementList ::= Statement*
-pub(super) fn statement_list(p: &mut Parser) {
+pub(super) fn statement_list(p: &mut Parser, typ: StatementListType) {
     let m = p.marker();
-    while !p.eof() {
-        statement(p);
+    match typ {
+        StatementListType::TopLevel => {
+            while !p.eof() {
+                statement(p);
+            }
+        }
+        StatementListType::Block => {
+            p.expect(T!['{']);
+            while !p.at(T!['}']) && !p.eof() {
+                statement(p);
+            }
+            p.expect(T!['}']);
+        }
+        StatementListType::SingleOrBlock => {
+            if p.eat_if(T!['{']) {
+                while !p.at(T!['}']) && !p.eof() {
+                    statement(p);
+                }
+                p.expect(T!['}']);
+            } else {
+                statement(p);
+            }
+        }
     }
     p.wrap(m, SyntaxKind::StatementList);
 }
@@ -69,14 +96,7 @@ pub(super) fn r#let(p: &mut Parser) {
     p.assert(T![let]);
     let_list(p);
     p.expect_with_msg(T![in], "expected 'in' at end of top-level 'let'");
-    if p.eat_if(T!['{']) {
-        while !p.at(T!['}']) && !p.eof() {
-            statement(p);
-        }
-        p.expect_with_msg(T!['}'], "expected '}' at end of top-level let command");
-    } else {
-        statement(p);
-    }
+    statement_list(p, StatementListType::SingleOrBlock);
     p.wrap(m, SyntaxKind::Let);
 }
 
@@ -149,11 +169,7 @@ pub(super) fn defset(p: &mut Parser) {
     r#type::r#type(p);
     value::identifier(p);
     p.expect(T![=]);
-    p.expect(T!['{']);
-    while !p.at(T!['}']) && !p.eof() {
-        statement(p);
-    }
-    p.expect_with_msg(T!['}'], "expected '}' at end of defset");
+    statement_list(p, StatementListType::Block);
     p.wrap(m, SyntaxKind::Defset);
 }
 
@@ -174,14 +190,7 @@ pub(super) fn foreach(p: &mut Parser) {
     p.assert(T![foreach]);
     foreach_iterator(p);
     p.expect(T![in]);
-    if p.eat_if(T!['{']) {
-        while !p.at(T!['}']) && !p.eof() {
-            statement(p);
-        }
-        p.expect_with_msg(T!['}'], "expected '}' at end of foreach command");
-    } else {
-        statement(p);
-    }
+    statement_list(p, StatementListType::SingleOrBlock);
     p.wrap(m, SyntaxKind::Foreach);
 }
 
@@ -207,14 +216,7 @@ fn r#if(p: &mut Parser) {
     p.assert(T![if]);
     value::value(p);
     p.expect(T![then]);
-    if p.eat_if(T!['{']) {
-        while !p.at(T!['}']) && !p.eof() {
-            statement(p);
-        }
-        p.expect(T!['}']);
-    } else {
-        statement(p);
-    }
+    statement_list(p, StatementListType::SingleOrBlock);
     p.wrap(m, SyntaxKind::If);
 }
 
