@@ -1,0 +1,78 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : Base<0>;\n                def Foo1 : Base<1>;\n            }\")"
+---
+File
+  StatementList
+    Defset
+      Defset@0..6 `defset`
+      Whitespace@6..7 ` `
+      ListType
+        List@7..11 `list`
+        Less@11..12 `<`
+        ClassId
+          Identifier
+            Id@12..16 `Base`
+        Greater@16..17 `>`
+      Whitespace@17..18 ` `
+      Identifier
+        Id@18..26 `BaseList`
+      Whitespace@26..27 ` `
+      Equal@27..28 `=`
+      Whitespace@28..29 ` `
+      LBrace@29..30 `{`
+      Whitespace@30..47 `\n                `
+      Def
+        Def@47..50 `def`
+        Whitespace@50..51 ` `
+        Value
+          InnerValue
+            Identifier
+              Id@51..55 `Foo0`
+        Whitespace@55..56 ` `
+        RecordBody
+          ParentClassList
+            Colon@56..57 `:`
+            Whitespace@57..58 ` `
+            ClassRef
+              Identifier
+                Id@58..62 `Base`
+              Less@62..63 `<`
+              ArgValueList
+                PositionalArgValueList
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@63..64 `0`
+              Greater@64..65 `>`
+          Body
+            Semi@65..66 `;`
+      Whitespace@66..83 `\n                `
+      Def
+        Def@83..86 `def`
+        Whitespace@86..87 ` `
+        Value
+          InnerValue
+            Identifier
+              Id@87..91 `Foo1`
+        Whitespace@91..92 ` `
+        RecordBody
+          ParentClassList
+            Colon@92..93 `:`
+            Whitespace@93..94 ` `
+            ClassRef
+              Identifier
+                Id@94..98 `Base`
+              Less@98..99 `<`
+              ArgValueList
+                PositionalArgValueList
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@99..100 `1`
+              Greater@100..101 `>`
+          Body
+            Semi@101..102 `;`
+      Whitespace@102..115 `\n            `
+      RBrace@115..116 `}`
+

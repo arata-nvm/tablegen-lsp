@@ -1,0 +1,22 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"defm foo : bar;\")"
+---
+File
+  StatementList
+    Defm
+      Defm@0..4 `defm`
+      Whitespace@4..5 ` `
+      Value
+        InnerValue
+          Identifier
+            Id@5..8 `foo`
+      Whitespace@8..9 ` `
+      ParentClassList
+        Colon@9..10 `:`
+        Whitespace@10..11 ` `
+        ClassRef
+          Identifier
+            Id@11..14 `bar`
+      Semi@14..15 `;`
+

@@ -1,0 +1,41 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"multiclass foo {\n                def _foo1;\n                def _foo2;\n            }\")"
+---
+File
+  StatementList
+    MultiClass
+      MultiClass@0..10 `multiclass`
+      Whitespace@10..11 ` `
+      Identifier
+        Id@11..14 `foo`
+      Whitespace@14..15 ` `
+      ParentClassList
+      LBrace@15..16 `{`
+      Whitespace@16..33 `\n                `
+      Def
+        Def@33..36 `def`
+        Whitespace@36..37 ` `
+        Value
+          InnerValue
+            Identifier
+              Id@37..42 `_foo1`
+        RecordBody
+          ParentClassList
+          Body
+            Semi@42..43 `;`
+      Whitespace@43..60 `\n                `
+      Def
+        Def@60..63 `def`
+        Whitespace@63..64 ` `
+        Value
+          InnerValue
+            Identifier
+              Id@64..69 `_foo2`
+        RecordBody
+          ParentClassList
+          Body
+            Semi@69..70 `;`
+      Whitespace@70..83 `\n            `
+      RBrace@83..84 `}`
+

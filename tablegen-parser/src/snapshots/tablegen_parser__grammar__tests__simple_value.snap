@@ -21,8 +21,9 @@ File
           Equal@16..17 `=`
           Whitespace@17..18 ` `
           Value
-            Integer
-              IntVal@18..19 `1`
+            InnerValue
+              Integer
+                IntVal@18..19 `1`
         Comma@19..20 `,`
         Whitespace@20..21 ` `
         TemplateArgDecl
@@ -35,8 +36,9 @@ File
           Equal@30..31 `=`
           Whitespace@31..32 ` `
           Value
-            String
-              StrVal@32..38 `\"hoge\"`
+            InnerValue
+              String
+                StrVal@32..38 `\"hoge\"`
         Comma@38..39 `,`
         Whitespace@39..40 ` `
         TemplateArgDecl
@@ -49,8 +51,9 @@ File
           Equal@46..47 `=`
           Whitespace@47..48 ` `
           Value
-            Boolean
-              FalseVal@48..53 `false`
+            InnerValue
+              Boolean
+                FalseVal@48..53 `false`
         Comma@53..54 `,`
         Whitespace@54..55 ` `
         TemplateArgDecl
@@ -63,8 +66,9 @@ File
           Equal@61..62 `=`
           Whitespace@62..63 ` `
           Value
-            Uninitialized
-              Question@63..64 `?`
+            InnerValue
+              Uninitialized
+                Question@63..64 `?`
         Comma@64..65 `,`
         Whitespace@65..66 ` `
         TemplateArgDecl
@@ -81,18 +85,21 @@ File
           Equal@76..77 `=`
           Whitespace@77..78 ` `
           Value
-            Bits
-              ValueList
-                LBrace@78..79 `{`
-                Value
-                  Integer
-                    IntVal@79..80 `0`
-                Comma@80..81 `,`
-                Whitespace@81..82 ` `
-                Value
-                  Integer
-                    IntVal@82..83 `1`
-                RBrace@83..84 `}`
+            InnerValue
+              Bits
+                ValueList
+                  LBrace@78..79 `{`
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@79..80 `0`
+                  Comma@80..81 `,`
+                  Whitespace@81..82 ` `
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@82..83 `1`
+                  RBrace@83..84 `}`
         Comma@84..85 `,`
         Whitespace@85..86 ` `
         TemplateArgDecl
@@ -109,18 +116,21 @@ File
           Equal@98..99 `=`
           Whitespace@99..100 ` `
           Value
-            List
-              ValueList
-                LSquare@100..101 `[`
-                Value
-                  Integer
-                    IntVal@101..102 `1`
-                Comma@102..103 `,`
-                Whitespace@103..104 ` `
-                Value
-                  Integer
-                    IntVal@104..105 `2`
-                RSquare@105..106 `]`
+            InnerValue
+              List
+                ValueList
+                  LSquare@100..101 `[`
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@101..102 `1`
+                  Comma@102..103 `,`
+                  Whitespace@103..104 ` `
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@104..105 `2`
+                  RSquare@105..106 `]`
         Comma@106..107 `,`
         Whitespace@107..108 ` `
         TemplateArgDecl
@@ -133,22 +143,25 @@ File
           Equal@114..115 `=`
           Whitespace@115..116 ` `
           Value
-            Dag
-              LParen@116..117 `(`
-              DagArg
-                Value
-                  Identifier
-                    Id@117..120 `add`
-              Whitespace@120..121 ` `
-              DagArgList
+            InnerValue
+              Dag
+                LParen@116..117 `(`
                 DagArg
                   Value
-                    Identifier
-                      Id@121..122 `A`
-                  Colon@122..123 `:`
-                  VarName
-                    VarName@123..128 `$hoge`
-              RParen@128..129 `)`
+                    InnerValue
+                      Identifier
+                        Id@117..120 `add`
+                Whitespace@120..121 ` `
+                DagArgList
+                  DagArg
+                    Value
+                      InnerValue
+                        Identifier
+                          Id@121..122 `A`
+                    Colon@122..123 `:`
+                    VarName
+                      VarName@123..128 `$hoge`
+                RParen@128..129 `)`
         Comma@129..130 `,`
         Whitespace@130..131 ` `
         TemplateArgDecl
@@ -161,8 +174,9 @@ File
           Equal@137..138 `=`
           Whitespace@138..139 ` `
           Value
-            Identifier
-              Id@139..140 `A`
+            InnerValue
+              Identifier
+                Id@139..140 `A`
         Comma@140..141 `,`
         Whitespace@141..142 ` `
         TemplateArgDecl
@@ -175,18 +189,21 @@ File
           Equal@148..149 `=`
           Whitespace@149..150 ` `
           Value
-            BangOperator
-              XAdd@150..154 `!add`
-              LParen@154..155 `(`
-              Value
-                Identifier
-                  Id@155..156 `A`
-              Comma@156..157 `,`
-              Whitespace@157..158 ` `
-              Value
-                Identifier
-                  Id@158..159 `B`
-              RParen@159..160 `)`
+            InnerValue
+              BangOperator
+                XAdd@150..154 `!add`
+                LParen@154..155 `(`
+                Value
+                  InnerValue
+                    Identifier
+                      Id@155..156 `A`
+                Comma@156..157 `,`
+                Whitespace@157..158 ` `
+                Value
+                  InnerValue
+                    Identifier
+                      Id@158..159 `B`
+                RParen@159..160 `)`
         Comma@160..161 `,`
         Whitespace@161..162 ` `
         TemplateArgDecl
@@ -199,30 +216,35 @@ File
           Equal@168..169 `=`
           Whitespace@169..170 ` `
           Value
-            CondOperator
-              XCond@170..175 `!cond`
-              LParen@175..176 `(`
-              CondClause
-                Value
-                  Boolean
-                    FalseVal@176..181 `false`
-                Colon@181..182 `:`
-                Whitespace@182..183 ` `
-                Value
-                  Integer
-                    IntVal@183..184 `1`
-              Comma@184..185 `,`
-              Whitespace@185..186 ` `
-              CondClause
-                Value
-                  Boolean
-                    TrueVal@186..190 `true`
-                Colon@190..191 `:`
-                Whitespace@191..192 ` `
-                Value
-                  Integer
-                    IntVal@192..193 `2`
-              RParen@193..194 `)`
+            InnerValue
+              CondOperator
+                XCond@170..175 `!cond`
+                LParen@175..176 `(`
+                CondClause
+                  Value
+                    InnerValue
+                      Boolean
+                        FalseVal@176..181 `false`
+                  Colon@181..182 `:`
+                  Whitespace@182..183 ` `
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@183..184 `1`
+                Comma@184..185 `,`
+                Whitespace@185..186 ` `
+                CondClause
+                  Value
+                    InnerValue
+                      Boolean
+                        TrueVal@186..190 `true`
+                  Colon@190..191 `:`
+                  Whitespace@191..192 ` `
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@192..193 `2`
+                RParen@193..194 `)`
         Greater@194..195 `>`
       Whitespace@195..196 ` `
       RecordBody
@@ -240,8 +262,9 @@ File
             Equal@221..222 `=`
             Whitespace@222..223 ` `
             Value
-              Code
-                CodeFragment@223..233 `[{ true }]`
+              InnerValue
+                Code
+                  CodeFragment@223..233 `[{ true }]`
             Semi@233..234 `;`
           Whitespace@234..247 `\n            `
           RBrace@247..248 `}`

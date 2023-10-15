@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn r#let() {
-        insta::assert_display_snapshot!(parse("let A = 1 in { class Foo; }"));
+        insta::assert_display_snapshot!(parse("let A = 1, B<1...3> = 0b101 in { class Foo; }"));
 
         insta::assert_display_snapshot!(parse("let A = 1"));
         insta::assert_display_snapshot!(parse("let A = 1 {"));
@@ -89,6 +89,55 @@ mod tests {
     fn let_item() {
         insta::assert_display_snapshot!(parse("let"));
         insta::assert_display_snapshot!(parse("let A"));
+    }
+
+    #[test]
+    fn multi_class() {
+        insta::assert_display_snapshot!(parse(
+            "multiclass foo {
+                def _foo1;
+                def _foo2;
+            }"
+        ));
+    }
+
+    #[test]
+    fn defm() {
+        insta::assert_display_snapshot!(parse("defm foo : bar;"));
+    }
+
+    #[test]
+    fn defset() {
+        insta::assert_display_snapshot!(parse(
+            "defset list<Base> BaseList = {
+                def Foo0 : Base<0>;
+                def Foo1 : Base<1>;
+            }"
+        ));
+    }
+
+    #[test]
+    fn defvar() {
+        insta::assert_display_snapshot!(parse("defvar i = 0;"));
+    }
+
+    #[test]
+    fn foreach() {
+        insta::assert_display_snapshot!(parse(
+            "foreach i = [0, 1] in {
+                def Foo # i : Base<i>;
+            }"
+        ));
+    }
+
+    #[test]
+    fn r#if() {
+        insta::assert_display_snapshot!(parse("if true then { class Foo; }"));
+    }
+
+    #[test]
+    fn assert() {
+        insta::assert_display_snapshot!(parse("assert hoge, \"fuga\";"));
     }
 
     #[test]
@@ -128,7 +177,14 @@ mod tests {
 
     #[test]
     fn value() {
-        insta::assert_display_snapshot!(parse("class Foo<int A = Hoge.Fuga>;"));
+        insta::assert_display_snapshot!(parse("class Foo<string A = \"hoge\" # \"fuga\">;"));
+    }
+
+    #[test]
+    fn inner_value() {
+        insta::assert_display_snapshot!(parse(
+            "class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<int> C = Hoge[0...1]>;"
+        ));
     }
 
     #[test]

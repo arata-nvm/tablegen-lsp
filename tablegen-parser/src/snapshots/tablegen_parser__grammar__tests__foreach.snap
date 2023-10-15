@@ -1,0 +1,70 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"foreach i = [0, 1] in {\n                def Foo # i : Base<i>;\n            }\")"
+---
+File
+  StatementList
+    Foreach
+      Foreach@0..7 `foreach`
+      Whitespace@7..8 ` `
+      ForeachIterator
+        Identifier
+          Id@8..9 `i`
+        Whitespace@9..10 ` `
+        Equal@10..11 `=`
+        Whitespace@11..12 ` `
+        Value
+          InnerValue
+            List
+              ValueList
+                LSquare@12..13 `[`
+                Value
+                  InnerValue
+                    Integer
+                      IntVal@13..14 `0`
+                Comma@14..15 `,`
+                Whitespace@15..16 ` `
+                Value
+                  InnerValue
+                    Integer
+                      IntVal@16..17 `1`
+                RSquare@17..18 `]`
+      Whitespace@18..19 ` `
+      In@19..21 `in`
+      Whitespace@21..22 ` `
+      LBrace@22..23 `{`
+      Whitespace@23..40 `\n                `
+      Def
+        Def@40..43 `def`
+        Whitespace@43..44 ` `
+        Value
+          InnerValue
+            Identifier
+              Id@44..47 `Foo`
+          Whitespace@47..48 ` `
+          Paste@48..49 `#`
+          Whitespace@49..50 ` `
+          InnerValue
+            Identifier
+              Id@50..51 `i`
+        Whitespace@51..52 ` `
+        RecordBody
+          ParentClassList
+            Colon@52..53 `:`
+            Whitespace@53..54 ` `
+            ClassRef
+              Identifier
+                Id@54..58 `Base`
+              Less@58..59 `<`
+              ArgValueList
+                PositionalArgValueList
+                  Value
+                    InnerValue
+                      Identifier
+                        Id@59..60 `i`
+              Greater@60..61 `>`
+          Body
+            Semi@61..62 `;`
+      Whitespace@62..75 `\n            `
+      RBrace@75..76 `}`
+

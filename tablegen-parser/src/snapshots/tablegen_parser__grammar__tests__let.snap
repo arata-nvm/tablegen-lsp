@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/grammar.rs
-expression: "parse(\"let A = 1 in { class Foo; }\")"
+expression: "parse(\"let A = 1, B<1...3> = 0b101 in { class Foo; }\")"
 ---
 File
   StatementList
@@ -15,22 +15,44 @@ File
           Equal@6..7 `=`
           Whitespace@7..8 ` `
           Value
-            Integer
-              IntVal@8..9 `1`
-      Whitespace@9..10 ` `
-      In@10..12 `in`
-      Whitespace@12..13 ` `
-      LBrace@13..14 `{`
-      Whitespace@14..15 ` `
+            InnerValue
+              Integer
+                IntVal@8..9 `1`
+        Comma@9..10 `,`
+        Whitespace@10..11 ` `
+        LetItem
+          Identifier
+            Id@11..12 `B`
+          Less@12..13 `<`
+          RangeList
+            RangePiece
+              Integer
+                IntVal@13..14 `1`
+              DotDotDot@14..17 `...`
+              Integer
+                IntVal@17..18 `3`
+          Greater@18..19 `>`
+          Whitespace@19..20 ` `
+          Equal@20..21 `=`
+          Whitespace@21..22 ` `
+          Value
+            InnerValue
+              Integer
+                BinaryIntVal@22..27 `0b101`
+      Whitespace@27..28 ` `
+      In@28..30 `in`
+      Whitespace@30..31 ` `
+      LBrace@31..32 `{`
+      Whitespace@32..33 ` `
       Class
-        Class@15..20 `class`
-        Whitespace@20..21 ` `
+        Class@33..38 `class`
+        Whitespace@38..39 ` `
         Identifier
-          Id@21..24 `Foo`
+          Id@39..42 `Foo`
         RecordBody
           ParentClassList
           Body
-            Semi@24..25 `;`
-      Whitespace@25..26 ` `
-      RBrace@26..27 `}`
+            Semi@42..43 `;`
+      Whitespace@43..44 ` `
+      RBrace@44..45 `}`
 

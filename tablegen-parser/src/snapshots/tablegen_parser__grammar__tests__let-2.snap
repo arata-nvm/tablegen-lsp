@@ -15,8 +15,9 @@ File
           Equal@6..7 `=`
           Whitespace@7..8 ` `
           Value
-            Integer
-              IntVal@8..9 `1`
+            InnerValue
+              Integer
+                IntVal@8..9 `1`
       Error(9:9:expected 'in' at end of top-level 'let', )
       Error(9:9:expected class, def, defm, defset, multiclass, let or foreach, )
       Error

@@ -1,6 +1,6 @@
 ---
 source: tablegen-parser/src/grammar.rs
-expression: "parse(\"class Foo<int A = Hoge.Fuga>;\")"
+expression: "parse(\"class Foo<string A = \\\"hoge\\\" # \\\"fuga\\\">;\")"
 ---
 File
   StatementList
@@ -12,24 +12,27 @@ File
       TemplateArgList
         Less@9..10 `<`
         TemplateArgDecl
-          IntType
-            Int@10..13 `int`
-          Whitespace@13..14 ` `
+          StringType
+            String@10..16 `string`
+          Whitespace@16..17 ` `
           Identifier
-            Id@14..15 `A`
-          Whitespace@15..16 ` `
-          Equal@16..17 `=`
-          Whitespace@17..18 ` `
+            Id@17..18 `A`
+          Whitespace@18..19 ` `
+          Equal@19..20 `=`
+          Whitespace@20..21 ` `
           Value
-            Identifier
-              Id@18..22 `Hoge`
-            FieldSuffix
-              Dot@22..23 `.`
-              Identifier
-                Id@23..27 `Fuga`
-        Greater@27..28 `>`
+            InnerValue
+              String
+                StrVal@21..27 `\"hoge\"`
+            Whitespace@27..28 ` `
+            Paste@28..29 `#`
+            Whitespace@29..30 ` `
+            InnerValue
+              String
+                StrVal@30..36 `\"fuga\"`
+        Greater@36..37 `>`
       RecordBody
         ParentClassList
         Body
-          Semi@28..29 `;`
+          Semi@37..38 `;`
 

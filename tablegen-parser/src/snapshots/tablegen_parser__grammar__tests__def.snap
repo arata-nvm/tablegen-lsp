@@ -8,8 +8,9 @@ File
       Def@0..3 `def`
       Whitespace@3..4 ` `
       Value
-        Identifier
-          Id@4..7 `Foo`
+        InnerValue
+          Identifier
+            Id@4..7 `Foo`
       Whitespace@7..8 ` `
       RecordBody
         ParentClassList

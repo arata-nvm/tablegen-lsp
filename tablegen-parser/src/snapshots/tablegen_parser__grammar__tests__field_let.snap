@@ -18,7 +18,8 @@ File
           FieldLet
             Let@12..15 `let`
             Error(15:15:expected field identifier after let, )
-            Error(15:15:unknown token when parsing a value, )
-            Error(15:15:expected '=' in let expression, )
+            Value
+              Error(15:15:unknown token when parsing a value, )
+            Error(15:15:expected ';' after let expression, )
           Error(15:15:expected RBrace, )
 

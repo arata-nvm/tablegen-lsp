@@ -21,7 +21,8 @@ File
             Identifier
               Id@16..17 `A`
             Error(17:17:expected Equal, )
-            Error(17:17:unknown token when parsing a value, )
-            Error(17:17:expected '=' in let expression, )
+            Value
+              Error(17:17:unknown token when parsing a value, )
+            Error(17:17:expected ';' after let expression, )
           Error(17:17:expected RBrace, )
 

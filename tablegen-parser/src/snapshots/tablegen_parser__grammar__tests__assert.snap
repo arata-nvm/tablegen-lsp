@@ -1,0 +1,21 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"assert hoge, \\\"fuga\\\";\")"
+---
+File
+  StatementList
+    Assert
+      Assert@0..6 `assert`
+      Whitespace@6..7 ` `
+      Value
+        InnerValue
+          Identifier
+            Id@7..11 `hoge`
+      Comma@11..12 `,`
+      Whitespace@12..13 ` `
+      Value
+        InnerValue
+          String
+            StrVal@13..19 `\"fuga\"`
+      Semi@19..20 `;`
+

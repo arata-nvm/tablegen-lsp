@@ -24,8 +24,9 @@ File
             Equal@18..19 `=`
             Whitespace@19..20 ` `
             Value
-              Integer
-                IntVal@20..21 `1`
+              InnerValue
+                Integer
+                  IntVal@20..21 `1`
             Error(21:21:expected ';' after let expression, )
           Error(21:21:expected RBrace, )
 

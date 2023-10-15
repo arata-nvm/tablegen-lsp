@@ -15,10 +15,16 @@ File
           Equal@6..7 `=`
           Whitespace@7..8 ` `
           Value
-            Integer
-              IntVal@8..9 `1`
-      Whitespace@9..10 ` `
-      Error(10:11:expected 'in' at end of top-level 'let', {)
-      LBrace@10..11 `{`
-      Error(11:11:expected '}' at end of top-level let command, )
+            InnerValue
+              Integer
+                IntVal@8..9 `1`
+              Whitespace@9..10 ` `
+              RangeSuffix
+                LBrace@10..11 `{`
+                RangeList
+                Error(11:11:expected '}' at end of bit range list, )
+      Error(11:11:expected 'in' at end of top-level 'let', )
+      Error(11:11:expected class, def, defm, defset, multiclass, let or foreach, )
+      Error
+        Eof@11..11 ``
 

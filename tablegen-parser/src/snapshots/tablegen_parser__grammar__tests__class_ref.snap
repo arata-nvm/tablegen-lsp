@@ -19,7 +19,6 @@ File
               Id@12..15 `Bar`
             Less@15..16 `<`
             ArgValueList
-              PositionalArgValueList
             Error(16:16:expected '>' in template value list, )
         Body
           Error(16:16:expected ';' or '{' to start body, )

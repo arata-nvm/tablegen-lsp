@@ -42,8 +42,9 @@ File
             Equal@64..65 `=`
             Whitespace@65..66 ` `
             Value
-              Identifier
-                Id@66..67 `A`
+              InnerValue
+                Identifier
+                  Id@66..67 `A`
             Semi@67..68 `;`
           Whitespace@68..85 `\n                `
           FieldLet
@@ -55,8 +56,9 @@ File
             Equal@91..92 `=`
             Whitespace@92..93 ` `
             Value
-              Identifier
-                Id@93..94 `A`
+              InnerValue
+                Identifier
+                  Id@93..94 `A`
             Semi@94..95 `;`
           Whitespace@95..108 `\n            `
           RBrace@108..109 `}`

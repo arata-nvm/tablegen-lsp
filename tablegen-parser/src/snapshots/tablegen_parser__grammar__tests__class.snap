@@ -29,8 +29,9 @@ File
           Equal@23..24 `=`
           Whitespace@24..25 ` `
           Value
-            Integer
-              IntVal@25..26 `1`
+            InnerValue
+              Integer
+                IntVal@25..26 `1`
         Greater@26..27 `>`
       RecordBody
         ParentClassList
@@ -43,13 +44,15 @@ File
             ArgValueList
               PositionalArgValueList
                 Value
-                  Identifier
-                    Id@33..34 `A`
+                  InnerValue
+                    Identifier
+                      Id@33..34 `A`
                 Comma@34..35 `,`
                 Whitespace@35..36 ` `
                 Value
-                  Integer
-                    IntVal@36..37 `2`
+                  InnerValue
+                    Integer
+                      IntVal@36..37 `2`
             Greater@37..38 `>`
         Body
           Semi@38..39 `;`

@@ -1,0 +1,20 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"defvar i = 0;\")"
+---
+File
+  StatementList
+    Defvar
+      Defvar@0..6 `defvar`
+      Whitespace@6..7 ` `
+      Identifier
+        Id@7..8 `i`
+      Whitespace@8..9 ` `
+      Equal@9..10 `=`
+      Whitespace@10..11 ` `
+      Value
+        InnerValue
+          Integer
+            IntVal@11..12 `0`
+      Semi@12..13 `;`
+
