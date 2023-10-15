@@ -133,12 +133,18 @@ pub(super) fn multi_class(p: &mut Parser) {
     opt_template_arg_list(p);
     parent_class_list(p);
     p.expect_with_msg(T!['{'], "expected '{' in multiclass definition");
+    multi_class_statements(p);
+    p.wrap(m, SyntaxKind::MultiClass);
+}
+
+pub(super) fn multi_class_statements(p: &mut Parser) {
+    let m = p.marker();
     multi_class_statement(p);
     while !p.at(T!['}']) && !p.eof() {
         multi_class_statement(p);
     }
     p.expect(T!['}']);
-    p.wrap(m, SyntaxKind::MultiClass);
+    p.wrap(m, SyntaxKind::StatementList);
 }
 
 // MultiClassStatement ::= Def | Defm | Foreach | Let
@@ -194,20 +200,32 @@ pub(super) fn foreach(p: &mut Parser) {
     p.wrap(m, SyntaxKind::Foreach);
 }
 
-// ForeachIterator ::= Identifier "=" ( "{" RangeList "}" | RangePiece | Value )
+// ForeachIterator ::= Identifier "=" ForeachIteratorInit
 pub(super) fn foreach_iterator(p: &mut Parser) {
     let m = p.marker();
     value::identifier(p).or_error(p, "expected identifier in foreach declaration");
     p.expect_with_msg(T![=], "expected '=' in foreach declaration");
-    if p.eat_if(T!['{']) {
-        value::range_list(p);
-        p.expect(T!['}']);
-    } else if p.at(TokenKind::IntVal) {
-        value::range_piece(p);
-    } else {
-        value::value(p);
-    }
+    foreach_iterator_init(p);
     p.wrap(m, SyntaxKind::ForeachIterator);
+}
+
+// ForeachIteratorInit ::=  "{" RangeList "}" | RangePiece | Value
+pub(super) fn foreach_iterator_init(p: &mut Parser) {
+    let m = p.marker();
+    match p.current() {
+        T!['{'] => {
+            p.assert(T!['{']);
+            value::range_list(p);
+            p.expect(T!['}']);
+        }
+        TokenKind::IntVal => {
+            value::range_piece(p);
+        }
+        _ => {
+            value::value(p);
+        }
+    }
+    p.wrap(m, SyntaxKind::ForeachIteratorInit);
 }
 
 // If ::= "if" Value "then" ( "{" Statement* "}" | Statement )
@@ -317,18 +335,25 @@ pub(super) fn positional_arg_value_list(p: &mut Parser) {
     p.wrap(m, SyntaxKind::PositionalArgValueList);
 }
 
-// NamedArgValueList ::= ( Value "=" Value ( "," Value "=" Value )* )?
+// NamedArgValueList ::= ( NamedArgValue ( "," NamedArgValue )* )?
 pub(super) fn named_arg_value_list(p: &mut Parser) {
     let m = p.marker();
     while !p.eof() {
-        value::value(p);
-        p.expect(T![=]);
-        value::value(p);
+        named_arg_value(p);
         if !p.eat_if(T![,]) {
             break;
         }
     }
     p.wrap(m, SyntaxKind::NamedArgValueList);
+}
+
+// NamedArgValue ::= Value "=" Value
+pub(super) fn named_arg_value(p: &mut Parser) {
+    let m = p.marker();
+    value::value(p);
+    p.expect(T![=]);
+    value::value(p);
+    p.wrap(m, SyntaxKind::NamedArgValue);
 }
 
 // Body ::= ";" | "{" BodyItem* "}"

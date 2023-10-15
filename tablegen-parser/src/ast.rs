@@ -147,7 +147,121 @@ impl<'a> LetItem<'a> {
         self.0.cast_first_match()
     }
 
+    pub fn range_list(self) -> Option<RangeList<'a>> {
+        self.0.cast_first_match()
+    }
+
     pub fn value(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(MultiClass);
+
+impl<'a> MultiClass<'a> {
+    pub fn name(self) -> Option<Identifier<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn template_arg_list(self) -> Option<TemplateArgList<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn parent_class_list(self) -> Option<ParentClassList<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn statement_list(self) -> Option<StatementList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(Defm);
+
+impl<'a> Defm<'a> {
+    pub fn name(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn parent_class_list(self) -> Option<ParentClassList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(Defset);
+
+impl<'a> Defset<'a> {
+    pub fn r#type(self) -> Option<Type<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn name(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn statement_list(self) -> Option<StatementList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(Defvar);
+
+impl<'a> Defvar<'a> {
+    pub fn name(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn value(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(Foreach);
+
+impl<'a> Foreach<'a> {
+    pub fn iterator(self) -> Option<ForeachIterator<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn body(self) -> Option<StatementList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(ForeachIterator);
+
+impl<'a> ForeachIterator<'a> {
+    pub fn name(self) -> Option<Identifier<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn init(self) -> Option<ForeachIteratorInit<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node_enum!(ForeachIteratorInit, [RangeList, RangePiece, Value]);
+
+node!(If);
+
+impl<'a> If<'a> {
+    pub fn condition(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn statement_list(self) -> Option<StatementList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(Assert);
+
+impl<'a> Assert<'a> {
+    pub fn condition(self) -> Option<Value<'a>> {
+        self.0.cast_first_match()
+    }
+
+    pub fn message(self) -> Option<Value<'a>> {
         self.0.cast_first_match()
     }
 }
@@ -214,6 +328,10 @@ impl<'a> ArgValueList<'a> {
     pub fn positional(self) -> Option<PositionalArgValueList<'a>> {
         self.0.cast_first_match()
     }
+
+    pub fn named(self) -> Option<NamedArgValueList<'a>> {
+        self.0.cast_first_match()
+    }
 }
 
 node!(PositionalArgValueList);
@@ -221,6 +339,26 @@ node!(PositionalArgValueList);
 impl<'a> PositionalArgValueList<'a> {
     pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
         self.0.cast_all_matches()
+    }
+}
+
+node!(NamedArgValueList);
+
+impl<'a> NamedArgValueList<'a> {
+    pub fn values(self) -> impl DoubleEndedIterator<Item = NamedArgValue<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(NamedArgValue);
+
+impl<'a> NamedArgValue<'a> {
+    pub fn name(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(0)
+    }
+
+    pub fn value(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(1)
     }
 }
 
@@ -232,7 +370,7 @@ impl<'a> Body<'a> {
     }
 }
 
-node_enum!(BodyItem, [FieldDef, FieldLet]);
+node_enum!(BodyItem, [FieldDef, FieldLet, Defvar, Assert]);
 
 node!(FieldDef);
 
@@ -301,6 +439,14 @@ impl<'a> ClassId<'a> {
 node!(Value);
 
 impl<'a> Value<'a> {
+    pub fn inner_values(self) -> impl DoubleEndedIterator<Item = InnerValue<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(InnerValue);
+
+impl<'a> InnerValue<'a> {
     pub fn simple_value(self) -> Option<SimpleValue<'a>> {
         self.0.cast_first_match()
     }
@@ -310,7 +456,63 @@ impl<'a> Value<'a> {
     }
 }
 
-node_enum!(ValueSuffix, [FieldSuffix]);
+node_enum!(ValueSuffix, [RangeSuffix, SliceSuffix, FieldSuffix]);
+
+node!(RangeSuffix);
+
+impl<'a> RangeSuffix<'a> {
+    pub fn range_list(self) -> Option<RangeList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(RangeList);
+
+impl<'a> RangeList<'a> {
+    pub fn pieces(self) -> impl DoubleEndedIterator<Item = RangePiece<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(RangePiece);
+
+impl<'a> RangePiece<'a> {
+    pub fn start(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(0)
+    }
+
+    pub fn end(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(1)
+    }
+}
+
+node!(SliceSuffix);
+
+impl<'a> SliceSuffix<'a> {
+    pub fn element_list(self) -> Option<SliceElements<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(SliceElements);
+
+impl<'a> SliceElements<'a> {
+    pub fn elements(self) -> impl DoubleEndedIterator<Item = SliceElement<'a>> {
+        self.0.cast_all_matches()
+    }
+}
+
+node!(SliceElement);
+
+impl<'a> SliceElement<'a> {
+    pub fn start(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(0)
+    }
+
+    pub fn end(self) -> Option<Value<'a>> {
+        self.0.cast_all_matches().nth(1)
+    }
+}
 
 node!(FieldSuffix);
 

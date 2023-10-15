@@ -22,7 +22,8 @@ Defset ::= "defset" Type Identifier "=" "{" Statement* "}"
 Defvar ::= "defvar" Identifier "=" Value ";"
 
 Foreach ::= "foreach" ForeachIterator "in" ( "{" Statement* "}" | Statement )
-ForeachIterator ::= Identifier "=" ( "{" RangeList "}" | RangePiece | Value )
+ForeachIterator ::= Identifier "=" ForeachIteratorInit
+ForeachIteratorInit ::=  "{" RangeList "}" | RangePiece | Value
 
 If ::= "if" Value "then" ( "{" Statement* "}" | Statement )
 
@@ -36,7 +37,8 @@ ParentClassList ::= ( ":" ClassRef ( "," ClassRef )* )?
 ClassRef ::= Identifier ( "<" ArgValueList? ">" )?
 ArgValueList ::= PositionalArgValueList ","? NamedArgValueList
 PositionalArgValueList ::= ( Value ( "," Value )* ) ?
-NamedArgValueList ::= ( Value "=" Value ( "," Value "=" Value )* )?
+NamedArgValueList ::= ( NamedArgValue ( "," NamedArgValue )* )?
+NamedArgValue ::= Value "=" Value
 
 Body ::= ";" | "{" BodyItem* "}"
 BodyItem ::= FieldDef | FieldLet | Defvar | Assert

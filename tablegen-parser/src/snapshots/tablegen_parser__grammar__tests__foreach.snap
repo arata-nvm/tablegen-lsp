@@ -13,22 +13,23 @@ File
         Whitespace@9..10 ` `
         Equal@10..11 `=`
         Whitespace@11..12 ` `
-        Value
-          InnerValue
-            List
-              ValueList
-                LSquare@12..13 `[`
-                Value
-                  InnerValue
-                    Integer
-                      IntVal@13..14 `0`
-                Comma@14..15 `,`
-                Whitespace@15..16 ` `
-                Value
-                  InnerValue
-                    Integer
-                      IntVal@16..17 `1`
-                RSquare@17..18 `]`
+        ForeachIteratorInit
+          Value
+            InnerValue
+              List
+                ValueList
+                  LSquare@12..13 `[`
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@13..14 `0`
+                  Comma@14..15 `,`
+                  Whitespace@15..16 ` `
+                  Value
+                    InnerValue
+                      Integer
+                        IntVal@16..17 `1`
+                  RSquare@17..18 `]`
       Whitespace@18..19 ` `
       In@19..21 `in`
       Whitespace@21..22 ` `
