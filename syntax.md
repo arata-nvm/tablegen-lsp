@@ -13,7 +13,7 @@ LetList ::= LetItem ( "," LetItem )*
 LetItem ::= Identifier ( "<" RangeList ">" )? "=" Value
 
 MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList "{" MultiClassStatement+ "}"
-MultiClassStatement ::= Assert | Def | Defm | Defvar | Foreach | If | Let
+MultiClassStatement ::= Def | Defm | Foreach | Let
 
 Defm ::= "defm" Value? ParentClassList ";"
 
@@ -53,7 +53,8 @@ BitsType ::= "bits" "<" Integer ">"
 ListType ::= "list" "<" Type ">"
 ClassId ::= Identifier
 
-Value ::= SimpleValue ValueSuffix* | Value "#" Value?
+Value ::= InnerValue ( "#" InnerValue )*
+InnerValue ::= SimpleValue ValueSuffix*
 ValueSuffix ::= RangeSuffix | SliceSuffix | FieldSuffix
 RangeSuffix ::= "{" RangeList "}"
 RangeList ::= RangePiece ( "," RangePiece )*
