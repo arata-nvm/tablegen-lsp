@@ -76,6 +76,7 @@ fn analyze_body(body: ast::Body, i: &mut DocumentIndexer) {
             ast::BodyItem::FieldLet(field_let) => {
                 analyze_field_let(field_let, i);
             }
+            _ => unimplemented!(),
         }
     }
 }
@@ -100,7 +101,8 @@ fn analyze_field_let(field_let: ast::FieldLet, i: &mut DocumentIndexer) {
 }
 
 fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
-    let Some(name) = def.name() else { return; };
+    let Some(name_value) = def.name() else { return; };
+    let Some(name) = name_value.inner_values().next() else { return; }; // TODO
     let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() else { return; };
     let Some(symbol_id) = with_id(Some(id), |name, range| {
         Some(i.add_record(name, range, RecordKind::Def))
@@ -150,12 +152,13 @@ fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {
 }
 
 fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> Option<()> {
-    let simple_value = value.simple_value()?;
+    let inner_value = value.inner_values().next()?;
+    let simple_value = inner_value.simple_value()?;
     let ast::SimpleValue::Identifier(id) = simple_value else { return None; };
     let symbol_id = with_id(Some(id), |name, range| i.add_symbol_reference(name, range))?;
 
-    let suffix = value.suffixes().next()?;
-    let ast::ValueSuffix::FieldSuffix(field_name) = suffix;
+    let suffix = inner_value.suffixes().next()?;
+    let ast::ValueSuffix::FieldSuffix(field_name) = suffix else { return None; };
     with_id(field_name.name(), |name, range| {
         i.access_field(symbol_id, name.clone(), range)
     });
