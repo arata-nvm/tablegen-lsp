@@ -637,6 +637,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "tablegen-evaluator"
+version = "0.1.0"
+
+[[package]]
 name = "tablegen-lsp"
 version = "0.1.0"
 dependencies = [
