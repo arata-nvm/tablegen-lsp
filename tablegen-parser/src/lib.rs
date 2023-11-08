@@ -6,3 +6,4 @@ pub mod lexer;
 pub mod linked_node;
 pub mod node;
 pub mod parser;
+pub mod preprocessor;

@@ -4,10 +4,7 @@ use crate::{
     T,
 };
 
-use super::{
-    delimited, r#type,
-    value::{self, VALUE_START},
-};
+use super::{delimited, r#type, value};
 
 pub(super) enum StatementListType {
     TopLevel,
@@ -85,9 +82,16 @@ pub(super) fn class(p: &mut Parser) {
 pub(super) fn def(p: &mut Parser) {
     let m = p.marker();
     p.assert(T![def]);
-    value::opt_value(p);
+    object_name(p);
     record_body(p);
     p.wrap(m, SyntaxKind::Def);
+}
+
+pub(super) fn object_name(p: &mut Parser) {
+    match p.current() {
+        T![:] | T![;] | T!['{'] => {}
+        _ => value::opt_value(p),
+    }
 }
 
 // Let ::= "let" LetList "in" ( "{" Statement* "}" | Statement );
@@ -312,7 +316,7 @@ pub(super) fn class_ref(p: &mut Parser) {
 // ArgValueList ::= PositionalArgValueList ","? NamedArgValueList
 pub(super) fn arg_value_list(p: &mut Parser) {
     let m = p.marker();
-    if p.at_set(&VALUE_START) {
+    if p.at_set(&value::VALUE_START) {
         positional_arg_value_list(p);
     }
     // TODO

@@ -58,7 +58,10 @@ fn extract_doc_comments(range: Range, node: LinkedNode<'_>) -> Option<String> {
         }
 
         let comment = sibling.node().text();
-        let comment_content = comment.trim_start_matches("//").trim_start().to_string();
+        if !comment.starts_with("//") {
+            break;
+        }
+        let comment_content = comment.trim_start_matches('/').trim_start().to_string();
         comments.push(comment_content);
         sibling = sibling.prev_sibling()?;
     }

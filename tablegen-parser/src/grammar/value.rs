@@ -218,7 +218,8 @@ pub(super) fn integer(p: &mut Parser) -> CompletedMarker {
 // String ::= STRING
 pub(super) fn string(p: &mut Parser) -> CompletedMarker {
     let m = p.marker();
-    if p.eat_if(TokenKind::StrVal) {
+    if p.at(TokenKind::StrVal) {
+        while p.eat_if(TokenKind::StrVal) {}
         p.wrap(m, SyntaxKind::String)
     } else {
         p.abandon(m)

@@ -556,8 +556,13 @@ impl Integer<'_> {
 node!(String);
 
 impl<'a> String<'a> {
-    pub fn value(self) -> Option<&'a EcoString> {
-        self.0.first_child_text()
+    pub fn value(self) -> std::string::String {
+        self.0
+            .children()
+            .filter(|node| node.token_kind() == TokenKind::StrVal)
+            .map(|node| node.text().as_str())
+            .collect::<Vec<_>>()
+            .join("")
     }
 }
 
