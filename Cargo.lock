@@ -121,12 +121,6 @@ checksum = "9bda8e21c04aca2ae33ffc2fd8c23134f3cac46db123ba97bd9d3f3b8a4a85e1"
 
 [[package]]
 name = "ecow"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d1990d053cf6edf3f030682dba3b0eb65ef01fabb2686072765d8a17d6728e8"
-
-[[package]]
-name = "ecow"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6ea5e3f9cda726431da9d1a8d5a29785d544b31e98e1ca7a210906244002e02"
@@ -635,7 +629,7 @@ name = "tablegen-analyzer"
 version = "0.1.0"
 dependencies = [
  "dashmap",
- "ecow 0.1.2",
+ "ecow",
  "id-arena",
  "iset",
  "ropey",
@@ -646,7 +640,7 @@ dependencies = [
 name = "tablegen-evaluator"
 version = "0.1.0"
 dependencies = [
- "ecow 0.2.0",
+ "ecow",
  "tablegen-parser",
 ]
 
@@ -666,7 +660,7 @@ name = "tablegen-parser"
 version = "0.1.0"
 dependencies = [
  "drop_bomb",
- "ecow 0.2.0",
+ "ecow",
  "insta",
  "unscanny",
 ]
