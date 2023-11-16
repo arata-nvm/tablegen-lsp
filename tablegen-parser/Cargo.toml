@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 drop_bomb = "0.1.5"
-ecow = "0.1.2"
+ecow = "0.2.0"
 insta = "1.31.0"
 unscanny = "0.1.0"
