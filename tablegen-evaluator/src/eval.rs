@@ -151,8 +151,8 @@ fn eval_value(value: ast::Value, e: &mut Evaluator) -> Option<RawValue> {
 fn eval_simple_value(simple_value: ast::SimpleValue, e: &mut Evaluator) -> Option<RawSimpleValue> {
     let val = match simple_value {
         ast::SimpleValue::Integer(v) => RawSimpleValue::Integer(v.value()?),
-        ast::SimpleValue::String(v) => RawSimpleValue::String(v.value()),
-        ast::SimpleValue::Code(v) => RawSimpleValue::Code(v.value()?.to_string()),
+        ast::SimpleValue::String(v) => RawSimpleValue::String(v.value().into()),
+        ast::SimpleValue::Code(v) => RawSimpleValue::Code(v.value()?),
         ast::SimpleValue::Boolean(v) => RawSimpleValue::Boolean(v.value()?),
         ast::SimpleValue::Uninitialized(_) => RawSimpleValue::Uninitialized,
         ast::SimpleValue::Bits(v) => RawSimpleValue::Bits(
@@ -168,9 +168,9 @@ fn eval_simple_value(simple_value: ast::SimpleValue, e: &mut Evaluator) -> Optio
                 .collect::<Option<Vec<RawValue>>>()?,
         ),
         ast::SimpleValue::Dag(v) => todo!(),
-        ast::SimpleValue::Identifier(v) => RawSimpleValue::Identifier(v.value()?.to_string()),
+        ast::SimpleValue::Identifier(v) => RawSimpleValue::Identifier(v.value()?.clone()),
         ast::SimpleValue::ClassRef(v) => {
-            let name = v.name()?.value()?.to_string();
+            let name = v.name()?.value()?.clone();
             let positional_arg = v
                 .arg_value_list()?
                 .positional()?

@@ -133,15 +133,15 @@ pub enum RawValueSuffix {
 #[derive(Debug)]
 pub enum RawSimpleValue {
     Integer(i64),
-    String(String),
-    Code(String),
+    String(EcoString),
+    Code(EcoString),
     Boolean(bool),
     Uninitialized,
     Bits(Vec<RawValue>),
     List(Vec<RawValue>),
     Dag(),
-    Identifier(String),
-    ClassRef(String, Vec<RawValue>, Vec<(RawValue, RawValue)>),
+    Identifier(EcoString),
+    ClassRef(EcoString, Vec<RawValue>, Vec<(RawValue, RawValue)>),
     BangOperator(TokenKind, Vec<RawValue>),
     CondOperator(Vec<(RawValue, RawValue)>),
 }
@@ -149,13 +149,13 @@ pub enum RawSimpleValue {
 #[derive(Debug, Clone)]
 pub enum Value {
     Integer(i64),
-    String(String),
-    Code(String),
+    String(EcoString),
+    Code(EcoString),
     Boolean(bool),
     Uninitialized,
     Bits(Vec<Value>),
     List(Vec<Value>),
     Dag(),
-    Identifier(String),
-    ClassRef(String, Vec<Value>, Vec<(Value, Value)>),
+    Identifier(EcoString),
+    ClassRef(EcoString, Vec<Value>, Vec<(Value, Value)>),
 }
