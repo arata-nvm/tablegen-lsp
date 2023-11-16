@@ -2,7 +2,10 @@ use tablegen_parser::{ast, node::SyntaxNode};
 
 use crate::{
     evaluator::Evaluator,
-    record_keeper::{Record, RecordField, RecordKeeper, RecordRef, TemplateArg, Type, Value},
+    record_keeper::{
+        RawSimpleValue, RawValue, Record, RecordField, RecordKeeper, RecordRef, TemplateArg, Type,
+        Value,
+    },
 };
 
 pub fn evaluate(root: SyntaxNode) -> Option<RecordKeeper> {
@@ -97,7 +100,7 @@ fn eval_field_def(def: ast::FieldDef, e: &mut Evaluator) -> Option<RecordField> 
     let typ = eval_type(def.r#type()?, e)?;
     let value = match def.value() {
         Some(value) => eval_value(value, e)?,
-        None => Value::Uninitialized,
+        None => RawValue(RawSimpleValue::Uninitialized, vec![]),
     };
     Some(RecordField::new(name.clone(), typ, value))
 }
@@ -116,7 +119,7 @@ fn eval_type(typ: ast::Type, e: &mut Evaluator) -> Option<Type> {
     Some(typ)
 }
 
-fn eval_value(value: ast::Value, e: &mut Evaluator) -> Option<Value> {
+fn eval_value(value: ast::Value, e: &mut Evaluator) -> Option<RawValue> {
     for inner_value in value.inner_values() {
         let value = eval_simple_value(inner_value.simple_value()?, e)?;
         for suffix in inner_value.suffixes() {
@@ -126,32 +129,32 @@ fn eval_value(value: ast::Value, e: &mut Evaluator) -> Option<Value> {
                 ast::ValueSuffix::FieldSuffix(_) => todo!(),
             }
         }
-        return Some(value);
+        return Some(RawValue(value, vec![]));
     }
     None
 }
 
-fn eval_simple_value(simple_value: ast::SimpleValue, e: &mut Evaluator) -> Option<Value> {
+fn eval_simple_value(simple_value: ast::SimpleValue, e: &mut Evaluator) -> Option<RawSimpleValue> {
     let val = match simple_value {
-        ast::SimpleValue::Integer(v) => Value::Integer(v.value()?),
-        ast::SimpleValue::String(v) => Value::String(v.value()),
-        ast::SimpleValue::Code(v) => Value::Code(v.value()?.to_string()),
-        ast::SimpleValue::Boolean(v) => Value::Boolean(v.value()?),
-        ast::SimpleValue::Uninitialized(_) => Value::Uninitialized,
-        ast::SimpleValue::Bits(v) => Value::Bits(
+        ast::SimpleValue::Integer(v) => RawSimpleValue::Integer(v.value()?),
+        ast::SimpleValue::String(v) => RawSimpleValue::String(v.value()),
+        ast::SimpleValue::Code(v) => RawSimpleValue::Code(v.value()?.to_string()),
+        ast::SimpleValue::Boolean(v) => RawSimpleValue::Boolean(v.value()?),
+        ast::SimpleValue::Uninitialized(_) => RawSimpleValue::Uninitialized,
+        ast::SimpleValue::Bits(v) => RawSimpleValue::Bits(
             v.value_list()?
                 .values()
                 .map(|v| eval_value(v, e))
-                .collect::<Option<Vec<Value>>>()?,
+                .collect::<Option<Vec<RawValue>>>()?,
         ),
-        ast::SimpleValue::List(v) => Value::List(
+        ast::SimpleValue::List(v) => RawSimpleValue::List(
             v.value_list()?
                 .values()
                 .map(|v| eval_value(v, e))
-                .collect::<Option<Vec<Value>>>()?,
+                .collect::<Option<Vec<RawValue>>>()?,
         ),
         ast::SimpleValue::Dag(v) => todo!(),
-        ast::SimpleValue::Identifier(v) => Value::Identifier(v.value()?.to_string()),
+        ast::SimpleValue::Identifier(v) => RawSimpleValue::Identifier(v.value()?.to_string()),
         ast::SimpleValue::ClassRef(v) => {
             let name = v.name()?.value()?.to_string();
             let positional_arg = v
@@ -159,29 +162,29 @@ fn eval_simple_value(simple_value: ast::SimpleValue, e: &mut Evaluator) -> Optio
                 .positional()?
                 .values()
                 .map(|v| eval_value(v, e))
-                .collect::<Option<Vec<Value>>>()?;
+                .collect::<Option<Vec<RawValue>>>()?;
             let named_arg = v
                 .arg_value_list()?
                 .named()?
                 .values()
                 .map(|v| Option::zip(eval_value(v.name()?, e), eval_value(v.value()?, e)))
-                .collect::<Option<Vec<(Value, Value)>>>()?;
-            Value::ClassRef(name, positional_arg, named_arg)
+                .collect::<Option<Vec<(RawValue, RawValue)>>>()?;
+            RawSimpleValue::ClassRef(name, positional_arg, named_arg)
         }
         ast::SimpleValue::BangOperator(v) => {
             let op = v.kind()?;
             let args = v
                 .values()
                 .map(|v| eval_value(v, e))
-                .collect::<Option<Vec<Value>>>()?;
-            Value::BangOperator(op, args)
+                .collect::<Option<Vec<RawValue>>>()?;
+            RawSimpleValue::BangOperator(op, args)
         }
         ast::SimpleValue::CondOperator(v) => {
             let clauses = v
                 .clauses()
                 .map(|c| Option::zip(eval_value(c.condition()?, e), eval_value(c.value()?, e)))
-                .collect::<Option<Vec<(Value, Value)>>>()?;
-            Value::CondOperator(clauses)
+                .collect::<Option<Vec<(RawValue, RawValue)>>>()?;
+            RawSimpleValue::CondOperator(clauses)
         }
     };
     Some(val)

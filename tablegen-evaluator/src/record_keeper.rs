@@ -66,15 +66,15 @@ impl Record {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TemplateArg {
     name: EcoString,
     typ: Type,
-    initial_value: Value,
+    initial_value: RawValue,
 }
 
 impl TemplateArg {
-    pub fn new(name: EcoString, typ: Type, value: Value) -> Self {
+    pub fn new(name: EcoString, typ: Type, value: RawValue) -> Self {
         Self {
             name,
             typ,
@@ -83,20 +83,32 @@ impl TemplateArg {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RecordField {
     name: EcoString,
     typ: Type,
-    value: Value,
+    value: RawValue,
 }
 
 impl RecordField {
-    pub fn new(name: EcoString, typ: Type, value: Value) -> Self {
+    pub fn new(name: EcoString, typ: Type, value: RawValue) -> Self {
         Self { name, typ, value }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
+pub struct RecordRef {
+    pub record: RecordId,
+    pub args: Vec<RawValue>,
+}
+
+impl RecordRef {
+    pub fn new(record: RecordId, args: Vec<RawValue>) -> Self {
+        Self { record, args }
+    }
+}
+
+#[derive(Debug)]
 pub enum Type {
     Bit,
     Int,
@@ -106,6 +118,32 @@ pub enum Type {
     List(Box<Type>),
     Class(String),
     Code,
+}
+
+#[derive(Debug)]
+pub struct RawValue(pub RawSimpleValue, pub Vec<RawValueSuffix>);
+
+#[derive(Debug)]
+pub enum RawValueSuffix {
+    RangeSuffix,
+    SliceSuffix,
+    FieldSuffix,
+}
+
+#[derive(Debug)]
+pub enum RawSimpleValue {
+    Integer(i64),
+    String(String),
+    Code(String),
+    Boolean(bool),
+    Uninitialized,
+    Bits(Vec<RawValue>),
+    List(Vec<RawValue>),
+    Dag(),
+    Identifier(String),
+    ClassRef(String, Vec<RawValue>, Vec<(RawValue, RawValue)>),
+    BangOperator(TokenKind, Vec<RawValue>),
+    CondOperator(Vec<(RawValue, RawValue)>),
 }
 
 #[derive(Debug, Clone)]
@@ -120,6 +158,4 @@ pub enum Value {
     Dag(),
     Identifier(String),
     ClassRef(String, Vec<Value>, Vec<(Value, Value)>),
-    BangOperator(TokenKind, Vec<Value>),
-    CondOperator(Vec<(Value, Value)>),
 }
