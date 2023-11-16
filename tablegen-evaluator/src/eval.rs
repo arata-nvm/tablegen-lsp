@@ -32,7 +32,7 @@ fn eval_statement(statement: ast::Statement, e: &mut Evaluator) -> Option<()> {
 
 fn eval_class(class: ast::Class, e: &mut Evaluator) -> Option<()> {
     let name = class.name()?.value()?;
-    e.set_current_record(Record::new(name.clone()));
+    e.start_record(Record::new(name.clone()));
 
     for arg in class.template_arg_list()?.args() {
         let arg = eval_template_arg(arg, e)?;

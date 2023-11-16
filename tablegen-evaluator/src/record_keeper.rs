@@ -87,7 +87,7 @@ pub enum Type {
     Code,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Integer(i64),
     String(String),
