@@ -18,13 +18,17 @@ impl RecordKeeper {
     pub fn add_record(&mut self, record: Record) {
         self.records.insert(record.name.clone(), record);
     }
+
+    pub fn find_record(&self, name: &EcoString) -> Option<&Record> {
+        self.records.get(name)
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Record {
-    pub name: EcoString,
-    pub template_args: HashMap<EcoString, TemplateArg>,
-    pub fields: HashMap<EcoString, RecordField>,
+    name: EcoString,
+    template_args: HashMap<EcoString, TemplateArg>,
+    fields: HashMap<EcoString, RecordField>,
 }
 
 impl Record {
@@ -43,13 +47,17 @@ impl Record {
     pub fn add_field(&mut self, field: RecordField) {
         self.fields.insert(field.name.clone(), field);
     }
+
+    pub fn fields(&self) -> impl ExactSizeIterator<Item = &RecordField> {
+        self.fields.values()
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TemplateArg {
-    pub name: EcoString,
-    pub typ: Type,
-    pub initial_value: Value,
+    name: EcoString,
+    typ: Type,
+    initial_value: Value,
 }
 
 impl TemplateArg {
@@ -62,11 +70,11 @@ impl TemplateArg {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RecordField {
-    pub name: EcoString,
-    pub typ: Type,
-    pub value: Value,
+    name: EcoString,
+    typ: Type,
+    value: Value,
 }
 
 impl RecordField {
@@ -75,7 +83,7 @@ impl RecordField {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Bit,
     Int,

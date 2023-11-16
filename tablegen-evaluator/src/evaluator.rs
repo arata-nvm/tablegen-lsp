@@ -38,6 +38,10 @@ impl Evaluator {
         self.current_record.as_mut().unwrap().add_field(field);
     }
 
+    pub fn find_record(&self, name: &EcoString) -> Option<&Record> {
+        self.record_keeper.find_record(name)
+    }
+
     pub fn add_symbol(&mut self, name: EcoString, value: Value) {
         self.context.add_symbol(name, value);
     }
