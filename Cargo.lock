@@ -641,6 +641,7 @@ name = "tablegen-evaluator"
 version = "0.1.0"
 dependencies = [
  "ecow",
+ "id-arena",
  "tablegen-parser",
 ]
 

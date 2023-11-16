@@ -1,34 +1,42 @@
 use std::collections::HashMap;
 
 use ecow::EcoString;
+use id_arena::{Arena, Id};
 use tablegen_parser::kind::TokenKind;
 
 #[derive(Debug)]
 pub struct RecordKeeper {
-    records: HashMap<EcoString, Record>,
+    records: Arena<Record>,
+    record_map: HashMap<EcoString, RecordId>,
 }
 
 impl RecordKeeper {
     pub fn new() -> Self {
         Self {
-            records: HashMap::new(),
+            records: Arena::new(),
+            record_map: HashMap::new(),
         }
     }
 
     pub fn add_record(&mut self, record: Record) {
-        self.records.insert(record.name.clone(), record);
+        let name = record.name.clone();
+        let record_id = self.records.alloc(record);
+        self.record_map.insert(name, record_id);
     }
 
-    pub fn find_record(&self, name: &EcoString) -> Option<&Record> {
-        self.records.get(name)
+    pub fn find_record(&self, name: &EcoString) -> Option<RecordId> {
+        self.record_map.get(name).copied()
     }
 }
 
-#[derive(Debug, Clone)]
+pub type RecordId = Id<Record>;
+
+#[derive(Debug)]
 pub struct Record {
     name: EcoString,
     template_args: HashMap<EcoString, TemplateArg>,
     fields: HashMap<EcoString, RecordField>,
+    parents: Vec<RecordRef>,
 }
 
 impl Record {
@@ -37,6 +45,7 @@ impl Record {
             name,
             template_args: HashMap::new(),
             fields: HashMap::new(),
+            parents: Vec::new(),
         }
     }
 
@@ -50,6 +59,10 @@ impl Record {
 
     pub fn fields(&self) -> impl ExactSizeIterator<Item = &RecordField> {
         self.fields.values()
+    }
+
+    pub fn add_parent(&mut self, parent: RecordRef) {
+        self.parents.push(parent);
     }
 }
 

@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 ecow = "0.2.0"
+id-arena = "2.2.1"
 tablegen-parser = { path = "../tablegen-parser" }

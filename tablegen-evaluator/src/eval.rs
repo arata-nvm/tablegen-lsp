@@ -1,11 +1,8 @@
-use tablegen_parser::{
-    ast::{self, AstNode},
-    node::SyntaxNode,
-};
+use tablegen_parser::{ast, node::SyntaxNode};
 
 use crate::{
     evaluator::Evaluator,
-    record_keeper::{Record, RecordField, RecordKeeper, TemplateArg, Type, Value},
+    record_keeper::{Record, RecordField, RecordKeeper, RecordRef, TemplateArg, Type, Value},
 };
 
 pub fn evaluate(root: SyntaxNode) -> Option<RecordKeeper> {
@@ -65,19 +62,20 @@ fn eval_template_arg(arg: ast::TemplateArgDecl, e: &mut Evaluator) -> Option<Tem
 fn eval_record_body(record_body: ast::RecordBody, e: &mut Evaluator) {
     with(record_body.parent_class_list(), |class_list| {
         for class_ref in class_list.classes() {
-            with(class_ref.name().and_then(|id| id.value()), |name| {
-                let parent_record = e.find_record(name).unwrap();
-                let fields: Vec<RecordField> = parent_record.fields().cloned().collect();
-                for field in fields {
-                    e.add_record_field(field);
-                }
-            });
+            eval_parent_class(class_ref, e);
         }
     });
     with(record_body.body(), |body| {
         for body_item in body.items() {
             eval_body_item(body_item, e);
         }
+    });
+}
+
+fn eval_parent_class(class_ref: ast::ClassRef, e: &mut Evaluator) {
+    with(class_ref.name().and_then(|id| id.value()), |name| {
+        let parent_record = e.find_record(name).unwrap();
+        e.add_parent(RecordRef::new(parent_record, vec![]));
     });
 }
 

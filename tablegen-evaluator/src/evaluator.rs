@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use ecow::EcoString;
 
-use crate::record_keeper::{Record, RecordField, RecordKeeper, TemplateArg, Value};
+use crate::record_keeper::{
+    Record, RecordField, RecordId, RecordKeeper, RecordRef, TemplateArg, Value,
+};
 
 pub(crate) struct Evaluator {
     record_keeper: RecordKeeper,
@@ -34,11 +36,15 @@ impl Evaluator {
         self.current_record.as_mut().unwrap().add_template_arg(arg);
     }
 
+    pub fn add_parent(&mut self, parent: RecordRef) {
+        self.current_record.as_mut().unwrap().add_parent(parent);
+    }
+
     pub fn add_record_field(&mut self, field: RecordField) {
         self.current_record.as_mut().unwrap().add_field(field);
     }
 
-    pub fn find_record(&self, name: &EcoString) -> Option<&Record> {
+    pub fn find_record(&self, name: &EcoString) -> Option<RecordId> {
         self.record_keeper.find_record(name)
     }
 
