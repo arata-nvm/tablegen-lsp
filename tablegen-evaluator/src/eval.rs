@@ -1,4 +1,4 @@
-use tablegen_parser::{ast, node::SyntaxNode, parser::Position};
+use tablegen_parser::{ast, node::SyntaxNode};
 
 use crate::{
     evaluator::Evaluator,
@@ -29,7 +29,7 @@ fn eval_statement(statement: ast::Statement, e: &mut Evaluator) -> Option<()> {
     match statement {
         ast::Statement::Include(_) => todo!(),
         ast::Statement::Class(class) => eval_class(class, e),
-        ast::Statement::Def(_) => todo!(),
+        ast::Statement::Def(def) => eval_def(def, e),
         ast::Statement::Let(_) => todo!(),
     };
     None
@@ -51,6 +51,21 @@ fn eval_class(class: ast::Class, e: &mut Evaluator) {
         });
 
         e.finish_record();
+    });
+}
+
+fn eval_def(def: ast::Def, e: &mut Evaluator) {
+    with(def.name(), |name| {
+        let value = eval_value(name, e);
+        let Some(RawValue(RawSimpleValue::Identifier(name), _)) = value else { unimplemented!(); };
+
+        e.start_record(Record::new(name));
+
+        with(def.record_body(), |record_body| {
+            eval_record_body(record_body, e);
+        });
+
+        e.finish_def();
     });
 }
 

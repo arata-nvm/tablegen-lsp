@@ -8,6 +8,7 @@ use tablegen_parser::kind::TokenKind;
 pub struct RecordKeeper {
     records: Arena<Record>,
     record_map: HashMap<EcoString, RecordId>,
+    def_map: HashMap<EcoString, RecordId>,
 }
 
 impl RecordKeeper {
@@ -15,6 +16,7 @@ impl RecordKeeper {
         Self {
             records: Arena::new(),
             record_map: HashMap::new(),
+            def_map: HashMap::new(),
         }
     }
 
@@ -26,6 +28,12 @@ impl RecordKeeper {
 
     pub fn find_record(&self, name: &EcoString) -> Option<RecordId> {
         self.record_map.get(name).copied()
+    }
+
+    pub fn add_def(&mut self, def: Record) {
+        let name = def.name.clone();
+        let def_id = self.records.alloc(def);
+        self.def_map.insert(name, def_id);
     }
 }
 

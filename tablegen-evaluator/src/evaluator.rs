@@ -32,6 +32,12 @@ impl Evaluator {
         self.record_keeper.add_record(record);
     }
 
+    pub fn finish_def(&mut self) {
+        self.context.pop();
+        let record = self.current_record.take().unwrap();
+        self.record_keeper.add_def(record);
+    }
+
     pub fn add_record_template_arg(&mut self, arg: TemplateArg) {
         self.current_record.as_mut().unwrap().add_template_arg(arg);
     }
