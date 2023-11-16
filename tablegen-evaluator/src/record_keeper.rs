@@ -7,7 +7,7 @@ use tablegen_parser::kind::TokenKind;
 #[derive(Debug)]
 pub struct RecordKeeper {
     records: Arena<Record>,
-    record_map: HashMap<EcoString, RecordId>,
+    class_map: HashMap<EcoString, RecordId>,
     def_map: HashMap<EcoString, RecordId>,
 }
 
@@ -15,19 +15,19 @@ impl RecordKeeper {
     pub fn new() -> Self {
         Self {
             records: Arena::new(),
-            record_map: HashMap::new(),
+            class_map: HashMap::new(),
             def_map: HashMap::new(),
         }
     }
 
-    pub fn add_record(&mut self, record: Record) {
+    pub fn add_class(&mut self, record: Record) {
         let name = record.name.clone();
-        let record_id = self.records.alloc(record);
-        self.record_map.insert(name, record_id);
+        let class_id = self.records.alloc(record);
+        self.class_map.insert(name, class_id);
     }
 
-    pub fn find_record(&self, name: &EcoString) -> Option<RecordId> {
-        self.record_map.get(name).copied()
+    pub fn find_class(&self, name: &EcoString) -> Option<RecordId> {
+        self.class_map.get(name).copied()
     }
 
     pub fn add_def(&mut self, def: Record) {

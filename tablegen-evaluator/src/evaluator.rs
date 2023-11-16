@@ -21,15 +21,15 @@ impl Evaluator {
         }
     }
 
-    pub fn start_record(&mut self, record: Record) {
+    pub fn start(&mut self, record: Record) {
         self.context.push();
         self.current_record.replace(record);
     }
 
-    pub fn finish_record(&mut self) {
+    pub fn finish_class(&mut self) {
         self.context.pop();
         let record = self.current_record.take().unwrap();
-        self.record_keeper.add_record(record);
+        self.record_keeper.add_class(record);
     }
 
     pub fn finish_def(&mut self) {
@@ -42,7 +42,7 @@ impl Evaluator {
         self.current_record.as_mut().unwrap().add_template_arg(arg);
     }
 
-    pub fn add_parent(&mut self, parent: RecordRef) {
+    pub fn add_record_parent(&mut self, parent: RecordRef) {
         self.current_record.as_mut().unwrap().add_parent(parent);
     }
 
@@ -51,7 +51,7 @@ impl Evaluator {
     }
 
     pub fn find_record(&self, name: &EcoString) -> Option<RecordId> {
-        self.record_keeper.find_record(name)
+        self.record_keeper.find_class(name)
     }
 
     pub fn add_symbol(&mut self, name: EcoString, value: Value) {

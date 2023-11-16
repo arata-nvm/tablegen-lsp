@@ -37,7 +37,7 @@ fn eval_statement(statement: ast::Statement, e: &mut Evaluator) -> Option<()> {
 
 fn eval_class(class: ast::Class, e: &mut Evaluator) {
     with(class.name().and_then(|id| id.value()), |name| {
-        e.start_record(Record::new(name.clone()));
+        e.start(Record::new(name.clone()));
 
         with(class.template_arg_list(), |arg_list| {
             for arg in arg_list.args() {
@@ -50,7 +50,7 @@ fn eval_class(class: ast::Class, e: &mut Evaluator) {
             eval_record_body(record_body, e);
         });
 
-        e.finish_record();
+        e.finish_class();
     });
 }
 
@@ -59,7 +59,7 @@ fn eval_def(def: ast::Def, e: &mut Evaluator) {
         let value = eval_value(name, e);
         let Some(RawValue(RawSimpleValue::Identifier(name), _)) = value else { unimplemented!(); };
 
-        e.start_record(Record::new(name));
+        e.start(Record::new(name));
 
         with(def.record_body(), |record_body| {
             eval_record_body(record_body, e);
@@ -107,7 +107,7 @@ fn eval_parent_class(class_ref: ast::ClassRef, e: &mut Evaluator) {
             },
         )
         .unwrap_or(vec![]);
-        e.add_parent(RecordRef::new(parent_record, args));
+        e.add_record_parent(RecordRef::new(parent_record, args));
     });
 }
 
