@@ -544,7 +544,7 @@ node!(Integer);
 
 impl Integer<'_> {
     pub fn value(self) -> Option<i64> {
-        let text = self.0.text();
+        let text = self.0.children().next()?.text();
         if let Some(rest) = text.strip_prefix("0x") {
             i64::from_str_radix(rest, 16).ok()
         } else {
@@ -560,7 +560,12 @@ impl<'a> String<'a> {
         self.0
             .children()
             .filter(|node| node.token_kind() == TokenKind::StrVal)
-            .map(|node| node.text().as_str())
+            .map(|node| {
+                node.text()
+                    .as_str()
+                    .trim_start_matches('"')
+                    .trim_end_matches('"')
+            })
             .collect::<Vec<_>>()
             .join("")
     }
@@ -584,7 +589,7 @@ node!(Boolean);
 
 impl<'a> Boolean<'a> {
     pub fn value(self) -> Option<bool> {
-        let text = self.0.text();
+        let text = self.0.children().next()?.text();
         match text.as_str() {
             "true" => Some(true),
             "false" => Some(false),
@@ -598,6 +603,14 @@ node!(Uninitialized);
 node!(Bits);
 
 impl<'a> Bits<'a> {
+    pub fn value_list(self) -> Option<ValueList<'a>> {
+        self.0.cast_first_match()
+    }
+}
+
+node!(ValueList);
+
+impl<'a> ValueList<'a> {
     pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
         self.0.cast_all_matches()
     }
@@ -606,8 +619,8 @@ impl<'a> Bits<'a> {
 node!(List);
 
 impl<'a> List<'a> {
-    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
-        self.0.cast_all_matches()
+    pub fn value_list(self) -> Option<ValueList<'a>> {
+        self.0.cast_first_match()
     }
 }
 
