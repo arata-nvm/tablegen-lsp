@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 ecow = "0.2.0"
+tablegen-parser = { path = "../tablegen-parser" }
