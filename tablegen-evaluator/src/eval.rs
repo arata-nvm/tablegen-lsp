@@ -1,4 +1,7 @@
-use tablegen_parser::{ast, node::SyntaxNode};
+use tablegen_parser::{
+    ast::{self, AstNode},
+    node::SyntaxNode,
+};
 
 use crate::{
     evaluator::Evaluator,
@@ -11,13 +14,16 @@ pub fn evaluate(root: SyntaxNode) -> Option<RecordKeeper> {
     Some(e.finish())
 }
 
-fn eval_file(root: SyntaxNode, e: &mut Evaluator) -> Option<()> {
-    let file = root.cast::<ast::File>()?;
-    let statement_list = file.statement_list()?;
-    for statement in statement_list.statements() {
-        eval_statement(statement, e);
-    }
-    None
+fn eval_file(root: SyntaxNode, e: &mut Evaluator) {
+    with(
+        root.cast::<ast::File>()
+            .and_then(|file| file.statement_list()),
+        |statement_list| {
+            for statement in statement_list.statements() {
+                eval_statement(statement, e);
+            }
+        },
+    );
 }
 
 fn eval_statement(statement: ast::Statement, e: &mut Evaluator) -> Option<()> {
@@ -30,18 +36,23 @@ fn eval_statement(statement: ast::Statement, e: &mut Evaluator) -> Option<()> {
     None
 }
 
-fn eval_class(class: ast::Class, e: &mut Evaluator) -> Option<()> {
-    let name = class.name()?.value()?;
-    e.start_record(Record::new(name.clone()));
+fn eval_class(class: ast::Class, e: &mut Evaluator) {
+    with(class.name().and_then(|id| id.value()), |name| {
+        e.start_record(Record::new(name.clone()));
 
-    for arg in class.template_arg_list()?.args() {
-        let arg = eval_template_arg(arg, e)?;
-        e.add_record_template_arg(arg);
-    }
-    eval_record_body(class.record_body()?, e);
+        with(class.template_arg_list(), |arg_list| {
+            for arg in arg_list.args() {
+                let Some(arg) = eval_template_arg(arg, e) else { continue; };
+                e.add_record_template_arg(arg);
+            }
+        });
 
-    e.finish_record();
-    None
+        with(class.record_body(), |record_body| {
+            eval_record_body(record_body, e);
+        });
+
+        e.finish_record();
+    });
 }
 
 fn eval_template_arg(arg: ast::TemplateArgDecl, e: &mut Evaluator) -> Option<TemplateArg> {
@@ -51,31 +62,40 @@ fn eval_template_arg(arg: ast::TemplateArgDecl, e: &mut Evaluator) -> Option<Tem
     Some(TemplateArg::new(name.clone(), typ, value))
 }
 
-fn eval_record_body(record_body: ast::RecordBody, e: &mut Evaluator) -> Option<()> {
-    for parent_class in record_body.parent_class_list()?.classes() {}
-    for body_item in record_body.body()?.items() {
-        eval_body_item(body_item, e);
-    }
-    None
+fn eval_record_body(record_body: ast::RecordBody, e: &mut Evaluator) {
+    with(record_body.parent_class_list(), |class_list| {
+        for parent_class in class_list.classes() {
+            // TODO
+        }
+    });
+    with(record_body.body(), |body| {
+        for body_item in body.items() {
+            eval_body_item(body_item, e);
+        }
+    });
 }
 
-fn eval_body_item(body_item: ast::BodyItem, e: &mut Evaluator) -> Option<()> {
+fn eval_body_item(body_item: ast::BodyItem, e: &mut Evaluator) {
     match body_item {
         ast::BodyItem::FieldDef(def) => {
-            let name = def.name()?.value()?;
-            let typ = eval_type(def.r#type()?, e)?;
-            let value = match def.value() {
-                Some(value) => eval_value(value, e)?,
-                None => Value::Uninitialized,
-            };
-            let field = RecordField::new(name.clone(), typ, value);
-            e.add_record_field(field);
+            if let Some(field) = eval_field_def(def, e) {
+                e.add_record_field(field);
+            }
         }
         ast::BodyItem::FieldLet(_) => todo!(),
         ast::BodyItem::Defvar(_) => todo!(),
         ast::BodyItem::Assert(_) => todo!(),
     }
-    None
+}
+
+fn eval_field_def(def: ast::FieldDef, e: &mut Evaluator) -> Option<RecordField> {
+    let name = def.name()?.value()?;
+    let typ = eval_type(def.r#type()?, e)?;
+    let value = match def.value() {
+        Some(value) => eval_value(value, e)?,
+        None => Value::Uninitialized,
+    };
+    Some(RecordField::new(name.clone(), typ, value))
 }
 
 fn eval_type(typ: ast::Type, e: &mut Evaluator) -> Option<Type> {
@@ -161,4 +181,10 @@ fn eval_simple_value(simple_value: ast::SimpleValue, e: &mut Evaluator) -> Optio
         }
     };
     Some(val)
+}
+
+fn with<A>(node: Option<A>, f: impl FnOnce(A)) {
+    if let Some(node) = node {
+        f(node);
+    }
 }
