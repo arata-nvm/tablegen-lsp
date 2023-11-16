@@ -1,10 +1,9 @@
-use tablegen_parser::{ast, node::SyntaxNode};
+use tablegen_parser::{ast, node::SyntaxNode, parser::Position};
 
 use crate::{
     evaluator::Evaluator,
     record_keeper::{
         RawSimpleValue, RawValue, Record, RecordField, RecordKeeper, RecordRef, TemplateArg, Type,
-        Value,
     },
 };
 
@@ -58,7 +57,10 @@ fn eval_class(class: ast::Class, e: &mut Evaluator) {
 fn eval_template_arg(arg: ast::TemplateArgDecl, e: &mut Evaluator) -> Option<TemplateArg> {
     let name = arg.name()?.value()?;
     let typ = eval_type(arg.r#type()?, e)?;
-    let value = eval_value(arg.value()?, e)?;
+    let value = match arg.value() {
+        Some(value) => eval_value(value, e)?,
+        None => RawValue(RawSimpleValue::Uninitialized, vec![]),
+    };
     Some(TemplateArg::new(name.clone(), typ, value))
 }
 
@@ -78,7 +80,19 @@ fn eval_record_body(record_body: ast::RecordBody, e: &mut Evaluator) {
 fn eval_parent_class(class_ref: ast::ClassRef, e: &mut Evaluator) {
     with(class_ref.name().and_then(|id| id.value()), |name| {
         let parent_record = e.find_record(name).unwrap();
-        e.add_parent(RecordRef::new(parent_record, vec![]));
+        let args = with_val(
+            class_ref
+                .arg_value_list()
+                .and_then(|arg_list| arg_list.positional()),
+            |positional| {
+                positional
+                    .values()
+                    .map(|value| eval_value(value, e))
+                    .collect::<Option<Vec<RawValue>>>()
+            },
+        )
+        .unwrap_or(vec![]);
+        e.add_parent(RecordRef::new(parent_record, args));
     });
 }
 
@@ -194,4 +208,8 @@ fn with<A>(node: Option<A>, f: impl FnOnce(A)) {
     if let Some(node) = node {
         f(node);
     }
+}
+
+fn with_val<A, B>(node: Option<A>, f: impl FnOnce(A) -> Option<B>) -> Option<B> {
+    f(node?)
 }
