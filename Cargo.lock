@@ -637,15 +637,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tablegen-evaluator"
-version = "0.1.0"
-dependencies = [
- "ecow",
- "id-arena",
- "tablegen-parser",
-]
-
-[[package]]
 name = "tablegen-lsp"
 version = "0.1.0"
 dependencies = [
