@@ -3,7 +3,7 @@ use tablegen_parser::{
     ast::{self, AstNode},
     error::SyntaxError,
     language::SyntaxNode,
-    parser::Range,
+    parser::TextRange,
 };
 
 use crate::{
@@ -169,10 +169,10 @@ fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> Option<()> {
 
 fn with_id<T>(
     id: Option<ast::Identifier>,
-    f: impl FnOnce(EcoString, Range) -> Option<T>,
+    f: impl FnOnce(EcoString, TextRange) -> Option<T>,
 ) -> Option<T> {
     let Some(id) = id else { return None; };
     let Some(name) = id.value() else { return None; };
     let range = id.syntax().text_range();
-    f(name, range.start().into()..range.end().into())
+    f(name, range)
 }

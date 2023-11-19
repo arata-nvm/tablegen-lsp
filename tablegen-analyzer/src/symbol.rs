@@ -1,12 +1,10 @@
-use std::{collections::HashMap, fmt};
-
+use crate::document::DocumentId;
 use ecow::EcoString;
 use id_arena::Id;
-use tablegen_parser::parser::Range;
+use std::{collections::HashMap, fmt};
+use tablegen_parser::parser::TextRange;
 
-use crate::document::DocumentId;
-
-pub type Location = (DocumentId, Range);
+pub type Location = (DocumentId, TextRange);
 
 pub type SymbolId = Id<Symbol>;
 

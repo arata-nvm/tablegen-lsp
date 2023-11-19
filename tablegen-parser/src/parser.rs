@@ -5,8 +5,7 @@ use crate::{
 use ecow::{eco_format, EcoString};
 use rowan::GreenNodeBuilder;
 
-pub type Position = usize;
-pub type Range = std::ops::Range<Position>;
+pub use rowan::{TextRange, TextSize};
 
 #[derive(Debug)]
 pub(crate) enum CompletedMarker {
@@ -32,8 +31,8 @@ pub(crate) struct Parser<'a> {
     lexer: Lexer<'a>,
 
     current: TokenKind,
-    current_start: Position,
-    current_end: Position,
+    current_start: TextSize,
+    current_end: TextSize,
     is_after_error: bool,
 
     builder: GreenNodeBuilder<'static>,
@@ -51,7 +50,7 @@ impl<'a> Parser<'a> {
             lexer,
 
             current,
-            current_start: 0,
+            current_start: 0.into(),
             current_end,
             is_after_error: false,
 
@@ -86,8 +85,8 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    fn current_range(&self) -> Range {
-        self.current_start..self.current_end
+    fn current_range(&self) -> TextRange {
+        TextRange::new(self.current_start, self.current_end)
     }
 
     #[inline]

@@ -1,5 +1,6 @@
-use crate::{parser::Position, token_kind::TokenKind, T};
+use crate::{token_kind::TokenKind, T};
 use ecow::EcoString;
+use rowan::TextSize;
 use unscanny::Scanner;
 
 #[derive(Debug)]
@@ -20,8 +21,8 @@ impl<'a> Lexer<'a> {
         self.error.take()
     }
 
-    pub fn cursor(&self) -> Position {
-        self.s.cursor()
+    pub fn cursor(&self) -> TextSize {
+        self.s.cursor().try_into().unwrap()
     }
 
     fn error(&mut self, msg: impl Into<EcoString>) -> TokenKind {
@@ -90,7 +91,7 @@ impl<'a> Lexer<'a> {
         TokenKind::BlockComment
     }
 
-    fn number(&mut self, mut start: Position, c: char) -> TokenKind {
+    fn number(&mut self, mut start: usize, c: char) -> TokenKind {
         match self.s.peek() {
             Some(c2) if !c2.is_ascii_digit() => match c {
                 '+' => return TokenKind::Plus,
@@ -137,7 +138,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn identifier(&mut self, start: Position) -> TokenKind {
+    fn identifier(&mut self, start: usize) -> TokenKind {
         self.s.eat_while(is_identifier_continue);
         let ident = self.s.from(start);
 
@@ -261,7 +262,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn preprocessor(&mut self, start: Position) -> TokenKind {
+    fn preprocessor(&mut self, start: usize) -> TokenKind {
         match self.s.peek() {
             Some(c) if c.is_alphabetic() => {}
             _ => return T![#],

@@ -1,6 +1,7 @@
 use std::fs;
 
 use tablegen_analyzer::document::{Document, DocumentId};
+use tablegen_parser::parser::TextSize;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -14,7 +15,10 @@ fn main() {
 
     let line: usize = args[3].parse().unwrap();
     let char_: usize = args[4].parse().unwrap();
-    let pos = doc.line_to_pos(line).unwrap() + char_;
+
+    let pos_size = doc.line_to_pos(line).unwrap();
+    let char_size: TextSize = char_.try_into().unwrap();
+    let pos = pos_size + char_size;
 
     match args[1].as_str() {
         "def_loc" => println!("{:?}", doc.get_definition(pos)),

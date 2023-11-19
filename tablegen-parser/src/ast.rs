@@ -7,7 +7,6 @@ use rowan::SyntaxNodeChildren;
 use std::iter::FilterMap;
 
 pub use rowan::ast::AstNode;
-pub use rowan::TextRange;
 
 macro_rules! node {
     ($name:ident) => {

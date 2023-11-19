@@ -1,18 +1,15 @@
+use crate::symbol::{
+    Location, Record, RecordField, RecordFieldKind, RecordFieldType, RecordKind, Symbol, SymbolId,
+};
 use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
-use tablegen_parser::parser::Position;
-
-use crate::symbol::{
-    Record, RecordField, RecordFieldKind, RecordFieldType, RecordKind, Symbol, SymbolId,
-};
-
-use super::symbol::Location;
+use tablegen_parser::parser::TextSize;
 
 #[derive(Debug)]
 pub struct SymbolMap {
     symbols: Arena<Symbol>,
-    symbol_map: IntervalMap<Position, SymbolId>,
+    symbol_map: IntervalMap<TextSize, SymbolId>,
     records: Vec<SymbolId>,
 }
 
@@ -33,7 +30,7 @@ impl SymbolMap {
     ) -> SymbolId {
         let record = Record::new(name, define_loc.clone(), kind);
         let symbol_id = self.symbols.alloc(Symbol::Record(record));
-        self.symbol_map.insert(define_loc.1, symbol_id);
+        self.symbol_map.insert(define_loc.1.into(), symbol_id);
         self.records.push(symbol_id);
         symbol_id
     }
@@ -47,7 +44,7 @@ impl SymbolMap {
     ) -> SymbolId {
         let field = RecordField::new(name, define_loc.clone(), kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::RecordField(field));
-        self.symbol_map.insert(define_loc.1, symbol_id);
+        self.symbol_map.insert(define_loc.1.into(), symbol_id);
         symbol_id
     }
 
@@ -62,10 +59,10 @@ impl SymbolMap {
     pub fn add_reference(&mut self, symbol_id: SymbolId, loc: Location) {
         let symbol = self.symbol_mut(symbol_id).unwrap();
         symbol.add_reference(loc.clone());
-        self.symbol_map.insert(loc.1, symbol_id);
+        self.symbol_map.insert(loc.1.into(), symbol_id);
     }
 
-    pub fn get_symbol_at(&self, pos: Position) -> Option<&Symbol> {
+    pub fn get_symbol_at(&self, pos: TextSize) -> Option<&Symbol> {
         self.symbol_map
             .values_overlap(pos)
             .next()

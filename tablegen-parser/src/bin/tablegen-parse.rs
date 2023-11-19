@@ -24,9 +24,9 @@ fn token(text: &str) {
         let cursor = lexer.cursor();
         let token = lexer.next();
         if let Some(err) = lexer.take_error() {
-            println!("{cursor}: Error({err})");
+            println!("{cursor:?}: Error({err})");
         } else {
-            println!("{cursor}: {:?}", token);
+            println!("{cursor:?}: {:?}", token);
         }
 
         if token == TokenKind::Eof {

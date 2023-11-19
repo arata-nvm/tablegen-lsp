@@ -1,15 +1,15 @@
-use crate::parser::Range;
 use ecow::EcoString;
+use rowan::TextRange;
 use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct SyntaxError {
-    pub range: Range,
+    pub range: TextRange,
     pub message: EcoString,
 }
 
 impl SyntaxError {
-    pub fn new(range: Range, message: impl Into<EcoString>) -> Self {
+    pub fn new(range: TextRange, message: impl Into<EcoString>) -> Self {
         Self {
             range,
             message: message.into(),
@@ -19,10 +19,6 @@ impl SyntaxError {
 
 impl fmt::Display for SyntaxError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}:{}",
-            self.range.start, self.range.end, self.message
-        )
+        write!(f, "{:?}:{}", self.range, self.message)
     }
 }
