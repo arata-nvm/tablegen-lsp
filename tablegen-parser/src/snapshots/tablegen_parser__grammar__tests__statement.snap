@@ -2,9 +2,16 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"a\")"
 ---
-File
-  StatementList
-    Error(0:1:expected class, def, defm, defset, multiclass, let or foreach, a)
-    Error
-      Id@0..1 `a`
-
+(
+    Root@0..1
+      StatementList@0..1
+        Error@0..1
+          Id@0..1 "a"
+    ,
+    [
+        SyntaxError {
+            range: 0..1,
+            message: "expected class, def, defm, defset, multiclass, let or foreach",
+        },
+    ],
+)

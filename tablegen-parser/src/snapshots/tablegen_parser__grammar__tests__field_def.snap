@@ -2,22 +2,29 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo { int\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      Whitespace@9..10 ` `
-      RecordBody
-        ParentClassList
-        Body
-          LBrace@10..11 `{`
-          Whitespace@11..12 ` `
-          FieldDef
-            IntType
-              Int@12..15 `int`
-            Error(15:15:expected identifier in declaration, )
-          Error(15:15:expected RBrace, )
-
+(
+    Root@0..15
+      StatementList@0..15
+        Class@0..15
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..10
+            Id@6..9 "Foo"
+            Whitespace@9..10 " "
+          RecordBody@10..15
+            ParentClassList@10..10
+            Body@10..15
+              LBrace@10..11 "{"
+              Whitespace@11..12 " "
+              FieldDef@12..15
+                IntType@12..15
+                  Int@12..15 "int"
+                Identifier@15..15
+    ,
+    [
+        SyntaxError {
+            range: 15..15,
+            message: "expected identifier in declaration",
+        },
+    ],
+)

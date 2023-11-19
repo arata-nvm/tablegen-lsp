@@ -1,9 +1,9 @@
 pub mod ast;
 pub mod error;
 pub mod grammar;
-pub mod kind;
+pub mod language;
 pub mod lexer;
-pub mod linked_node;
-pub mod node;
 pub mod parser;
 pub mod preprocessor;
+pub mod syntax_kind;
+pub mod token_kind;

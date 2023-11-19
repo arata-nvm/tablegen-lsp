@@ -2,11 +2,14 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(r#\"include \"foo.td\"\"#)"
 ---
-File
-  StatementList
-    Include
-      Include@0..7 `include`
-      Whitespace@7..8 ` `
-      String
-        StrVal@8..16 `\"foo.td\"`
-
+(
+    Root@0..16
+      StatementList@0..16
+        Include@0..16
+          IncludeKw@0..7 "include"
+          Whitespace@7..8 " "
+          String@8..16
+            StrVal@8..16 "\"foo.td\""
+    ,
+    [],
+)

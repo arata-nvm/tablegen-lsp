@@ -2,64 +2,69 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<int A> {\n                int B;\n                int C = A;\n                let D = A;\n            }\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      TemplateArgList
-        Less@9..10 `<`
-        TemplateArgDecl
-          IntType
-            Int@10..13 `int`
-          Whitespace@13..14 ` `
-          Identifier
-            Id@14..15 `A`
-        Greater@15..16 `>`
-      Whitespace@16..17 ` `
-      RecordBody
-        ParentClassList
-        Body
-          LBrace@17..18 `{`
-          Whitespace@18..35 `\n                `
-          FieldDef
-            IntType
-              Int@35..38 `int`
-            Whitespace@38..39 ` `
-            Identifier
-              Id@39..40 `B`
-            Semi@40..41 `;`
-          Whitespace@41..58 `\n                `
-          FieldDef
-            IntType
-              Int@58..61 `int`
-            Whitespace@61..62 ` `
-            Identifier
-              Id@62..63 `C`
-            Whitespace@63..64 ` `
-            Equal@64..65 `=`
-            Whitespace@65..66 ` `
-            Value
-              InnerValue
-                Identifier
-                  Id@66..67 `A`
-            Semi@67..68 `;`
-          Whitespace@68..85 `\n                `
-          FieldLet
-            Let@85..88 `let`
-            Whitespace@88..89 ` `
-            Identifier
-              Id@89..90 `D`
-            Whitespace@90..91 ` `
-            Equal@91..92 `=`
-            Whitespace@92..93 ` `
-            Value
-              InnerValue
-                Identifier
-                  Id@93..94 `A`
-            Semi@94..95 `;`
-          Whitespace@95..108 `\n            `
-          RBrace@108..109 `}`
-
+(
+    Root@0..109
+      StatementList@0..109
+        Class@0..109
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..9
+            Id@6..9 "Foo"
+          TemplateArgList@9..17
+            Less@9..10 "<"
+            TemplateArgDecl@10..15
+              IntType@10..14
+                Int@10..13 "int"
+                Whitespace@13..14 " "
+              Identifier@14..15
+                Id@14..15 "A"
+            Greater@15..16 ">"
+            Whitespace@16..17 " "
+          RecordBody@17..109
+            ParentClassList@17..17
+            Body@17..109
+              LBrace@17..18 "{"
+              Whitespace@18..35 "\n                "
+              FieldDef@35..58
+                IntType@35..39
+                  Int@35..38 "int"
+                  Whitespace@38..39 " "
+                Identifier@39..40
+                  Id@39..40 "B"
+                Semi@40..41 ";"
+                Whitespace@41..58 "\n                "
+              FieldDef@58..85
+                IntType@58..62
+                  Int@58..61 "int"
+                  Whitespace@61..62 " "
+                Identifier@62..64
+                  Id@62..63 "C"
+                  Whitespace@63..64 " "
+                Equal@64..65 "="
+                Whitespace@65..66 " "
+                Value@66..67
+                  InnerValue@66..67
+                    ClassValue@66..67
+                      Identifier@66..67
+                        Id@66..67 "A"
+                Semi@67..68 ";"
+                Whitespace@68..85 "\n                "
+              FieldLet@85..108
+                LetKw@85..88 "let"
+                Whitespace@88..89 " "
+                Identifier@89..91
+                  Id@89..90 "D"
+                  Whitespace@90..91 " "
+                Equal@91..92 "="
+                Whitespace@92..93 " "
+                Value@93..94
+                  InnerValue@93..94
+                    ClassValue@93..94
+                      Identifier@93..94
+                        Id@93..94 "A"
+                Semi@94..95 ";"
+                Whitespace@95..108 "\n            "
+              RBrace@108..109 "}"
+    ,
+    [],
+)

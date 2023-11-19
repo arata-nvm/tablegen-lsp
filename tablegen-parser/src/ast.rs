@@ -1,83 +1,110 @@
-use ecow::EcoString;
-
 use crate::{
-    kind::{SyntaxKind, TokenKind},
-    node::SyntaxNode,
-    parser::Range,
+    language::{Language, SyntaxNode},
+    syntax_kind::SyntaxKind,
 };
+use ecow::EcoString;
+use rowan::SyntaxNodeChildren;
+use std::iter::FilterMap;
 
-pub trait AstNode<'a>: Sized {
-    fn from_untyped(node: &'a SyntaxNode) -> Option<Self>;
-
-    fn to_untyped(self) -> &'a SyntaxNode;
-}
+pub use rowan::ast::AstNode;
+pub use rowan::TextRange;
 
 macro_rules! node {
     ($name:ident) => {
-        #[derive(Debug, Clone, Copy)]
-        pub struct $name<'a>(&'a SyntaxNode);
+        #[derive(Debug)]
+        pub struct $name(SyntaxNode);
 
-        impl<'a> $name<'a> {
-            pub fn range(&self) -> Range {
-                self.0.range()
+        impl AstNode for $name {
+            type Language = Language;
+
+            fn can_cast(kind: SyntaxKind) -> bool {
+                kind == SyntaxKind::$name
             }
-        }
 
-        impl<'a> AstNode<'a> for $name<'a> {
-            #[inline]
-            fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
+            fn cast(node: SyntaxNode) -> Option<Self> {
                 match node.kind() {
                     SyntaxKind::$name => Some(Self(node)),
                     _ => None,
                 }
             }
 
-            #[inline]
-            fn to_untyped(self) -> &'a SyntaxNode {
-                self.0
+            fn syntax(&self) -> &rowan::SyntaxNode<Self::Language> {
+                &self.0
             }
         }
     };
 }
 
 macro_rules! node_enum {
-    ($name:ident, [$($item:ident),*]) => {
-        #[derive(Debug)]
-        pub enum $name<'a> {
-            $($item($item<'a>),)*
+  ($name:ident, [$($item:ident),*]) => {
+    #[derive(Debug)]
+    pub enum $name {
+        $($item($item),)*
+    }
+
+    impl AstNode for $name {
+        type Language = Language;
+
+        fn can_cast(kind: SyntaxKind) -> bool {
+            matches!(kind, $(SyntaxKind::$item)|*)
         }
 
-        impl<'a> AstNode<'a> for $name<'a> {
-            #[inline]
-            fn from_untyped(node: &'a SyntaxNode) -> Option<Self> {
-                match node.kind() {
-                    $(SyntaxKind::$item => node.cast().map(Self::$item),)*
-                    _ => None,
-                }
-            }
-
-            #[inline]
-            fn to_untyped(self) -> &'a SyntaxNode {
-                match self {
-                    $(Self::$item(v) => v.to_untyped(),)*
-                }
+        fn cast(node: SyntaxNode) -> Option<Self> {
+            match node.kind() {
+                $(SyntaxKind::$item => $item::cast(node).map(Self::$item),)*
+                _ => None,
             }
         }
-    };
+
+        fn syntax(&self) -> &SyntaxNode {
+            match self {
+                $(Self::$item(v) => v.syntax(),)*
+            }
+        }
+    }
+  };
 }
 
-node!(File);
+// FIXME
+trait Castable {
+    fn cast_first_match<T>(&self) -> Option<T>
+    where
+        T: AstNode<Language = Language>;
 
-impl<'a> File<'a> {
-    pub fn statement_list(self) -> Option<StatementList<'a>> {
+    fn cast_all_matches<T>(
+        &self,
+    ) -> FilterMap<SyntaxNodeChildren<Language>, fn(SyntaxNode) -> Option<T>>
+    where
+        T: AstNode<Language = Language>;
+}
+
+impl Castable for SyntaxNode {
+    fn cast_first_match<T: AstNode<Language = Language>>(&self) -> Option<T> {
+        self.children().find_map(T::cast)
+    }
+
+    fn cast_all_matches<T>(
+        &self,
+    ) -> FilterMap<SyntaxNodeChildren<Language>, fn(SyntaxNode) -> Option<T>>
+    where
+        T: AstNode<Language = Language>,
+    {
+        self.children().filter_map(T::cast)
+    }
+}
+
+node!(Root);
+
+impl Root {
+    pub fn statement_list(&self) -> Option<StatementList> {
         self.0.cast_first_match()
     }
 }
 
 node!(StatementList);
 
-impl<'a> StatementList<'a> {
-    pub fn statements(self) -> impl DoubleEndedIterator<Item = Statement<'a>> {
+impl StatementList {
+    pub fn statements(&self) -> impl Iterator<Item = Statement> {
         self.0.cast_all_matches()
     }
 }
@@ -86,156 +113,156 @@ node_enum!(Statement, [Include, Class, Def, Let]);
 
 node!(Include);
 
-impl<'a> Include<'a> {
-    pub fn path(self) -> Option<String<'a>> {
+impl Include {
+    pub fn path(&self) -> Option<String> {
         self.0.cast_first_match()
     }
 }
 
 node!(Class);
 
-impl<'a> Class<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl Class {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn template_arg_list(self) -> Option<TemplateArgList<'a>> {
+    pub fn template_arg_list(&self) -> Option<TemplateArgList> {
         self.0.cast_first_match()
     }
 
-    pub fn record_body(self) -> Option<RecordBody<'a>> {
+    pub fn record_body(&self) -> Option<RecordBody> {
         self.0.cast_first_match()
     }
 }
 
 node!(Def);
 
-impl<'a> Def<'a> {
-    pub fn name(self) -> Option<Value<'a>> {
+impl Def {
+    pub fn name(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 
-    pub fn record_body(self) -> Option<RecordBody<'a>> {
+    pub fn record_body(&self) -> Option<RecordBody> {
         self.0.cast_first_match()
     }
 }
 
 node!(Let);
 
-impl<'a> Let<'a> {
-    pub fn let_list(self) -> Option<LetList<'a>> {
+impl Let {
+    pub fn let_list(&self) -> Option<LetList> {
         self.0.cast_first_match()
     }
 
-    pub fn body(self) -> impl DoubleEndedIterator<Item = Statement<'a>> {
+    pub fn body(&self) -> impl Iterator<Item = Statement> {
         self.0.cast_all_matches()
     }
 }
 
 node!(LetList);
 
-impl<'a> LetList<'a> {
-    pub fn items(self) -> impl DoubleEndedIterator<Item = LetItem<'a>> {
+impl LetList {
+    pub fn items(&self) -> impl Iterator<Item = LetItem> {
         self.0.cast_all_matches()
     }
 }
 
 node!(LetItem);
 
-impl<'a> LetItem<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl LetItem {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn range_list(self) -> Option<RangeList<'a>> {
+    pub fn range_list(&self) -> Option<RangeList> {
         self.0.cast_first_match()
     }
 
-    pub fn value(self) -> Option<Value<'a>> {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 }
 
 node!(MultiClass);
 
-impl<'a> MultiClass<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl MultiClass {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn template_arg_list(self) -> Option<TemplateArgList<'a>> {
+    pub fn template_arg_list(&self) -> Option<TemplateArgList> {
         self.0.cast_first_match()
     }
 
-    pub fn parent_class_list(self) -> Option<ParentClassList<'a>> {
+    pub fn parent_class_list(&self) -> Option<ParentClassList> {
         self.0.cast_first_match()
     }
 
-    pub fn statement_list(self) -> Option<StatementList<'a>> {
+    pub fn statement_list(&self) -> Option<StatementList> {
         self.0.cast_first_match()
     }
 }
 
 node!(Defm);
 
-impl<'a> Defm<'a> {
-    pub fn name(self) -> Option<Value<'a>> {
+impl Defm {
+    pub fn name(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 
-    pub fn parent_class_list(self) -> Option<ParentClassList<'a>> {
+    pub fn parent_class_list(&self) -> Option<ParentClassList> {
         self.0.cast_first_match()
     }
 }
 
 node!(Defset);
 
-impl<'a> Defset<'a> {
-    pub fn r#type(self) -> Option<Type<'a>> {
+impl Defset {
+    pub fn r#type(&self) -> Option<Type> {
         self.0.cast_first_match()
     }
 
-    pub fn name(self) -> Option<Value<'a>> {
+    pub fn name(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 
-    pub fn statement_list(self) -> Option<StatementList<'a>> {
+    pub fn statement_list(&self) -> Option<StatementList> {
         self.0.cast_first_match()
     }
 }
 
 node!(Defvar);
 
-impl<'a> Defvar<'a> {
-    pub fn name(self) -> Option<Value<'a>> {
+impl Defvar {
+    pub fn name(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 
-    pub fn value(self) -> Option<Value<'a>> {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 }
 
 node!(Foreach);
 
-impl<'a> Foreach<'a> {
-    pub fn iterator(self) -> Option<ForeachIterator<'a>> {
+impl Foreach {
+    pub fn iterator(&self) -> Option<ForeachIterator> {
         self.0.cast_first_match()
     }
 
-    pub fn body(self) -> Option<StatementList<'a>> {
+    pub fn body(&self) -> Option<StatementList> {
         self.0.cast_first_match()
     }
 }
 
 node!(ForeachIterator);
 
-impl<'a> ForeachIterator<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl ForeachIterator {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn init(self) -> Option<ForeachIteratorInit<'a>> {
+    pub fn init(&self) -> Option<ForeachIteratorInit> {
         self.0.cast_first_match()
     }
 }
@@ -244,128 +271,128 @@ node_enum!(ForeachIteratorInit, [RangeList, RangePiece, Value]);
 
 node!(If);
 
-impl<'a> If<'a> {
-    pub fn condition(self) -> Option<Value<'a>> {
+impl If {
+    pub fn condition(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 
-    pub fn statement_list(self) -> Option<StatementList<'a>> {
+    pub fn statement_list(&self) -> Option<StatementList> {
         self.0.cast_first_match()
     }
 }
 
 node!(Assert);
 
-impl<'a> Assert<'a> {
-    pub fn condition(self) -> Option<Value<'a>> {
+impl Assert {
+    pub fn condition(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 
-    pub fn message(self) -> Option<Value<'a>> {
+    pub fn message(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 }
 
 node!(TemplateArgList);
 
-impl<'a> TemplateArgList<'a> {
-    pub fn args(self) -> impl DoubleEndedIterator<Item = TemplateArgDecl<'a>> {
+impl TemplateArgList {
+    pub fn args(&self) -> impl Iterator<Item = TemplateArgDecl> {
         self.0.cast_all_matches()
     }
 }
 
 node!(TemplateArgDecl);
 
-impl<'a> TemplateArgDecl<'a> {
-    pub fn r#type(self) -> Option<Type<'a>> {
+impl TemplateArgDecl {
+    pub fn r#type(&self) -> Option<Type> {
         self.0.cast_first_match()
     }
 
-    pub fn name(self) -> Option<Identifier<'a>> {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn value(self) -> Option<Value<'a>> {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 }
 
 node!(RecordBody);
 
-impl<'a> RecordBody<'a> {
-    pub fn parent_class_list(self) -> Option<ParentClassList<'a>> {
+impl RecordBody {
+    pub fn parent_class_list(&self) -> Option<ParentClassList> {
         self.0.cast_first_match()
     }
 
-    pub fn body(self) -> Option<Body<'a>> {
+    pub fn body(&self) -> Option<Body> {
         self.0.cast_first_match()
     }
 }
 
 node!(ParentClassList);
 
-impl<'a> ParentClassList<'a> {
-    pub fn classes(self) -> impl DoubleEndedIterator<Item = ClassRef<'a>> {
+impl ParentClassList {
+    pub fn classes(&self) -> impl Iterator<Item = ClassRef> {
         self.0.cast_all_matches()
     }
 }
 
 node!(ClassRef);
 
-impl<'a> ClassRef<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl ClassRef {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn arg_value_list(self) -> Option<ArgValueList<'a>> {
+    pub fn arg_value_list(&self) -> Option<ArgValueList> {
         self.0.cast_first_match()
     }
 }
 
 node!(ArgValueList);
 
-impl<'a> ArgValueList<'a> {
-    pub fn positional(self) -> Option<PositionalArgValueList<'a>> {
+impl ArgValueList {
+    pub fn positional(&self) -> Option<PositionalArgValueList> {
         self.0.cast_first_match()
     }
 
-    pub fn named(self) -> Option<NamedArgValueList<'a>> {
+    pub fn named(&self) -> Option<NamedArgValueList> {
         self.0.cast_first_match()
     }
 }
 
 node!(PositionalArgValueList);
 
-impl<'a> PositionalArgValueList<'a> {
-    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
+impl PositionalArgValueList {
+    pub fn values(&self) -> impl Iterator<Item = Value> {
         self.0.cast_all_matches()
     }
 }
 
 node!(NamedArgValueList);
 
-impl<'a> NamedArgValueList<'a> {
-    pub fn values(self) -> impl DoubleEndedIterator<Item = NamedArgValue<'a>> {
+impl NamedArgValueList {
+    pub fn values(&self) -> impl Iterator<Item = NamedArgValue> {
         self.0.cast_all_matches()
     }
 }
 
 node!(NamedArgValue);
 
-impl<'a> NamedArgValue<'a> {
-    pub fn name(self) -> Option<Value<'a>> {
+impl NamedArgValue {
+    pub fn name(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(0)
     }
 
-    pub fn value(self) -> Option<Value<'a>> {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(1)
     }
 }
 
 node!(Body);
 
-impl<'a> Body<'a> {
-    pub fn items(self) -> impl DoubleEndedIterator<Item = BodyItem<'a>> {
+impl Body {
+    pub fn items(&self) -> impl Iterator<Item = BodyItem> {
         self.0.cast_all_matches()
     }
 }
@@ -374,16 +401,16 @@ node_enum!(BodyItem, [FieldDef, FieldLet, Defvar, Assert]);
 
 node!(FieldDef);
 
-impl<'a> FieldDef<'a> {
-    pub fn r#type(self) -> Option<Type<'a>> {
+impl FieldDef {
+    pub fn r#type(&self) -> Option<Type> {
         self.0.cast_first_match()
     }
 
-    pub fn name(self) -> Option<Identifier<'a>> {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn value(self) -> Option<Value<'a>> {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 }
@@ -392,12 +419,12 @@ node!(CodeType);
 
 node!(FieldLet);
 
-impl<'a> FieldLet<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl FieldLet {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
-    pub fn value(self) -> Option<Value<'a>> {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 }
@@ -414,44 +441,44 @@ node!(DagType);
 
 node!(BitsType);
 
-impl<'a> BitsType<'a> {
-    pub fn length(self) -> Option<Integer<'a>> {
+impl BitsType {
+    pub fn length(&self) -> Option<Integer> {
         self.0.cast_first_match()
     }
 }
 
 node!(ListType);
 
-impl<'a> ListType<'a> {
-    pub fn inner_type(self) -> Option<Type<'a>> {
+impl ListType {
+    pub fn inner_type(&self) -> Option<Type> {
         self.0.cast_first_match()
     }
 }
 
 node!(ClassId);
 
-impl<'a> ClassId<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl ClassId {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 }
 
 node!(Value);
 
-impl<'a> Value<'a> {
-    pub fn inner_values(self) -> impl DoubleEndedIterator<Item = InnerValue<'a>> {
+impl Value {
+    pub fn inner_values(&self) -> impl Iterator<Item = InnerValue> {
         self.0.cast_all_matches()
     }
 }
 
 node!(InnerValue);
 
-impl<'a> InnerValue<'a> {
-    pub fn simple_value(self) -> Option<SimpleValue<'a>> {
+impl InnerValue {
+    pub fn simple_value(&self) -> Option<SimpleValue> {
         self.0.cast_first_match()
     }
 
-    pub fn suffixes(self) -> impl DoubleEndedIterator<Item = ValueSuffix<'a>> {
+    pub fn suffixes(&self) -> impl Iterator<Item = ValueSuffix> {
         self.0.cast_all_matches()
     }
 }
@@ -460,64 +487,64 @@ node_enum!(ValueSuffix, [RangeSuffix, SliceSuffix, FieldSuffix]);
 
 node!(RangeSuffix);
 
-impl<'a> RangeSuffix<'a> {
-    pub fn range_list(self) -> Option<RangeList<'a>> {
+impl RangeSuffix {
+    pub fn range_list(&self) -> Option<RangeList> {
         self.0.cast_first_match()
     }
 }
 
 node!(RangeList);
 
-impl<'a> RangeList<'a> {
-    pub fn pieces(self) -> impl DoubleEndedIterator<Item = RangePiece<'a>> {
+impl RangeList {
+    pub fn pieces(&self) -> impl Iterator<Item = RangePiece> {
         self.0.cast_all_matches()
     }
 }
 
 node!(RangePiece);
 
-impl<'a> RangePiece<'a> {
-    pub fn start(self) -> Option<Value<'a>> {
+impl RangePiece {
+    pub fn start(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(0)
     }
 
-    pub fn end(self) -> Option<Value<'a>> {
+    pub fn end(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(1)
     }
 }
 
 node!(SliceSuffix);
 
-impl<'a> SliceSuffix<'a> {
-    pub fn element_list(self) -> Option<SliceElements<'a>> {
+impl SliceSuffix {
+    pub fn element_list(&self) -> Option<SliceElements> {
         self.0.cast_first_match()
     }
 }
 
 node!(SliceElements);
 
-impl<'a> SliceElements<'a> {
-    pub fn elements(self) -> impl DoubleEndedIterator<Item = SliceElement<'a>> {
+impl SliceElements {
+    pub fn elements(&self) -> impl Iterator<Item = SliceElement> {
         self.0.cast_all_matches()
     }
 }
 
 node!(SliceElement);
 
-impl<'a> SliceElement<'a> {
-    pub fn start(self) -> Option<Value<'a>> {
+impl SliceElement {
+    pub fn start(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(0)
     }
 
-    pub fn end(self) -> Option<Value<'a>> {
+    pub fn end(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(1)
     }
 }
 
 node!(FieldSuffix);
 
-impl<'a> FieldSuffix<'a> {
-    pub fn name(self) -> Option<Identifier<'a>> {
+impl FieldSuffix {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 }
@@ -542,9 +569,10 @@ node_enum!(
 
 node!(Integer);
 
-impl Integer<'_> {
-    pub fn value(self) -> Option<i64> {
-        let text = self.0.children().next()?.text();
+impl Integer {
+    pub fn value(&self) -> Option<i64> {
+        let token = self.0.first_token()?;
+        let text = token.text();
         if let Some(rest) = text.strip_prefix("0x") {
             i64::from_str_radix(rest, 16).ok()
         } else {
@@ -555,16 +583,19 @@ impl Integer<'_> {
 
 node!(String);
 
-impl<'a> String<'a> {
-    pub fn value(self) -> std::string::String {
+impl String {
+    pub fn value(&self) -> std::string::String {
         self.0
-            .children()
-            .filter(|node| node.token_kind() == TokenKind::StrVal)
-            .map(|node| {
-                node.text()
-                    .as_str()
-                    .trim_start_matches('"')
-                    .trim_end_matches('"')
+            .children_with_tokens()
+            .filter(|node| node.kind() == SyntaxKind::StrVal)
+            .filter_map(|node| {
+                node.as_token().map(|token| {
+                    token
+                        .text()
+                        .trim_start_matches('"')
+                        .trim_end_matches('"')
+                        .to_string()
+                })
             })
             .collect::<Vec<_>>()
             .join("")
@@ -573,10 +604,11 @@ impl<'a> String<'a> {
 
 node!(Code);
 
-impl<'a> Code<'a> {
-    pub fn value(self) -> Option<EcoString> {
-        self.0.children().next().map(|node| {
-            node.text()
+impl Code {
+    pub fn value(&self) -> Option<EcoString> {
+        self.0.first_token().map(|token| {
+            token
+                .text()
                 .trim_start_matches("[{")
                 .trim_end_matches("}]")
                 .trim()
@@ -587,10 +619,10 @@ impl<'a> Code<'a> {
 
 node!(Boolean);
 
-impl<'a> Boolean<'a> {
-    pub fn value(self) -> Option<bool> {
-        let text = self.0.children().next()?.text();
-        match text.as_str() {
+impl Boolean {
+    pub fn value(&self) -> Option<bool> {
+        let token = self.0.first_token()?;
+        match token.text() {
             "true" => Some(true),
             "false" => Some(false),
             _ => None,
@@ -602,100 +634,100 @@ node!(Uninitialized);
 
 node!(Bits);
 
-impl<'a> Bits<'a> {
-    pub fn value_list(self) -> Option<ValueList<'a>> {
+impl Bits {
+    pub fn value_list(&self) -> Option<ValueList> {
         self.0.cast_first_match()
     }
 }
 
 node!(ValueList);
 
-impl<'a> ValueList<'a> {
-    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
+impl ValueList {
+    pub fn values(&self) -> impl Iterator<Item = Value> {
         self.0.cast_all_matches()
     }
 }
 
 node!(List);
 
-impl<'a> List<'a> {
-    pub fn value_list(self) -> Option<ValueList<'a>> {
+impl List {
+    pub fn value_list(&self) -> Option<ValueList> {
         self.0.cast_first_match()
     }
 }
 
 node!(Dag);
 
-impl<'a> Dag<'a> {
-    pub fn arg_list(self) -> Option<DagArgList<'a>> {
+impl Dag {
+    pub fn arg_list(&self) -> Option<DagArgList> {
         self.0.cast_first_match()
     }
 }
 
 node!(DagArgList);
 
-impl<'a> DagArgList<'a> {
-    pub fn args(self) -> impl DoubleEndedIterator<Item = DagArg<'a>> {
+impl DagArgList {
+    pub fn args(&self) -> impl Iterator<Item = DagArg> {
         self.0.cast_all_matches()
     }
 }
 
 node!(DagArg);
 
-impl<'a> DagArg<'a> {
-    pub fn value(self) -> Option<Value<'a>> {
+impl DagArg {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_first_match()
     }
 
-    pub fn var_name(self) -> Option<VarName<'a>> {
+    pub fn var_name(&self) -> Option<VarName> {
         self.0.cast_first_match()
     }
 }
 
 node!(VarName);
 
-impl<'a> VarName<'a> {
-    pub fn value(self) -> Option<&'a EcoString> {
-        self.0.first_child_text()
+impl VarName {
+    pub fn value(&self) -> Option<EcoString> {
+        Some(self.0.first_token()?.text().into())
     }
 }
 
 node!(Identifier);
 
-impl<'a> Identifier<'a> {
-    pub fn value(self) -> Option<&'a EcoString> {
-        self.0.first_child_text()
+impl Identifier {
+    pub fn value(&self) -> Option<EcoString> {
+        Some(self.0.first_token()?.text().into())
     }
 }
 
 node!(BangOperator);
 
-impl<'a> BangOperator<'a> {
-    pub fn kind(self) -> Option<TokenKind> {
-        self.0.children().next().map(|node| node.token_kind())
+impl BangOperator {
+    pub fn kind(&self) -> Option<SyntaxKind> {
+        Some(self.0.first_token()?.kind())
     }
 
-    pub fn values(self) -> impl DoubleEndedIterator<Item = Value<'a>> {
+    pub fn values(&self) -> impl Iterator<Item = Value> {
         self.0.cast_all_matches()
     }
 }
 
 node!(CondOperator);
 
-impl<'a> CondOperator<'a> {
-    pub fn clauses(self) -> impl DoubleEndedIterator<Item = CondClause<'a>> {
+impl CondOperator {
+    pub fn clauses(&self) -> impl Iterator<Item = CondClause> {
         self.0.cast_all_matches()
     }
 }
 
 node!(CondClause);
 
-impl<'a> CondClause<'a> {
-    pub fn condition(self) -> Option<Value<'a>> {
+impl CondClause {
+    pub fn condition(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(0)
     }
 
-    pub fn value(self) -> Option<Value<'a>> {
+    pub fn value(&self) -> Option<Value> {
         self.0.cast_all_matches().nth(1)
     }
 }

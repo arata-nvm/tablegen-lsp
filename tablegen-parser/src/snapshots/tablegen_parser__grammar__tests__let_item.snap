@@ -2,14 +2,24 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"let\")"
 ---
-File
-  StatementList
-    Let
-      Let@0..3 `let`
-      LetList
-      Error(3:3:expected 'in' at end of top-level 'let', )
-      StatementList
-        Error(3:3:expected class, def, defm, defset, multiclass, let or foreach, )
-        Error
-          Eof@3..3 ``
-
+(
+    Root@0..3
+      StatementList@0..3
+        Let@0..3
+          LetKw@0..3 "let"
+          LetList@3..3
+          StatementList@3..3
+            Error@3..3
+              Eof@3..3 ""
+    ,
+    [
+        SyntaxError {
+            range: 3..3,
+            message: "expected 'in' at end of top-level 'let'",
+        },
+        SyntaxError {
+            range: 3..3,
+            message: "expected class, def, defm, defset, multiclass, let or foreach",
+        },
+    ],
+)

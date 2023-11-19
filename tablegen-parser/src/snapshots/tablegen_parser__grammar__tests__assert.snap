@@ -2,20 +2,24 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"assert hoge, \\\"fuga\\\";\")"
 ---
-File
-  StatementList
-    Assert
-      Assert@0..6 `assert`
-      Whitespace@6..7 ` `
-      Value
-        InnerValue
-          Identifier
-            Id@7..11 `hoge`
-      Comma@11..12 `,`
-      Whitespace@12..13 ` `
-      Value
-        InnerValue
-          String
-            StrVal@13..19 `\"fuga\"`
-      Semi@19..20 `;`
-
+(
+    Root@0..20
+      StatementList@0..20
+        Assert@0..20
+          AssertKw@0..6 "assert"
+          Whitespace@6..7 " "
+          Value@7..11
+            InnerValue@7..11
+              ClassValue@7..11
+                Identifier@7..11
+                  Id@7..11 "hoge"
+          Comma@11..12 ","
+          Whitespace@12..13 " "
+          Value@13..19
+            InnerValue@13..19
+              String@13..19
+                StrVal@13..19 "\"fuga\""
+          Semi@19..20 ";"
+    ,
+    [],
+)

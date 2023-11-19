@@ -1,5 +1,10 @@
 use ecow::EcoString;
-use tablegen_parser::{ast, error::SyntaxError, node::SyntaxNode, parser::Range};
+use tablegen_parser::{
+    ast::{self, AstNode},
+    error::SyntaxError,
+    language::SyntaxNode,
+    parser::Range,
+};
 
 use crate::{
     document::DocumentId,
@@ -8,15 +13,15 @@ use crate::{
     symbol_map::SymbolMap,
 };
 
-pub fn analyze(doc_id: DocumentId, file: &SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
+pub fn analyze(doc_id: DocumentId, root: SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
     let mut indexer = DocumentIndexer::new(doc_id);
-    analyze_file(file, &mut indexer);
+    analyze_file(root, &mut indexer);
     indexer.finish()
 }
 
-fn analyze_file(file: &SyntaxNode, i: &mut DocumentIndexer) -> Option<()> {
-    let file = file.cast::<ast::File>()?;
-    let list = file.statement_list()?;
+fn analyze_file(root: SyntaxNode, i: &mut DocumentIndexer) -> Option<()> {
+    let root = ast::Root::cast(root)?;
+    let list = root.statement_list()?;
     for stmt in list.statements() {
         match stmt {
             ast::Statement::Class(class) => analyze_class(class, i),
@@ -126,8 +131,8 @@ fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<RecordFieldTy
             RecordFieldType::List(Box::new(inner_typ))
         }
         ast::Type::ClassId(class_id) => with_id(class_id.name(), |name, range| {
-            let symbol_id = i.add_symbol_reference(name, range)?;
-            Some(RecordFieldType::Class(symbol_id, name.clone()))
+            let symbol_id = i.add_symbol_reference(name.clone(), range)?;
+            Some(RecordFieldType::Class(symbol_id, name))
         })?,
         ast::Type::CodeType(_) => RecordFieldType::Code,
     };
@@ -164,10 +169,10 @@ fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> Option<()> {
 
 fn with_id<T>(
     id: Option<ast::Identifier>,
-    f: impl FnOnce(&EcoString, Range) -> Option<T>,
+    f: impl FnOnce(EcoString, Range) -> Option<T>,
 ) -> Option<T> {
     let Some(id) = id else { return None; };
     let Some(name) = id.value() else { return None; };
-    let range = id.range();
-    f(name, range)
+    let range = id.syntax().text_range();
+    f(name, range.start().into()..range.end().into())
 }

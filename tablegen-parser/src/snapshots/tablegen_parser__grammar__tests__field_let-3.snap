@@ -2,31 +2,37 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo { let A = 1\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      Whitespace@9..10 ` `
-      RecordBody
-        ParentClassList
-        Body
-          LBrace@10..11 `{`
-          Whitespace@11..12 ` `
-          FieldLet
-            Let@12..15 `let`
-            Whitespace@15..16 ` `
-            Identifier
-              Id@16..17 `A`
-            Whitespace@17..18 ` `
-            Equal@18..19 `=`
-            Whitespace@19..20 ` `
-            Value
-              InnerValue
-                Integer
-                  IntVal@20..21 `1`
-            Error(21:21:expected ';' after let expression, )
-          Error(21:21:expected RBrace, )
-
+(
+    Root@0..21
+      StatementList@0..21
+        Class@0..21
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..10
+            Id@6..9 "Foo"
+            Whitespace@9..10 " "
+          RecordBody@10..21
+            ParentClassList@10..10
+            Body@10..21
+              LBrace@10..11 "{"
+              Whitespace@11..12 " "
+              FieldLet@12..21
+                LetKw@12..15 "let"
+                Whitespace@15..16 " "
+                Identifier@16..18
+                  Id@16..17 "A"
+                  Whitespace@17..18 " "
+                Equal@18..19 "="
+                Whitespace@19..20 " "
+                Value@20..21
+                  InnerValue@20..21
+                    Integer@20..21
+                      IntVal@20..21 "1"
+    ,
+    [
+        SyntaxError {
+            range: 21..21,
+            message: "expected ';' after let expression",
+        },
+    ],
+)

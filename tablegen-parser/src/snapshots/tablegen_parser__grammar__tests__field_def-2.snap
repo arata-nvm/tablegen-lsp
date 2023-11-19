@@ -2,25 +2,31 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo { int A\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      Whitespace@9..10 ` `
-      RecordBody
-        ParentClassList
-        Body
-          LBrace@10..11 `{`
-          Whitespace@11..12 ` `
-          FieldDef
-            IntType
-              Int@12..15 `int`
-            Whitespace@15..16 ` `
-            Identifier
-              Id@16..17 `A`
-            Error(17:17:expected ';' after declaration, )
-          Error(17:17:expected RBrace, )
-
+(
+    Root@0..17
+      StatementList@0..17
+        Class@0..17
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..10
+            Id@6..9 "Foo"
+            Whitespace@9..10 " "
+          RecordBody@10..17
+            ParentClassList@10..10
+            Body@10..17
+              LBrace@10..11 "{"
+              Whitespace@11..12 " "
+              FieldDef@12..17
+                IntType@12..16
+                  Int@12..15 "int"
+                  Whitespace@15..16 " "
+                Identifier@16..17
+                  Id@16..17 "A"
+    ,
+    [
+        SyntaxError {
+            range: 17..17,
+            message: "expected ';' after declaration",
+        },
+    ],
+)

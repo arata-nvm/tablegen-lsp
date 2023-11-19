@@ -2,71 +2,77 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"foreach i = [0, 1] in {\n                def Foo # i : Base<i>;\n            }\")"
 ---
-File
-  StatementList
-    Foreach
-      Foreach@0..7 `foreach`
-      Whitespace@7..8 ` `
-      ForeachIterator
-        Identifier
-          Id@8..9 `i`
-        Whitespace@9..10 ` `
-        Equal@10..11 `=`
-        Whitespace@11..12 ` `
-        ForeachIteratorInit
-          Value
-            InnerValue
-              List
-                ValueList
-                  LSquare@12..13 `[`
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@13..14 `0`
-                  Comma@14..15 `,`
-                  Whitespace@15..16 ` `
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@16..17 `1`
-                  RSquare@17..18 `]`
-      Whitespace@18..19 ` `
-      In@19..21 `in`
-      Whitespace@21..22 ` `
-      StatementList
-        LBrace@22..23 `{`
-        Whitespace@23..40 `\n                `
-        Def
-          Def@40..43 `def`
-          Whitespace@43..44 ` `
-          Value
-            InnerValue
-              Identifier
-                Id@44..47 `Foo`
-            Whitespace@47..48 ` `
-            Paste@48..49 `#`
-            Whitespace@49..50 ` `
-            InnerValue
-              Identifier
-                Id@50..51 `i`
-          Whitespace@51..52 ` `
-          RecordBody
-            ParentClassList
-              Colon@52..53 `:`
-              Whitespace@53..54 ` `
-              ClassRef
-                Identifier
-                  Id@54..58 `Base`
-                Less@58..59 `<`
-                ArgValueList
-                  PositionalArgValueList
-                    Value
-                      InnerValue
-                        Identifier
-                          Id@59..60 `i`
-                Greater@60..61 `>`
-            Body
-              Semi@61..62 `;`
-        Whitespace@62..75 `\n            `
-        RBrace@75..76 `}`
-
+(
+    Root@0..76
+      StatementList@0..76
+        Foreach@0..76
+          ForeachKw@0..7 "foreach"
+          Whitespace@7..8 " "
+          ForeachIterator@8..19
+            Identifier@8..10
+              Id@8..9 "i"
+              Whitespace@9..10 " "
+            Equal@10..11 "="
+            Whitespace@11..12 " "
+            ForeachIteratorInit@12..19
+              Value@12..19
+                InnerValue@12..19
+                  List@12..19
+                    ValueList@12..19
+                      LSquare@12..13 "["
+                      Value@13..14
+                        InnerValue@13..14
+                          Integer@13..14
+                            IntVal@13..14 "0"
+                      Comma@14..15 ","
+                      Whitespace@15..16 " "
+                      Value@16..17
+                        InnerValue@16..17
+                          Integer@16..17
+                            IntVal@16..17 "1"
+                      RSquare@17..18 "]"
+                      Whitespace@18..19 " "
+          In@19..21 "in"
+          Whitespace@21..22 " "
+          StatementList@22..76
+            LBrace@22..23 "{"
+            Whitespace@23..40 "\n                "
+            Def@40..75
+              DefKw@40..43 "def"
+              Whitespace@43..44 " "
+              Value@44..52
+                InnerValue@44..48
+                  ClassValue@44..48
+                    Identifier@44..48
+                      Id@44..47 "Foo"
+                      Whitespace@47..48 " "
+                Paste@48..49 "#"
+                Whitespace@49..50 " "
+                InnerValue@50..52
+                  ClassValue@50..52
+                    Identifier@50..52
+                      Id@50..51 "i"
+                      Whitespace@51..52 " "
+              RecordBody@52..75
+                ParentClassList@52..61
+                  Colon@52..53 ":"
+                  Whitespace@53..54 " "
+                  ClassRef@54..61
+                    Identifier@54..58
+                      Id@54..58 "Base"
+                    Less@58..59 "<"
+                    ArgValueList@59..60
+                      PositionalArgValueList@59..60
+                        Value@59..60
+                          InnerValue@59..60
+                            ClassValue@59..60
+                              Identifier@59..60
+                                Id@59..60 "i"
+                    Greater@60..61 ">"
+                Body@61..75
+                  Semi@61..62 ";"
+                  Whitespace@62..75 "\n            "
+            RBrace@75..76 "}"
+    ,
+    [],
+)

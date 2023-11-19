@@ -1,5 +1,5 @@
 use ropey::Rope;
-use tablegen_parser::{error::SyntaxError, grammar, node::SyntaxNode, parser::Position};
+use tablegen_parser::{error::SyntaxError, grammar, language::SyntaxNode, parser::Position};
 
 use crate::{analyze, hover, symbol::Location, symbol_map::SymbolMap};
 
@@ -29,10 +29,8 @@ pub struct Document {
 
 impl Document {
     pub fn parse(doc_id: DocumentId, text: String) -> Self {
-        let root = grammar::parse(&text);
-        let (symbol_map, index_errors) = analyze::analyze(doc_id, &root);
-
-        let mut errors: Vec<SyntaxError> = root.errors().into_iter().cloned().collect();
+        let (root, mut errors) = grammar::parse(&text);
+        let (symbol_map, index_errors) = analyze::analyze(doc_id, root.clone());
         errors.extend(index_errors);
 
         Self {

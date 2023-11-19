@@ -2,37 +2,40 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<string A = \\\"hoge\\\" # \\\"fuga\\\">;\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      TemplateArgList
-        Less@9..10 `<`
-        TemplateArgDecl
-          StringType
-            String@10..16 `string`
-          Whitespace@16..17 ` `
-          Identifier
-            Id@17..18 `A`
-          Whitespace@18..19 ` `
-          Equal@19..20 `=`
-          Whitespace@20..21 ` `
-          Value
-            InnerValue
-              String
-                StrVal@21..27 `\"hoge\"`
-            Whitespace@27..28 ` `
-            Paste@28..29 `#`
-            Whitespace@29..30 ` `
-            InnerValue
-              String
-                StrVal@30..36 `\"fuga\"`
-        Greater@36..37 `>`
-      RecordBody
-        ParentClassList
-        Body
-          Semi@37..38 `;`
-
+(
+    Root@0..38
+      StatementList@0..38
+        Class@0..38
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..9
+            Id@6..9 "Foo"
+          TemplateArgList@9..37
+            Less@9..10 "<"
+            TemplateArgDecl@10..36
+              StringType@10..17
+                StringKw@10..16 "string"
+                Whitespace@16..17 " "
+              Identifier@17..19
+                Id@17..18 "A"
+                Whitespace@18..19 " "
+              Equal@19..20 "="
+              Whitespace@20..21 " "
+              Value@21..36
+                InnerValue@21..28
+                  String@21..28
+                    StrVal@21..27 "\"hoge\""
+                    Whitespace@27..28 " "
+                Paste@28..29 "#"
+                Whitespace@29..30 " "
+                InnerValue@30..36
+                  String@30..36
+                    StrVal@30..36 "\"fuga\""
+            Greater@36..37 ">"
+          RecordBody@37..38
+            ParentClassList@37..37
+            Body@37..38
+              Semi@37..38 ";"
+    ,
+    [],
+)

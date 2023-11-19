@@ -2,41 +2,46 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"multiclass foo {\n                def _foo1;\n                def _foo2;\n            }\")"
 ---
-File
-  StatementList
-    MultiClass
-      MultiClass@0..10 `multiclass`
-      Whitespace@10..11 ` `
-      Identifier
-        Id@11..14 `foo`
-      Whitespace@14..15 ` `
-      ParentClassList
-      LBrace@15..16 `{`
-      Whitespace@16..33 `\n                `
-      StatementList
-        Def
-          Def@33..36 `def`
-          Whitespace@36..37 ` `
-          Value
-            InnerValue
-              Identifier
-                Id@37..42 `_foo1`
-          RecordBody
-            ParentClassList
-            Body
-              Semi@42..43 `;`
-        Whitespace@43..60 `\n                `
-        Def
-          Def@60..63 `def`
-          Whitespace@63..64 ` `
-          Value
-            InnerValue
-              Identifier
-                Id@64..69 `_foo2`
-          RecordBody
-            ParentClassList
-            Body
-              Semi@69..70 `;`
-        Whitespace@70..83 `\n            `
-        RBrace@83..84 `}`
-
+(
+    Root@0..84
+      StatementList@0..84
+        MultiClass@0..84
+          MultiClassKw@0..10 "multiclass"
+          Whitespace@10..11 " "
+          Identifier@11..15
+            Id@11..14 "foo"
+            Whitespace@14..15 " "
+          ParentClassList@15..15
+          LBrace@15..16 "{"
+          Whitespace@16..33 "\n                "
+          StatementList@33..84
+            Def@33..60
+              DefKw@33..36 "def"
+              Whitespace@36..37 " "
+              Value@37..42
+                InnerValue@37..42
+                  ClassValue@37..42
+                    Identifier@37..42
+                      Id@37..42 "_foo1"
+              RecordBody@42..60
+                ParentClassList@42..42
+                Body@42..60
+                  Semi@42..43 ";"
+                  Whitespace@43..60 "\n                "
+            Def@60..83
+              DefKw@60..63 "def"
+              Whitespace@63..64 " "
+              Value@64..69
+                InnerValue@64..69
+                  ClassValue@64..69
+                    Identifier@64..69
+                      Id@64..69 "_foo2"
+              RecordBody@69..83
+                ParentClassList@69..69
+                Body@69..83
+                  Semi@69..70 ";"
+                  Whitespace@70..83 "\n            "
+            RBrace@83..84 "}"
+    ,
+    [],
+)

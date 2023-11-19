@@ -2,30 +2,33 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"if true then { class Foo; }\")"
 ---
-File
-  StatementList
-    If
-      If@0..2 `if`
-      Whitespace@2..3 ` `
-      Value
-        InnerValue
-          Boolean
-            TrueVal@3..7 `true`
-      Whitespace@7..8 ` `
-      Then@8..12 `then`
-      Whitespace@12..13 ` `
-      StatementList
-        LBrace@13..14 `{`
-        Whitespace@14..15 ` `
-        Class
-          Class@15..20 `class`
-          Whitespace@20..21 ` `
-          Identifier
-            Id@21..24 `Foo`
-          RecordBody
-            ParentClassList
-            Body
-              Semi@24..25 `;`
-        Whitespace@25..26 ` `
-        RBrace@26..27 `}`
-
+(
+    Root@0..27
+      StatementList@0..27
+        If@0..27
+          IfKw@0..2 "if"
+          Whitespace@2..3 " "
+          Value@3..8
+            InnerValue@3..8
+              Boolean@3..8
+                TrueVal@3..7 "true"
+                Whitespace@7..8 " "
+          Then@8..12 "then"
+          Whitespace@12..13 " "
+          StatementList@13..27
+            LBrace@13..14 "{"
+            Whitespace@14..15 " "
+            Class@15..26
+              ClassKw@15..20 "class"
+              Whitespace@20..21 " "
+              Identifier@21..24
+                Id@21..24 "Foo"
+              RecordBody@24..26
+                ParentClassList@24..24
+                Body@24..26
+                  Semi@24..25 ";"
+                  Whitespace@25..26 " "
+            RBrace@26..27 "}"
+    ,
+    [],
+)

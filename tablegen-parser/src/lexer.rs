@@ -1,7 +1,6 @@
+use crate::{parser::Position, token_kind::TokenKind, T};
 use ecow::EcoString;
 use unscanny::Scanner;
-
-use crate::{kind::TokenKind, parser::Position, T};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -296,7 +295,7 @@ fn is_newline(c: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::kind::TokenKind;
+    use crate::token_kind::TokenKind;
 
     use super::Lexer;
 

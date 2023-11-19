@@ -2,21 +2,34 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"let A\")"
 ---
-File
-  StatementList
-    Let
-      Let@0..3 `let`
-      Whitespace@3..4 ` `
-      LetList
-        LetItem
-          Identifier
-            Id@4..5 `A`
-          Error(5:5:expected '=' in let expression, )
-          Value
-            Error(5:5:unknown token when parsing a value, )
-      Error(5:5:expected 'in' at end of top-level 'let', )
-      StatementList
-        Error(5:5:expected class, def, defm, defset, multiclass, let or foreach, )
-        Error
-          Eof@5..5 ``
-
+(
+    Root@0..5
+      StatementList@0..5
+        Let@0..5
+          LetKw@0..3 "let"
+          Whitespace@3..4 " "
+          LetList@4..5
+            LetItem@4..5
+              Identifier@4..5
+                Id@4..5 "A"
+              Value@5..5
+                InnerValue@5..5
+          StatementList@5..5
+            Error@5..5
+              Eof@5..5 ""
+    ,
+    [
+        SyntaxError {
+            range: 5..5,
+            message: "expected '=' in let expression",
+        },
+        SyntaxError {
+            range: 5..5,
+            message: "unknown token when parsing a value",
+        },
+        SyntaxError {
+            range: 5..5,
+            message: "expected class, def, defm, defset, multiclass, let or foreach",
+        },
+    ],
+)

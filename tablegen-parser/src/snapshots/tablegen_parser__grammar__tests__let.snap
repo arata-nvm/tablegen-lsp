@@ -2,58 +2,61 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"let A = 1, B<1...3> = 0b101 in { class Foo; }\")"
 ---
-File
-  StatementList
-    Let
-      Let@0..3 `let`
-      Whitespace@3..4 ` `
-      LetList
-        LetItem
-          Identifier
-            Id@4..5 `A`
-          Whitespace@5..6 ` `
-          Equal@6..7 `=`
-          Whitespace@7..8 ` `
-          Value
-            InnerValue
-              Integer
-                IntVal@8..9 `1`
-        Comma@9..10 `,`
-        Whitespace@10..11 ` `
-        LetItem
-          Identifier
-            Id@11..12 `B`
-          Less@12..13 `<`
-          RangeList
-            RangePiece
-              Integer
-                IntVal@13..14 `1`
-              DotDotDot@14..17 `...`
-              Integer
-                IntVal@17..18 `3`
-          Greater@18..19 `>`
-          Whitespace@19..20 ` `
-          Equal@20..21 `=`
-          Whitespace@21..22 ` `
-          Value
-            InnerValue
-              Integer
-                BinaryIntVal@22..27 `0b101`
-      Whitespace@27..28 ` `
-      In@28..30 `in`
-      Whitespace@30..31 ` `
-      StatementList
-        LBrace@31..32 `{`
-        Whitespace@32..33 ` `
-        Class
-          Class@33..38 `class`
-          Whitespace@38..39 ` `
-          Identifier
-            Id@39..42 `Foo`
-          RecordBody
-            ParentClassList
-            Body
-              Semi@42..43 `;`
-        Whitespace@43..44 ` `
-        RBrace@44..45 `}`
-
+(
+    Root@0..45
+      StatementList@0..45
+        Let@0..45
+          LetKw@0..3 "let"
+          Whitespace@3..4 " "
+          LetList@4..28
+            LetItem@4..9
+              Identifier@4..6
+                Id@4..5 "A"
+                Whitespace@5..6 " "
+              Equal@6..7 "="
+              Whitespace@7..8 " "
+              Value@8..9
+                InnerValue@8..9
+                  Integer@8..9
+                    IntVal@8..9 "1"
+            Comma@9..10 ","
+            Whitespace@10..11 " "
+            LetItem@11..28
+              Identifier@11..12
+                Id@11..12 "B"
+              Less@12..13 "<"
+              RangeList@13..18
+                RangePiece@13..18
+                  Integer@13..14
+                    IntVal@13..14 "1"
+                  DotDotDot@14..17 "..."
+                  Integer@17..18
+                    IntVal@17..18 "3"
+              Greater@18..19 ">"
+              Whitespace@19..20 " "
+              Equal@20..21 "="
+              Whitespace@21..22 " "
+              Value@22..28
+                InnerValue@22..28
+                  Integer@22..28
+                    BinaryIntVal@22..27 "0b101"
+                    Whitespace@27..28 " "
+          In@28..30 "in"
+          Whitespace@30..31 " "
+          StatementList@31..45
+            LBrace@31..32 "{"
+            Whitespace@32..33 " "
+            Class@33..44
+              ClassKw@33..38 "class"
+              Whitespace@38..39 " "
+              Identifier@39..42
+                Id@39..42 "Foo"
+              RecordBody@42..44
+                ParentClassList@42..42
+                Body@42..44
+                  Semi@42..43 ";"
+                  Whitespace@43..44 " "
+            RBrace@44..45 "}"
+    ,
+    [],
+)

@@ -2,270 +2,278 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2)> {\n                code C = [{ true }];\n            }\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      TemplateArgList
-        Less@9..10 `<`
-        TemplateArgDecl
-          IntType
-            Int@10..13 `int`
-          Whitespace@13..14 ` `
-          Identifier
-            Id@14..15 `A`
-          Whitespace@15..16 ` `
-          Equal@16..17 `=`
-          Whitespace@17..18 ` `
-          Value
-            InnerValue
-              Integer
-                IntVal@18..19 `1`
-        Comma@19..20 `,`
-        Whitespace@20..21 ` `
-        TemplateArgDecl
-          StringType
-            String@21..27 `string`
-          Whitespace@27..28 ` `
-          Identifier
-            Id@28..29 `B`
-          Whitespace@29..30 ` `
-          Equal@30..31 `=`
-          Whitespace@31..32 ` `
-          Value
-            InnerValue
-              String
-                StrVal@32..38 `\"hoge\"`
-        Comma@38..39 `,`
-        Whitespace@39..40 ` `
-        TemplateArgDecl
-          BitType
-            Bit@40..43 `bit`
-          Whitespace@43..44 ` `
-          Identifier
-            Id@44..45 `D`
-          Whitespace@45..46 ` `
-          Equal@46..47 `=`
-          Whitespace@47..48 ` `
-          Value
-            InnerValue
-              Boolean
-                FalseVal@48..53 `false`
-        Comma@53..54 `,`
-        Whitespace@54..55 ` `
-        TemplateArgDecl
-          IntType
-            Int@55..58 `int`
-          Whitespace@58..59 ` `
-          Identifier
-            Id@59..60 `E`
-          Whitespace@60..61 ` `
-          Equal@61..62 `=`
-          Whitespace@62..63 ` `
-          Value
-            InnerValue
-              Uninitialized
-                Question@63..64 `?`
-        Comma@64..65 `,`
-        Whitespace@65..66 ` `
-        TemplateArgDecl
-          BitsType
-            Bits@66..70 `bits`
-            Less@70..71 `<`
-            Integer
-              IntVal@71..72 `2`
-            Greater@72..73 `>`
-          Whitespace@73..74 ` `
-          Identifier
-            Id@74..75 `F`
-          Whitespace@75..76 ` `
-          Equal@76..77 `=`
-          Whitespace@77..78 ` `
-          Value
-            InnerValue
-              Bits
-                ValueList
-                  LBrace@78..79 `{`
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@79..80 `0`
-                  Comma@80..81 `,`
-                  Whitespace@81..82 ` `
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@82..83 `1`
-                  RBrace@83..84 `}`
-        Comma@84..85 `,`
-        Whitespace@85..86 ` `
-        TemplateArgDecl
-          ListType
-            List@86..90 `list`
-            Less@90..91 `<`
-            IntType
-              Int@91..94 `int`
-            Greater@94..95 `>`
-          Whitespace@95..96 ` `
-          Identifier
-            Id@96..97 `G`
-          Whitespace@97..98 ` `
-          Equal@98..99 `=`
-          Whitespace@99..100 ` `
-          Value
-            InnerValue
-              List
-                ValueList
-                  LSquare@100..101 `[`
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@101..102 `1`
-                  Comma@102..103 `,`
-                  Whitespace@103..104 ` `
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@104..105 `2`
-                  RSquare@105..106 `]`
-        Comma@106..107 `,`
-        Whitespace@107..108 ` `
-        TemplateArgDecl
-          DagType
-            Dag@108..111 `dag`
-          Whitespace@111..112 ` `
-          Identifier
-            Id@112..113 `H`
-          Whitespace@113..114 ` `
-          Equal@114..115 `=`
-          Whitespace@115..116 ` `
-          Value
-            InnerValue
-              Dag
-                LParen@116..117 `(`
-                DagArg
-                  Value
-                    InnerValue
-                      Identifier
-                        Id@117..120 `add`
-                Whitespace@120..121 ` `
-                DagArgList
-                  DagArg
-                    Value
-                      InnerValue
-                        Identifier
-                          Id@121..122 `A`
-                    Colon@122..123 `:`
-                    VarName
-                      VarName@123..128 `$hoge`
-                RParen@128..129 `)`
-        Comma@129..130 `,`
-        Whitespace@130..131 ` `
-        TemplateArgDecl
-          IntType
-            Int@131..134 `int`
-          Whitespace@134..135 ` `
-          Identifier
-            Id@135..136 `I`
-          Whitespace@136..137 ` `
-          Equal@137..138 `=`
-          Whitespace@138..139 ` `
-          Value
-            InnerValue
-              Identifier
-                Id@139..140 `A`
-        Comma@140..141 `,`
-        Whitespace@141..142 ` `
-        TemplateArgDecl
-          IntType
-            Int@142..145 `int`
-          Whitespace@145..146 ` `
-          Identifier
-            Id@146..147 `J`
-          Whitespace@147..148 ` `
-          Equal@148..149 `=`
-          Whitespace@149..150 ` `
-          Value
-            InnerValue
-              BangOperator
-                XAdd@150..154 `!add`
-                LParen@154..155 `(`
-                Value
-                  InnerValue
-                    Identifier
-                      Id@155..156 `A`
-                Comma@156..157 `,`
-                Whitespace@157..158 ` `
-                Value
-                  InnerValue
-                    Identifier
-                      Id@158..159 `B`
-                RParen@159..160 `)`
-        Comma@160..161 `,`
-        Whitespace@161..162 ` `
-        TemplateArgDecl
-          IntType
-            Int@162..165 `int`
-          Whitespace@165..166 ` `
-          Identifier
-            Id@166..167 `K`
-          Whitespace@167..168 ` `
-          Equal@168..169 `=`
-          Whitespace@169..170 ` `
-          Value
-            InnerValue
-              CondOperator
-                XCond@170..175 `!cond`
-                LParen@175..176 `(`
-                CondClause
-                  Value
-                    InnerValue
-                      Boolean
-                        FalseVal@176..181 `false`
-                  Colon@181..182 `:`
-                  Whitespace@182..183 ` `
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@183..184 `1`
-                Comma@184..185 `,`
-                Whitespace@185..186 ` `
-                CondClause
-                  Value
-                    InnerValue
-                      Boolean
-                        TrueVal@186..190 `true`
-                  Colon@190..191 `:`
-                  Whitespace@191..192 ` `
-                  Value
-                    InnerValue
-                      Integer
-                        IntVal@192..193 `2`
-                RParen@193..194 `)`
-        Greater@194..195 `>`
-      Whitespace@195..196 ` `
-      RecordBody
-        ParentClassList
-        Body
-          LBrace@196..197 `{`
-          Whitespace@197..214 `\n                `
-          FieldDef
-            CodeType
-              Code@214..218 `code`
-            Whitespace@218..219 ` `
-            Identifier
-              Id@219..220 `C`
-            Whitespace@220..221 ` `
-            Equal@221..222 `=`
-            Whitespace@222..223 ` `
-            Value
-              InnerValue
-                Code
-                  CodeFragment@223..233 `[{ true }]`
-            Semi@233..234 `;`
-          Whitespace@234..247 `\n            `
-          RBrace@247..248 `}`
-
+(
+    Root@0..248
+      StatementList@0..248
+        Class@0..248
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..9
+            Id@6..9 "Foo"
+          TemplateArgList@9..196
+            Less@9..10 "<"
+            TemplateArgDecl@10..19
+              IntType@10..14
+                Int@10..13 "int"
+                Whitespace@13..14 " "
+              Identifier@14..16
+                Id@14..15 "A"
+                Whitespace@15..16 " "
+              Equal@16..17 "="
+              Whitespace@17..18 " "
+              Value@18..19
+                InnerValue@18..19
+                  Integer@18..19
+                    IntVal@18..19 "1"
+            Comma@19..20 ","
+            Whitespace@20..21 " "
+            TemplateArgDecl@21..38
+              StringType@21..28
+                StringKw@21..27 "string"
+                Whitespace@27..28 " "
+              Identifier@28..30
+                Id@28..29 "B"
+                Whitespace@29..30 " "
+              Equal@30..31 "="
+              Whitespace@31..32 " "
+              Value@32..38
+                InnerValue@32..38
+                  String@32..38
+                    StrVal@32..38 "\"hoge\""
+            Comma@38..39 ","
+            Whitespace@39..40 " "
+            TemplateArgDecl@40..53
+              BitType@40..44
+                Bit@40..43 "bit"
+                Whitespace@43..44 " "
+              Identifier@44..46
+                Id@44..45 "D"
+                Whitespace@45..46 " "
+              Equal@46..47 "="
+              Whitespace@47..48 " "
+              Value@48..53
+                InnerValue@48..53
+                  Boolean@48..53
+                    FalseVal@48..53 "false"
+            Comma@53..54 ","
+            Whitespace@54..55 " "
+            TemplateArgDecl@55..64
+              IntType@55..59
+                Int@55..58 "int"
+                Whitespace@58..59 " "
+              Identifier@59..61
+                Id@59..60 "E"
+                Whitespace@60..61 " "
+              Equal@61..62 "="
+              Whitespace@62..63 " "
+              Value@63..64
+                InnerValue@63..64
+                  Uninitialized@63..64
+                    Question@63..64 "?"
+            Comma@64..65 ","
+            Whitespace@65..66 " "
+            TemplateArgDecl@66..84
+              BitsType@66..74
+                BitsKw@66..70 "bits"
+                Less@70..71 "<"
+                Integer@71..72
+                  IntVal@71..72 "2"
+                Greater@72..73 ">"
+                Whitespace@73..74 " "
+              Identifier@74..76
+                Id@74..75 "F"
+                Whitespace@75..76 " "
+              Equal@76..77 "="
+              Whitespace@77..78 " "
+              Value@78..84
+                InnerValue@78..84
+                  Bits@78..84
+                    ValueList@78..84
+                      LBrace@78..79 "{"
+                      Value@79..80
+                        InnerValue@79..80
+                          Integer@79..80
+                            IntVal@79..80 "0"
+                      Comma@80..81 ","
+                      Whitespace@81..82 " "
+                      Value@82..83
+                        InnerValue@82..83
+                          Integer@82..83
+                            IntVal@82..83 "1"
+                      RBrace@83..84 "}"
+            Comma@84..85 ","
+            Whitespace@85..86 " "
+            TemplateArgDecl@86..106
+              ListType@86..96
+                ListKw@86..90 "list"
+                Less@90..91 "<"
+                IntType@91..94
+                  Int@91..94 "int"
+                Greater@94..95 ">"
+                Whitespace@95..96 " "
+              Identifier@96..98
+                Id@96..97 "G"
+                Whitespace@97..98 " "
+              Equal@98..99 "="
+              Whitespace@99..100 " "
+              Value@100..106
+                InnerValue@100..106
+                  List@100..106
+                    ValueList@100..106
+                      LSquare@100..101 "["
+                      Value@101..102
+                        InnerValue@101..102
+                          Integer@101..102
+                            IntVal@101..102 "1"
+                      Comma@102..103 ","
+                      Whitespace@103..104 " "
+                      Value@104..105
+                        InnerValue@104..105
+                          Integer@104..105
+                            IntVal@104..105 "2"
+                      RSquare@105..106 "]"
+            Comma@106..107 ","
+            Whitespace@107..108 " "
+            TemplateArgDecl@108..129
+              DagType@108..112
+                DagKw@108..111 "dag"
+                Whitespace@111..112 " "
+              Identifier@112..114
+                Id@112..113 "H"
+                Whitespace@113..114 " "
+              Equal@114..115 "="
+              Whitespace@115..116 " "
+              Value@116..129
+                InnerValue@116..129
+                  Dag@116..129
+                    LParen@116..117 "("
+                    DagArg@117..121
+                      Value@117..121
+                        InnerValue@117..121
+                          ClassValue@117..121
+                            Identifier@117..121
+                              Id@117..120 "add"
+                              Whitespace@120..121 " "
+                    DagArgList@121..128
+                      DagArg@121..128
+                        Value@121..122
+                          InnerValue@121..122
+                            ClassValue@121..122
+                              Identifier@121..122
+                                Id@121..122 "A"
+                        Colon@122..123 ":"
+                        VarName@123..128
+                          VarNameKw@123..128 "$hoge"
+                    RParen@128..129 ")"
+            Comma@129..130 ","
+            Whitespace@130..131 " "
+            TemplateArgDecl@131..140
+              IntType@131..135
+                Int@131..134 "int"
+                Whitespace@134..135 " "
+              Identifier@135..137
+                Id@135..136 "I"
+                Whitespace@136..137 " "
+              Equal@137..138 "="
+              Whitespace@138..139 " "
+              Value@139..140
+                InnerValue@139..140
+                  ClassValue@139..140
+                    Identifier@139..140
+                      Id@139..140 "A"
+            Comma@140..141 ","
+            Whitespace@141..142 " "
+            TemplateArgDecl@142..160
+              IntType@142..146
+                Int@142..145 "int"
+                Whitespace@145..146 " "
+              Identifier@146..148
+                Id@146..147 "J"
+                Whitespace@147..148 " "
+              Equal@148..149 "="
+              Whitespace@149..150 " "
+              Value@150..160
+                InnerValue@150..160
+                  BangOperator@150..160
+                    XAdd@150..154 "!add"
+                    LParen@154..155 "("
+                    Value@155..156
+                      InnerValue@155..156
+                        ClassValue@155..156
+                          Identifier@155..156
+                            Id@155..156 "A"
+                    Comma@156..157 ","
+                    Whitespace@157..158 " "
+                    Value@158..159
+                      InnerValue@158..159
+                        ClassValue@158..159
+                          Identifier@158..159
+                            Id@158..159 "B"
+                    RParen@159..160 ")"
+            Comma@160..161 ","
+            Whitespace@161..162 " "
+            TemplateArgDecl@162..194
+              IntType@162..166
+                Int@162..165 "int"
+                Whitespace@165..166 " "
+              Identifier@166..168
+                Id@166..167 "K"
+                Whitespace@167..168 " "
+              Equal@168..169 "="
+              Whitespace@169..170 " "
+              Value@170..194
+                InnerValue@170..194
+                  CondOperator@170..194
+                    XCond@170..175 "!cond"
+                    LParen@175..176 "("
+                    CondClause@176..184
+                      Value@176..181
+                        InnerValue@176..181
+                          Boolean@176..181
+                            FalseVal@176..181 "false"
+                      Colon@181..182 ":"
+                      Whitespace@182..183 " "
+                      Value@183..184
+                        InnerValue@183..184
+                          Integer@183..184
+                            IntVal@183..184 "1"
+                    Comma@184..185 ","
+                    Whitespace@185..186 " "
+                    CondClause@186..193
+                      Value@186..190
+                        InnerValue@186..190
+                          Boolean@186..190
+                            TrueVal@186..190 "true"
+                      Colon@190..191 ":"
+                      Whitespace@191..192 " "
+                      Value@192..193
+                        InnerValue@192..193
+                          Integer@192..193
+                            IntVal@192..193 "2"
+                    RParen@193..194 ")"
+            Greater@194..195 ">"
+            Whitespace@195..196 " "
+          RecordBody@196..248
+            ParentClassList@196..196
+            Body@196..248
+              LBrace@196..197 "{"
+              Whitespace@197..214 "\n                "
+              FieldDef@214..247
+                CodeType@214..219
+                  CodeKw@214..218 "code"
+                  Whitespace@218..219 " "
+                Identifier@219..221
+                  Id@219..220 "C"
+                  Whitespace@220..221 " "
+                Equal@221..222 "="
+                Whitespace@222..223 " "
+                Value@223..233
+                  InnerValue@223..233
+                    Code@223..233
+                      CodeFragment@223..233 "[{ true }]"
+                Semi@233..234 ";"
+                Whitespace@234..247 "\n            "
+              RBrace@247..248 "}"
+    ,
+    [],
+)

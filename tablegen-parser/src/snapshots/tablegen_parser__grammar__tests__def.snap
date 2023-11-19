@@ -2,23 +2,27 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"def Foo : Bar;\")"
 ---
-File
-  StatementList
-    Def
-      Def@0..3 `def`
-      Whitespace@3..4 ` `
-      Value
-        InnerValue
-          Identifier
-            Id@4..7 `Foo`
-      Whitespace@7..8 ` `
-      RecordBody
-        ParentClassList
-          Colon@8..9 `:`
-          Whitespace@9..10 ` `
-          ClassRef
-            Identifier
-              Id@10..13 `Bar`
-        Body
-          Semi@13..14 `;`
-
+(
+    Root@0..14
+      StatementList@0..14
+        Def@0..14
+          DefKw@0..3 "def"
+          Whitespace@3..4 " "
+          Value@4..8
+            InnerValue@4..8
+              ClassValue@4..8
+                Identifier@4..8
+                  Id@4..7 "Foo"
+                  Whitespace@7..8 " "
+          RecordBody@8..14
+            ParentClassList@8..13
+              Colon@8..9 ":"
+              Whitespace@9..10 " "
+              ClassRef@10..13
+                Identifier@10..13
+                  Id@10..13 "Bar"
+            Body@13..14
+              Semi@13..14 ";"
+    ,
+    [],
+)

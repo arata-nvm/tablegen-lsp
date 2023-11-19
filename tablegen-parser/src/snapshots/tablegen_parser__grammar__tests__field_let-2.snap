@@ -2,27 +2,36 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo { let A\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      Whitespace@9..10 ` `
-      RecordBody
-        ParentClassList
-        Body
-          LBrace@10..11 `{`
-          Whitespace@11..12 ` `
-          FieldLet
-            Let@12..15 `let`
-            Whitespace@15..16 ` `
-            Identifier
-              Id@16..17 `A`
-            Error(17:17:expected Equal, )
-            Value
-              Error(17:17:unknown token when parsing a value, )
-            Error(17:17:expected ';' after let expression, )
-          Error(17:17:expected RBrace, )
-
+(
+    Root@0..17
+      StatementList@0..17
+        Class@0..17
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..10
+            Id@6..9 "Foo"
+            Whitespace@9..10 " "
+          RecordBody@10..17
+            ParentClassList@10..10
+            Body@10..17
+              LBrace@10..11 "{"
+              Whitespace@11..12 " "
+              FieldLet@12..17
+                LetKw@12..15 "let"
+                Whitespace@15..16 " "
+                Identifier@16..17
+                  Id@16..17 "A"
+                Value@17..17
+                  InnerValue@17..17
+    ,
+    [
+        SyntaxError {
+            range: 17..17,
+            message: "expected Equal",
+        },
+        SyntaxError {
+            range: 17..17,
+            message: "unknown token when parsing a value",
+        },
+    ],
+)

@@ -1,6 +1,6 @@
 use std::fs;
 
-use tablegen_parser::{grammar::parse, kind::TokenKind, lexer::Lexer};
+use tablegen_parser::{grammar::parse, lexer::Lexer, token_kind::TokenKind};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -36,12 +36,12 @@ fn token(text: &str) {
 }
 
 fn node(text: &str) {
-    let node = parse(text);
-    println!("{node}");
+    let (node, _) = parse(text);
+    println!("{node:?}");
 }
 
 fn error(text: &str) {
-    for error in parse(text).errors() {
+    for error in parse(text).1 {
         println!("{error}");
     }
 }

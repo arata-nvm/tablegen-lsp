@@ -2,58 +2,62 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<int A, int B = 1>: Bar<A, 2>;\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      TemplateArgList
-        Less@9..10 `<`
-        TemplateArgDecl
-          IntType
-            Int@10..13 `int`
-          Whitespace@13..14 ` `
-          Identifier
-            Id@14..15 `A`
-        Comma@15..16 `,`
-        Whitespace@16..17 ` `
-        TemplateArgDecl
-          IntType
-            Int@17..20 `int`
-          Whitespace@20..21 ` `
-          Identifier
-            Id@21..22 `B`
-          Whitespace@22..23 ` `
-          Equal@23..24 `=`
-          Whitespace@24..25 ` `
-          Value
-            InnerValue
-              Integer
-                IntVal@25..26 `1`
-        Greater@26..27 `>`
-      RecordBody
-        ParentClassList
-          Colon@27..28 `:`
-          Whitespace@28..29 ` `
-          ClassRef
-            Identifier
-              Id@29..32 `Bar`
-            Less@32..33 `<`
-            ArgValueList
-              PositionalArgValueList
-                Value
-                  InnerValue
-                    Identifier
-                      Id@33..34 `A`
-                Comma@34..35 `,`
-                Whitespace@35..36 ` `
-                Value
-                  InnerValue
-                    Integer
-                      IntVal@36..37 `2`
-            Greater@37..38 `>`
-        Body
-          Semi@38..39 `;`
-
+(
+    Root@0..39
+      StatementList@0..39
+        Class@0..39
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..9
+            Id@6..9 "Foo"
+          TemplateArgList@9..27
+            Less@9..10 "<"
+            TemplateArgDecl@10..15
+              IntType@10..14
+                Int@10..13 "int"
+                Whitespace@13..14 " "
+              Identifier@14..15
+                Id@14..15 "A"
+            Comma@15..16 ","
+            Whitespace@16..17 " "
+            TemplateArgDecl@17..26
+              IntType@17..21
+                Int@17..20 "int"
+                Whitespace@20..21 " "
+              Identifier@21..23
+                Id@21..22 "B"
+                Whitespace@22..23 " "
+              Equal@23..24 "="
+              Whitespace@24..25 " "
+              Value@25..26
+                InnerValue@25..26
+                  Integer@25..26
+                    IntVal@25..26 "1"
+            Greater@26..27 ">"
+          RecordBody@27..39
+            ParentClassList@27..38
+              Colon@27..28 ":"
+              Whitespace@28..29 " "
+              ClassRef@29..38
+                Identifier@29..32
+                  Id@29..32 "Bar"
+                Less@32..33 "<"
+                ArgValueList@33..37
+                  PositionalArgValueList@33..37
+                    Value@33..34
+                      InnerValue@33..34
+                        ClassValue@33..34
+                          Identifier@33..34
+                            Id@33..34 "A"
+                    Comma@34..35 ","
+                    Whitespace@35..36 " "
+                    Value@36..37
+                      InnerValue@36..37
+                        Integer@36..37
+                          IntVal@36..37 "2"
+                Greater@37..38 ">"
+            Body@38..39
+              Semi@38..39 ";"
+    ,
+    [],
+)

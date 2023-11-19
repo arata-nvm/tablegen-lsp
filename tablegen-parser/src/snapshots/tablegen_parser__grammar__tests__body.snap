@@ -2,15 +2,22 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      RecordBody
-        ParentClassList
-        Body
-          Error(9:9:expected ';' or '{' to start body, )
-
+(
+    Root@0..9
+      StatementList@0..9
+        Class@0..9
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..9
+            Id@6..9 "Foo"
+          RecordBody@9..9
+            ParentClassList@9..9
+            Body@9..9
+    ,
+    [
+        SyntaxError {
+            range: 9..9,
+            message: "expected ';' or '{' to start body",
+        },
+    ],
+)

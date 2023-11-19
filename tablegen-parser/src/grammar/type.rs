@@ -1,10 +1,4 @@
-use crate::{
-    kind::{SyntaxKind, TokenKind},
-    parser::Parser,
-    T,
-};
-
-use super::value;
+use crate::{grammar::value, parser::Parser, syntax_kind::SyntaxKind, token_kind::TokenKind, T};
 
 pub(super) const TYPE_FIRST_TOKENS: [TokenKind; 8] = [
     T![bit],
@@ -33,55 +27,62 @@ pub(super) fn r#type(p: &mut Parser) {
 
 // BitType ::= "bit"
 pub(super) fn bit_type(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::BitType);
     p.assert(T![bit]);
-    p.wrap(m, SyntaxKind::BitType);
+    p.finish_node();
 }
 
 // IntType ::= "int"
 pub(super) fn int_type(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::IntType);
     p.assert(T![int]);
-    p.wrap(m, SyntaxKind::IntType);
+    p.finish_node();
 }
 
 // StringType ::= "string"
 pub(super) fn string_type(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::StringType);
     p.assert(T![string]);
-    p.wrap(m, SyntaxKind::StringType);
+    p.finish_node();
 }
 
 // DagType ::= "dag"
 pub(super) fn dag_type(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::DagType);
     p.assert(T![dag]);
-    p.wrap(m, SyntaxKind::DagType);
+    p.finish_node();
 }
 
 // BitsType ::= "bits" "<" Integer ">"
 pub(super) fn bits_type(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::BitsType);
     p.assert(T![bits]);
     p.expect_with_msg(T![<], "expected '<' after bits type");
     value::integer(p).or_error(p, "expected integer in bits<n> type");
     p.expect_with_msg(T![>], "expected '>' at end of bits<n> type");
-    p.wrap(m, SyntaxKind::BitsType);
+    p.finish_node();
 }
 
 // ListType ::= "list" "<" Type ">"
 pub(super) fn list_type(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::ListType);
     p.assert(T![list]);
     p.expect_with_msg(T![<], "expected '<' after list type");
     r#type(p);
     p.expect_with_msg(T![>], "expected '>' at end of list<ty> type");
-    p.wrap(m, SyntaxKind::ListType);
+    p.finish_node();
 }
 
 // ClassId ::= Identifier
 pub(super) fn class_id(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::ClassId);
     value::identifier(p).or_error(p, "expected name for ClassID");
-    p.wrap(m, SyntaxKind::ClassId);
+    p.finish_node();
+}
+
+// CodeType ::= "code"
+pub(super) fn code_type(p: &mut Parser) {
+    p.start_node(SyntaxKind::CodeType);
+    p.assert(T![code]);
+    p.finish_node();
 }

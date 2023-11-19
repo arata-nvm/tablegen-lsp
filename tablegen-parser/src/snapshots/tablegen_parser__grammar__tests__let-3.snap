@@ -2,30 +2,39 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"let A = 1 {\")"
 ---
-File
-  StatementList
-    Let
-      Let@0..3 `let`
-      Whitespace@3..4 ` `
-      LetList
-        LetItem
-          Identifier
-            Id@4..5 `A`
-          Whitespace@5..6 ` `
-          Equal@6..7 `=`
-          Whitespace@7..8 ` `
-          Value
-            InnerValue
-              Integer
-                IntVal@8..9 `1`
-              Whitespace@9..10 ` `
-              RangeSuffix
-                LBrace@10..11 `{`
-                RangeList
-                Error(11:11:expected '}' at end of bit range list, )
-      Error(11:11:expected 'in' at end of top-level 'let', )
-      StatementList
-        Error(11:11:expected class, def, defm, defset, multiclass, let or foreach, )
-        Error
-          Eof@11..11 ``
-
+(
+    Root@0..11
+      StatementList@0..11
+        Let@0..11
+          LetKw@0..3 "let"
+          Whitespace@3..4 " "
+          LetList@4..11
+            LetItem@4..11
+              Identifier@4..6
+                Id@4..5 "A"
+                Whitespace@5..6 " "
+              Equal@6..7 "="
+              Whitespace@7..8 " "
+              Value@8..11
+                InnerValue@8..11
+                  Integer@8..10
+                    IntVal@8..9 "1"
+                    Whitespace@9..10 " "
+                  RangeSuffix@10..11
+                    LBrace@10..11 "{"
+                    RangeList@11..11
+          StatementList@11..11
+            Error@11..11
+              Eof@11..11 ""
+    ,
+    [
+        SyntaxError {
+            range: 11..11,
+            message: "expected '}' at end of bit range list",
+        },
+        SyntaxError {
+            range: 11..11,
+            message: "expected class, def, defm, defset, multiclass, let or foreach",
+        },
+    ],
+)

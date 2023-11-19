@@ -1,10 +1,10 @@
 use crate::{
-    kind::{SyntaxKind, TokenKind},
+    grammar::{delimited, r#type, value},
     parser::Parser,
+    syntax_kind::SyntaxKind,
+    token_kind::TokenKind,
     T,
 };
-
-use super::{delimited, r#type, value};
 
 pub(super) enum StatementListType {
     TopLevel,
@@ -14,7 +14,7 @@ pub(super) enum StatementListType {
 
 // StatementList ::= Statement*
 pub(super) fn statement_list(p: &mut Parser, typ: StatementListType) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::StatementList.into());
     match typ {
         StatementListType::TopLevel => {
             while !p.eof() {
@@ -39,7 +39,7 @@ pub(super) fn statement_list(p: &mut Parser, typ: StatementListType) {
             }
         }
     }
-    p.wrap(m, SyntaxKind::StatementList);
+    p.finish_node();
 }
 
 // Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Foreach | If | Let | MultiClass
@@ -62,29 +62,29 @@ pub(super) fn statement(p: &mut Parser) {
 
 // Include ::= "include" String
 pub(super) fn include(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Include);
     p.assert(T![include]);
     value::string(p).or_error(p, "expected filename after include");
-    p.wrap(m, SyntaxKind::Include);
+    p.finish_node();
 }
 
 // Class ::= "class" Identifier TemplateArgList? RecordBody
 pub(super) fn class(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Class);
     p.assert(T![class]);
     value::identifier(p).or_error(p, "expected class name after 'class' keyword");
     opt_template_arg_list(p);
     record_body(p);
-    p.wrap(m, SyntaxKind::Class);
+    p.finish_node();
 }
 
 // Def ::= "def" Value? RecordBody
 pub(super) fn def(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Def);
     p.assert(T![def]);
     object_name(p);
     record_body(p);
-    p.wrap(m, SyntaxKind::Def);
+    p.finish_node();
 }
 
 pub(super) fn object_name(p: &mut Parser) {
@@ -96,29 +96,29 @@ pub(super) fn object_name(p: &mut Parser) {
 
 // Let ::= "let" LetList "in" ( "{" Statement* "}" | Statement );
 pub(super) fn r#let(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Let);
     p.assert(T![let]);
     let_list(p);
     p.expect_with_msg(T![in], "expected 'in' at end of top-level 'let'");
     statement_list(p, StatementListType::SingleOrBlock);
-    p.wrap(m, SyntaxKind::Let);
+    p.finish_node();
 }
 
 // LetList ::= LetItem ( "," LetItem )*
 pub(super) fn let_list(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::LetList);
     while !p.eof() {
         let_item(p);
         if !p.eat_if(T![,]) {
             break;
         }
     }
-    p.wrap(m, SyntaxKind::LetList);
+    p.finish_node();
 }
 
 // LetItem ::= Identifier ( "<" RangeList ">" )? "=" Value
 pub(super) fn let_item(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::LetItem);
     value::identifier(p).or_error(p, "expected identifier in let expression");
     if p.eat_if(T![<]) {
         value::range_list(p);
@@ -126,29 +126,29 @@ pub(super) fn let_item(p: &mut Parser) {
     }
     p.expect_with_msg(T![=], "expected '=' in let expression");
     value::value(p);
-    p.wrap(m, SyntaxKind::LetItem);
+    p.finish_node();
 }
 
 // MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList "{" MultiClassStatement+ "}"
 pub(super) fn multi_class(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::MultiClass);
     p.assert(T![multiclass]);
     value::identifier(p).or_error(p, "expected identifier after multiclass for name");
     opt_template_arg_list(p);
     parent_class_list(p);
     p.expect_with_msg(T!['{'], "expected '{' in multiclass definition");
     multi_class_statements(p);
-    p.wrap(m, SyntaxKind::MultiClass);
+    p.finish_node();
 }
 
 pub(super) fn multi_class_statements(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::StatementList);
     multi_class_statement(p);
     while !p.at(T!['}']) && !p.eof() {
         multi_class_statement(p);
     }
     p.expect(T!['}']);
-    p.wrap(m, SyntaxKind::StatementList);
+    p.finish_node();
 }
 
 // MultiClassStatement ::= Def | Defm | Foreach | Let
@@ -164,58 +164,58 @@ pub(super) fn multi_class_statement(p: &mut Parser) {
 
 // Defm ::= "defm" Value? ParentClassList ";"
 pub(super) fn defm(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Defm);
     p.assert(T![defm]);
     value::opt_value(p);
     parent_class_list(p);
     p.expect_with_msg(T![;], "expected ';' at end of defm");
-    p.wrap(m, SyntaxKind::Defm);
+    p.finish_node();
 }
 
 // Defset ::= "defset" Type Identifier "=" "{" Statement* "}"
 pub(super) fn defset(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Defset);
     p.assert(T![defset]);
     r#type::r#type(p);
     value::identifier(p);
     p.expect(T![=]);
     statement_list(p, StatementListType::Block);
-    p.wrap(m, SyntaxKind::Defset);
+    p.finish_node();
 }
 
 // Defvar ::= "defvar" Identifier "=" Value ";"
 pub(super) fn defvar(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Defvar);
     p.assert(T![defvar]);
     value::identifier(p);
     p.expect(T![=]);
     value::value(p);
     p.expect(T![;]);
-    p.wrap(m, SyntaxKind::Defvar);
+    p.finish_node();
 }
 
 // Foreach ::= "foreach" ForeachIterator "in" ( "{" Statement* "}" | Statement )
 pub(super) fn foreach(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Foreach);
     p.assert(T![foreach]);
     foreach_iterator(p);
     p.expect(T![in]);
     statement_list(p, StatementListType::SingleOrBlock);
-    p.wrap(m, SyntaxKind::Foreach);
+    p.finish_node();
 }
 
 // ForeachIterator ::= Identifier "=" ForeachIteratorInit
 pub(super) fn foreach_iterator(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::ForeachIterator);
     value::identifier(p).or_error(p, "expected identifier in foreach declaration");
     p.expect_with_msg(T![=], "expected '=' in foreach declaration");
     foreach_iterator_init(p);
-    p.wrap(m, SyntaxKind::ForeachIterator);
+    p.finish_node()
 }
 
 // ForeachIteratorInit ::=  "{" RangeList "}" | RangePiece | Value
 pub(super) fn foreach_iterator_init(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::ForeachIteratorInit);
     match p.current() {
         T!['{'] => {
             p.assert(T!['{']);
@@ -229,28 +229,28 @@ pub(super) fn foreach_iterator_init(p: &mut Parser) {
             value::value(p);
         }
     }
-    p.wrap(m, SyntaxKind::ForeachIteratorInit);
+    p.finish_node();
 }
 
 // If ::= "if" Value "then" ( "{" Statement* "}" | Statement )
 fn r#if(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::If);
     p.assert(T![if]);
     value::value(p);
     p.expect(T![then]);
     statement_list(p, StatementListType::SingleOrBlock);
-    p.wrap(m, SyntaxKind::If);
+    p.finish_node();
 }
 
 // Assert ::= "assert" Value "," Value ";"
 fn r#assert(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Assert);
     p.assert(T![assert]);
     value::value(p);
     p.expect(T![,]);
     value::value(p);
     p.expect(T![;]);
-    p.wrap(m, SyntaxKind::Assert);
+    p.finish_node();
 }
 
 pub(super) fn opt_template_arg_list(p: &mut Parser) {
@@ -261,35 +261,35 @@ pub(super) fn opt_template_arg_list(p: &mut Parser) {
 
 // TemplateArgList ::= "<" TemplateArgDecl ( "," TemplateArgDecl )* ">"
 pub(super) fn template_arg_list(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::TemplateArgList);
     delimited(p, T![<], T![>], T![,], template_arg_decl);
-    p.wrap(m, SyntaxKind::TemplateArgList);
+    p.finish_node();
 }
 
 // TemplateArgDecl ::= Type Identifier ( "=" Value )?
 pub(super) fn template_arg_decl(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::TemplateArgDecl);
     r#type::r#type(p);
     value::identifier(p).or_error(p, "expected identifier in declaration");
     if p.eat_if(T![=]) {
         value::value(p);
     }
-    p.wrap(m, SyntaxKind::TemplateArgDecl);
+    p.finish_node();
 }
 
 // RecordBody ::= ParentClassList Body
 pub(super) fn record_body(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::RecordBody);
     parent_class_list(p);
     body(p);
-    p.wrap(m, SyntaxKind::RecordBody);
+    p.finish_node();
 }
 
 // ParentClassList ::= ( ":" ClassRef ( "," ClassRef )* )?
 pub(super) fn parent_class_list(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::ParentClassList);
     if !p.eat_if(T![:]) {
-        p.wrap(m, SyntaxKind::ParentClassList);
+        p.finish_node();
         return;
     }
 
@@ -299,23 +299,23 @@ pub(super) fn parent_class_list(p: &mut Parser) {
             break;
         }
     }
-    p.wrap(m, SyntaxKind::ParentClassList);
+    p.finish_node();
 }
 
 // ClassRef ::= Identifier ( "<" ArgValueList? ">" )?
 pub(super) fn class_ref(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::ClassRef);
     value::identifier(p);
     if p.eat_if(T![<]) {
         arg_value_list(p);
         p.expect_with_msg(T![>], "expected '>' in template value list");
     }
-    p.wrap(m, SyntaxKind::ClassRef);
+    p.finish_node();
 }
 
 // ArgValueList ::= PositionalArgValueList ","? NamedArgValueList
 pub(super) fn arg_value_list(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::ArgValueList);
     if p.at_set(&value::VALUE_START) {
         positional_arg_value_list(p);
     }
@@ -324,47 +324,47 @@ pub(super) fn arg_value_list(p: &mut Parser) {
     // if p.at_set(&VALUE_START) {
     // named_arg_value_list(p);
     // }
-    p.wrap(m, SyntaxKind::ArgValueList);
+    p.finish_node();
 }
 
 // PositionalArgValueList ::= ( Value ( "," Value )* ) ?
 pub(super) fn positional_arg_value_list(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::PositionalArgValueList);
     while !p.eof() {
         value::value(p);
         if !p.eat_if(T![,]) {
             break;
         }
     }
-    p.wrap(m, SyntaxKind::PositionalArgValueList);
+    p.finish_node();
 }
 
 // NamedArgValueList ::= ( NamedArgValue ( "," NamedArgValue )* )?
 pub(super) fn named_arg_value_list(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::NamedArgValueList);
     while !p.eof() {
         named_arg_value(p);
         if !p.eat_if(T![,]) {
             break;
         }
     }
-    p.wrap(m, SyntaxKind::NamedArgValueList);
+    p.finish_node();
 }
 
 // NamedArgValue ::= Value "=" Value
 pub(super) fn named_arg_value(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::NamedArgValue);
     value::value(p);
     p.expect(T![=]);
     value::value(p);
-    p.wrap(m, SyntaxKind::NamedArgValue);
+    p.finish_node();
 }
 
 // Body ::= ";" | "{" BodyItem* "}"
 pub(super) fn body(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::Body);
     if p.eat_if(T![;]) {
-        p.wrap(m, SyntaxKind::Body);
+        p.finish_node();
         return;
     }
 
@@ -375,7 +375,7 @@ pub(super) fn body(p: &mut Parser) {
         }
     }
     p.expect(T!['}']);
-    p.wrap(m, SyntaxKind::Body);
+    p.finish_node();
 }
 
 // BodyItem ::= FieldDef | FieldLet | Defvar | Assert
@@ -397,10 +397,10 @@ pub(super) fn body_item(p: &mut Parser) -> bool {
 
 // FieldDef ::= "field"? ( Type | CodeType ) Identifier ( "=" Value )? ";"
 pub(super) fn field_def(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::FieldDef);
     p.eat_if(T![field]);
     if p.at(T![code]) {
-        code_type(p);
+        r#type::code_type(p);
     } else {
         r#type::r#type(p);
     }
@@ -409,19 +409,12 @@ pub(super) fn field_def(p: &mut Parser) {
         value::value(p);
     }
     p.expect_with_msg(T![;], "expected ';' after declaration");
-    p.wrap(m, SyntaxKind::FieldDef);
-}
-
-// CodeType ::= "code"
-pub(super) fn code_type(p: &mut Parser) {
-    let m = p.marker();
-    p.assert(T![code]);
-    p.wrap(m, SyntaxKind::CodeType);
+    p.finish_node();
 }
 
 // FieldLet ::= "let" Identitfer ( "{" RangeList "}" )? "=" Value ";"
 pub(super) fn field_let(p: &mut Parser) {
-    let m = p.marker();
+    p.start_node(SyntaxKind::FieldLet);
     p.assert(T![let]);
     value::identifier(p).or_error(p, "expected field identifier after let");
     if p.eat_if(T!['{']) {
@@ -431,5 +424,5 @@ pub(super) fn field_let(p: &mut Parser) {
     p.expect(T![=]);
     value::value(p).or_error(p, "expected '=' in let expression");
     p.expect_with_msg(T![;], "expected ';' after let expression");
-    p.wrap(m, SyntaxKind::FieldLet);
+    p.finish_node();
 }

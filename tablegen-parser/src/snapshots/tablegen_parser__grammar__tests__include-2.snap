@@ -2,9 +2,17 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"include\")"
 ---
-File
-  StatementList
-    Include
-      Include@0..7 `include`
-      Error(7:7:expected filename after include, )
-
+(
+    Root@0..7
+      StatementList@0..7
+        Include@0..7
+          IncludeKw@0..7 "include"
+          String@7..7
+    ,
+    [
+        SyntaxError {
+            range: 7..7,
+            message: "expected filename after include",
+        },
+    ],
+)

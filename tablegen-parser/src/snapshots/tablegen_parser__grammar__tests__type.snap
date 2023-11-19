@@ -2,81 +2,84 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;\")"
 ---
-File
-  StatementList
-    Class
-      Class@0..5 `class`
-      Whitespace@5..6 ` `
-      Identifier
-        Id@6..9 `Foo`
-      TemplateArgList
-        Less@9..10 `<`
-        TemplateArgDecl
-          BitType
-            Bit@10..13 `bit`
-          Whitespace@13..14 ` `
-          Identifier
-            Id@14..15 `A`
-        Comma@15..16 `,`
-        Whitespace@16..17 ` `
-        TemplateArgDecl
-          IntType
-            Int@17..20 `int`
-          Whitespace@20..21 ` `
-          Identifier
-            Id@21..22 `B`
-        Comma@22..23 `,`
-        Whitespace@23..24 ` `
-        TemplateArgDecl
-          StringType
-            String@24..30 `string`
-          Whitespace@30..31 ` `
-          Identifier
-            Id@31..32 `C`
-        Comma@32..33 `,`
-        Whitespace@33..34 ` `
-        TemplateArgDecl
-          DagType
-            Dag@34..37 `dag`
-          Whitespace@37..38 ` `
-          Identifier
-            Id@38..39 `D`
-        Comma@39..40 `,`
-        Whitespace@40..41 ` `
-        TemplateArgDecl
-          BitsType
-            Bits@41..45 `bits`
-            Less@45..46 `<`
-            Integer
-              IntVal@46..48 `32`
-            Greater@48..49 `>`
-          Whitespace@49..50 ` `
-          Identifier
-            Id@50..51 `E`
-        Comma@51..52 `,`
-        Whitespace@52..53 ` `
-        TemplateArgDecl
-          ListType
-            List@53..57 `list`
-            Less@57..58 `<`
-            IntType
-              Int@58..61 `int`
-            Greater@61..62 `>`
-          Whitespace@62..63 ` `
-          Identifier
-            Id@63..64 `F`
-        Comma@64..65 `,`
-        Whitespace@65..66 ` `
-        TemplateArgDecl
-          ClassId
-            Identifier
-              Id@66..69 `Bar`
-          Whitespace@69..70 ` `
-          Identifier
-            Id@70..71 `G`
-        Greater@71..72 `>`
-      RecordBody
-        ParentClassList
-        Body
-          Semi@72..73 `;`
-
+(
+    Root@0..73
+      StatementList@0..73
+        Class@0..73
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..9
+            Id@6..9 "Foo"
+          TemplateArgList@9..72
+            Less@9..10 "<"
+            TemplateArgDecl@10..15
+              BitType@10..14
+                Bit@10..13 "bit"
+                Whitespace@13..14 " "
+              Identifier@14..15
+                Id@14..15 "A"
+            Comma@15..16 ","
+            Whitespace@16..17 " "
+            TemplateArgDecl@17..22
+              IntType@17..21
+                Int@17..20 "int"
+                Whitespace@20..21 " "
+              Identifier@21..22
+                Id@21..22 "B"
+            Comma@22..23 ","
+            Whitespace@23..24 " "
+            TemplateArgDecl@24..32
+              StringType@24..31
+                StringKw@24..30 "string"
+                Whitespace@30..31 " "
+              Identifier@31..32
+                Id@31..32 "C"
+            Comma@32..33 ","
+            Whitespace@33..34 " "
+            TemplateArgDecl@34..39
+              DagType@34..38
+                DagKw@34..37 "dag"
+                Whitespace@37..38 " "
+              Identifier@38..39
+                Id@38..39 "D"
+            Comma@39..40 ","
+            Whitespace@40..41 " "
+            TemplateArgDecl@41..51
+              BitsType@41..50
+                BitsKw@41..45 "bits"
+                Less@45..46 "<"
+                Integer@46..48
+                  IntVal@46..48 "32"
+                Greater@48..49 ">"
+                Whitespace@49..50 " "
+              Identifier@50..51
+                Id@50..51 "E"
+            Comma@51..52 ","
+            Whitespace@52..53 " "
+            TemplateArgDecl@53..64
+              ListType@53..63
+                ListKw@53..57 "list"
+                Less@57..58 "<"
+                IntType@58..61
+                  Int@58..61 "int"
+                Greater@61..62 ">"
+                Whitespace@62..63 " "
+              Identifier@63..64
+                Id@63..64 "F"
+            Comma@64..65 ","
+            Whitespace@65..66 " "
+            TemplateArgDecl@66..71
+              ClassId@66..70
+                Identifier@66..70
+                  Id@66..69 "Bar"
+                  Whitespace@69..70 " "
+              Identifier@70..71
+                Id@70..71 "G"
+            Greater@71..72 ">"
+          RecordBody@72..73
+            ParentClassList@72..72
+            Body@72..73
+              Semi@72..73 ";"
+    ,
+    [],
+)

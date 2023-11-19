@@ -2,78 +2,83 @@
 source: tablegen-parser/src/grammar.rs
 expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : Base<0>;\n                def Foo1 : Base<1>;\n            }\")"
 ---
-File
-  StatementList
-    Defset
-      Defset@0..6 `defset`
-      Whitespace@6..7 ` `
-      ListType
-        List@7..11 `list`
-        Less@11..12 `<`
-        ClassId
-          Identifier
-            Id@12..16 `Base`
-        Greater@16..17 `>`
-      Whitespace@17..18 ` `
-      Identifier
-        Id@18..26 `BaseList`
-      Whitespace@26..27 ` `
-      Equal@27..28 `=`
-      Whitespace@28..29 ` `
-      StatementList
-        LBrace@29..30 `{`
-        Whitespace@30..47 `\n                `
-        Def
-          Def@47..50 `def`
-          Whitespace@50..51 ` `
-          Value
-            InnerValue
-              Identifier
-                Id@51..55 `Foo0`
-          Whitespace@55..56 ` `
-          RecordBody
-            ParentClassList
-              Colon@56..57 `:`
-              Whitespace@57..58 ` `
-              ClassRef
-                Identifier
-                  Id@58..62 `Base`
-                Less@62..63 `<`
-                ArgValueList
-                  PositionalArgValueList
-                    Value
-                      InnerValue
-                        Integer
-                          IntVal@63..64 `0`
-                Greater@64..65 `>`
-            Body
-              Semi@65..66 `;`
-        Whitespace@66..83 `\n                `
-        Def
-          Def@83..86 `def`
-          Whitespace@86..87 ` `
-          Value
-            InnerValue
-              Identifier
-                Id@87..91 `Foo1`
-          Whitespace@91..92 ` `
-          RecordBody
-            ParentClassList
-              Colon@92..93 `:`
-              Whitespace@93..94 ` `
-              ClassRef
-                Identifier
-                  Id@94..98 `Base`
-                Less@98..99 `<`
-                ArgValueList
-                  PositionalArgValueList
-                    Value
-                      InnerValue
-                        Integer
-                          IntVal@99..100 `1`
-                Greater@100..101 `>`
-            Body
-              Semi@101..102 `;`
-        Whitespace@102..115 `\n            `
-        RBrace@115..116 `}`
-
+(
+    Root@0..116
+      StatementList@0..116
+        Defset@0..116
+          DefsetKw@0..6 "defset"
+          Whitespace@6..7 " "
+          ListType@7..18
+            ListKw@7..11 "list"
+            Less@11..12 "<"
+            ClassId@12..16
+              Identifier@12..16
+                Id@12..16 "Base"
+            Greater@16..17 ">"
+            Whitespace@17..18 " "
+          Identifier@18..27
+            Id@18..26 "BaseList"
+            Whitespace@26..27 " "
+          Equal@27..28 "="
+          Whitespace@28..29 " "
+          StatementList@29..116
+            LBrace@29..30 "{"
+            Whitespace@30..47 "\n                "
+            Def@47..83
+              DefKw@47..50 "def"
+              Whitespace@50..51 " "
+              Value@51..56
+                InnerValue@51..56
+                  ClassValue@51..56
+                    Identifier@51..56
+                      Id@51..55 "Foo0"
+                      Whitespace@55..56 " "
+              RecordBody@56..83
+                ParentClassList@56..65
+                  Colon@56..57 ":"
+                  Whitespace@57..58 " "
+                  ClassRef@58..65
+                    Identifier@58..62
+                      Id@58..62 "Base"
+                    Less@62..63 "<"
+                    ArgValueList@63..64
+                      PositionalArgValueList@63..64
+                        Value@63..64
+                          InnerValue@63..64
+                            Integer@63..64
+                              IntVal@63..64 "0"
+                    Greater@64..65 ">"
+                Body@65..83
+                  Semi@65..66 ";"
+                  Whitespace@66..83 "\n                "
+            Def@83..115
+              DefKw@83..86 "def"
+              Whitespace@86..87 " "
+              Value@87..92
+                InnerValue@87..92
+                  ClassValue@87..92
+                    Identifier@87..92
+                      Id@87..91 "Foo1"
+                      Whitespace@91..92 " "
+              RecordBody@92..115
+                ParentClassList@92..101
+                  Colon@92..93 ":"
+                  Whitespace@93..94 " "
+                  ClassRef@94..101
+                    Identifier@94..98
+                      Id@94..98 "Base"
+                    Less@98..99 "<"
+                    ArgValueList@99..100
+                      PositionalArgValueList@99..100
+                        Value@99..100
+                          InnerValue@99..100
+                            Integer@99..100
+                              IntVal@99..100 "1"
+                    Greater@100..101 ">"
+                Body@101..115
+                  Semi@101..102 ";"
+                  Whitespace@102..115 "\n            "
+            RBrace@115..116 "}"
+    ,
+    [],
+)

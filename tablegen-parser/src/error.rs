@@ -1,8 +1,6 @@
-use std::fmt;
-
-use ecow::EcoString;
-
 use crate::parser::Range;
+use ecow::EcoString;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct SyntaxError {

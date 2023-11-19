@@ -51,9 +51,9 @@ impl DocumentIndexer {
         (self.doc_id, range)
     }
 
-    pub fn add_symbol_reference(&mut self, name: &EcoString, range: Range) -> Option<SymbolId> {
+    pub fn add_symbol_reference(&mut self, name: EcoString, range: Range) -> Option<SymbolId> {
         let reference_loc = (self.doc_id, range.clone());
-        if let Some(symbol_id) = self.find_symbol_scope(name).copied() {
+        if let Some(symbol_id) = self.find_symbol_scope(&name).copied() {
             self.symbols.add_reference(symbol_id, reference_loc);
             Some(symbol_id)
         } else {
@@ -62,14 +62,14 @@ impl DocumentIndexer {
         }
     }
 
-    pub fn add_record(&mut self, name: &EcoString, range: Range, kind: RecordKind) -> SymbolId {
+    pub fn add_record(&mut self, name: EcoString, range: Range, kind: RecordKind) -> SymbolId {
         let define_loc = self.to_location(range);
         let symbol_id = self.symbols.new_record(name.clone(), define_loc, kind);
         self.add_symbol_scope(name.clone(), symbol_id);
         symbol_id
     }
 
-    pub fn add_template_arg(&mut self, name: &EcoString, range: Range, typ: RecordFieldType) {
+    pub fn add_template_arg(&mut self, name: EcoString, range: Range, typ: RecordFieldType) {
         let define_loc = self.to_location(range);
         let symbol_id = self.symbols.new_record_field(
             name.clone(),
@@ -83,7 +83,7 @@ impl DocumentIndexer {
         parent.add_template_arg(name.clone(), symbol_id);
     }
 
-    pub fn add_field(&mut self, name: &EcoString, range: Range, typ: RecordFieldType) {
+    pub fn add_field(&mut self, name: EcoString, range: Range, typ: RecordFieldType) {
         let define_loc = self.to_location(range);
         let symbol_id =
             self.symbols
