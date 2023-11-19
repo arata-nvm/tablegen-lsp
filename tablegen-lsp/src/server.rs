@@ -1,37 +1,57 @@
-use tablegen_analyzer::document::Document;
-use tokio::sync::Mutex;
-use tower_lsp::{
-    jsonrpc::Result,
-    lsp_types::{
-        DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
-        DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
-        HoverProviderCapability, InitializeParams, InitializeResult, Location, OneOf,
-        ReferenceParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
-    },
-    Client, LanguageServer,
+use std::{
+    future::{ready, Future},
+    ops::ControlFlow,
 };
+
+use async_lsp::{router::Router, ClientSocket, LanguageClient, ResponseError};
+use lsp_types::{
+    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
+    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, Location,
+    OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+};
+use tablegen_analyzer::document::Document;
 
 use crate::{
     compat::{analyzer2lsp, lsp2analyzer},
     document_map::DocumentMap,
 };
 
+type NotifyResult = ControlFlow<async_lsp::Result<()>>;
+
 pub struct TableGenLanguageServer {
-    client: Client,
-    document_map: Mutex<DocumentMap>,
+    client: ClientSocket,
+    document_map: DocumentMap,
 }
 
 impl TableGenLanguageServer {
-    pub fn new(client: Client) -> Self {
-        Self {
-            client,
-            document_map: Mutex::new(DocumentMap::new()),
-        }
+    pub fn new_router(client: ClientSocket) -> Router<Self> {
+        let this = Self::new(client);
+        let mut router = Router::new(this);
+        router
+            .request::<request::Initialize, _>(Self::initialize)
+            .request::<request::Shutdown, _>(|_, _| ready(Ok(())))
+            .notification::<notification::DidOpenTextDocument>(Self::did_open)
+            .notification::<notification::DidChangeTextDocument>(Self::did_change)
+            .request::<request::GotoDefinition, _>(Self::goto_definition)
+            .request::<request::References, _>(Self::references)
+            .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
+            .request::<request::HoverRequest, _>(Self::hover);
+        router
     }
 
-    async fn on_change(&self, uri: Url, version: i32, text: String) {
-        let mut document_map = self.document_map.lock().await;
-        let doc_id = document_map.assign_document_id(uri.clone());
+    pub fn new(client: ClientSocket) -> Self {
+        Self {
+            client,
+            document_map: DocumentMap::new(),
+        }
+    }
+}
+
+impl TableGenLanguageServer {
+    fn on_change(&mut self, uri: Url, version: i32, text: String) {
+        let doc_id = self.document_map.assign_document_id(uri.clone());
         let mut document = Document::parse(doc_id, text);
 
         let diags = document
@@ -40,28 +60,29 @@ impl TableGenLanguageServer {
             .map(|error| analyzer2lsp::error(&document, error))
             .collect();
         self.client
-            .publish_diagnostics(uri, diags, Some(version))
-            .await;
+            .publish_diagnostics(PublishDiagnosticsParams::new(uri, diags, Some(version)))
+            .unwrap();
 
-        document_map.update_document(doc_id, document);
+        self.document_map.update_document(doc_id, document);
     }
 
-    async fn with_document<T>(
+    fn with_document<T>(
         &self,
         uri: Url,
         f: impl FnOnce(&DocumentMap, &Document) -> Option<T>,
     ) -> Option<T> {
-        let document_map = self.document_map.lock().await;
-        let Some(doc_id) = document_map.to_document_id(&uri) else { return None; };
-        let Some(document) = document_map.find_document(doc_id) else { return None; };
-        f(&document_map, document)
+        let Some(doc_id) = self.document_map.to_document_id(&uri) else { return None; };
+        let Some(document) = self.document_map.find_document(doc_id) else { return None; };
+        f(&self.document_map, document)
     }
 }
 
-#[tower_lsp::async_trait]
-impl LanguageServer for TableGenLanguageServer {
-    async fn initialize(&self, _params: InitializeParams) -> Result<InitializeResult> {
-        Ok(InitializeResult {
+impl TableGenLanguageServer {
+    fn initialize(
+        &mut self,
+        _params: InitializeParams,
+    ) -> impl Future<Output = Result<InitializeResult, ResponseError>> {
+        ready(Ok(InitializeResult {
             server_info: None,
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -73,98 +94,89 @@ impl LanguageServer for TableGenLanguageServer {
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 ..Default::default()
             },
-        })
+        }))
     }
 
-    async fn shutdown(&self) -> Result<()> {
-        Ok(())
-    }
-
-    async fn did_open(&self, params: DidOpenTextDocumentParams) {
+    fn did_open(&mut self, params: DidOpenTextDocumentParams) -> NotifyResult {
         self.on_change(
             params.text_document.uri,
             params.text_document.version,
             params.text_document.text,
-        )
-        .await;
+        );
+        ControlFlow::Continue(())
     }
 
-    async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
+    fn did_change(&mut self, mut params: DidChangeTextDocumentParams) -> NotifyResult {
         self.on_change(
             params.text_document.uri,
             params.text_document.version,
             std::mem::take(&mut params.content_changes[0].text),
-        )
-        .await;
+        );
+        ControlFlow::Continue(())
     }
 
-    async fn goto_definition(
-        &self,
+    fn goto_definition(
+        &mut self,
         params: GotoDefinitionParams,
-    ) -> Result<Option<GotoDefinitionResponse>> {
+    ) -> impl Future<Output = Result<Option<GotoDefinitionResponse>, ResponseError>> {
         let uri = params.text_document_position_params.text_document.uri;
-        let definition = self
-            .with_document(uri, |doc_map, doc| {
-                let lsp_position = params.text_document_position_params.position;
-                let position = lsp2analyzer::position(doc, lsp_position);
-                let definition = doc.get_definition(position)?;
-                let lsp_definition = analyzer2lsp::location(doc_map, doc, definition);
-                Some(GotoDefinitionResponse::Scalar(lsp_definition))
-            })
-            .await;
-
-        Ok(definition)
+        let definition = self.with_document(uri, |doc_map, doc| {
+            let lsp_position = params.text_document_position_params.position;
+            let position = lsp2analyzer::position(doc, lsp_position);
+            let definition = doc.get_definition(position)?;
+            let lsp_definition = analyzer2lsp::location(doc_map, doc, definition);
+            Some(GotoDefinitionResponse::Scalar(lsp_definition))
+        });
+        ready(Ok(definition))
     }
 
-    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+    fn references(
+        &mut self,
+        params: ReferenceParams,
+    ) -> impl Future<Output = Result<Option<Vec<Location>>, ResponseError>> {
         let uri = params.text_document_position.text_document.uri;
-        let references = self
-            .with_document(uri, |doc_map, doc| {
-                let lsp_position = params.text_document_position.position;
-                let position = lsp2analyzer::position(doc, lsp_position);
-                let references = doc.get_references(position)?;
-                let lsp_references = references
-                    .into_iter()
-                    .map(|reference| analyzer2lsp::location(doc_map, doc, reference))
-                    .collect();
-                Some(lsp_references)
-            })
-            .await;
-
-        Ok(references)
+        let references = self.with_document(uri, |doc_map, doc| {
+            let lsp_position = params.text_document_position.position;
+            let position = lsp2analyzer::position(doc, lsp_position);
+            let references = doc.get_references(position)?;
+            let lsp_references = references
+                .into_iter()
+                .map(|reference| analyzer2lsp::location(doc_map, doc, reference))
+                .collect();
+            Some(lsp_references)
+        });
+        ready(Ok(references))
     }
 
-    async fn document_symbol(
-        &self,
+    fn document_symbol(
+        &mut self,
         params: DocumentSymbolParams,
-    ) -> Result<Option<DocumentSymbolResponse>> {
+    ) -> impl Future<Output = Result<Option<DocumentSymbolResponse>, ResponseError>> {
         let uri = params.text_document.uri;
-        let symbols = self
-            .with_document(uri, |_, doc| {
-                let records = doc.symbol_map().records();
-                let lsp_symbols = records
-                    .into_iter()
-                    .filter_map(|symbol_id| doc.symbol_map().symbol(*symbol_id))
-                    .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
-                    .collect();
-                Some(DocumentSymbolResponse::Nested(lsp_symbols))
-            })
-            .await;
-
-        Ok(symbols)
+        let symbols = self.with_document(uri, |_, doc| {
+            let records = doc.symbol_map().records();
+            let lsp_symbols = records
+                .into_iter()
+                .filter_map(|symbol_id| doc.symbol_map().symbol(*symbol_id))
+                .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
+                .collect();
+            Some(DocumentSymbolResponse::Nested(lsp_symbols))
+        });
+        ready(Ok(symbols))
     }
 
-    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+    fn hover(
+        &mut self,
+        params: HoverParams,
+    ) -> impl Future<Output = Result<Option<Hover>, ResponseError>> {
         let uri = params.text_document_position_params.text_document.uri;
-        let hover = self
-            .with_document(uri, |_, doc| {
-                let lsp_position = params.text_document_position_params.position;
-                let position = lsp2analyzer::position(doc, lsp_position);
-                let hover = doc.get_hover(position)?;
-                let lsp_hover = analyzer2lsp::hover(hover);
-                Some(lsp_hover)
-            })
-            .await;
-        Ok(hover)
+        let hover = self.with_document(uri, |_, doc| {
+            let lsp_position = params.text_document_position_params.position;
+            let position = lsp2analyzer::position(doc, lsp_position);
+            let hover = doc.get_hover(position)?;
+            let lsp_hover = analyzer2lsp::hover(hover);
+            Some(lsp_hover)
+        });
+        ready(Ok(hover))
     }
 }

@@ -1,2 +1,2 @@
 [workspace]
-members = ["tablegen-analyzer", "tablegen-parser"]
+members = ["tablegen-analyzer", "tablegen-lsp", "tablegen-parser"]

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use lsp_types::Url;
 use tablegen_analyzer::document::{Document, DocumentId};
-use tower_lsp::lsp_types::Url;
 
 pub struct DocumentMap {
     uri_to_id: HashMap<Url, DocumentId>,

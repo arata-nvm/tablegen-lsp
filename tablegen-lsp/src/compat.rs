@@ -4,21 +4,20 @@ pub mod analyzer2lsp {
         symbol::{Location, Symbol, SymbolId},
     };
     use tablegen_parser::{error, parser};
-    use tower_lsp::lsp_types::{self, Diagnostic};
 
     use crate::document_map::DocumentMap;
 
-    pub fn range(doc: &Document, range: parser::Range) -> lsp_types::Range {
-        let start = position(doc, range.start);
-        let end = position(doc, range.end);
+    pub fn range(doc: &Document, range: parser::TextRange) -> lsp_types::Range {
+        let start = position(doc, range.start());
+        let end = position(doc, range.end());
         lsp_types::Range::new(start, end)
     }
 
-    pub fn position(doc: &Document, pos: parser::Position) -> lsp_types::Position {
+    pub fn position(doc: &Document, pos: parser::TextSize) -> lsp_types::Position {
         let line = doc.pos_to_line(pos).unwrap_or_default();
         let line_first = doc.line_to_pos(line).unwrap_or_default();
         let character = pos - line_first;
-        lsp_types::Position::new(line as u32, character as u32)
+        lsp_types::Position::new(line as u32, character.into())
     }
 
     pub fn location(doc_map: &DocumentMap, doc: &Document, loc: Location) -> lsp_types::Location {
@@ -27,10 +26,10 @@ pub mod analyzer2lsp {
         lsp_types::Location::new(uri, range)
     }
 
-    pub fn error(doc: &Document, error: error::SyntaxError) -> Diagnostic {
+    pub fn error(doc: &Document, error: error::SyntaxError) -> lsp_types::Diagnostic {
         let range = range(doc, error.range);
         let message = error.message.to_string();
-        Diagnostic::new_simple(range, message)
+        lsp_types::Diagnostic::new_simple(range, message)
     }
 
     #[allow(deprecated)]
@@ -88,9 +87,10 @@ pub mod analyzer2lsp {
 pub mod lsp2analyzer {
     use tablegen_analyzer::document::Document;
     use tablegen_parser::parser;
-    use tower_lsp::lsp_types;
 
-    pub fn position(doc: &Document, position: lsp_types::Position) -> parser::Position {
-        doc.line_to_pos(position.line as usize).unwrap_or_default() + position.character as usize
+    pub fn position(doc: &Document, position: lsp_types::Position) -> parser::TextSize {
+        let pos_size = doc.line_to_pos(position.line as usize).unwrap_or_default();
+        let char_size: parser::TextSize = position.character.into();
+        pos_size + char_size
     }
 }

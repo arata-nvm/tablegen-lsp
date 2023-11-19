@@ -1,12 +1,15 @@
+use async_lsp::stdio::{PipeStdin, PipeStdout};
 use tablegen_lsp::server::TableGenLanguageServer;
-use tower_lsp::{LspService, Server};
+use tower::ServiceBuilder;
 
 #[tokio::main]
 async fn main() {
-    let stdin = tokio::io::stdin();
-    let stdout = tokio::io::stdout();
+    let stdin = PipeStdin::lock_tokio().unwrap();
+    let stdout = PipeStdout::lock_tokio().unwrap();
 
-    let (service, socket) = LspService::build(TableGenLanguageServer::new).finish();
+    let (mainloop, _) = async_lsp::MainLoop::new_server(|client| {
+        ServiceBuilder::new().service(TableGenLanguageServer::new_router(client))
+    });
 
-    Server::new(stdin, stdout, socket).serve(service).await;
+    mainloop.run_buffered(stdin, stdout).await.unwrap();
 }
