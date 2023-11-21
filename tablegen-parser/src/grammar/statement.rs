@@ -15,6 +15,7 @@ pub(super) enum StatementListType {
 // StatementList ::= Statement*
 pub(super) fn statement_list(p: &mut Parser, typ: StatementListType) {
     p.start_node(SyntaxKind::StatementList);
+    p.eat_trivia();
     match typ {
         StatementListType::TopLevel => {
             while !p.eof() {

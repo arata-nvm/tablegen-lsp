@@ -20,7 +20,6 @@ pub fn parse(text: &str) -> (SyntaxNode, Vec<SyntaxError>) {
 // Root ::= StatementList
 fn root(p: &mut Parser) {
     p.start_node(SyntaxKind::Root);
-    p.eat_trivia();
     statement::statement_list(p, StatementListType::TopLevel);
     if !p.eof() {
         p.error("unexpected input at top level");
