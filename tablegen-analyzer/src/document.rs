@@ -28,14 +28,14 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn parse(doc_id: DocumentId, text: String) -> Self {
-        let (root, mut errors) = grammar::parse(&text);
+    pub fn parse(doc_id: DocumentId, text: &str) -> Self {
+        let (root, mut errors) = grammar::parse(text);
         let (symbol_map, index_errors) = analyze::analyze(doc_id, root.clone());
         errors.extend(index_errors);
 
         Self {
             doc_id,
-            text: Rope::from_str(&text),
+            text: Rope::from_str(text),
             root,
             errors,
             symbol_map,

@@ -11,7 +11,7 @@ fn main() {
     }
 
     let text = fs::read_to_string(&args[2]).unwrap();
-    let doc = Document::parse(DocumentId::new(0), text);
+    let doc = Document::parse(DocumentId::new(0), &text);
 
     let line: usize = args[3].parse().unwrap();
     let char_: usize = args[4].parse().unwrap();

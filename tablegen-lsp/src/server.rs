@@ -52,7 +52,7 @@ impl TableGenLanguageServer {
 impl TableGenLanguageServer {
     fn on_change(&mut self, uri: Url, version: i32, text: String) {
         let doc_id = self.document_map.assign_document_id(uri.clone());
-        let mut document = Document::parse(doc_id, text);
+        let mut document = Document::parse(doc_id, &text);
 
         let diags = document
             .take_errors()
