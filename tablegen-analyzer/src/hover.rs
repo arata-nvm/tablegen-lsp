@@ -40,28 +40,48 @@ fn extract_symbol_info(symbol: &Symbol) -> String {
 
 fn extract_doc_comments(range: TextRange, root: SyntaxNode) -> Option<String> {
     let id_node = root.covering_element(range);
-    let id_token = id_node.as_token()?;
-    let parent_node = id_token.parent()?;
+    let identifier_node = match id_node.kind() {
+        SyntaxKind::Id => id_node.parent()?,
+        SyntaxKind::Identifier => id_node.into_node()?,
+        _ => return None,
+    };
 
-    let mut sibling = parent_node.prev_sibling()?;
+    // Class or FieldDef
+    let parent_node = identifier_node.parent()?;
+
+    let mut sibling = parent_node.prev_sibling_or_token()?.into_token()?;
     let mut comments = Vec::new();
     loop {
-        if sibling.kind() != SyntaxKind::Whitespace || !sibling.text().contains_char('\n') {
+        if sibling.kind() != SyntaxKind::Whitespace || !sibling.text().contains('\n') {
             break;
         }
 
-        sibling = sibling.prev_sibling()?;
+        sibling = match sibling
+            .prev_sibling_or_token()
+            .and_then(|elm| elm.into_token())
+        {
+            Some(sibling) => sibling,
+            None => break,
+        };
+
         if sibling.kind() != SyntaxKind::LineComment {
             break;
         }
 
-        let comment = sibling.text().to_string();
+        let comment = sibling.text();
         if !comment.starts_with("//") {
             break;
         }
         let comment_content = comment.trim_start_matches('/').trim_start().to_string();
         comments.push(comment_content);
-        sibling = sibling.prev_sibling()?;
+
+        sibling = match sibling
+            .prev_sibling_or_token()
+            .and_then(|elm| elm.into_token())
+        {
+            Some(sibling) => sibling,
+            None => break,
+        };
     }
 
     comments
