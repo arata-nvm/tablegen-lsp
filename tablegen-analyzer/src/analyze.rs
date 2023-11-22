@@ -15,13 +15,21 @@ use crate::{
 
 pub fn analyze(doc_id: DocumentId, root: SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
     let mut indexer = DocumentIndexer::new(doc_id);
-    analyze_file(root, &mut indexer);
+    analyze_root(root, &mut indexer);
     indexer.finish()
 }
 
-fn analyze_file(root: SyntaxNode, i: &mut DocumentIndexer) -> Option<()> {
-    let root = ast::Root::cast(root)?;
-    let list = root.statement_list()?;
+fn analyze_root(root: SyntaxNode, i: &mut DocumentIndexer) {
+    let root = ast::Root::cast(root);
+    with(
+        root.and_then(|root| root.statement_list()),
+        |statement_list| {
+            analyze_statement_list(statement_list, i);
+        },
+    );
+}
+
+fn analyze_statement_list(list: ast::StatementList, i: &mut DocumentIndexer) {
     for stmt in list.statements() {
         match stmt {
             ast::Statement::Class(class) => analyze_class(class, i),
@@ -29,24 +37,25 @@ fn analyze_file(root: SyntaxNode, i: &mut DocumentIndexer) -> Option<()> {
             _ => {}
         }
     }
-    None
 }
 
 fn analyze_class(class: ast::Class, i: &mut DocumentIndexer) {
-    let Some(symbol_id) = with_id(class.name(), |name, range| {
-        Some(i.add_record(name, range, RecordKind::Class))
-    }) else { return; };
+    with_id(class.name(), |name, range| {
+        let symbol_id = i.add_record(name, range, RecordKind::Class);
 
-    i.push(symbol_id);
-    if let Some(template_arg_list) = class.template_arg_list() {
-        for arg in template_arg_list.args() {
-            analyze_template_arg(arg, i);
-        }
-    }
-    if let Some(record_body) = class.record_body() {
-        analyze_record_body(record_body, i);
-    }
-    i.pop();
+        i.push(symbol_id);
+        with(class.template_arg_list(), |list| {
+            for arg in list.args() {
+                analyze_template_arg(arg, i);
+            }
+        });
+        with(class.record_body(), |record_body| {
+            analyze_record_body(record_body, i);
+        });
+        i.pop();
+
+        Some(())
+    });
 }
 
 fn analyze_template_arg(arg: ast::TemplateArgDecl, i: &mut DocumentIndexer) {
@@ -58,14 +67,14 @@ fn analyze_template_arg(arg: ast::TemplateArgDecl, i: &mut DocumentIndexer) {
 }
 
 fn analyze_record_body(record_body: ast::RecordBody, i: &mut DocumentIndexer) {
-    if let Some(parent_class_list) = record_body.parent_class_list() {
-        for class_ref in parent_class_list.classes() {
+    with(record_body.parent_class_list(), |list| {
+        for class_ref in list.classes() {
             analyze_class_ref(class_ref, i);
         }
-    }
-    if let Some(body) = record_body.body() {
+    });
+    with(record_body.body(), |body| {
         analyze_body(body, i);
-    }
+    });
 }
 
 fn analyze_body(body: ast::Body, i: &mut DocumentIndexer) {
@@ -87,33 +96,38 @@ fn analyze_field_def(field_def: ast::FieldDef, i: &mut DocumentIndexer) {
         let typ = analyze_type(field_def.r#type()?, i)?;
         i.add_field(name, range, typ);
 
-        if let Some(value) = field_def.value() {
+        with(field_def.value(), |value| {
             analyze_value(value, i);
-        }
+        });
 
         Some(())
     });
 }
 
 fn analyze_field_let(field_let: ast::FieldLet, i: &mut DocumentIndexer) {
-    if let Some(value) = field_let.value() {
+    with(field_let.value(), |value| {
         analyze_value(value, i);
-    }
+    });
 }
 
 fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
-    let Some(name_value) = def.name() else { return; };
-    let Some(name) = name_value.inner_values().next() else { return; }; // TODO
-    let Some(ast::SimpleValue::Identifier(id)) = name.simple_value() else { return; };
-    let Some(symbol_id) = with_id(Some(id), |name, range| {
-        Some(i.add_record(name, range, RecordKind::Def))
-    }) else { return; };
+    let Some(name) = def.name() else { return; };
+    let Some((name, range)) =  analyze_name_value(name) else { return; };
+    let symbol_id = i.add_record(name, range, RecordKind::Def);
 
     i.push(symbol_id);
-    if let Some(record_body) = def.record_body() {
+    with(def.record_body(), |record_body| {
         analyze_record_body(record_body, i);
-    }
+    });
     i.pop();
+}
+
+fn analyze_name_value(value: ast::Value) -> Option<(EcoString, TextRange)> {
+    let name = value.inner_values().next()?;
+    match name.simple_value()? {
+        ast::SimpleValue::Identifier(id) => with_id(Some(id), |name, range| Some((name, range))),
+        _ => None,
+    }
 }
 
 fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<RecordFieldType> {
@@ -143,13 +157,13 @@ fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {
     with_id(class_ref.name(), |name, range| {
         i.add_symbol_reference(name, range)
     });
-    if let Some(arg_value_list) = class_ref.arg_value_list() {
-        if let Some(positional) = arg_value_list.positional() {
+    with(class_ref.arg_value_list(), |list| {
+        with(list.positional(), |positional| {
             for arg in positional.values() {
                 analyze_value(arg, i);
             }
-        }
-    }
+        });
+    });
 }
 
 fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> Option<()> {
@@ -165,6 +179,12 @@ fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> Option<()> {
     });
 
     None
+}
+
+fn with<T>(t: Option<T>, f: impl FnOnce(T)) {
+    if let Some(t) = t {
+        f(t);
+    }
 }
 
 fn with_id<T>(
