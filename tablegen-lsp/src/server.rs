@@ -31,9 +31,12 @@ impl TableGenLanguageServer {
         let mut router = Router::new(this);
         router
             .request::<request::Initialize, _>(Self::initialize)
+            .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
             .request::<request::Shutdown, _>(|_, _| ready(Ok(())))
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
+            .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
+            .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
             .request::<request::GotoDefinition, _>(Self::goto_definition)
             .request::<request::References, _>(Self::references)
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
