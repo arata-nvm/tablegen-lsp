@@ -47,42 +47,40 @@ fn extract_doc_comments(range: TextRange, root: SyntaxNode) -> Option<String> {
         _ => return None,
     };
 
-    // Class or FieldDef
-    let parent_node = identifier_node.parent()?;
+    // Class or FieldDef or Defset or InnerValue
+    let mut parent_node = identifier_node.parent()?;
 
-    let mut sibling = parent_node.prev_sibling_or_token()?.into_token()?;
+    if parent_node.kind() == SyntaxKind::InnerValue {
+        let value_node = parent_node.parent()?;
+        // Def
+        parent_node = value_node.parent()?;
+    }
+
+    let mut cur_token = parent_node.first_token()?;
     let mut comments = Vec::new();
     loop {
-        if sibling.kind() != SyntaxKind::Whitespace || !sibling.text().contains('\n') {
-            break;
-        }
-
-        sibling = match sibling
-            .prev_sibling_or_token()
-            .and_then(|elm| elm.into_token())
-        {
-            Some(sibling) => sibling,
+        cur_token = match cur_token.prev_token() {
+            Some(t) => t,
             None => break,
         };
-
-        if sibling.kind() != SyntaxKind::LineComment {
+        if cur_token.kind() != SyntaxKind::Whitespace || cur_token.text().matches('\n').count() != 1
+        {
             break;
         }
 
-        let comment = sibling.text();
+        cur_token = match cur_token.prev_token() {
+            Some(t) => t,
+            None => break,
+        };
+        if cur_token.kind() != SyntaxKind::LineComment {
+            break;
+        }
+
+        let comment = cur_token.text();
         if !comment.starts_with("//") {
             break;
         }
-        let comment_content = comment.trim_start_matches('/').trim_start().to_string();
-        comments.push(comment_content);
-
-        sibling = match sibling
-            .prev_sibling_or_token()
-            .and_then(|elm| elm.into_token())
-        {
-            Some(sibling) => sibling,
-            None => break,
-        };
+        comments.push(comment.trim_start_matches('/').trim_start().to_string());
     }
 
     comments
