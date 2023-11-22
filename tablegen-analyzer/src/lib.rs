@@ -49,6 +49,13 @@ mod tests {
                 TextRange::new(pos(&doc, 1, 6), pos(&doc, 1, 9)),
             ))
         );
+        assert_eq!(
+            doc.get_definition(pos(&doc, 12, 9)),
+            Some((
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 1, 6), pos(&doc, 1, 9)),
+            ))
+        );
 
         // arg a
         assert_eq!(
@@ -110,6 +117,15 @@ mod tests {
                 TextRange::new(pos(&doc, 8, 6), pos(&doc, 8, 10)),
             ))
         );
+
+        // def foo
+        assert_eq!(
+            doc.get_definition(pos(&doc, 12, 4)),
+            Some((
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 12, 4), pos(&doc, 12, 7)),
+            ))
+        );
     }
 
     #[test]
@@ -132,6 +148,10 @@ mod tests {
                 (
                     DocumentId::new(0),
                     TextRange::new(pos(&doc, 7, 12), pos(&doc, 7, 15))
+                ),
+                (
+                    DocumentId::new(0),
+                    TextRange::new(pos(&doc, 12, 9), pos(&doc, 12, 12))
                 )
             ]),
         );
@@ -165,6 +185,9 @@ mod tests {
 
         // def foo2
         assert_eq!(doc.get_references(pos(&doc, 8, 6)), Some(vec![]));
+
+        // def foo
+        assert_eq!(doc.get_references(pos(&doc, 12, 4)), Some(vec![]));
     }
 
     #[test]
@@ -216,6 +239,12 @@ mod tests {
         assert_eq!(
             doc.get_hover(pos(&doc, 8, 6)),
             Some("**def** `foo2`\n***\n".into())
+        );
+
+        // def foo
+        assert_eq!(
+            doc.get_hover(pos(&doc, 12, 4)),
+            Some("**def** `foo`\n***\ndocument 2".into()),
         );
     }
 }

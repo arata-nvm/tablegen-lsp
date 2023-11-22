@@ -8,3 +8,6 @@ defset list<Foo> foos {
   def foo1: Foo<2>;
   def foo2: Bar;
 }
+
+// document 2
+def foo: Foo<3>;
