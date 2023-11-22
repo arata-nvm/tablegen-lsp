@@ -221,7 +221,7 @@ impl Defset {
         self.0.cast_first_match()
     }
 
-    pub fn name(&self) -> Option<Value> {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
