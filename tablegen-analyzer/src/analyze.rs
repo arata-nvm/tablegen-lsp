@@ -86,7 +86,7 @@ fn analyze_body(body: ast::Body, i: &mut DocumentIndexer) {
             ast::BodyItem::FieldLet(field_let) => {
                 analyze_field_let(field_let, i);
             }
-            _ => unimplemented!(),
+            _ => {}
         }
     }
 }
