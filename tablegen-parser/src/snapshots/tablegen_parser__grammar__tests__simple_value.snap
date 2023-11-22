@@ -150,17 +150,15 @@ expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", bit D = false
                     DagArg@117..121
                       Value@117..121
                         InnerValue@117..121
-                          ClassValue@117..121
-                            Identifier@117..121
-                              Id@117..120 "add"
-                              Whitespace@120..121 " "
+                          Identifier@117..121
+                            Id@117..120 "add"
+                            Whitespace@120..121 " "
                     DagArgList@121..128
                       DagArg@121..128
                         Value@121..122
                           InnerValue@121..122
-                            ClassValue@121..122
-                              Identifier@121..122
-                                Id@121..122 "A"
+                            Identifier@121..122
+                              Id@121..122 "A"
                         Colon@122..123 ":"
                         VarName@123..128
                           VarNameKw@123..128 "$hoge"
@@ -178,9 +176,8 @@ expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", bit D = false
               Whitespace@138..139 " "
               Value@139..140
                 InnerValue@139..140
-                  ClassValue@139..140
-                    Identifier@139..140
-                      Id@139..140 "A"
+                  Identifier@139..140
+                    Id@139..140 "A"
             Comma@140..141 ","
             Whitespace@141..142 " "
             TemplateArgDecl@142..160
@@ -199,16 +196,14 @@ expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", bit D = false
                     LParen@154..155 "("
                     Value@155..156
                       InnerValue@155..156
-                        ClassValue@155..156
-                          Identifier@155..156
-                            Id@155..156 "A"
+                        Identifier@155..156
+                          Id@155..156 "A"
                     Comma@156..157 ","
                     Whitespace@157..158 " "
                     Value@158..159
                       InnerValue@158..159
-                        ClassValue@158..159
-                          Identifier@158..159
-                            Id@158..159 "B"
+                        Identifier@158..159
+                          Id@158..159 "B"
                     RParen@159..160 ")"
             Comma@160..161 ","
             Whitespace@161..162 " "

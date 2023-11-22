@@ -42,17 +42,15 @@ expression: "parse(\"foreach i = [0, 1] in {\n                def Foo # i : Base
               Whitespace@43..44 " "
               Value@44..52
                 InnerValue@44..48
-                  ClassValue@44..48
-                    Identifier@44..48
-                      Id@44..47 "Foo"
-                      Whitespace@47..48 " "
+                  Identifier@44..48
+                    Id@44..47 "Foo"
+                    Whitespace@47..48 " "
                 Paste@48..49 "#"
                 Whitespace@49..50 " "
                 InnerValue@50..52
-                  ClassValue@50..52
-                    Identifier@50..52
-                      Id@50..51 "i"
-                      Whitespace@51..52 " "
+                  Identifier@50..52
+                    Id@50..51 "i"
+                    Whitespace@51..52 " "
               RecordBody@52..75
                 ParentClassList@52..61
                   Colon@52..53 ":"
@@ -65,9 +63,8 @@ expression: "parse(\"foreach i = [0, 1] in {\n                def Foo # i : Base
                       PositionalArgValueList@59..60
                         Value@59..60
                           InnerValue@59..60
-                            ClassValue@59..60
-                              Identifier@59..60
-                                Id@59..60 "i"
+                            Identifier@59..60
+                              Id@59..60 "i"
                     Greater@60..61 ">"
                 Body@61..75
                   Semi@61..62 ";"

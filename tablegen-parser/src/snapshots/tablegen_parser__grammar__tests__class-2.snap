@@ -44,9 +44,8 @@ expression: "parse(\"class Foo<int A> {\n                int B;\n               
                 Whitespace@65..66 " "
                 Value@66..67
                   InnerValue@66..67
-                    ClassValue@66..67
-                      Identifier@66..67
-                        Id@66..67 "A"
+                    Identifier@66..67
+                      Id@66..67 "A"
                 Semi@67..68 ";"
                 Whitespace@68..85 "\n                "
               FieldLet@85..108
@@ -59,9 +58,8 @@ expression: "parse(\"class Foo<int A> {\n                int B;\n               
                 Whitespace@92..93 " "
                 Value@93..94
                   InnerValue@93..94
-                    ClassValue@93..94
-                      Identifier@93..94
-                        Id@93..94 "A"
+                    Identifier@93..94
+                      Id@93..94 "A"
                 Semi@94..95 ";"
                 Whitespace@95..108 "\n            "
               RBrace@108..109 "}"

@@ -10,9 +10,8 @@ expression: "parse(\"assert hoge, \\\"fuga\\\";\")"
           Whitespace@6..7 " "
           Value@7..11
             InnerValue@7..11
-              ClassValue@7..11
-                Identifier@7..11
-                  Id@7..11 "hoge"
+              Identifier@7..11
+                Id@7..11 "hoge"
           Comma@11..12 ","
           Whitespace@12..13 " "
           Value@13..19

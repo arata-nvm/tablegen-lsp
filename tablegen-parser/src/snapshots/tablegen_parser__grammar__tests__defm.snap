@@ -10,10 +10,9 @@ expression: "parse(\"defm foo : bar;\")"
           Whitespace@4..5 " "
           Value@5..9
             InnerValue@5..9
-              ClassValue@5..9
-                Identifier@5..9
-                  Id@5..8 "foo"
-                  Whitespace@8..9 " "
+              Identifier@5..9
+                Id@5..8 "foo"
+                Whitespace@8..9 " "
           ParentClassList@9..14
             Colon@9..10 ":"
             Whitespace@10..11 " "

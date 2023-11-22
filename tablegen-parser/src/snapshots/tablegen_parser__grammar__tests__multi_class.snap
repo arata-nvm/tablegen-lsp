@@ -20,9 +20,8 @@ expression: "parse(\"multiclass foo {\n                def _foo1;\n             
               Whitespace@36..37 " "
               Value@37..42
                 InnerValue@37..42
-                  ClassValue@37..42
-                    Identifier@37..42
-                      Id@37..42 "_foo1"
+                  Identifier@37..42
+                    Id@37..42 "_foo1"
               RecordBody@42..60
                 ParentClassList@42..42
                 Body@42..60
@@ -33,9 +32,8 @@ expression: "parse(\"multiclass foo {\n                def _foo1;\n             
               Whitespace@63..64 " "
               Value@64..69
                 InnerValue@64..69
-                  ClassValue@64..69
-                    Identifier@64..69
-                      Id@64..69 "_foo2"
+                  Identifier@64..69
+                    Id@64..69 "_foo2"
               RecordBody@69..83
                 ParentClassList@69..69
                 Body@69..83

@@ -35,7 +35,7 @@ pub(crate) struct Parser<'a> {
     current_end: TextSize,
     is_after_error: bool,
 
-    builder: GreenNodeBuilder<'static>,
+    pub(crate) builder: GreenNodeBuilder<'static>,
     recover_tokens: &'a [TokenKind],
     errors: Vec<SyntaxError>,
 }

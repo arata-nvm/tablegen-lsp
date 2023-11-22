@@ -23,9 +23,8 @@ expression: "parse(\"class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<
               Whitespace@17..18 " "
               Value@18..27
                 InnerValue@18..27
-                  ClassValue@18..22
-                    Identifier@18..22
-                      Id@18..22 "Hoge"
+                  Identifier@18..22
+                    Id@18..22 "Hoge"
                   FieldSuffix@22..27
                     Dot@22..23 "."
                     Identifier@23..27
@@ -47,9 +46,8 @@ expression: "parse(\"class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<
               Whitespace@40..41 " "
               Value@41..52
                 InnerValue@41..52
-                  ClassValue@41..45
-                    Identifier@41..45
-                      Id@41..45 "Hoge"
+                  Identifier@41..45
+                    Id@41..45 "Hoge"
                   RangeSuffix@45..52
                     LBrace@45..46 "{"
                     RangeList@46..51
@@ -77,9 +75,8 @@ expression: "parse(\"class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<
               Whitespace@67..68 " "
               Value@68..79
                 InnerValue@68..79
-                  ClassValue@68..72
-                    Identifier@68..72
-                      Id@68..72 "Hoge"
+                  Identifier@68..72
+                    Id@68..72 "Hoge"
                   SliceSuffix@72..79
                     LSquare@72..73 "["
                     SliceElements@73..78

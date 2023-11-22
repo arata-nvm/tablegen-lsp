@@ -29,10 +29,9 @@ expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : 
               Whitespace@50..51 " "
               Value@51..56
                 InnerValue@51..56
-                  ClassValue@51..56
-                    Identifier@51..56
-                      Id@51..55 "Foo0"
-                      Whitespace@55..56 " "
+                  Identifier@51..56
+                    Id@51..55 "Foo0"
+                    Whitespace@55..56 " "
               RecordBody@56..83
                 ParentClassList@56..65
                   Colon@56..57 ":"
@@ -56,10 +55,9 @@ expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : 
               Whitespace@86..87 " "
               Value@87..92
                 InnerValue@87..92
-                  ClassValue@87..92
-                    Identifier@87..92
-                      Id@87..91 "Foo1"
-                      Whitespace@91..92 " "
+                  Identifier@87..92
+                    Id@87..91 "Foo1"
+                    Whitespace@91..92 " "
               RecordBody@92..115
                 ParentClassList@92..101
                   Colon@92..93 ":"
