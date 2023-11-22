@@ -52,6 +52,11 @@ impl DocumentIndexer {
     }
 
     pub fn add_symbol_reference(&mut self, name: EcoString, range: TextRange) -> Option<SymbolId> {
+        // ref: https://llvm.org/docs/TableGen/ProgRef.html#name
+        if name == "NAME" {
+            return None;
+        }
+
         let reference_loc = (self.doc_id, range.clone());
         if let Some(symbol_id) = self.find_symbol_scope(&name).copied() {
             self.symbols.add_reference(symbol_id, reference_loc);
