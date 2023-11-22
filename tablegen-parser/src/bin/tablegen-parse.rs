@@ -37,7 +37,7 @@ fn token(text: &str) {
 
 fn node(text: &str) {
     let (node, _) = parse(text);
-    println!("{node:?}");
+    println!("{node:#?}");
 }
 
 fn error(text: &str) {
