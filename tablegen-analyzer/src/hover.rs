@@ -22,6 +22,7 @@ fn extract_symbol_info(symbol: &Symbol) -> String {
             let name = match record.kind() {
                 RecordKind::Class => format!("**class** `{}`", record.name()),
                 RecordKind::Def => format!("**def** `{}`", record.name()),
+                RecordKind::Defset => format!("**defset** `{}`", record.name()),
             };
             format!("{name}\n***\n")
         }

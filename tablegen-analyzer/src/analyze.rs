@@ -34,6 +34,7 @@ fn analyze_statement_list(list: ast::StatementList, i: &mut DocumentIndexer) {
         match stmt {
             ast::Statement::Class(class) => analyze_class(class, i),
             ast::Statement::Def(def) => analyze_def(def, i),
+            ast::Statement::Defset(defset) => analyze_defset(defset, i),
             _ => {}
         }
     }
@@ -128,6 +129,23 @@ fn analyze_name_value(value: ast::Value) -> Option<(EcoString, TextRange)> {
         ast::SimpleValue::Identifier(id) => with_id(Some(id), |name, range| Some((name, range))),
         _ => None,
     }
+}
+
+fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
+    with_id(defset.name(), |name, range| {
+        let symbol_id = i.add_record(name, range, RecordKind::Defset);
+
+        i.push(symbol_id);
+        with(defset.r#type(), |typ| {
+            analyze_type(typ, i);
+        });
+        with(defset.statement_list(), |list| {
+            analyze_statement_list(list, i);
+        });
+        i.pop();
+
+        Some(())
+    });
 }
 
 fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<RecordFieldType> {

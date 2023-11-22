@@ -86,6 +86,7 @@ pub struct Record {
 pub enum RecordKind {
     Class,
     Def,
+    Defset,
 }
 
 impl Record {
