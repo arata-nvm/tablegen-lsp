@@ -16,6 +16,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	client = new LanguageClient('tablegen-lsp', serverOptions, clientOptions);
 	client.start();
+
+	vscode.commands.registerCommand('tablegen-lsp.restartServer', () => client.restart());
 }
 
 export function deactivate(): Thenable<void> | undefined {

@@ -27,6 +27,13 @@
         "scopeName": "source.tablegen",
         "path": "./language-grammar.json"
       }
+    ],
+    "commands": [
+      {
+        "command": "tablegen-lsp.restartServer",
+        "title": "Restart server",
+        "category": "tablegen-lsp"
+      }
     ]
   },
   "scripts": {
