@@ -35,6 +35,20 @@ mod tests {
                 TextRange::new(pos(&doc, 1, 6), pos(&doc, 1, 9)),
             ))
         );
+        assert_eq!(
+            doc.get_definition(pos(&doc, 6, 12)),
+            Some((
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 1, 6), pos(&doc, 1, 9)),
+            ))
+        );
+        assert_eq!(
+            doc.get_definition(pos(&doc, 7, 12)),
+            Some((
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 1, 6), pos(&doc, 1, 9)),
+            ))
+        );
 
         // arg a
         assert_eq!(
@@ -69,6 +83,33 @@ mod tests {
                 TextRange::new(pos(&doc, 4, 6), pos(&doc, 4, 10)),
             ))
         );
+
+        // defset foos
+        assert_eq!(
+            doc.get_definition(pos(&doc, 6, 17)),
+            Some((
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 6, 17), pos(&doc, 6, 22)),
+            ))
+        );
+
+        // def foo1
+        assert_eq!(
+            doc.get_definition(pos(&doc, 7, 6)),
+            Some((
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 7, 6), pos(&doc, 7, 10)),
+            ))
+        );
+
+        // def foo2
+        assert_eq!(
+            doc.get_definition(pos(&doc, 8, 6)),
+            Some((
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 8, 6), pos(&doc, 8, 10)),
+            ))
+        );
     }
 
     #[test]
@@ -79,17 +120,20 @@ mod tests {
         // class Foo
         assert_eq!(
             doc.get_references(pos(&doc, 1, 6)),
-            Some(vec![(
-                DocumentId::new(0),
-                TextRange::new(pos(&doc, 4, 12), pos(&doc, 4, 15)),
-            )]),
-        );
-        assert_eq!(
-            doc.get_references(pos(&doc, 4, 12)),
-            Some(vec![(
-                DocumentId::new(0),
-                TextRange::new(pos(&doc, 4, 12), pos(&doc, 4, 15)),
-            )]),
+            Some(vec![
+                (
+                    DocumentId::new(0),
+                    TextRange::new(pos(&doc, 4, 12), pos(&doc, 4, 15))
+                ),
+                (
+                    DocumentId::new(0),
+                    TextRange::new(pos(&doc, 6, 12), pos(&doc, 6, 15))
+                ),
+                (
+                    DocumentId::new(0),
+                    TextRange::new(pos(&doc, 7, 12), pos(&doc, 7, 15))
+                )
+            ]),
         );
 
         // arg a
@@ -105,7 +149,22 @@ mod tests {
         assert_eq!(doc.get_references(pos(&doc, 2, 6)), Some(vec![]));
 
         // class Bar
-        assert_eq!(doc.get_references(pos(&doc, 4, 6)), Some(vec![]));
+        assert_eq!(
+            doc.get_references(pos(&doc, 4, 6)),
+            Some(vec![(
+                DocumentId::new(0),
+                TextRange::new(pos(&doc, 8, 12), pos(&doc, 8, 15))
+            )])
+        );
+
+        // defset foos
+        assert_eq!(doc.get_references(pos(&doc, 6, 17)), Some(vec![]));
+
+        // def foo1
+        assert_eq!(doc.get_references(pos(&doc, 7, 6)), Some(vec![]));
+
+        // def foo2
+        assert_eq!(doc.get_references(pos(&doc, 8, 6)), Some(vec![]));
     }
 
     #[test]
@@ -139,6 +198,24 @@ mod tests {
         assert_eq!(
             doc.get_hover(pos(&doc, 4, 6)),
             Some("**class** `Bar`\n***\n".into())
+        );
+
+        // defset foos
+        assert_eq!(
+            doc.get_hover(pos(&doc, 6, 17)),
+            Some("**defset** `foos`\n***\n".into())
+        );
+
+        // def foo1
+        assert_eq!(
+            doc.get_hover(pos(&doc, 7, 6)),
+            Some("**def** `foo1`\n***\n".into())
+        );
+
+        // def foo2
+        assert_eq!(
+            doc.get_hover(pos(&doc, 8, 6)),
+            Some("**def** `foo2`\n***\n".into())
         );
     }
 }
