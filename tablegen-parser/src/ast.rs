@@ -108,7 +108,10 @@ impl StatementList {
     }
 }
 
-node_enum!(Statement, [Include, Class, Def, Let]);
+node_enum!(
+    Statement,
+    [Include, Assert, Class, Def, Defm, Defset, Defvar, Foreach, If, Let, MultiClass]
+);
 
 node!(Include);
 
