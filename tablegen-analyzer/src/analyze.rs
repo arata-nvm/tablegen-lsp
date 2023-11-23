@@ -98,12 +98,10 @@ fn analyze_field_def(field_def: ast::FieldDef, i: &mut DocumentIndexer) {
     with_id(field_def.name(), |name, range| {
         let typ = analyze_type(field_def.r#type()?, i)?;
         i.add_field(name, range, typ);
-
-        with(field_def.value(), |value| {
-            analyze_value(value, i);
-        });
-
         Some(())
+    });
+    with(field_def.value(), |value| {
+        analyze_value(value, i);
     });
 }
 
