@@ -33,7 +33,6 @@ pub enum BangOperator {
     XSize,
     XEmpty,
     XIf,
-    XCond,
     XEq,
     XIsA,
     XDag,
@@ -61,8 +60,8 @@ impl BangOperator {
         match self {
             XRange => 1,
             XFind | XSubstr => 2,
-            XCast | XCond | XEmpty | XExists | XGetDagOp | XHead | XIsA | XLog2 | XNot | XSize
-            | XTail | XToLower | XToUpper | XXor => 1,
+            XCast | XEmpty | XExists | XGetDagOp | XHead | XIsA | XLog2 | XNot | XSize | XTail
+            | XToLower | XToUpper | XXor => 1,
             XAdd | XAnd | XConcat | XDiv | XEq | XGe | XGetDagArg | XGetDagName | XGt
             | XInterleave | XLe | XListConcat | XListRemove | XListSplat | XLt | XMul | XNe
             | XOr | XSetDagOp | XShl | XSra | XSrl | XStrConcat | XSub => 2,
@@ -76,9 +75,7 @@ impl BangOperator {
         match self {
             XRange => 3,
             XFind | XSubstr => 3,
-            XAdd | XAnd | XConcat | XCond | XListConcat | XMul | XOr | XStrConcat | XXor => {
-                usize::MAX
-            }
+            XAdd | XAnd | XConcat | XListConcat | XMul | XOr | XStrConcat | XXor => usize::MAX,
             _ => self.min_num_of_args(),
         }
     }
@@ -121,7 +118,6 @@ impl fmt::Display for BangOperator {
             XSize => write!(f, "!size"),
             XEmpty => write!(f, "!empty"),
             XIf => write!(f, "!if"),
-            XCond => write!(f, "!cond"),
             XEq => write!(f, "!eq"),
             XIsA => write!(f, "!isa"),
             XDag => write!(f, "!dag"),
@@ -179,7 +175,6 @@ impl TryFrom<SyntaxKind> for BangOperator {
             SyntaxKind::XSize => Ok(Self::XSize),
             SyntaxKind::XEmpty => Ok(Self::XEmpty),
             SyntaxKind::XIf => Ok(Self::XIf),
-            SyntaxKind::XCond => Ok(Self::XCond),
             SyntaxKind::XEq => Ok(Self::XEq),
             SyntaxKind::XIsA => Ok(Self::XIsA),
             SyntaxKind::XDag => Ok(Self::XDag),
