@@ -318,6 +318,40 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
         });
     }
 
+    fn check_xforeach(
+        arg_var: ast::Value,
+        arg_sequence: ast::Value,
+        arg_expr: ast::Value,
+        i: &mut DocumentIndexer,
+    ) {
+        analyze_value(arg_sequence.clone(), i);
+
+        let Some(arg_var) = arg_var.inner_values().nth(0) else { return; };
+        let Some(ast::SimpleValue::Identifier(arg_var)) =  arg_var.simple_value() else { return; };
+
+        let arg_sequence_typ = infer_type(arg_sequence.clone(), i);
+        let elm_typ = match arg_sequence_typ {
+            SymbolType::List(elm_typ) => *elm_typ,
+            SymbolType::Dag => SymbolType::unknown(),
+            SymbolType::Unresolved(_) => SymbolType::unknown(),
+            _ => {
+                i.error(
+                    arg_sequence.syntax().text_range(),
+                    "!foreach must have a list or dag argument",
+                );
+                SymbolType::unknown()
+            }
+        };
+
+        with_id(Some(arg_var), |name, range: TextRange| {
+            i.push_temporary();
+            i.add_temporary_variable(name, range, elm_typ);
+            analyze_value(arg_expr, i);
+            i.pop_temporary();
+            Some(())
+        });
+    }
+
     with(
         bang_op.kind().and_then(|kind| kind.try_into().ok()),
         |kind: BangOperator| {
@@ -329,6 +363,12 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
                     let Some(arg_list) = values.next() else { return; };
                     let Some(arg_predicate) = values.next() else { return; };
                     check_xfilter(arg_var, arg_list, arg_predicate, i);
+                }
+                BangOperator::XForEach => {
+                    let Some(arg_var) = values.next() else { return; };
+                    let Some(arg_sequence) = values.next() else { return; };
+                    let Some(arg_expr) = values.next() else { return; };
+                    check_xforeach(arg_var, arg_sequence, arg_expr, i);
                 }
                 _ => {
                     for value in values {
