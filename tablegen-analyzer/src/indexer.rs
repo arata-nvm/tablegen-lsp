@@ -5,7 +5,9 @@ use tablegen_parser::{error::SyntaxError, parser::TextRange};
 
 use crate::{
     document::DocumentId,
-    symbol::{Location, Record, RecordFieldKind, RecordFieldType, RecordKind, SymbolId},
+    symbol::{
+        Location, Record, RecordFieldKind, RecordFieldType, RecordKind, SymbolId, VariableKind,
+    },
     symbol_map::SymbolMap,
 };
 
@@ -97,6 +99,20 @@ impl DocumentIndexer {
 
         let parent = self.scope_symbol_mut();
         parent.add_field(name.clone(), symbol_id);
+    }
+
+    pub fn add_variable(
+        &mut self,
+        name: EcoString,
+        range: TextRange,
+        kind: VariableKind,
+        typ: RecordFieldType,
+    ) {
+        let define_loc = self.to_location(range);
+        let symbol_id = self
+            .symbols
+            .new_variable(name.clone(), define_loc, kind, typ);
+        self.add_symbol_scope(name, symbol_id);
     }
 
     fn add_symbol_scope(&mut self, name: EcoString, symbol_id: SymbolId) {

@@ -1,6 +1,6 @@
 use tablegen_parser::{language::SyntaxNode, parser::TextRange, syntax_kind::SyntaxKind};
 
-use crate::symbol::{RecordFieldKind, RecordKind, Symbol};
+use crate::symbol::{RecordFieldKind, RecordKind, Symbol, VariableKind};
 
 pub fn hover(symbol: &Symbol, root: SyntaxNode) -> Option<String> {
     let (_, range) = symbol.define_loc().clone();
@@ -35,6 +35,14 @@ fn extract_symbol_info(symbol: &Symbol) -> String {
                 RecordFieldKind::Field => format!("**field** `{}`", record_field.name()),
             };
             let typ = record_field.r#type();
+            format!("{name}\n***\nType: `{typ}`\n***\n")
+        }
+        Symbol::Variable(variable) => {
+            let name = match variable.kind() {
+                VariableKind::Defset => format!("**defset** `{}`", variable.name()),
+                VariableKind::Defvar => format!("**defvar** `{}`", variable.name()),
+            };
+            let typ = variable.r#type();
             format!("{name}\n***\nType: `{typ}`\n***\n")
         }
     }

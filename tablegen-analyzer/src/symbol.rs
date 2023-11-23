@@ -12,6 +12,7 @@ pub type SymbolId = Id<Symbol>;
 pub enum Symbol {
     Record(Record),
     RecordField(RecordField),
+    Variable(Variable),
 }
 
 impl Symbol {
@@ -19,6 +20,7 @@ impl Symbol {
         match self {
             Self::Record(record) => record.name(),
             Self::RecordField(field) => field.name(),
+            Self::Variable(variable) => variable.name(),
         }
     }
 
@@ -26,6 +28,7 @@ impl Symbol {
         match self {
             Self::Record(record) => record.define_loc(),
             Self::RecordField(field) => field.define_loc(),
+            Self::Variable(variable) => variable.define_loc(),
         }
     }
 
@@ -33,6 +36,7 @@ impl Symbol {
         match self {
             Self::Record(record) => record.add_reference(loc),
             Self::RecordField(field) => field.add_reference(loc),
+            Self::Variable(variable) => variable.add_reference(loc),
         }
     }
 
@@ -40,34 +44,35 @@ impl Symbol {
         match self {
             Self::Record(record) => record.reference_locs(),
             Self::RecordField(field) => field.reference_locs(),
+            Self::Variable(variable) => variable.reference_locs(),
         }
     }
 
     pub fn as_record(&self) -> &Record {
         match self {
             Self::Record(record) => record,
-            Self::RecordField(_) => panic!(),
+            _ => panic!(),
         }
     }
 
     pub fn as_record_mut(&mut self) -> &mut Record {
         match self {
             Self::Record(record) => record,
-            Self::RecordField(_) => panic!(),
+            _ => panic!(),
         }
     }
 
     pub fn as_field(&self) -> &RecordField {
         match self {
-            Self::Record(_) => panic!(),
             Self::RecordField(field) => field,
+            _ => panic!(),
         }
     }
 
     pub fn as_field_mut(&mut self) -> &mut RecordField {
         match self {
-            Self::Record(_) => panic!(),
             Self::RecordField(field) => field,
+            _ => panic!(),
         }
     }
 }
@@ -197,6 +202,62 @@ impl RecordField {
 pub enum RecordFieldKind {
     TemplateArg,
     Field,
+}
+
+#[derive(Debug)]
+pub struct Variable {
+    name: EcoString,
+    define_loc: Location,
+    reference_locs: Vec<Location>,
+    kind: VariableKind,
+    typ: RecordFieldType,
+}
+
+#[derive(Debug, Clone)]
+pub enum VariableKind {
+    Defset,
+    Defvar,
+}
+
+impl Variable {
+    pub fn new(
+        name: EcoString,
+        define_loc: Location,
+        kind: VariableKind,
+        typ: RecordFieldType,
+    ) -> Self {
+        Self {
+            name,
+            define_loc,
+            reference_locs: Vec::new(),
+            kind,
+            typ,
+        }
+    }
+
+    pub fn name(&self) -> &EcoString {
+        &self.name
+    }
+
+    pub fn define_loc(&self) -> &Location {
+        &self.define_loc
+    }
+
+    pub fn add_reference(&mut self, loc: Location) {
+        self.reference_locs.push(loc);
+    }
+
+    pub fn reference_locs(&self) -> &[Location] {
+        &self.reference_locs
+    }
+
+    pub fn kind(&self) -> VariableKind {
+        self.kind.clone()
+    }
+
+    pub fn r#type(&self) -> &RecordFieldType {
+        &self.typ
+    }
 }
 
 #[derive(Debug, Clone)]

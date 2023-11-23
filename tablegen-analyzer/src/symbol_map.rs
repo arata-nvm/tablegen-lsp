@@ -1,5 +1,6 @@
 use crate::symbol::{
     Location, Record, RecordField, RecordFieldKind, RecordFieldType, RecordKind, Symbol, SymbolId,
+    Variable, VariableKind,
 };
 use ecow::EcoString;
 use id_arena::Arena;
@@ -44,6 +45,19 @@ impl SymbolMap {
     ) -> SymbolId {
         let field = RecordField::new(name, define_loc.clone(), kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::RecordField(field));
+        self.symbol_map.insert(define_loc.1.into(), symbol_id);
+        symbol_id
+    }
+
+    pub fn new_variable(
+        &mut self,
+        name: EcoString,
+        define_loc: Location,
+        kind: VariableKind,
+        typ: RecordFieldType,
+    ) -> SymbolId {
+        let variable = Variable::new(name, define_loc.clone(), kind, typ);
+        let symbol_id = self.symbols.alloc(Symbol::Variable(variable));
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
         symbol_id
     }

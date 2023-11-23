@@ -9,7 +9,7 @@ use tablegen_parser::{
 use crate::{
     document::DocumentId,
     indexer::DocumentIndexer,
-    symbol::{RecordFieldType, RecordKind},
+    symbol::{RecordFieldType, RecordKind, VariableKind},
     symbol_map::SymbolMap,
 };
 
@@ -134,7 +134,12 @@ fn analyze_name_value(value: ast::Value) -> Option<(EcoString, TextRange)> {
 
 fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
     with_id(defset.name(), |name, range| {
-        let _ = i.add_record(name, range, RecordKind::Defset);
+        i.add_variable(
+            name,
+            range,
+            VariableKind::Defset,
+            RecordFieldType::Unresolved("unknown".into()),
+        );
 
         with(defset.r#type(), |typ| {
             analyze_type(typ, i);
@@ -149,7 +154,12 @@ fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
 
 fn analyze_defvar(defvar: ast::Defvar, i: &mut DocumentIndexer) {
     with_id(defvar.name(), |name, range| {
-        let _ = i.add_record(name, range, RecordKind::Defvar);
+        i.add_variable(
+            name,
+            range,
+            VariableKind::Defvar,
+            RecordFieldType::Unresolved("unknown".into()),
+        );
         with(defvar.value(), |value| analyze_value(value, i));
         Some(())
     });
