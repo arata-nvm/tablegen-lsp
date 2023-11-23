@@ -352,6 +352,48 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
         });
     }
 
+    fn check_xfoldl(
+        arg_init: ast::Value,
+        arg_list: ast::Value,
+        arg_acc: ast::Value,
+        arg_var: ast::Value,
+        arg_expr: ast::Value,
+        i: &mut DocumentIndexer,
+    ) {
+        analyze_value(arg_init.clone(), i);
+        analyze_value(arg_list.clone(), i);
+
+        let Some(arg_acc) = arg_acc.inner_values().nth(0) else { return; };
+        let Some(ast::SimpleValue::Identifier(arg_acc)) =  arg_acc.simple_value() else { return; };
+
+        let Some(arg_var) = arg_var.inner_values().nth(0) else { return; };
+        let Some(ast::SimpleValue::Identifier(arg_var)) =  arg_var.simple_value() else { return; };
+
+        let arg_list_typ = infer_type(arg_list.clone(), i);
+        let elm_typ = match arg_list_typ {
+            SymbolType::List(elm_typ) => *elm_typ,
+            SymbolType::Unresolved(_) => SymbolType::unknown(),
+            x => {
+                i.error(
+                    arg_list.syntax().text_range(),
+                    eco_format!("!foldl list must be a list, but is of type '{x}'"),
+                );
+                SymbolType::unknown()
+            }
+        };
+
+        with_id(Some(arg_acc), |name_acc, range_acc| {
+            with_id(Some(arg_var), |name_var, range_var| {
+                i.push_temporary();
+                i.add_temporary_variable(name_acc, range_acc, elm_typ.clone());
+                i.add_temporary_variable(name_var, range_var, elm_typ);
+                analyze_value(arg_expr, i);
+                i.pop_temporary();
+                Some(())
+            })
+        });
+    }
+
     with(
         bang_op.kind().and_then(|kind| kind.try_into().ok()),
         |kind: BangOperator| {
@@ -369,6 +411,14 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
                     let Some(arg_sequence) = values.next() else { return; };
                     let Some(arg_expr) = values.next() else { return; };
                     check_xforeach(arg_var, arg_sequence, arg_expr, i);
+                }
+                BangOperator::XFoldl => {
+                    let Some(arg_init) = values.next() else { return; };
+                    let Some(arg_list) = values.next() else { return; };
+                    let Some(arg_acc) = values.next() else { return; };
+                    let Some(arg_var) = values.next() else { return; };
+                    let Some(arg_expr) = values.next() else { return; };
+                    check_xfoldl(arg_init, arg_list, arg_acc, arg_var, arg_expr, i);
                 }
                 _ => {
                     for value in values {
