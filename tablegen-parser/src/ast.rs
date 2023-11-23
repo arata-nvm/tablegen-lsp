@@ -709,6 +709,10 @@ impl BangOperator {
         Some(self.0.first_token()?.kind())
     }
 
+    pub fn r#type(&self) -> Option<Type> {
+        self.0.cast_first_match()
+    }
+
     pub fn values(&self) -> impl Iterator<Item = Value> {
         self.0.cast_all_matches()
     }
