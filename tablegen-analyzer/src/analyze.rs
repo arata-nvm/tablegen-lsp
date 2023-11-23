@@ -35,6 +35,7 @@ fn analyze_statement_list(list: ast::StatementList, i: &mut DocumentIndexer) {
             ast::Statement::Class(class) => analyze_class(class, i),
             ast::Statement::Def(def) => analyze_def(def, i),
             ast::Statement::Defset(defset) => analyze_defset(defset, i),
+            ast::Statement::Defvar(defvar) => analyze_defvar(defvar, i),
             _ => {}
         }
     }
@@ -142,6 +143,14 @@ fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
             analyze_statement_list(list, i);
         });
 
+        Some(())
+    });
+}
+
+fn analyze_defvar(defvar: ast::Defvar, i: &mut DocumentIndexer) {
+    with_id(defvar.name(), |name, range| {
+        let _ = i.add_record(name, range, RecordKind::Defvar);
+        with(defvar.value(), |value| analyze_value(value, i));
         Some(())
     });
 }

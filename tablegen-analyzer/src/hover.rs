@@ -23,6 +23,7 @@ fn extract_symbol_info(symbol: &Symbol) -> String {
                 RecordKind::Class => format!("**class** `{}`", record.name()),
                 RecordKind::Def => format!("**def** `{}`", record.name()),
                 RecordKind::Defset => format!("**defset** `{}`", record.name()),
+                RecordKind::Defvar => format!("**defvar** `{}`", record.name()),
             };
             format!("{name}\n***\n")
         }
