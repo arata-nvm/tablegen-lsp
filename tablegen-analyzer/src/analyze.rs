@@ -1,6 +1,7 @@
-use ecow::EcoString;
+use ecow::{eco_format, EcoString};
 use tablegen_parser::{
     ast::{self, AstNode},
+    bang_operator::BangOperator,
     error::SyntaxError,
     language::SyntaxNode,
     parser::TextRange,
@@ -267,11 +268,7 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
                 },
             );
         }
-        ast::SimpleValue::BangOperator(bang_op) => {
-            for value in bang_op.values() {
-                analyze_value(value, i);
-            }
-        }
+        ast::SimpleValue::BangOperator(bang_op) => analyze_bang_operator(bang_op, i),
         ast::SimpleValue::CondOperator(cond_op) => {
             for clause in cond_op.clauses() {
                 with(clause.condition(), |value| analyze_value(value, i));
@@ -279,6 +276,30 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
             }
         }
     };
+}
+
+fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
+    with(
+        bang_op.kind().and_then(|kind| kind.try_into().ok()),
+        |kind: BangOperator| {
+            let num_actual = bang_op.values().count();
+            if !kind.is_valid_num_of_args(num_actual) {
+                let (min, max) = (kind.min_num_of_args(), kind.max_num_of_args());
+                let num_expect = if min == max {
+                    eco_format!("{min}")
+                } else {
+                    eco_format!("{min}-{max}")
+                };
+                let msg =
+                    eco_format!("{kind} expects {num_expect} arguments, but got {num_actual}",);
+                i.error(bang_op.syntax().text_range(), msg);
+            }
+
+            for value in bang_op.values() {
+                analyze_value(value, i);
+            }
+        },
+    );
 }
 
 fn with<T>(t: Option<T>, f: impl FnOnce(T)) {

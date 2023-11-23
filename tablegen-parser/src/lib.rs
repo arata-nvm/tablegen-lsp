@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod bang_operator;
 pub mod error;
 pub mod grammar;
 pub mod language;
