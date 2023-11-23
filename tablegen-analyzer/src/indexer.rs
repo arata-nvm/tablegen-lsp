@@ -142,7 +142,7 @@ impl DocumentIndexer {
             .insert(name.clone(), symbol_id);
     }
 
-    fn find_symbol_scope(&self, name: &EcoString) -> Option<&SymbolId> {
+    pub fn find_symbol_scope(&self, name: &EcoString) -> Option<&SymbolId> {
         for scope in self.scopes.iter().rev() {
             if let Some(symbol_id) = scope.get(name) {
                 return Some(symbol_id);
