@@ -208,6 +208,7 @@ pub enum RecordFieldType {
     List(Box<RecordFieldType>),
     Class(SymbolId, EcoString),
     Code,
+    Unresolved(EcoString),
 }
 
 impl fmt::Display for RecordFieldType {
@@ -221,6 +222,7 @@ impl fmt::Display for RecordFieldType {
             RecordFieldType::List(inner_typ) => write!(f, "list<{}>", inner_typ),
             RecordFieldType::Class(_, name) => write!(f, "{}", name),
             RecordFieldType::Code => write!(f, "code"),
+            RecordFieldType::Unresolved(name) => write!(f, "{}", name),
         }
     }
 }

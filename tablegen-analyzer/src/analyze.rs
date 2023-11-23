@@ -163,8 +163,10 @@ fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<RecordFieldTy
             RecordFieldType::List(Box::new(inner_typ))
         }
         ast::Type::ClassId(class_id) => with_id(class_id.name(), |name, range| {
-            let symbol_id = i.add_symbol_reference(name.clone(), range)?;
-            Some(RecordFieldType::Class(symbol_id, name))
+            match i.add_symbol_reference(name.clone(), range) {
+                Some(symbol_id) => Some(RecordFieldType::Class(symbol_id, name)),
+                None => Some(RecordFieldType::Unresolved(name.clone())),
+            }
         })?,
         ast::Type::CodeType(_) => RecordFieldType::Code,
     };
