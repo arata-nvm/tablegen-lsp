@@ -280,6 +280,13 @@ impl SymbolType {
     pub fn unknown() -> SymbolType {
         SymbolType::Unresolved(EcoString::from("unknown"))
     }
+
+    pub fn element_typ(&self) -> Option<SymbolType> {
+        match self {
+            SymbolType::List(typ) => Some(*typ.clone()),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for SymbolType {
