@@ -184,19 +184,82 @@ fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {
     });
 }
 
-fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> Option<()> {
-    let inner_value = value.inner_values().next()?;
-    let simple_value = inner_value.simple_value()?;
-    let ast::SimpleValue::Identifier(id) = simple_value else { return None; };
-    let symbol_id = with_id(Some(id), |name, range| i.add_symbol_reference(name, range))?;
+fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) {
+    for inner_value in value.inner_values() {
+        analyze_inner_value(inner_value, i);
+    }
 
-    let suffix = inner_value.suffixes().next()?;
-    let ast::ValueSuffix::FieldSuffix(field_name) = suffix else { return None; };
-    with_id(field_name.name(), |name, range| {
-        i.access_field(symbol_id, name.clone(), range)
+    // let suffix = inner_value.suffixes().next()?;
+    // let ast::ValueSuffix::FieldSuffix(field_name) = suffix else { return None; };
+    // with_id(field_name.name(), |name, range| {
+    //     i.access_field(symbol_id, name.clone(), range)
+    // });
+
+    // None
+}
+
+fn analyze_inner_value(inner_value: ast::InnerValue, i: &mut DocumentIndexer) {
+    with(inner_value.simple_value(), |simple_value| {
+        analyze_simple_value(simple_value, i);
     });
+}
 
-    None
+fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer) {
+    match simple_value {
+        ast::SimpleValue::Integer(_)
+        | ast::SimpleValue::String(_)
+        | ast::SimpleValue::Code(_)
+        | ast::SimpleValue::Boolean(_)
+        | ast::SimpleValue::Uninitialized(_) => {}
+        ast::SimpleValue::Bits(bits) => with(bits.value_list(), |list| {
+            for value in list.values() {
+                analyze_value(value, i);
+            }
+        }),
+        ast::SimpleValue::List(list) => with(list.value_list(), |list| {
+            for value in list.values() {
+                analyze_value(value, i);
+            }
+        }),
+        ast::SimpleValue::Dag(dag) => {
+            with(dag.arg_list(), |list| {
+                for arg in list.args() {
+                    with(arg.value(), |value| analyze_value(value, i));
+                }
+            });
+        }
+        ast::SimpleValue::Identifier(identifier) => {
+            with_id(Some(identifier), |name, range| {
+                i.add_symbol_reference(name, range)
+            });
+        }
+        ast::SimpleValue::ClassRef(class_ref) => {
+            with_id(class_ref.name(), |name, range| {
+                i.add_symbol_reference(name, range)
+            });
+            with(
+                class_ref
+                    .arg_value_list()
+                    .and_then(|list| list.positional()),
+                |list| {
+                    for value in list.values() {
+                        analyze_value(value, i);
+                    }
+                },
+            );
+        }
+        ast::SimpleValue::BangOperator(bang_op) => {
+            for value in bang_op.values() {
+                analyze_value(value, i);
+            }
+        }
+        ast::SimpleValue::CondOperator(cond_op) => {
+            for clause in cond_op.clauses() {
+                with(clause.condition(), |value| analyze_value(value, i));
+                with(clause.value(), |value| analyze_value(value, i));
+            }
+        }
+    };
 }
 
 fn with<T>(t: Option<T>, f: impl FnOnce(T)) {
