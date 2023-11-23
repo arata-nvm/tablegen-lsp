@@ -133,16 +133,14 @@ fn analyze_name_value(value: ast::Value) -> Option<(EcoString, TextRange)> {
 
 fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
     with_id(defset.name(), |name, range| {
-        let symbol_id = i.add_record(name, range, RecordKind::Defset);
+        let _ = i.add_record(name, range, RecordKind::Defset);
 
-        i.push(symbol_id);
         with(defset.r#type(), |typ| {
             analyze_type(typ, i);
         });
         with(defset.statement_list(), |list| {
             analyze_statement_list(list, i);
         });
-        i.pop();
 
         Some(())
     });
