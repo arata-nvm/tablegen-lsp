@@ -102,6 +102,37 @@ pub(super) fn inner_value(p: &mut Parser) -> CompletedMarker {
     CompletedMarker::Success
 }
 
+pub(super) fn opt_name_value(p: &mut Parser) {
+    if p.at_set(&VALUE_START) {
+        name_value(p);
+    }
+}
+
+// Value(NameMode) ::= InnerValue ( "#" InnerValue )*
+pub(super) fn name_value(p: &mut Parser) -> CompletedMarker {
+    p.start_node(SyntaxKind::Value);
+    inner_name_value(p);
+    while p.eat_if(T![#]) {
+        inner_name_value(p);
+    }
+    p.finish_node();
+    CompletedMarker::Success
+}
+
+// InnerValue(NameMode) ::= SimpleValue ValueSuffix*
+pub(super) fn inner_name_value(p: &mut Parser) -> CompletedMarker {
+    p.start_node(SyntaxKind::InnerValue);
+    if !simple_value(p).is_success() {
+        p.finish_node();
+        return CompletedMarker::Fail;
+    }
+
+    while p.current() != T!['{'] && value_suffix(p) {}
+
+    p.finish_node();
+    CompletedMarker::Success
+}
+
 // ValueSuffix ::= RangeSuffix | SliceSuffix | FieldSuffix
 pub(super) fn value_suffix(p: &mut Parser) -> bool {
     match p.current() {

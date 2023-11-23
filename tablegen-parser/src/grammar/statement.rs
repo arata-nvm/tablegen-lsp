@@ -91,7 +91,7 @@ pub(super) fn def(p: &mut Parser) {
 pub(super) fn object_name(p: &mut Parser) {
     match p.current() {
         T![:] | T![;] | T!['{'] => {}
-        _ => value::opt_value(p),
+        _ => value::opt_name_value(p),
     }
 }
 
@@ -167,7 +167,7 @@ pub(super) fn multi_class_statement(p: &mut Parser) {
 pub(super) fn defm(p: &mut Parser) {
     p.start_node(SyntaxKind::Defm);
     p.assert(T![defm]);
-    value::opt_value(p);
+    object_name(p);
     parent_class_list(p);
     p.expect_with_msg(T![;], "expected ';' at end of defm");
     p.finish_node();

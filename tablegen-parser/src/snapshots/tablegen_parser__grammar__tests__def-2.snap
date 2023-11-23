@@ -1,0 +1,23 @@
+---
+source: tablegen-parser/src/grammar.rs
+expression: "parse(\"def foo {}\")"
+---
+(
+    Root@0..10
+      StatementList@0..10
+        Def@0..10
+          DefKw@0..3 "def"
+          Whitespace@3..4 " "
+          Value@4..8
+            InnerValue@4..8
+              Identifier@4..8
+                Id@4..7 "foo"
+                Whitespace@7..8 " "
+          RecordBody@8..10
+            ParentClassList@8..8
+            Body@8..10
+              LBrace@8..9 "{"
+              RBrace@9..10 "}"
+    ,
+    [],
+)
