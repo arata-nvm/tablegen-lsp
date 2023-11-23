@@ -313,15 +313,15 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
             }
         })
         .unwrap_or(SymbolType::unknown()),
-        ast::SimpleValue::ClassRef(class_ref) => {
-            with(class_ref.arg_value_list(), |list| {
+        ast::SimpleValue::ClassValue(class_value) => {
+            with(class_value.arg_value_list(), |list| {
                 with(list.positional(), |positional| {
                     for value in positional.values() {
                         analyze_value(value, i);
                     }
                 })
             });
-            with_id(class_ref.name(), |name, range| {
+            with_id(class_value.name(), |name, range| {
                 i.add_symbol_reference(name.clone(), range)
                     .map(|symbol_id| SymbolType::Class(symbol_id, name))
             })

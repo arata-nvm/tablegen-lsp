@@ -574,7 +574,7 @@ node_enum!(
         List,
         Dag,
         Identifier,
-        ClassRef,
+        ClassValue,
         BangOperator,
         CondOperator
     ]
@@ -710,6 +710,18 @@ node!(Identifier);
 impl Identifier {
     pub fn value(&self) -> Option<EcoString> {
         Some(self.0.first_token()?.text().into())
+    }
+}
+
+node!(ClassValue);
+
+impl ClassValue {
+    pub fn name(&self) -> Option<Identifier> {
+        self.0.cast_first_match()
+    }
+
+    pub fn arg_value_list(&self) -> Option<ArgValueList> {
+        self.0.cast_first_match()
     }
 }
 
