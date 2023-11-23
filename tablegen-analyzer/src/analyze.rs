@@ -271,24 +271,60 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
 }
 
 fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
+    fn check_args(kind: BangOperator, bang_op: &ast::BangOperator, i: &mut DocumentIndexer) {
+        let num_actual = bang_op.values().count();
+        if !kind.is_valid_num_of_args(num_actual) {
+            let (min, max) = (kind.min_num_of_args(), kind.max_num_of_args());
+            let num_expect = if min == max {
+                eco_format!("{min}")
+            } else {
+                eco_format!("{min}-{max}")
+            };
+            let msg = eco_format!("{kind} expects {num_expect} arguments, but got {num_actual}",);
+            i.error(bang_op.syntax().text_range(), msg);
+        }
+    }
+
+    fn check_xfilter(
+        arg_var: ast::Value,
+        arg_list: ast::Value,
+        arg_predicate: ast::Value,
+        i: &mut DocumentIndexer,
+    ) {
+        analyze_value(arg_list.clone(), i);
+
+        let Some(arg_var) = arg_var.inner_values().nth(0) else { return; };
+        let Some(ast::SimpleValue::Identifier(arg_var)) =  arg_var.simple_value() else { return; };
+
+        let arg_list_typ = infer_type(arg_list.clone(), i);
+        let SymbolType::List(elm_typ) = arg_list_typ else { return; };
+
+        with_id(Some(arg_var), |name, range: TextRange| {
+            i.push_temporary();
+            i.add_temporary_variable(name, range, *elm_typ);
+            analyze_value(arg_predicate, i);
+            i.pop();
+            Some(())
+        });
+    }
+
     with(
         bang_op.kind().and_then(|kind| kind.try_into().ok()),
         |kind: BangOperator| {
-            let num_actual = bang_op.values().count();
-            if !kind.is_valid_num_of_args(num_actual) {
-                let (min, max) = (kind.min_num_of_args(), kind.max_num_of_args());
-                let num_expect = if min == max {
-                    eco_format!("{min}")
-                } else {
-                    eco_format!("{min}-{max}")
-                };
-                let msg =
-                    eco_format!("{kind} expects {num_expect} arguments, but got {num_actual}",);
-                i.error(bang_op.syntax().text_range(), msg);
-            }
-
-            for value in bang_op.values() {
-                analyze_value(value, i);
+            check_args(kind, &bang_op, i);
+            let mut values = bang_op.values();
+            match kind {
+                BangOperator::XFilter => {
+                    let Some(arg_var) = values.next() else { return; };
+                    let Some(arg_list) = values.next() else { return; };
+                    let Some(arg_predicate) = values.next() else { return; };
+                    check_xfilter(arg_var, arg_list, arg_predicate, i);
+                }
+                _ => {
+                    for value in values {
+                        analyze_value(value, i);
+                    }
+                }
             }
         },
     );
