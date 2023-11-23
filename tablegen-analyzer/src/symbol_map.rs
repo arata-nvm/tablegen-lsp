@@ -1,5 +1,5 @@
 use crate::symbol::{
-    Location, Record, RecordField, RecordFieldKind, RecordFieldType, RecordKind, Symbol, SymbolId,
+    Location, Record, RecordField, RecordFieldKind, RecordKind, Symbol, SymbolId, SymbolType,
     Variable, VariableKind,
 };
 use ecow::EcoString;
@@ -41,7 +41,7 @@ impl SymbolMap {
         name: EcoString,
         define_loc: Location,
         kind: RecordFieldKind,
-        typ: RecordFieldType,
+        typ: SymbolType,
     ) -> SymbolId {
         let field = RecordField::new(name, define_loc.clone(), kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::RecordField(field));
@@ -54,7 +54,7 @@ impl SymbolMap {
         name: EcoString,
         define_loc: Location,
         kind: VariableKind,
-        typ: RecordFieldType,
+        typ: SymbolType,
     ) -> SymbolId {
         let variable = Variable::new(name, define_loc.clone(), kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::Variable(variable));

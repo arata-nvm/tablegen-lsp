@@ -154,7 +154,7 @@ pub struct RecordField {
     define_loc: Location,
     reference_locs: Vec<Location>,
     kind: RecordFieldKind,
-    typ: RecordFieldType,
+    typ: SymbolType,
 }
 
 impl RecordField {
@@ -162,7 +162,7 @@ impl RecordField {
         name: EcoString,
         define_loc: Location,
         kind: RecordFieldKind,
-        typ: RecordFieldType,
+        typ: SymbolType,
     ) -> Self {
         Self {
             name,
@@ -193,7 +193,7 @@ impl RecordField {
         self.kind.clone()
     }
 
-    pub fn r#type(&self) -> &RecordFieldType {
+    pub fn r#type(&self) -> &SymbolType {
         &self.typ
     }
 }
@@ -210,7 +210,7 @@ pub struct Variable {
     define_loc: Location,
     reference_locs: Vec<Location>,
     kind: VariableKind,
-    typ: RecordFieldType,
+    typ: SymbolType,
 }
 
 #[derive(Debug, Clone)]
@@ -220,12 +220,7 @@ pub enum VariableKind {
 }
 
 impl Variable {
-    pub fn new(
-        name: EcoString,
-        define_loc: Location,
-        kind: VariableKind,
-        typ: RecordFieldType,
-    ) -> Self {
+    pub fn new(name: EcoString, define_loc: Location, kind: VariableKind, typ: SymbolType) -> Self {
         Self {
             name,
             define_loc,
@@ -255,36 +250,36 @@ impl Variable {
         self.kind.clone()
     }
 
-    pub fn r#type(&self) -> &RecordFieldType {
+    pub fn r#type(&self) -> &SymbolType {
         &self.typ
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum RecordFieldType {
+pub enum SymbolType {
     Bit,
     Int,
     String,
     Dag,
     Bits(i64),
-    List(Box<RecordFieldType>),
+    List(Box<SymbolType>),
     Class(SymbolId, EcoString),
     Code,
     Unresolved(EcoString),
 }
 
-impl fmt::Display for RecordFieldType {
+impl fmt::Display for SymbolType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RecordFieldType::Bit => write!(f, "bit"),
-            RecordFieldType::Int => write!(f, "int"),
-            RecordFieldType::String => write!(f, "string"),
-            RecordFieldType::Dag => write!(f, "dag"),
-            RecordFieldType::Bits(len) => write!(f, "bits<{len}>"),
-            RecordFieldType::List(inner_typ) => write!(f, "list<{}>", inner_typ),
-            RecordFieldType::Class(_, name) => write!(f, "{}", name),
-            RecordFieldType::Code => write!(f, "code"),
-            RecordFieldType::Unresolved(name) => write!(f, "{}", name),
+            SymbolType::Bit => write!(f, "bit"),
+            SymbolType::Int => write!(f, "int"),
+            SymbolType::String => write!(f, "string"),
+            SymbolType::Dag => write!(f, "dag"),
+            SymbolType::Bits(len) => write!(f, "bits<{len}>"),
+            SymbolType::List(inner_typ) => write!(f, "list<{}>", inner_typ),
+            SymbolType::Class(_, name) => write!(f, "{}", name),
+            SymbolType::Code => write!(f, "code"),
+            SymbolType::Unresolved(name) => write!(f, "{}", name),
         }
     }
 }

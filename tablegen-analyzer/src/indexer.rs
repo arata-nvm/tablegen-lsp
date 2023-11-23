@@ -5,9 +5,7 @@ use tablegen_parser::{error::SyntaxError, parser::TextRange};
 
 use crate::{
     document::DocumentId,
-    symbol::{
-        Location, Record, RecordFieldKind, RecordFieldType, RecordKind, SymbolId, VariableKind,
-    },
+    symbol::{Location, Record, RecordFieldKind, RecordKind, SymbolId, SymbolType, VariableKind},
     symbol_map::SymbolMap,
 };
 
@@ -76,7 +74,7 @@ impl DocumentIndexer {
         symbol_id
     }
 
-    pub fn add_template_arg(&mut self, name: EcoString, range: TextRange, typ: RecordFieldType) {
+    pub fn add_template_arg(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
         let define_loc = self.to_location(range);
         let symbol_id = self.symbols.new_record_field(
             name.clone(),
@@ -90,7 +88,7 @@ impl DocumentIndexer {
         parent.add_template_arg(name.clone(), symbol_id);
     }
 
-    pub fn add_field(&mut self, name: EcoString, range: TextRange, typ: RecordFieldType) {
+    pub fn add_field(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
         let define_loc = self.to_location(range);
         let symbol_id =
             self.symbols
@@ -106,7 +104,7 @@ impl DocumentIndexer {
         name: EcoString,
         range: TextRange,
         kind: VariableKind,
-        typ: RecordFieldType,
+        typ: SymbolType,
     ) {
         let define_loc = self.to_location(range);
         let symbol_id = self
@@ -153,7 +151,7 @@ impl DocumentIndexer {
 
     pub fn find_field_of(&self, symbol_id: SymbolId, name: &EcoString) -> Option<SymbolId> {
         let field = self.symbols.symbol(symbol_id)?.as_field();
-        let RecordFieldType::Class(typ_id, _) = field.r#type() else { return None; };
+        let SymbolType::Class(typ_id, _) = field.r#type() else { return None; };
         let typ = self.symbols.symbol(*typ_id)?.as_record();
         let field_id = typ.find_field(name)?;
         Some(*field_id)

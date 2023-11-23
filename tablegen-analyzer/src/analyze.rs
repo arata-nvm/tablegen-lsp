@@ -9,7 +9,7 @@ use tablegen_parser::{
 use crate::{
     document::DocumentId,
     indexer::DocumentIndexer,
-    symbol::{RecordFieldType, RecordKind, VariableKind},
+    symbol::{RecordKind, SymbolType, VariableKind},
     symbol_map::SymbolMap,
 };
 
@@ -138,7 +138,7 @@ fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
             name,
             range,
             VariableKind::Defset,
-            RecordFieldType::Unresolved("unknown".into()),
+            SymbolType::Unresolved("unknown".into()),
         );
 
         with(defset.r#type(), |typ| {
@@ -158,34 +158,34 @@ fn analyze_defvar(defvar: ast::Defvar, i: &mut DocumentIndexer) {
             name,
             range,
             VariableKind::Defvar,
-            RecordFieldType::Unresolved("unknown".into()),
+            SymbolType::Unresolved("unknown".into()),
         );
         with(defvar.value(), |value| analyze_value(value, i));
         Some(())
     });
 }
 
-fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<RecordFieldType> {
+fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<SymbolType> {
     let typ = match typ {
-        ast::Type::BitType(_) => RecordFieldType::Bit,
-        ast::Type::IntType(_) => RecordFieldType::Int,
-        ast::Type::StringType(_) => RecordFieldType::String,
-        ast::Type::DagType(_) => RecordFieldType::Dag,
+        ast::Type::BitType(_) => SymbolType::Bit,
+        ast::Type::IntType(_) => SymbolType::Int,
+        ast::Type::StringType(_) => SymbolType::String,
+        ast::Type::DagType(_) => SymbolType::Dag,
         ast::Type::BitsType(bits_typ) => {
             let len = bits_typ.length()?.value()?;
-            RecordFieldType::Bits(len)
+            SymbolType::Bits(len)
         }
         ast::Type::ListType(list_typ) => {
             let inner_typ = analyze_type(list_typ.inner_type()?, i)?;
-            RecordFieldType::List(Box::new(inner_typ))
+            SymbolType::List(Box::new(inner_typ))
         }
         ast::Type::ClassId(class_id) => with_id(class_id.name(), |name, range| {
             match i.add_symbol_reference(name.clone(), range) {
-                Some(symbol_id) => Some(RecordFieldType::Class(symbol_id, name)),
-                None => Some(RecordFieldType::Unresolved(name.clone())),
+                Some(symbol_id) => Some(SymbolType::Class(symbol_id, name)),
+                None => Some(SymbolType::Unresolved(name.clone())),
             }
         })?,
-        ast::Type::CodeType(_) => RecordFieldType::Code,
+        ast::Type::CodeType(_) => SymbolType::Code,
     };
     Some(typ)
 }
