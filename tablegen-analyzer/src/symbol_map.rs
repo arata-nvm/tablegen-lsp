@@ -63,6 +63,19 @@ impl SymbolMap {
         symbol_id
     }
 
+    pub fn new_temporary_variable(
+        &mut self,
+        name: EcoString,
+        define_loc: Location,
+        kind: VariableKind,
+        typ: SymbolType,
+    ) -> SymbolId {
+        let variable = Variable::new(name, define_loc.clone(), kind, typ);
+        let symbol_id = self.symbols.alloc(Symbol::Variable(variable));
+        self.symbol_map.insert(define_loc.1.into(), symbol_id);
+        symbol_id
+    }
+
     pub fn symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
         self.symbols.get(symbol_id)
     }

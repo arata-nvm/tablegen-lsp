@@ -40,6 +40,10 @@ impl DocumentIndexer {
         self.scope_symbols.push(symbol_id);
     }
 
+    pub fn push_temporary(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+
     pub fn pop(&mut self) {
         self.scopes.pop();
         self.scope_symbols.pop();
@@ -67,6 +71,10 @@ impl DocumentIndexer {
             self.error(range, eco_format!("variable not found: {}", name));
             None
         }
+    }
+
+    pub fn symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
+        self.symbols.symbol(symbol_id)
     }
 
     pub fn add_record(&mut self, name: EcoString, range: TextRange, kind: RecordKind) -> SymbolId {
@@ -112,6 +120,14 @@ impl DocumentIndexer {
         let symbol_id = self
             .symbols
             .new_variable(name.clone(), define_loc, kind, typ);
+        self.add_symbol_scope(name, symbol_id);
+    }
+
+    pub fn add_temporary_variable(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
+        let define_loc = self.to_location(range);
+        let symbol_id =
+            self.symbols
+                .new_variable(name.clone(), define_loc, VariableKind::Temporary, typ);
         self.add_symbol_scope(name, symbol_id);
     }
 

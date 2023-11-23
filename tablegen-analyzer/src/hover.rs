@@ -41,6 +41,7 @@ fn extract_symbol_info(symbol: &Symbol) -> String {
             let name = match variable.kind() {
                 VariableKind::Defset => format!("**defset** `{}`", variable.name()),
                 VariableKind::Defvar => format!("**defvar** `{}`", variable.name()),
+                VariableKind::Temporary => format!("**temporary var** `{}`", variable.name()),
             };
             let typ = variable.r#type();
             format!("{name}\n***\nType: `{typ}`\n***\n")

@@ -142,7 +142,6 @@ fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
         with(defset.statement_list(), |list| {
             analyze_statement_list(list, i);
         });
-
         Some(())
     });
 }

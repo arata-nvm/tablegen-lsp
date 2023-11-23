@@ -75,6 +75,13 @@ impl Symbol {
             _ => None,
         }
     }
+
+    pub fn as_variable(&self) -> Option<&Variable> {
+        match self {
+            Self::Variable(variable) => Some(variable),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -217,6 +224,7 @@ pub struct Variable {
 pub enum VariableKind {
     Defset,
     Defvar,
+    Temporary,
 }
 
 impl Variable {
