@@ -521,6 +521,17 @@ impl SliceSuffix {
     pub fn element_list(&self) -> Option<SliceElements> {
         self.0.cast_first_match()
     }
+
+    pub fn is_single_element(&self) -> bool {
+        let Some(list) = self.element_list() else { return false; };
+        let elements: Vec<SliceElement> = list.elements().collect();
+        let num_colon = self
+            .0
+            .children_with_tokens()
+            .filter(|element| element.kind() == SyntaxKind::Colon)
+            .count();
+        elements.len() == 1 && elements[0].end().is_none() && num_colon == 0
+    }
 }
 
 node!(SliceElements);

@@ -10,7 +10,7 @@ use tablegen_parser::{
 use crate::{
     document::DocumentId,
     indexer::DocumentIndexer,
-    symbol::{RecordKind, SymbolType, VariableKind},
+    symbol::{RecordKind, Symbol, SymbolType, VariableKind},
     symbol_map::SymbolMap,
 };
 
@@ -149,10 +149,8 @@ fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
 fn analyze_defvar(defvar: ast::Defvar, i: &mut DocumentIndexer) {
     with_id(defvar.name(), |name, range| {
         with(defvar.value(), |value| {
-            let typ = infer_type(value.clone(), i);
+            let typ = analyze_value(value, i);
             i.add_variable(name, range, VariableKind::Defvar, typ);
-
-            analyze_value(value, i);
         });
         Some(())
     });
@@ -196,82 +194,163 @@ fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {
     });
 }
 
-fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) {
-    for inner_value in value.inner_values() {
+fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> SymbolType {
+    let mut values = value.inner_values();
+
+    let first_value = values.next();
+    let first_value_typ = first_value.map(|inner_value| analyze_inner_value(inner_value, i));
+    for inner_value in values {
         analyze_inner_value(inner_value, i);
     }
 
-    // let suffix = inner_value.suffixes().next()?;
-    // let ast::ValueSuffix::FieldSuffix(field_name) = suffix else { return None; };
-    // with_id(field_name.name(), |name, range| {
-    //     i.access_field(symbol_id, name.clone(), range)
-    // });
-
-    // None
+    match value.inner_values().count() {
+        0 => None,
+        1 => first_value_typ,
+        _ => Some(SymbolType::String),
+    }
+    .unwrap_or(SymbolType::unknown())
 }
 
-fn analyze_inner_value(inner_value: ast::InnerValue, i: &mut DocumentIndexer) {
-    with(inner_value.simple_value(), |simple_value| {
-        analyze_simple_value(simple_value, i);
+fn analyze_inner_value(inner_value: ast::InnerValue, i: &mut DocumentIndexer) -> SymbolType {
+    let Some(simple_value) = inner_value.simple_value() else { return SymbolType::unknown(); };
+
+    let mut lhs_typ: SymbolType = analyze_simple_value(simple_value, i);
+    for suffix in inner_value.suffixes() {
+        let suffixed_type = match suffix {
+            ast::ValueSuffix::RangeSuffix(range_suffix) => {
+                analyze_range_suffix(range_suffix, i);
+                match lhs_typ {
+                    SymbolType::Bits(_) | SymbolType::Int => Some(SymbolType::Int),
+                    _ => None,
+                }
+            }
+            ast::ValueSuffix::SliceSuffix(slice_suffix) => {
+                let is_single_element = slice_suffix.is_single_element();
+                analyze_slice_suffix(slice_suffix, i);
+                if is_single_element {
+                    Some(lhs_typ.element_typ().unwrap_or(SymbolType::unknown()))
+                } else {
+                    Some(lhs_typ)
+                }
+            }
+            ast::ValueSuffix::FieldSuffix(field_suffix) => match lhs_typ {
+                SymbolType::Class(symbol_id, _) => with_id(field_suffix.name(), |name, range| {
+                    let field_symbol_id = i.access_field(symbol_id, name, range)?;
+                    let field = i.symbol(field_symbol_id)?;
+                    Some(field.as_field()?.r#type().clone())
+                }),
+                _ => None,
+            },
+        };
+        lhs_typ = suffixed_type.unwrap_or(SymbolType::unknown());
+    }
+    lhs_typ
+}
+
+fn analyze_range_suffix(range_suffix: ast::RangeSuffix, i: &mut DocumentIndexer) {
+    with(range_suffix.range_list(), |list| {
+        for piece in list.pieces() {
+            with(piece.start(), |value| {
+                analyze_value(value, i);
+            });
+            with(piece.end(), |value| {
+                analyze_value(value, i);
+            });
+        }
     });
 }
 
-fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer) {
+fn analyze_slice_suffix(slice_suffix: ast::SliceSuffix, i: &mut DocumentIndexer) {
+    with(slice_suffix.element_list(), |list| {
+        for element in list.elements() {
+            with(element.start(), |value| {
+                analyze_value(value, i);
+            });
+            with(element.end(), |value| {
+                analyze_value(value, i);
+            });
+        }
+    });
+}
+
+fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer) -> SymbolType {
     match simple_value {
-        ast::SimpleValue::Integer(_)
-        | ast::SimpleValue::String(_)
-        | ast::SimpleValue::Code(_)
-        | ast::SimpleValue::Boolean(_)
-        | ast::SimpleValue::Uninitialized(_) => {}
-        ast::SimpleValue::Bits(bits) => with(bits.value_list(), |list| {
+        ast::SimpleValue::Integer(_) => SymbolType::Int,
+        ast::SimpleValue::String(_) => SymbolType::String,
+        ast::SimpleValue::Code(_) => SymbolType::Code,
+        ast::SimpleValue::Boolean(_) => SymbolType::Bit,
+        ast::SimpleValue::Uninitialized(_) => SymbolType::unknown(),
+        ast::SimpleValue::Bits(bits) => {
+            let Some(list) = bits.value_list() else { return SymbolType::Bits(0) };
             for value in list.values() {
                 analyze_value(value, i);
             }
-        }),
-        ast::SimpleValue::List(list) => with(list.value_list(), |list| {
-            for value in list.values() {
-                analyze_value(value, i);
-            }
-        }),
+            SymbolType::Bits(list.values().count() as i64)
+        }
+        ast::SimpleValue::List(list) => {
+            let Some(list) = list.value_list() else { return SymbolType::List(Box::new(SymbolType::unknown())) };
+            let value_typs: Vec<SymbolType> =
+                list.values().map(|value| analyze_value(value, i)).collect();
+            let first_value_typ = value_typs.get(0).cloned().unwrap_or(SymbolType::unknown());
+            SymbolType::List(Box::new(first_value_typ.clone()))
+        }
         ast::SimpleValue::Dag(dag) => {
             with(dag.arg_list(), |list| {
                 for arg in list.args() {
-                    with(arg.value(), |value| analyze_value(value, i));
+                    with(arg.value(), |value| {
+                        analyze_value(value, i);
+                    });
                 }
             });
+            SymbolType::Dag
         }
-        ast::SimpleValue::Identifier(identifier) => {
-            with_id(Some(identifier), |name, range| {
-                i.add_symbol_reference(name, range)
-            });
-        }
+        ast::SimpleValue::Identifier(identifier) => with_id(Some(identifier), |name, range| {
+            let symbol_id = i.add_symbol_reference(name, range)?;
+            match i.symbol(symbol_id)? {
+                Symbol::RecordField(field) => Some(field.r#type().clone()),
+                Symbol::Variable(variable) => Some(variable.r#type().clone()),
+                _ => None,
+            }
+        })
+        .unwrap_or(SymbolType::unknown()),
         ast::SimpleValue::ClassRef(class_ref) => {
-            with_id(class_ref.name(), |name, range| {
-                i.add_symbol_reference(name, range)
-            });
-            with(
-                class_ref
-                    .arg_value_list()
-                    .and_then(|list| list.positional()),
-                |list| {
-                    for value in list.values() {
+            with(class_ref.arg_value_list(), |list| {
+                with(list.positional(), |positional| {
+                    for value in positional.values() {
                         analyze_value(value, i);
                     }
-                },
-            );
+                })
+            });
+            with_id(class_ref.name(), |name, range| {
+                i.add_symbol_reference(name.clone(), range)
+                    .map(|symbol_id| SymbolType::Class(symbol_id, name))
+            })
+            .unwrap_or(SymbolType::unknown())
         }
-        ast::SimpleValue::BangOperator(bang_op) => analyze_bang_operator(bang_op, i),
+        ast::SimpleValue::BangOperator(bang_op) => {
+            analyze_bang_operator(bang_op, i).unwrap_or(SymbolType::unknown())
+        }
         ast::SimpleValue::CondOperator(cond_op) => {
-            for clause in cond_op.clauses() {
-                with(clause.condition(), |value| analyze_value(value, i));
-                with(clause.value(), |value| analyze_value(value, i));
-            }
+            let clauses: Vec<SymbolType> = cond_op
+                .clauses()
+                .map(|clause| {
+                    with(clause.condition(), |value| {
+                        analyze_value(value, i);
+                    });
+                    let value_typ = clause.value().map(|value| analyze_value(value, i));
+                    value_typ.unwrap_or(SymbolType::unknown())
+                })
+                .collect();
+            clauses.get(0).cloned().unwrap_or(SymbolType::unknown())
         }
-    };
+    }
 }
 
-fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
-    fn check_args(kind: BangOperator, bang_op: &ast::BangOperator, i: &mut DocumentIndexer) {
+fn analyze_bang_operator(
+    bang_op: ast::BangOperator,
+    i: &mut DocumentIndexer,
+) -> Option<SymbolType> {
+    fn check_num_args(kind: BangOperator, bang_op: &ast::BangOperator, i: &mut DocumentIndexer) {
         let num_actual = bang_op.values().count();
         if !kind.is_valid_num_of_args(num_actual) {
             let (min, max) = (kind.min_num_of_args(), kind.max_num_of_args());
@@ -290,21 +369,17 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
         arg_list: ast::Value,
         arg_predicate: ast::Value,
         i: &mut DocumentIndexer,
-    ) {
-        analyze_value(arg_list.clone(), i);
+    ) -> Option<SymbolType> {
+        let arg_var = arg_var.inner_values().nth(0)?;
+        let ast::SimpleValue::Identifier(arg_var) =  arg_var.simple_value()? else { return None; };
 
-        let Some(arg_var) = arg_var.inner_values().nth(0) else { return; };
-        let Some(ast::SimpleValue::Identifier(arg_var)) =  arg_var.simple_value() else { return; };
-
-        let arg_list_typ = infer_type(arg_list.clone(), i);
+        let arg_list_range = arg_list.syntax().text_range();
+        let arg_list_typ = analyze_value(arg_list, i);
         let elm_typ = match arg_list_typ {
-            SymbolType::List(elm_typ) => *elm_typ,
+            SymbolType::List(ref elm_typ) => *elm_typ.clone(),
             SymbolType::Unresolved(_) => SymbolType::unknown(),
             _ => {
-                i.error(
-                    arg_list.syntax().text_range(),
-                    "!filter must have a list argument",
-                );
+                i.error(arg_list_range, "!filter must have a list argument");
                 SymbolType::unknown()
             }
         };
@@ -316,6 +391,8 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
             i.pop_temporary();
             Some(())
         });
+
+        Some(arg_list_typ)
     }
 
     fn check_xforeach(
@@ -323,20 +400,19 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
         arg_sequence: ast::Value,
         arg_expr: ast::Value,
         i: &mut DocumentIndexer,
-    ) {
-        analyze_value(arg_sequence.clone(), i);
+    ) -> Option<SymbolType> {
+        let arg_var = arg_var.inner_values().nth(0)?;
+        let ast::SimpleValue::Identifier(arg_var) =  arg_var.simple_value()? else { return None; };
 
-        let Some(arg_var) = arg_var.inner_values().nth(0) else { return; };
-        let Some(ast::SimpleValue::Identifier(arg_var)) =  arg_var.simple_value() else { return; };
-
-        let arg_sequence_typ = infer_type(arg_sequence.clone(), i);
+        let arg_sequence_range = arg_sequence.syntax().text_range();
+        let arg_sequence_typ = analyze_value(arg_sequence, i);
         let elm_typ = match arg_sequence_typ {
             SymbolType::List(elm_typ) => *elm_typ,
             SymbolType::Dag => SymbolType::unknown(),
             SymbolType::Unresolved(_) => SymbolType::unknown(),
             _ => {
                 i.error(
-                    arg_sequence.syntax().text_range(),
+                    arg_sequence_range,
                     "!foreach must have a list or dag argument",
                 );
                 SymbolType::unknown()
@@ -346,10 +422,10 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
         with_id(Some(arg_var), |name, range: TextRange| {
             i.push_temporary();
             i.add_temporary_variable(name, range, elm_typ);
-            analyze_value(arg_expr, i);
+            let arg_expr_typ = analyze_value(arg_expr, i);
             i.pop_temporary();
-            Some(())
-        });
+            Some(arg_expr_typ)
+        })
     }
 
     fn check_xfoldl(
@@ -359,23 +435,22 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
         arg_var: ast::Value,
         arg_expr: ast::Value,
         i: &mut DocumentIndexer,
-    ) {
-        analyze_value(arg_init.clone(), i);
-        analyze_value(arg_list.clone(), i);
+    ) -> Option<SymbolType> {
+        let arg_acc = arg_acc.inner_values().nth(0)?;
+        let ast::SimpleValue::Identifier(arg_acc) =  arg_acc.simple_value()? else { return None; };
 
-        let Some(arg_acc) = arg_acc.inner_values().nth(0) else { return; };
-        let Some(ast::SimpleValue::Identifier(arg_acc)) =  arg_acc.simple_value() else { return; };
+        let arg_var = arg_var.inner_values().nth(0)?;
+        let ast::SimpleValue::Identifier(arg_var) =  arg_var.simple_value()? else { return None; };
 
-        let Some(arg_var) = arg_var.inner_values().nth(0) else { return; };
-        let Some(ast::SimpleValue::Identifier(arg_var)) =  arg_var.simple_value() else { return; };
-
-        let arg_list_typ = infer_type(arg_list.clone(), i);
+        let arg_init_typ = analyze_value(arg_init, i);
+        let arg_list_range = arg_list.syntax().text_range();
+        let arg_list_typ = analyze_value(arg_list, i);
         let elm_typ = match arg_list_typ {
             SymbolType::List(elm_typ) => *elm_typ,
             SymbolType::Unresolved(_) => SymbolType::unknown(),
             x => {
                 i.error(
-                    arg_list.syntax().text_range(),
+                    arg_list_range,
                     eco_format!("!foldl list must be a list, but is of type '{x}'"),
                 );
                 SymbolType::unknown()
@@ -392,99 +467,32 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
                 Some(())
             })
         });
+
+        Some(arg_init_typ)
     }
 
-    with(
-        bang_op.kind().and_then(|kind| kind.try_into().ok()),
-        |kind: BangOperator| {
-            check_args(kind, &bang_op, i);
-            let mut values = bang_op.values();
-            match kind {
-                BangOperator::XFilter => {
-                    let Some(arg_var) = values.next() else { return; };
-                    let Some(arg_list) = values.next() else { return; };
-                    let Some(arg_predicate) = values.next() else { return; };
-                    check_xfilter(arg_var, arg_list, arg_predicate, i);
-                }
-                BangOperator::XForEach => {
-                    let Some(arg_var) = values.next() else { return; };
-                    let Some(arg_sequence) = values.next() else { return; };
-                    let Some(arg_expr) = values.next() else { return; };
-                    check_xforeach(arg_var, arg_sequence, arg_expr, i);
-                }
-                BangOperator::XFoldl => {
-                    let Some(arg_init) = values.next() else { return; };
-                    let Some(arg_list) = values.next() else { return; };
-                    let Some(arg_acc) = values.next() else { return; };
-                    let Some(arg_var) = values.next() else { return; };
-                    let Some(arg_expr) = values.next() else { return; };
-                    check_xfoldl(arg_init, arg_list, arg_acc, arg_var, arg_expr, i);
-                }
-                _ => {
-                    for value in values {
-                        analyze_value(value, i);
-                    }
-                }
-            }
-        },
-    );
-}
-
-fn infer_type(value: ast::Value, i: &mut DocumentIndexer) -> SymbolType {
-    let simple_value = value
-        .inner_values()
-        .nth(0)
-        .and_then(|inner_value| inner_value.simple_value());
-    let Some(simple_value) = simple_value else { return SymbolType::unknown(); };
-
-    match simple_value {
-        ast::SimpleValue::Integer(_) => SymbolType::Int,
-        ast::SimpleValue::String(_) => SymbolType::String,
-        ast::SimpleValue::Code(_) => SymbolType::Code,
-        ast::SimpleValue::Boolean(_) => SymbolType::Bit,
-        ast::SimpleValue::Uninitialized(_) => SymbolType::unknown(),
-        ast::SimpleValue::Bits(bits) => {
-            let len = bits
-                .value_list()
-                .map(|list| list.values().count() as i64)
-                .unwrap_or_default();
-            SymbolType::Bits(len)
-        }
-        ast::SimpleValue::List(list) => {
-            let elm_typ = list
-                .value_list()
-                .and_then(|list| list.values().next())
-                .map(|value| infer_type(value, i))
-                .unwrap_or(SymbolType::unknown());
-            SymbolType::List(Box::new(elm_typ))
-        }
-        ast::SimpleValue::Dag(_) => SymbolType::Dag,
-        ast::SimpleValue::Identifier(identifier) => with_id(Some(identifier), |name, _| {
-            let symbol_id = i.find_symbol_scope(&name)?;
-            let symbol = i.symbol(*symbol_id)?;
-            Some(symbol.as_variable()?.r#type().clone())
-        })
-        .unwrap_or(SymbolType::unknown()),
-        ast::SimpleValue::ClassRef(class_ref) => with_id(class_ref.name(), |name, _| {
-            i.find_symbol_scope(&name)
-                .map(|symbol_id| SymbolType::Class(*symbol_id, name))
-        })
-        .unwrap_or(SymbolType::unknown()),
-        ast::SimpleValue::BangOperator(bang_op) => {
-            infer_type_bang_op(bang_op, i).unwrap_or(SymbolType::unknown())
-        }
-        ast::SimpleValue::CondOperator(cond_op) => cond_op
-            .clauses()
-            .next()
-            .and_then(|clause| clause.value())
-            .map(|value| infer_type(value, i))
-            .unwrap_or(SymbolType::unknown()),
-    }
-}
-
-fn infer_type_bang_op(bang_op: ast::BangOperator, i: &mut DocumentIndexer) -> Option<SymbolType> {
     let kind: BangOperator = bang_op.kind()?.try_into().ok()?;
+    check_num_args(kind, &bang_op, i);
+
     use BangOperator::*;
+    let mut values = bang_op.values();
+    match kind {
+        XFilter => return check_xfilter(values.next()?, values.next()?, values.next()?, i),
+        XFoldl => {
+            return check_xfoldl(
+                values.next()?,
+                values.next()?,
+                values.next()?,
+                values.next()?,
+                values.next()?,
+                i,
+            )
+        }
+        XForEach => return check_xforeach(values.next()?, values.next()?, values.next()?, i),
+        _ => {}
+    }
+
+    let value_types: Vec<SymbolType> = values.map(|value| analyze_value(value, i)).collect();
     let typ = match kind {
         XAdd => SymbolType::Int,
         XAnd => SymbolType::Bit,
@@ -495,23 +503,20 @@ fn infer_type_bang_op(bang_op: ast::BangOperator, i: &mut DocumentIndexer) -> Op
         XEmpty => SymbolType::Bit,
         XEq => SymbolType::Bit,
         XExists => SymbolType::Bit,
-        XFilter => infer_type(bang_op.values().nth(1)?, i),
         XFind => SymbolType::Int,
-        XFoldl => infer_type(bang_op.values().nth(0)?, i),
-        XForEach => infer_type(bang_op.values().nth(1)?, i),
         XGe => SymbolType::Bit,
         XGetDagArg => analyze_type(bang_op.r#type()?, i)?,
         XGetDagName => SymbolType::String,
         XGetDagOp => analyze_type(bang_op.r#type()?, i)?,
         XGt => SymbolType::Bit,
-        XHead => infer_type(bang_op.values().nth(0)?, i).element_typ()?,
-        XIf => infer_type(bang_op.values().nth(1)?, i),
+        XHead => value_types.get(0)?.element_typ()?,
+        XIf => value_types.get(1)?.clone(),
         XInterleave => SymbolType::String, // TODO
         XIsA => SymbolType::Bit,
         XLe => SymbolType::Bit,
-        XListConcat => infer_type(bang_op.values().nth(0)?, i),
-        XListRemove => infer_type(bang_op.values().nth(0)?, i),
-        XListSplat => SymbolType::List(Box::new(infer_type(bang_op.values().nth(0)?, i))),
+        XListConcat => value_types.get(0)?.clone(),
+        XListRemove => value_types.get(0)?.clone(),
+        XListSplat => SymbolType::List(Box::new(value_types.get(0)?.clone())),
         XLog2 => SymbolType::Int,
         XLt => SymbolType::Bit,
         XMul => SymbolType::Int,
@@ -530,10 +535,11 @@ fn infer_type_bang_op(bang_op: ast::BangOperator, i: &mut DocumentIndexer) -> Op
         XSub => SymbolType::Int,
         XSubst => SymbolType::String,
         XSubstr => SymbolType::String,
-        XTail => infer_type(bang_op.values().nth(0)?, i).element_typ()?,
+        XTail => value_types.get(0)?.element_typ()?,
         XToLower => SymbolType::String,
         XToUpper => SymbolType::String,
         XXor => SymbolType::Bit,
+        _ => unreachable!(),
     };
     Some(typ)
 }

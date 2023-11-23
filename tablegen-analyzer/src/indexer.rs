@@ -165,24 +165,13 @@ impl DocumentIndexer {
         name: EcoString,
         range: TextRange,
     ) -> Option<SymbolId> {
-        let reference_loc = self.to_location(range.clone());
-        let Some(field_id )= self.find_field_of(symbol_id, &name) else {
+        let record = self.symbols.symbol(symbol_id)?.as_record()?;
+        let Some(field_id ) = record.find_field(&name).cloned() else {
             self.error(range, eco_format!("cannot access field: {}", name));
             return None;
         };
+        let reference_loc = self.to_location(range.clone());
         self.symbols.add_reference(field_id, reference_loc);
         Some(field_id)
-    }
-
-    pub fn find_field_of(&self, symbol_id: SymbolId, name: &EcoString) -> Option<SymbolId> {
-        let typ = match self.symbols.symbol(symbol_id)? {
-            Symbol::RecordField(record_field) => record_field.r#type(),
-            Symbol::Variable(variable) => variable.r#type(),
-            _ => return None,
-        };
-        let SymbolType::Class(typ_id, _) = typ else { return None; };
-        let typ = self.symbols.symbol(*typ_id)?.as_record()?;
-        let field_id = typ.find_field(name)?;
-        Some(*field_id)
     }
 }
