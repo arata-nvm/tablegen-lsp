@@ -183,7 +183,9 @@ fn analyze_type(typ: ast::Type, i: &mut DocumentIndexer) -> Option<SymbolType> {
 
 fn analyze_class_ref(class_ref: ast::ClassRef, i: &mut DocumentIndexer) {
     with_id(class_ref.name(), |name, range| {
-        i.add_symbol_reference(name, range)
+        let symbol_id = i.add_symbol_reference(name, range)?;
+        i.add_parent(symbol_id);
+        Some(())
     });
     with(class_ref.arg_value_list(), |list| {
         with(list.positional(), |positional| {

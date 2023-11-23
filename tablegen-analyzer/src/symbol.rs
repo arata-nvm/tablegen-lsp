@@ -90,6 +90,7 @@ pub struct Record {
     define_loc: Location,
     reference_locs: Vec<Location>,
     template_args: HashMap<EcoString, SymbolId>,
+    parents: Vec<SymbolId>,
     fields: HashMap<EcoString, SymbolId>,
     kind: RecordKind,
 }
@@ -109,6 +110,7 @@ impl Record {
             define_loc,
             reference_locs: Vec::new(),
             template_args: HashMap::new(),
+            parents: Vec::new(),
             fields: HashMap::new(),
             kind,
         }
@@ -136,6 +138,14 @@ impl Record {
 
     pub fn template_args(&self) -> Vec<&SymbolId> {
         self.template_args.values().collect()
+    }
+
+    pub fn add_parent(&mut self, parent: SymbolId) {
+        self.parents.push(parent);
+    }
+
+    pub fn parents(&self) -> &[SymbolId] {
+        &self.parents
     }
 
     pub fn add_field(&mut self, name: EcoString, field_id: SymbolId) {

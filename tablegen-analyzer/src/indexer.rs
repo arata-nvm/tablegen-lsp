@@ -102,6 +102,11 @@ impl DocumentIndexer {
         parent.add_template_arg(name.clone(), symbol_id);
     }
 
+    pub fn add_parent(&mut self, parent: SymbolId) {
+        let cur_record = self.scope_symbol_mut();
+        cur_record.add_parent(parent);
+    }
+
     pub fn add_field(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
         let define_loc = self.to_location(range);
         let symbol_id =
@@ -166,12 +171,20 @@ impl DocumentIndexer {
         range: TextRange,
     ) -> Option<SymbolId> {
         let record = self.symbols.symbol(symbol_id)?.as_record()?;
-        let Some(field_id ) = record.find_field(&name).cloned() else {
-            self.error(range, eco_format!("cannot access field: {}", name));
-            return None;
-        };
-        let reference_loc = self.to_location(range.clone());
-        self.symbols.add_reference(field_id, reference_loc);
-        Some(field_id)
+        if let Some(field_id) = record.find_field(&name).cloned() {
+            let reference_loc = self.to_location(range.clone());
+            self.symbols.add_reference(field_id, reference_loc);
+            return Some(field_id);
+        }
+
+        let parents = record.parents().to_vec();
+        for parent in parents.into_iter().rev() {
+            if let Some(field_id) = self.access_field(parent, name.clone(), range.clone()) {
+                return Some(field_id);
+            }
+        }
+
+        self.error(range, eco_format!("cannot access field: {}", name));
+        None
     }
 }
