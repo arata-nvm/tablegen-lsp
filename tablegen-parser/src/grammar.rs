@@ -194,5 +194,6 @@ mod tests {
                 code C = [{ true }];
             }"
         ));
+        insta::assert_debug_snapshot!(parse("defvar A = [[1], [1,], [1,2]];"));
     }
 }

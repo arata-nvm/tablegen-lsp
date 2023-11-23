@@ -197,7 +197,7 @@ pub(super) fn slice_elements(p: &mut Parser) -> CompletedMarker {
     p.start_node(SyntaxKind::SliceElements);
     while !p.eof() {
         slice_element(p);
-        if !p.eat_if(T![,]) {
+        if !p.eat_if(T![,]) || p.at(T![']']) {
             break;
         }
     }
