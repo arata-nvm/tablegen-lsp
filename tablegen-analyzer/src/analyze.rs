@@ -32,13 +32,18 @@ fn analyze_root(root: SyntaxNode, i: &mut DocumentIndexer) {
 
 fn analyze_statement_list(list: ast::StatementList, i: &mut DocumentIndexer) {
     for stmt in list.statements() {
-        match stmt {
-            ast::Statement::Class(class) => analyze_class(class, i),
-            ast::Statement::Def(def) => analyze_def(def, i),
-            ast::Statement::Defset(defset) => analyze_defset(defset, i),
-            ast::Statement::Defvar(defvar) => analyze_defvar(defvar, i),
-            _ => {}
-        }
+        analyze_statement(stmt, i);
+    }
+}
+
+fn analyze_statement(stmt: ast::Statement, i: &mut DocumentIndexer) {
+    match stmt {
+        ast::Statement::Class(class) => analyze_class(class, i),
+        ast::Statement::Def(def) => analyze_def(def, i),
+        ast::Statement::Defset(defset) => analyze_defset(defset, i),
+        ast::Statement::Defvar(defvar) => analyze_defvar(defvar, i),
+        ast::Statement::Let(r#let) => analyze_let(r#let, i),
+        _ => {}
     }
 }
 
@@ -158,6 +163,19 @@ fn analyze_defvar(defvar: ast::Defvar, i: &mut DocumentIndexer) {
             i.add_variable(name, range, VariableKind::Defvar, typ);
         });
         Some(())
+    });
+}
+
+fn analyze_let(r#let: ast::Let, i: &mut DocumentIndexer) {
+    with(r#let.let_list(), |list| {
+        for item in list.items() {
+            with(item.value(), |value| {
+                analyze_value(value, i);
+            });
+        }
+    });
+    with(r#let.statement_list(), |list| {
+        analyze_statement_list(list, i);
     });
 }
 
