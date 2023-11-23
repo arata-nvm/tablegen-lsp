@@ -149,13 +149,12 @@ fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
 
 fn analyze_defvar(defvar: ast::Defvar, i: &mut DocumentIndexer) {
     with_id(defvar.name(), |name, range| {
-        i.add_variable(
-            name,
-            range,
-            VariableKind::Defvar,
-            SymbolType::Unresolved("unknown".into()),
-        );
-        with(defvar.value(), |value| analyze_value(value, i));
+        with(defvar.value(), |value| {
+            let typ = infer_type(value.clone(), i);
+            i.add_variable(name, range, VariableKind::Defvar, typ);
+
+            analyze_value(value, i);
+        });
         Some(())
     });
 }
@@ -294,6 +293,25 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
             }
         },
     );
+}
+
+fn infer_type(value: ast::Value, i: &mut DocumentIndexer) -> SymbolType {
+    let simple_value = value
+        .inner_values()
+        .nth(0)
+        .and_then(|inner_value| inner_value.simple_value());
+    if let Some(ast::SimpleValue::Identifier(identifier)) = simple_value {
+        let symbol_id = with_id(Some(identifier), |name, range| {
+            i.add_symbol_reference(name, range)
+        });
+        if let Some(symbol) = symbol_id.and_then(|symbol_id| i.symbol(symbol_id)) {
+            if let Some(typ) = symbol.as_variable().map(|variable| variable.r#type()) {
+                return typ.clone();
+            }
+        };
+    }
+
+    SymbolType::Unresolved("unknown".into())
 }
 
 fn with<T>(t: Option<T>, f: impl FnOnce(T)) {
