@@ -11,7 +11,7 @@ use tablegen_parser::parser::TextSize;
 pub struct SymbolMap {
     symbols: Arena<Symbol>,
     symbol_map: IntervalMap<TextSize, SymbolId>,
-    records: Vec<SymbolId>,
+    global_symbols: Vec<SymbolId>,
 }
 
 impl SymbolMap {
@@ -19,7 +19,7 @@ impl SymbolMap {
         Self {
             symbols: Arena::new(),
             symbol_map: IntervalMap::new(),
-            records: Vec::new(),
+            global_symbols: Vec::new(),
         }
     }
 
@@ -32,7 +32,7 @@ impl SymbolMap {
         let record = Record::new(name, define_loc.clone(), kind);
         let symbol_id = self.symbols.alloc(Symbol::Record(record));
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
-        self.records.push(symbol_id);
+        self.global_symbols.push(symbol_id);
         symbol_id
     }
 
@@ -59,6 +59,7 @@ impl SymbolMap {
         let variable = Variable::new(name, define_loc.clone(), kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::Variable(variable));
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
+        self.global_symbols.push(symbol_id);
         symbol_id
     }
 
@@ -83,7 +84,7 @@ impl SymbolMap {
             .and_then(|&id| self.symbols.get(id))
     }
 
-    pub fn records(&self) -> &[SymbolId] {
-        &self.records
+    pub fn global_symbols(&self) -> &[SymbolId] {
+        &self.global_symbols
     }
 }

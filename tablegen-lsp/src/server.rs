@@ -158,8 +158,8 @@ impl TableGenLanguageServer {
     ) -> impl Future<Output = Result<Option<DocumentSymbolResponse>, ResponseError>> {
         let uri = params.text_document.uri;
         let symbols = self.with_document(uri, |_, doc| {
-            let records = doc.symbol_map().records();
-            let lsp_symbols = records
+            let symbols = doc.symbol_map().global_symbols();
+            let lsp_symbols = symbols
                 .into_iter()
                 .filter_map(|symbol_id| doc.symbol_map().symbol(*symbol_id))
                 .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
