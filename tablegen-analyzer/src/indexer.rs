@@ -156,6 +156,10 @@ impl DocumentIndexer {
         None
     }
 
+    pub fn scope_symbol_id(&self) -> SymbolId {
+        self.scope_symbols.last().unwrap().clone()
+    }
+
     pub fn scope_symbol_mut(&mut self) -> &mut Record {
         let symbol_id = self.scope_symbols.last().unwrap();
         self.symbols
