@@ -72,7 +72,7 @@ impl DocumentIndexer {
             self.symbols.add_reference(symbol_id, reference_loc);
             Some(symbol_id)
         } else {
-            self.error(range, eco_format!("variable not found: {}", name));
+            self.error(range, eco_format!("symbol not found: {}", name));
             None
         }
     }
