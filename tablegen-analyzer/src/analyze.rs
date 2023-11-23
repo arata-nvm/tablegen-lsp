@@ -385,18 +385,107 @@ fn infer_type(value: ast::Value, i: &mut DocumentIndexer) -> SymbolType {
         .inner_values()
         .nth(0)
         .and_then(|inner_value| inner_value.simple_value());
-    if let Some(ast::SimpleValue::Identifier(identifier)) = simple_value {
-        let symbol_id = with_id(Some(identifier), |name, range| {
-            i.add_symbol_reference(name, range)
-        });
-        if let Some(symbol) = symbol_id.and_then(|symbol_id| i.symbol(symbol_id)) {
-            if let Some(typ) = symbol.as_variable().map(|variable| variable.r#type()) {
-                return typ.clone();
-            }
-        };
-    }
+    let Some(simple_value) = simple_value else { return SymbolType::unknown(); };
 
-    SymbolType::unknown()
+    match simple_value {
+        ast::SimpleValue::Integer(_) => SymbolType::Int,
+        ast::SimpleValue::String(_) => SymbolType::String,
+        ast::SimpleValue::Code(_) => SymbolType::Code,
+        ast::SimpleValue::Boolean(_) => SymbolType::Bit,
+        ast::SimpleValue::Uninitialized(_) => SymbolType::unknown(),
+        ast::SimpleValue::Bits(bits) => {
+            let len = bits
+                .value_list()
+                .map(|list| list.values().count() as i64)
+                .unwrap_or_default();
+            SymbolType::Bits(len)
+        }
+        ast::SimpleValue::List(list) => {
+            let elm_typ = list
+                .value_list()
+                .and_then(|list| list.values().next())
+                .map(|value| infer_type(value, i))
+                .unwrap_or(SymbolType::unknown());
+            SymbolType::List(Box::new(elm_typ))
+        }
+        ast::SimpleValue::Dag(_) => SymbolType::Dag,
+        ast::SimpleValue::Identifier(identifier) => with_id(Some(identifier), |name, range| {
+            let symbol_id = i.find_symbol_scope(&name)?;
+            let symbol = i.symbol(*symbol_id)?;
+            Some(symbol.as_variable()?.r#type().clone())
+        })
+        .unwrap_or(SymbolType::unknown()),
+        ast::SimpleValue::ClassRef(class_ref) => with_id(class_ref.name(), |name, range| {
+            i.find_symbol_scope(&name)
+                .map(|symbol_id| SymbolType::Class(*symbol_id, name))
+        })
+        .unwrap_or(SymbolType::unknown()),
+        ast::SimpleValue::BangOperator(bang_op) => {
+            infer_type_bang_op(bang_op, i).unwrap_or(SymbolType::unknown())
+        }
+        ast::SimpleValue::CondOperator(cond_op) => cond_op
+            .clauses()
+            .next()
+            .and_then(|clause| clause.value())
+            .map(|value| infer_type(value, i))
+            .unwrap_or(SymbolType::unknown()),
+    }
+}
+
+fn infer_type_bang_op(bang_op: ast::BangOperator, i: &mut DocumentIndexer) -> Option<SymbolType> {
+    let kind: BangOperator = bang_op.kind()?.try_into().ok()?;
+    use BangOperator::*;
+    let typ = match kind {
+        XAdd => SymbolType::Int,
+        XAnd => SymbolType::Bit,
+        XCast => analyze_type(bang_op.r#type()?, i)?,
+        XConcat => SymbolType::Dag,
+        XDag => SymbolType::Dag,
+        XDiv => SymbolType::Int,
+        XEmpty => SymbolType::Bit,
+        XEq => SymbolType::Bit,
+        XExists => SymbolType::Bit,
+        XFilter => infer_type(bang_op.values().nth(1)?, i),
+        XFind => SymbolType::Int,
+        XFoldl => infer_type(bang_op.values().nth(0)?, i),
+        XForEach => infer_type(bang_op.values().nth(1)?, i),
+        XGe => SymbolType::Bit,
+        XGetDagArg => analyze_type(bang_op.r#type()?, i)?,
+        XGetDagName => SymbolType::String,
+        XGetDagOp => analyze_type(bang_op.r#type()?, i)?,
+        XGt => SymbolType::Bit,
+        XHead => infer_type(bang_op.values().nth(0)?, i).element_typ()?,
+        XIf => infer_type(bang_op.values().nth(1)?, i),
+        XInterleave => SymbolType::String, // TODO
+        XIsA => SymbolType::Bit,
+        XLe => SymbolType::Bit,
+        XListConcat => infer_type(bang_op.values().nth(0)?, i),
+        XListRemove => infer_type(bang_op.values().nth(0)?, i),
+        XListSplat => SymbolType::List(Box::new(infer_type(bang_op.values().nth(0)?, i))),
+        XLog2 => SymbolType::Int,
+        XLt => SymbolType::Bit,
+        XMul => SymbolType::Int,
+        XNe => SymbolType::Bit,
+        XNot => SymbolType::Bit,
+        XOr => SymbolType::Bit,
+        XRange => SymbolType::List(Box::new(SymbolType::Int)),
+        XSetDagArg => SymbolType::Dag,
+        XSetDagName => SymbolType::Dag,
+        XSetDagOp => SymbolType::Dag,
+        XShl => SymbolType::Int,
+        XSize => SymbolType::String, // TODO
+        XSra => SymbolType::Int,
+        XSrl => SymbolType::Int,
+        XStrConcat => SymbolType::String,
+        XSub => SymbolType::Int,
+        XSubst => SymbolType::String,
+        XSubstr => SymbolType::String,
+        XTail => infer_type(bang_op.values().nth(0)?, i).element_typ()?,
+        XToLower => SymbolType::String,
+        XToUpper => SymbolType::String,
+        XXor => SymbolType::Bit,
+    };
+    Some(typ)
 }
 
 fn with<T>(t: Option<T>, f: impl FnOnce(T)) {
