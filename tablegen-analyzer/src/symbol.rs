@@ -48,31 +48,31 @@ impl Symbol {
         }
     }
 
-    pub fn as_record(&self) -> &Record {
+    pub fn as_record(&self) -> Option<&Record> {
         match self {
-            Self::Record(record) => record,
-            _ => panic!(),
+            Self::Record(record) => Some(record),
+            _ => None,
         }
     }
 
-    pub fn as_record_mut(&mut self) -> &mut Record {
+    pub fn as_record_mut(&mut self) -> Option<&mut Record> {
         match self {
-            Self::Record(record) => record,
-            _ => panic!(),
+            Self::Record(record) => Some(record),
+            _ => None,
         }
     }
 
-    pub fn as_field(&self) -> &RecordField {
+    pub fn as_field(&self) -> Option<&RecordField> {
         match self {
-            Self::RecordField(field) => field,
-            _ => panic!(),
+            Self::RecordField(field) => Some(field),
+            _ => None,
         }
     }
 
-    pub fn as_field_mut(&mut self) -> &mut RecordField {
+    pub fn as_field_mut(&mut self) -> Option<&mut RecordField> {
         match self {
-            Self::RecordField(field) => field,
-            _ => panic!(),
+            Self::RecordField(field) => Some(field),
+            _ => None,
         }
     }
 }

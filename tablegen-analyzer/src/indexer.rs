@@ -5,7 +5,9 @@ use tablegen_parser::{error::SyntaxError, parser::TextRange};
 
 use crate::{
     document::DocumentId,
-    symbol::{Location, Record, RecordFieldKind, RecordKind, SymbolId, SymbolType, VariableKind},
+    symbol::{
+        Location, Record, RecordFieldKind, RecordKind, Symbol, SymbolId, SymbolType, VariableKind,
+    },
     symbol_map::SymbolMap,
 };
 
@@ -131,7 +133,10 @@ impl DocumentIndexer {
 
     pub fn scope_symbol_mut(&mut self) -> &mut Record {
         let symbol_id = self.scope_symbols.last().unwrap();
-        self.symbols.symbol_mut(*symbol_id).unwrap().as_record_mut()
+        self.symbols
+            .symbol_mut(*symbol_id)
+            .and_then(|symbol| symbol.as_record_mut())
+            .unwrap()
     }
 
     pub fn access_field(
@@ -150,9 +155,13 @@ impl DocumentIndexer {
     }
 
     pub fn find_field_of(&self, symbol_id: SymbolId, name: &EcoString) -> Option<SymbolId> {
-        let field = self.symbols.symbol(symbol_id)?.as_field();
-        let SymbolType::Class(typ_id, _) = field.r#type() else { return None; };
-        let typ = self.symbols.symbol(*typ_id)?.as_record();
+        let typ = match self.symbols.symbol(symbol_id)? {
+            Symbol::RecordField(record_field) => record_field.r#type(),
+            Symbol::Variable(variable) => variable.r#type(),
+            _ => return None,
+        };
+        let SymbolType::Class(typ_id, _) = typ else { return None; };
+        let typ = self.symbols.symbol(*typ_id)?.as_record()?;
         let field_id = typ.find_field(name)?;
         Some(*field_id)
     }

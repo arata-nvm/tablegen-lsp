@@ -34,16 +34,23 @@ pub mod analyzer2lsp {
 
     #[allow(deprecated)]
     pub fn document_symbol(doc: &Document, symbol: &Symbol) -> lsp_types::DocumentSymbol {
-        let template_args = document_symbol_field(doc, symbol.as_record().template_args());
-        let fields = document_symbol_field(doc, symbol.as_record().fields());
-        let children: Vec<lsp_types::DocumentSymbol> = template_args.chain(fields).collect();
-
+        let (children, kind) = match symbol {
+            Symbol::Record(record) => {
+                let template_args = document_symbols(doc, record.template_args());
+                let fields = document_symbols(doc, record.fields());
+                let children: Vec<lsp_types::DocumentSymbol> =
+                    template_args.chain(fields).collect();
+                (children, lsp_types::SymbolKind::CLASS)
+            }
+            Symbol::RecordField(_) => (vec![], lsp_types::SymbolKind::PROPERTY),
+            Symbol::Variable(_) => (vec![], lsp_types::SymbolKind::CONSTANT),
+        };
         let define_loc = range(doc, symbol.define_loc().1.clone());
 
         lsp_types::DocumentSymbol {
             name: symbol.name().to_string(),
             detail: None,
-            kind: lsp_types::SymbolKind::CLASS, // TODO
+            kind,
             tags: None,
             deprecated: None,
             range: define_loc,
@@ -56,24 +63,14 @@ pub mod analyzer2lsp {
         }
     }
 
-    #[allow(deprecated)]
-    fn document_symbol_field<'a>(
+    fn document_symbols<'a>(
         doc: &'a Document,
         symbols: Vec<&'a SymbolId>,
     ) -> impl Iterator<Item = lsp_types::DocumentSymbol> + 'a {
         symbols
             .into_iter()
             .filter_map(|id| doc.symbol_map().symbol(*id))
-            .map(|child| lsp_types::DocumentSymbol {
-                name: child.name().to_string(),
-                detail: None,
-                kind: lsp_types::SymbolKind::PROPERTY,
-                tags: None,
-                deprecated: None,
-                range: range(doc, child.define_loc().1.clone()),
-                selection_range: range(doc, child.define_loc().1.clone()),
-                children: None,
-            })
+            .map(|symbol| document_symbol(doc, symbol))
     }
 
     pub fn hover(hover: String) -> lsp_types::Hover {
