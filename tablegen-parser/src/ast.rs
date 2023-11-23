@@ -236,7 +236,7 @@ impl Defset {
 node!(Defvar);
 
 impl Defvar {
-    pub fn name(&self) -> Option<Value> {
+    pub fn name(&self) -> Option<Identifier> {
         self.0.cast_first_match()
     }
 
