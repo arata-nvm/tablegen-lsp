@@ -226,7 +226,7 @@ mod tests {
         // defset foos
         assert_eq!(
             doc.get_hover(pos(&doc, 6, 17)),
-            Some("**defset** `foos`\n***\n".into())
+            Some("**defset** `foos`\n***\nType: `list<Foo>`\n***\n".into())
         );
 
         // def foo1
