@@ -156,8 +156,8 @@ impl Let {
         self.0.cast_first_match()
     }
 
-    pub fn body(&self) -> impl Iterator<Item = Statement> {
-        self.0.cast_all_matches()
+    pub fn statement_list(&self) -> Option<StatementList> {
+        self.0.cast_first_match()
     }
 }
 
