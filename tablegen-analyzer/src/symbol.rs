@@ -276,6 +276,12 @@ pub enum SymbolType {
     Unresolved(EcoString),
 }
 
+impl SymbolType {
+    pub fn unknown() -> SymbolType {
+        SymbolType::Unresolved(EcoString::from("unknown"))
+    }
+}
+
 impl fmt::Display for SymbolType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

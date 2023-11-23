@@ -297,11 +297,21 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
         let Some(ast::SimpleValue::Identifier(arg_var)) =  arg_var.simple_value() else { return; };
 
         let arg_list_typ = infer_type(arg_list.clone(), i);
-        let SymbolType::List(elm_typ) = arg_list_typ else { return; };
+        let elm_typ = match arg_list_typ {
+            SymbolType::List(elm_typ) => *elm_typ,
+            SymbolType::Unresolved(_) => SymbolType::unknown(),
+            _ => {
+                i.error(
+                    arg_list.syntax().text_range(),
+                    "!filter must have a list argument",
+                );
+                SymbolType::unknown()
+            }
+        };
 
         with_id(Some(arg_var), |name, range: TextRange| {
             i.push_temporary();
-            i.add_temporary_variable(name, range, *elm_typ);
+            i.add_temporary_variable(name, range, elm_typ);
             analyze_value(arg_predicate, i);
             i.pop_temporary();
             Some(())
@@ -346,7 +356,7 @@ fn infer_type(value: ast::Value, i: &mut DocumentIndexer) -> SymbolType {
         };
     }
 
-    SymbolType::Unresolved("unknown".into())
+    SymbolType::unknown()
 }
 
 fn with<T>(t: Option<T>, f: impl FnOnce(T)) {
