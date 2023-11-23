@@ -303,7 +303,7 @@ fn analyze_bang_operator(bang_op: ast::BangOperator, i: &mut DocumentIndexer) {
             i.push_temporary();
             i.add_temporary_variable(name, range, *elm_typ);
             analyze_value(arg_predicate, i);
-            i.pop();
+            i.pop_temporary();
             Some(())
         });
     }

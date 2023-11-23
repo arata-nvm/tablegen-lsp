@@ -40,13 +40,17 @@ impl DocumentIndexer {
         self.scope_symbols.push(symbol_id);
     }
 
+    pub fn pop(&mut self) {
+        self.scopes.pop();
+        self.scope_symbols.pop();
+    }
+
     pub fn push_temporary(&mut self) {
         self.scopes.push(HashMap::new());
     }
 
-    pub fn pop(&mut self) {
+    pub fn pop_temporary(&mut self) {
         self.scopes.pop();
-        self.scope_symbols.pop();
     }
 
     pub fn error(&mut self, range: TextRange, message: impl Into<EcoString>) {
