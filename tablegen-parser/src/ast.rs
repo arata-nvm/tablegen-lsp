@@ -10,7 +10,7 @@ pub use rowan::ast::AstNode;
 
 macro_rules! node {
     ($name:ident) => {
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         pub struct $name(SyntaxNode);
 
         impl AstNode for $name {
