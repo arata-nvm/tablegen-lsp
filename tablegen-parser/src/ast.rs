@@ -36,7 +36,7 @@ macro_rules! node {
 
 macro_rules! node_enum {
   ($name:ident, [$($item:ident),*]) => {
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub enum $name {
         $($item($item),)*
     }
