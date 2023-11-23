@@ -409,13 +409,13 @@ fn infer_type(value: ast::Value, i: &mut DocumentIndexer) -> SymbolType {
             SymbolType::List(Box::new(elm_typ))
         }
         ast::SimpleValue::Dag(_) => SymbolType::Dag,
-        ast::SimpleValue::Identifier(identifier) => with_id(Some(identifier), |name, range| {
+        ast::SimpleValue::Identifier(identifier) => with_id(Some(identifier), |name, _| {
             let symbol_id = i.find_symbol_scope(&name)?;
             let symbol = i.symbol(*symbol_id)?;
             Some(symbol.as_variable()?.r#type().clone())
         })
         .unwrap_or(SymbolType::unknown()),
-        ast::SimpleValue::ClassRef(class_ref) => with_id(class_ref.name(), |name, range| {
+        ast::SimpleValue::ClassRef(class_ref) => with_id(class_ref.name(), |name, _| {
             i.find_symbol_scope(&name)
                 .map(|symbol_id| SymbolType::Class(*symbol_id, name))
         })
