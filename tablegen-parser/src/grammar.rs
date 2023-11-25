@@ -178,6 +178,7 @@ mod tests {
     #[test]
     fn value() {
         insta::assert_debug_snapshot!(parse("class Foo<string A = \"hoge\" # \"fuga\">;"));
+        insta::assert_debug_snapshot!(parse("defvar a = A#B;"));
     }
 
     #[test]

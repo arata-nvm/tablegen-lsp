@@ -47,7 +47,7 @@ impl<'a> Lexer<'a> {
             Some('[') if self.s.eat_if('{') => self.code_fragment(),
 
             Some('!') => self.bangoperator(),
-            Some('#') => self.preprocessor(start),
+            Some('#') => self.preprocessor(),
 
             Some('[') => T!['['],
             Some(']') => T![']'],
@@ -262,22 +262,22 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn preprocessor(&mut self, start: usize) -> TokenKind {
-        match self.s.peek() {
-            Some(c) if c.is_alphabetic() => {}
-            _ => return T![#],
-        }
+    fn preprocessor(&mut self) -> TokenKind {
+        let ident_start = self.s.cursor();
 
         self.s.eat_while(char::is_alphabetic);
-        let ident = self.s.from(start);
+        let ident = self.s.from(ident_start);
 
         match ident {
-            "#ifdef" => T![#ifdef],
-            "#ifndef" => T![#ifndef],
-            "#else" => T![#else],
-            "#endif" => T![#endif],
-            "#define" => T![#define],
-            _ => self.error("Unknown preprocessor directive"),
+            "ifdef" => T![#ifdef],
+            "ifndef" => T![#ifndef],
+            "else" => T![#else],
+            "endif" => T![#endif],
+            "define" => T![#define],
+            _ => {
+                self.s.jump(ident_start);
+                T![#]
+            }
         }
     }
 }
