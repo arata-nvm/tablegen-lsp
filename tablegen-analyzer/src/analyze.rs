@@ -320,6 +320,11 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
             SymbolType::List(Box::new(first_value_typ.clone()))
         }
         ast::SimpleValue::Dag(dag) => {
+            with(dag.operator(), |operator| {
+                with(operator.value(), |value| {
+                    analyze_value(value, i);
+                });
+            });
             with(dag.arg_list(), |list| {
                 for arg in list.args() {
                     with(arg.value(), |value| {

@@ -672,6 +672,10 @@ impl List {
 node!(Dag);
 
 impl Dag {
+    pub fn operator(&self) -> Option<DagArg> {
+        self.0.cast_first_match()
+    }
+
     pub fn arg_list(&self) -> Option<DagArgList> {
         self.0.cast_first_match()
     }
