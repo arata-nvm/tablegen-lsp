@@ -400,11 +400,7 @@ pub(super) fn body_item(p: &mut Parser) -> bool {
 pub(super) fn field_def(p: &mut Parser) {
     p.start_node(SyntaxKind::FieldDef);
     p.eat_if(T![field]);
-    if p.at(T![code]) {
-        r#type::code_type(p);
-    } else {
-        r#type::r#type(p);
-    }
+    r#type::r#type(p);
     value::identifier(p).or_error(p, "expected identifier in declaration");
     if p.eat_if(T![=]) {
         value::value(p);

@@ -20,6 +20,7 @@ pub(super) fn r#type(p: &mut Parser) {
         T![dag] => dag_type(p),
         T![bits] => bits_type(p),
         T![list] => list_type(p),
+        T![code] => code_type(p),
         TokenKind::Id => class_id(p),
         _ => p.error_and_recover("unknown token when expecting a type"),
     };
