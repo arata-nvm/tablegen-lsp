@@ -342,7 +342,7 @@ pub(super) fn value_list(p: &mut Parser, bra: TokenKind, ket: TokenKind) -> Comp
 pub(super) fn dag(p: &mut Parser) -> CompletedMarker {
     p.start_node(SyntaxKind::Dag);
     p.expect(T!['(']);
-    if !p.at(TokenKind::Id) {
+    if !p.at_set(&[TokenKind::Id, T![!cast], T![?], T![!getdagop]]) {
         p.error("expected identifier in dag init");
         p.finish_node();
         return CompletedMarker::Fail;
