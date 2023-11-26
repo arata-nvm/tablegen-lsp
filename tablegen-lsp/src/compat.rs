@@ -87,6 +87,7 @@ pub mod analyzer2lsp {
             CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
             CompletionItemKind::Type => lsp_types::CompletionItemKind::CLASS,
             CompletionItemKind::Class => lsp_types::CompletionItemKind::CLASS,
+            CompletionItemKind::Def => lsp_types::CompletionItemKind::VARIABLE,
         });
         lsp_item
     }

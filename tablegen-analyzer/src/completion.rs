@@ -13,6 +13,7 @@ pub enum CompletionItemKind {
     Keyword,
     Type,
     Class,
+    Def,
 }
 
 impl CompletionItem {
@@ -84,6 +85,11 @@ fn complete_symbol(symbol_map: &SymbolMap, items: &mut Vec<CompletionItem>) {
                     record.name().as_str(),
                     "class",
                     CompletionItemKind::Class,
+                )),
+                RecordKind::Def => items.push(CompletionItem::new(
+                    record.name().as_str(),
+                    "def",
+                    CompletionItemKind::Def,
                 )),
                 _ => {}
             },
