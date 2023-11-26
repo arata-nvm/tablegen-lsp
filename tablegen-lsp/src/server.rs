@@ -8,9 +8,9 @@ use lsp_types::{
     notification, request, CompletionOptions, CompletionParams, CompletionResponse,
     DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
     DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
-    HoverProviderCapability, InitializeParams, InitializeResult, Location, OneOf,
-    PublishDiagnosticsParams, ReferenceParams, ServerCapabilities, TextDocumentSyncCapability,
-    TextDocumentSyncKind, Url,
+    HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams,
+    Location, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 
 use tablegen_analyzer::document::Document;
@@ -44,7 +44,8 @@ impl TableGenLanguageServer {
             .request::<request::References, _>(Self::references)
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
             .request::<request::HoverRequest, _>(Self::hover)
-            .request::<request::Completion, _>(Self::completion);
+            .request::<request::Completion, _>(Self::completion)
+            .request::<request::InlayHintRequest, _>(Self::inlay_hint);
         router
     }
 
@@ -104,6 +105,7 @@ impl TableGenLanguageServer {
                 document_symbol_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 completion_provider: Some(CompletionOptions::default()),
+                inlay_hint_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
         }))
@@ -208,5 +210,23 @@ impl TableGenLanguageServer {
             Some(CompletionResponse::Array(lsp_completion))
         });
         ready(Ok(completion))
+    }
+
+    fn inlay_hint(
+        &mut self,
+        params: InlayHintParams,
+    ) -> impl Future<Output = Result<Option<Vec<InlayHint>>, ResponseError>> {
+        let uri = params.text_document.uri;
+        let inlay_hint = self.with_document(uri, |_, doc| {
+            let lsp_range = params.range;
+            let range = lsp2analyzer::range(doc, lsp_range);
+            let inlay_hint = doc.get_inlay_hint(range)?;
+            let lsp_inlay_hint = inlay_hint
+                .into_iter()
+                .map(|hint| analyzer2lsp::inlay_hint(doc, hint))
+                .collect();
+            Some(lsp_inlay_hint)
+        });
+        ready(Ok(inlay_hint))
     }
 }

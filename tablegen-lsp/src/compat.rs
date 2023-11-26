@@ -2,6 +2,7 @@ pub mod analyzer2lsp {
     use tablegen_analyzer::{
         completion::{CompletionItem, CompletionItemKind},
         document::Document,
+        inlay_hint::InlayHint,
         symbol::{Location, Symbol, SymbolId},
     };
     use tablegen_parser::{error, parser};
@@ -95,6 +96,19 @@ pub mod analyzer2lsp {
         });
         lsp_item
     }
+
+    pub fn inlay_hint(doc: &Document, hint: InlayHint) -> lsp_types::InlayHint {
+        lsp_types::InlayHint {
+            position: position(doc, hint.position),
+            label: lsp_types::InlayHintLabel::String(hint.label),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        }
+    }
 }
 
 pub mod lsp2analyzer {
@@ -105,5 +119,11 @@ pub mod lsp2analyzer {
         let pos_size = doc.line_to_pos(position.line as usize).unwrap_or_default();
         let char_size: parser::TextSize = position.character.into();
         pos_size + char_size
+    }
+
+    pub fn range(doc: &Document, range: lsp_types::Range) -> parser::TextRange {
+        let start = position(doc, range.start);
+        let end = position(doc, range.end);
+        parser::TextRange::new(start, end)
     }
 }

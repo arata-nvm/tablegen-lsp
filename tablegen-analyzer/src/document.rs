@@ -1,9 +1,11 @@
 use ropey::Rope;
 
+use tablegen_parser::parser::TextRange;
 use tablegen_parser::{error::SyntaxError, grammar, language::SyntaxNode, parser::TextSize};
 
 use crate::completion::CompletionItem;
-use crate::{analyze, completion, hover, symbol::Location, symbol_map::SymbolMap};
+use crate::inlay_hint::InlayHint;
+use crate::{analyze, completion, hover, inlay_hint, symbol::Location, symbol_map::SymbolMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentId(usize);
@@ -91,5 +93,9 @@ impl Document {
 
     pub fn get_completion(&self, pos: TextSize) -> Option<Vec<CompletionItem>> {
         completion::completion(self, pos)
+    }
+
+    pub fn get_inlay_hint(&self, range: TextRange) -> Option<Vec<InlayHint>> {
+        inlay_hint::inlay_hint(self, range)
     }
 }

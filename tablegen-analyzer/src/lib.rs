@@ -3,6 +3,7 @@ pub mod completion;
 pub mod document;
 pub mod hover;
 pub mod indexer;
+pub mod inlay_hint;
 pub mod symbol;
 pub mod symbol_map;
 
