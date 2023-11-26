@@ -15,10 +15,11 @@ pub enum CompletionItemKind {
     Class,
     Def,
     Defset,
+    Defvar,
 }
 
 impl CompletionItem {
-    fn new<S: Into<String>>(label: S, detail: S, kind: CompletionItemKind) -> Self {
+    fn new(label: impl Into<String>, detail: impl Into<String>, kind: CompletionItemKind) -> Self {
         Self {
             label: label.into(),
             detail: detail.into(),
@@ -100,7 +101,12 @@ fn complete_symbol(symbol_map: &SymbolMap, items: &mut Vec<CompletionItem>) {
                     "defset",
                     CompletionItemKind::Defset,
                 )),
-                _ => {}
+                VariableKind::Defvar => items.push(CompletionItem::new(
+                    variable.name().as_str(),
+                    "defvar",
+                    CompletionItemKind::Defvar,
+                )),
+                VariableKind::Temporary => {}
             },
         }
     }
