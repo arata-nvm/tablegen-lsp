@@ -5,7 +5,7 @@ use tablegen_parser::parser::TextSize;
 use tablegen_parser::syntax_kind::SyntaxKind;
 
 use crate::document::Document;
-use crate::symbol::{RecordKind, Symbol, VariableKind};
+use crate::symbol::{RecordKind, Symbol, SymbolId, VariableKind};
 use crate::symbol_map::SymbolMap;
 
 #[derive(Eq, PartialEq, Hash)]
@@ -15,7 +15,7 @@ pub struct CompletionItem {
     pub kind: CompletionItemKind,
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CompletionItemKind {
     Keyword,
     Type,
@@ -24,6 +24,7 @@ pub enum CompletionItemKind {
     Defset,
     Defvar,
     Field,
+    TemplateArg,
 }
 
 impl CompletionItem {
@@ -155,18 +156,36 @@ fn complete_scoped_symbol(
 }
 
 fn complete_class_and_def(doc: &Document, symbol: &Symbol, items: &mut Vec<CompletionItem>) {
-    let field_ids = doc.symbol_map().get_all_fields(symbol);
-    let field_items = field_ids
-        .into_iter()
-        .filter_map(|field_id| doc.symbol_map().symbol(field_id))
-        .filter_map(|symbol| symbol.as_field())
-        .map(|field| {
-            CompletionItem::new(
-                field.name(),
-                field.r#type().to_string(),
-                CompletionItemKind::Field,
-            )
-        });
-    let uniq_field_items: HashSet<CompletionItem> = HashSet::from_iter(field_items);
-    items.extend(uniq_field_items);
+    fn convert_symbol_ids_to_items(
+        doc: &Document,
+        symbol_ids: Vec<SymbolId>,
+        kind: CompletionItemKind,
+        items: &mut Vec<CompletionItem>,
+    ) {
+        let new_items = symbol_ids
+            .into_iter()
+            .filter_map(|symbol_id| doc.symbol_map().symbol(symbol_id))
+            .filter_map(|symbol| symbol.as_field())
+            .map(|field| {
+                CompletionItem::new(field.name(), field.r#type().to_string(), kind.clone())
+            });
+        let uniq_new_items: HashSet<CompletionItem> = HashSet::from_iter(new_items);
+        items.extend(uniq_new_items);
+    }
+
+    if let Some(record) = symbol.as_record() {
+        convert_symbol_ids_to_items(
+            doc,
+            record.template_args(),
+            CompletionItemKind::TemplateArg,
+            items,
+        );
+    }
+
+    convert_symbol_ids_to_items(
+        doc,
+        doc.symbol_map().get_all_fields(symbol),
+        CompletionItemKind::Field,
+        items,
+    );
 }

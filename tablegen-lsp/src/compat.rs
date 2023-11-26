@@ -91,6 +91,7 @@ pub mod analyzer2lsp {
             CompletionItemKind::Defset => lsp_types::CompletionItemKind::VARIABLE,
             CompletionItemKind::Defvar => lsp_types::CompletionItemKind::VARIABLE,
             CompletionItemKind::Field => lsp_types::CompletionItemKind::FIELD,
+            CompletionItemKind::TemplateArg => lsp_types::CompletionItemKind::PROPERTY,
         });
         lsp_item
     }
