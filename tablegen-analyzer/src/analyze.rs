@@ -1,4 +1,5 @@
 use ecow::{eco_format, EcoString};
+
 use tablegen_parser::{
     ast::{self, AstNode},
     bang_operator::BangOperator,
@@ -124,8 +125,12 @@ fn analyze_field_let(field_let: ast::FieldLet, i: &mut DocumentIndexer) {
 }
 
 fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
-    let Some(name) = def.name() else { return; };
-    let Some((name, range)) =  analyze_name_value(name) else { return; };
+    let Some(name) = def.name() else {
+        return;
+    };
+    let Some((name, range)) = analyze_name_value(name) else {
+        return;
+    };
     let symbol_id = i.add_record(name, range, RecordKind::Def);
 
     i.push(symbol_id);
@@ -146,7 +151,9 @@ fn analyze_name_value(value: ast::Value) -> Option<(EcoString, TextRange)> {
 fn analyze_defset(defset: ast::Defset, i: &mut DocumentIndexer) {
     with_id(defset.name(), |name, range| {
         with(defset.r#type(), |typ| {
-            let Some(typ) = analyze_type(typ, i) else { return; };
+            let Some(typ) = analyze_type(typ, i) else {
+                return;
+            };
             i.add_variable(name, range, VariableKind::Defset, typ);
         });
         with(defset.statement_list(), |list| {
@@ -237,7 +244,9 @@ fn analyze_value(value: ast::Value, i: &mut DocumentIndexer) -> SymbolType {
 }
 
 fn analyze_inner_value(inner_value: ast::InnerValue, i: &mut DocumentIndexer) -> SymbolType {
-    let Some(simple_value) = inner_value.simple_value() else { return SymbolType::unknown(); };
+    let Some(simple_value) = inner_value.simple_value() else {
+        return SymbolType::unknown();
+    };
 
     let mut lhs_typ: SymbolType = analyze_simple_value(simple_value, i);
     for suffix in inner_value.suffixes() {
@@ -306,14 +315,18 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
         ast::SimpleValue::Boolean(_) => SymbolType::Bit,
         ast::SimpleValue::Uninitialized(_) => SymbolType::unknown(),
         ast::SimpleValue::Bits(bits) => {
-            let Some(list) = bits.value_list() else { return SymbolType::Bits(0) };
+            let Some(list) = bits.value_list() else {
+                return SymbolType::Bits(0);
+            };
             for value in list.values() {
                 analyze_value(value, i);
             }
             SymbolType::Bits(list.values().count() as i64)
         }
         ast::SimpleValue::List(list) => {
-            let Some(list) = list.value_list() else { return SymbolType::List(Box::new(SymbolType::unknown())) };
+            let Some(list) = list.value_list() else {
+                return SymbolType::List(Box::new(SymbolType::unknown()));
+            };
             let value_typs: Vec<SymbolType> =
                 list.values().map(|value| analyze_value(value, i)).collect();
             let first_value_typ = value_typs.get(0).cloned().unwrap_or(SymbolType::unknown());
@@ -409,7 +422,9 @@ fn analyze_bang_operator(
         i: &mut DocumentIndexer,
     ) -> Option<SymbolType> {
         let arg_var = arg_var.inner_values().nth(0)?;
-        let ast::SimpleValue::Identifier(arg_var) =  arg_var.simple_value()? else { return None; };
+        let ast::SimpleValue::Identifier(arg_var) = arg_var.simple_value()? else {
+            return None;
+        };
 
         let arg_list_range = arg_list.syntax().text_range();
         let arg_list_typ = analyze_value(arg_list, i);
@@ -440,7 +455,9 @@ fn analyze_bang_operator(
         i: &mut DocumentIndexer,
     ) -> Option<SymbolType> {
         let arg_var = arg_var.inner_values().nth(0)?;
-        let ast::SimpleValue::Identifier(arg_var) =  arg_var.simple_value()? else { return None; };
+        let ast::SimpleValue::Identifier(arg_var) = arg_var.simple_value()? else {
+            return None;
+        };
 
         let arg_sequence_range = arg_sequence.syntax().text_range();
         let arg_sequence_typ = analyze_value(arg_sequence, i);
@@ -475,10 +492,14 @@ fn analyze_bang_operator(
         i: &mut DocumentIndexer,
     ) -> Option<SymbolType> {
         let arg_acc = arg_acc.inner_values().nth(0)?;
-        let ast::SimpleValue::Identifier(arg_acc) =  arg_acc.simple_value()? else { return None; };
+        let ast::SimpleValue::Identifier(arg_acc) = arg_acc.simple_value()? else {
+            return None;
+        };
 
         let arg_var = arg_var.inner_values().nth(0)?;
-        let ast::SimpleValue::Identifier(arg_var) =  arg_var.simple_value()? else { return None; };
+        let ast::SimpleValue::Identifier(arg_var) = arg_var.simple_value()? else {
+            return None;
+        };
 
         let arg_init_typ = analyze_value(arg_init, i);
         let arg_list_range = arg_list.syntax().text_range();
@@ -524,7 +545,7 @@ fn analyze_bang_operator(
                 values.next()?,
                 values.next()?,
                 i,
-            )
+            );
         }
         XForEach => return check_xforeach(values.next()?, values.next()?, values.next()?, i),
         _ => {}
@@ -592,8 +613,12 @@ fn with_id<T>(
     id: Option<ast::Identifier>,
     f: impl FnOnce(EcoString, TextRange) -> Option<T>,
 ) -> Option<T> {
-    let Some(id) = id else { return None; };
-    let Some(name) = id.value() else { return None; };
+    let Some(id) = id else {
+        return None;
+    };
+    let Some(name) = id.value() else {
+        return None;
+    };
     let range = id.syntax().text_range();
     f(name, range)
 }

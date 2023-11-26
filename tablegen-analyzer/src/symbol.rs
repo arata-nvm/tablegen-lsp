@@ -1,8 +1,11 @@
-use crate::document::DocumentId;
+use std::{collections::HashMap, fmt};
+
 use ecow::EcoString;
 use id_arena::Id;
-use std::{collections::HashMap, fmt};
+
 use tablegen_parser::parser::TextRange;
+
+use crate::document::DocumentId;
 
 pub type Location = (DocumentId, TextRange);
 
