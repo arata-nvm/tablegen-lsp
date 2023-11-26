@@ -81,7 +81,7 @@ impl TableGenLanguageServer {
     fn initialize(
         &mut self,
         _params: InitializeParams,
-    ) -> impl Future<Output = Result<InitializeResult, ResponseError>> {
+    ) -> impl Future<Output=Result<InitializeResult, ResponseError>> {
         ready(Ok(InitializeResult {
             server_info: None,
             capabilities: ServerCapabilities {
@@ -119,7 +119,7 @@ impl TableGenLanguageServer {
     fn goto_definition(
         &mut self,
         params: GotoDefinitionParams,
-    ) -> impl Future<Output = Result<Option<GotoDefinitionResponse>, ResponseError>> {
+    ) -> impl Future<Output=Result<Option<GotoDefinitionResponse>, ResponseError>> {
         let uri = params.text_document_position_params.text_document.uri;
         let definition = self.with_document(uri, |doc_map, doc| {
             let lsp_position = params.text_document_position_params.position;
@@ -134,7 +134,7 @@ impl TableGenLanguageServer {
     fn references(
         &mut self,
         params: ReferenceParams,
-    ) -> impl Future<Output = Result<Option<Vec<Location>>, ResponseError>> {
+    ) -> impl Future<Output=Result<Option<Vec<Location>>, ResponseError>> {
         let uri = params.text_document_position.text_document.uri;
         let references = self.with_document(uri, |doc_map, doc| {
             let lsp_position = params.text_document_position.position;
@@ -152,7 +152,7 @@ impl TableGenLanguageServer {
     fn document_symbol(
         &mut self,
         params: DocumentSymbolParams,
-    ) -> impl Future<Output = Result<Option<DocumentSymbolResponse>, ResponseError>> {
+    ) -> impl Future<Output=Result<Option<DocumentSymbolResponse>, ResponseError>> {
         let uri = params.text_document.uri;
         let symbols = self.with_document(uri, |_, doc| {
             let symbols = doc.symbol_map().global_symbols();
@@ -169,7 +169,7 @@ impl TableGenLanguageServer {
     fn hover(
         &mut self,
         params: HoverParams,
-    ) -> impl Future<Output = Result<Option<Hover>, ResponseError>> {
+    ) -> impl Future<Output=Result<Option<Hover>, ResponseError>> {
         let uri = params.text_document_position_params.text_document.uri;
         let hover = self.with_document(uri, |_, doc| {
             let lsp_position = params.text_document_position_params.position;
