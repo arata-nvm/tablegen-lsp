@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use tablegen_parser::ast::{AstNode, Class, Def};
 use tablegen_parser::parser::TextSize;
 use tablegen_parser::syntax_kind::SyntaxKind;
@@ -6,12 +8,14 @@ use crate::document::Document;
 use crate::symbol::{RecordKind, Symbol, VariableKind};
 use crate::symbol_map::SymbolMap;
 
+#[derive(Eq, PartialEq, Hash)]
 pub struct CompletionItem {
     pub label: String,
     pub detail: String,
     pub kind: CompletionItemKind,
 }
 
+#[derive(Eq, PartialEq, Hash)]
 pub enum CompletionItemKind {
     Keyword,
     Type,
@@ -132,38 +136,14 @@ fn complete_scoped_symbol(
                 let class = Class::cast(cur_node.clone())?;
                 let name_range = class.name()?.syntax().text_range();
                 let symbol = doc.symbol_map().get_symbol_at(name_range.start())?;
-                let field_ids = doc.symbol_map().get_all_fields(symbol);
-                let field_items = field_ids
-                    .into_iter()
-                    .filter_map(|field_id| doc.symbol_map().symbol(field_id))
-                    .filter_map(|symbol| symbol.as_field())
-                    .map(|field| {
-                        CompletionItem::new(
-                            field.name(),
-                            field.r#type().to_string(),
-                            CompletionItemKind::Field,
-                        )
-                    });
-                items.extend(field_items);
+                complete_class_and_def(doc, symbol, items);
                 break;
             }
             SyntaxKind::Def => {
                 let def = Def::cast(cur_node.clone())?;
                 let name_range = def.name()?.syntax().text_range();
                 let symbol = doc.symbol_map().get_symbol_at(name_range.start())?;
-                let field_ids = doc.symbol_map().get_all_fields(symbol);
-                let field_items = field_ids
-                    .into_iter()
-                    .filter_map(|field_id| doc.symbol_map().symbol(field_id))
-                    .filter_map(|symbol| symbol.as_field())
-                    .map(|field| {
-                        CompletionItem::new(
-                            field.name(),
-                            field.r#type().to_string(),
-                            CompletionItemKind::Field,
-                        )
-                    });
-                items.extend(field_items);
+                complete_class_and_def(doc, symbol, items);
                 break;
             }
             _ => {}
@@ -172,4 +152,21 @@ fn complete_scoped_symbol(
     }
 
     None
+}
+
+fn complete_class_and_def(doc: &Document, symbol: &Symbol, items: &mut Vec<CompletionItem>) {
+    let field_ids = doc.symbol_map().get_all_fields(symbol);
+    let field_items = field_ids
+        .into_iter()
+        .filter_map(|field_id| doc.symbol_map().symbol(field_id))
+        .filter_map(|symbol| symbol.as_field())
+        .map(|field| {
+            CompletionItem::new(
+                field.name(),
+                field.r#type().to_string(),
+                CompletionItemKind::Field,
+            )
+        });
+    let uniq_field_items: HashSet<CompletionItem> = HashSet::from_iter(field_items);
+    items.extend(uniq_field_items);
 }
