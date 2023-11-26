@@ -1,5 +1,6 @@
 pub mod analyzer2lsp {
     use tablegen_analyzer::{
+        completion::{CompletionItem, CompletionItemKind},
         document::Document,
         symbol::{Location, Symbol, SymbolId},
     };
@@ -78,6 +79,14 @@ pub mod analyzer2lsp {
             contents: lsp_types::HoverContents::Scalar(lsp_types::MarkedString::String(hover)),
             range: None,
         }
+    }
+
+    pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
+        let mut lsp_item = lsp_types::CompletionItem::new_simple(item.label, item.detail);
+        lsp_item.kind = Some(match item.kind {
+            CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
+        });
+        lsp_item
     }
 }
 

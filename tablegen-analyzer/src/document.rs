@@ -1,7 +1,9 @@
 use ropey::Rope;
+
 use tablegen_parser::{error::SyntaxError, grammar, language::SyntaxNode, parser::TextSize};
 
-use crate::{analyze, hover, symbol::Location, symbol_map::SymbolMap};
+use crate::{analyze, completion, hover, symbol::Location, symbol_map::SymbolMap};
+use crate::completion::CompletionItem;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentId(usize);
@@ -81,5 +83,9 @@ impl Document {
     pub fn get_hover(&self, pos: TextSize) -> Option<String> {
         let symbol = self.symbol_map.get_symbol_at(pos)?;
         hover::hover(symbol, self.root.clone())
+    }
+
+    pub fn get_completion(&self, pos: TextSize) -> Option<Vec<CompletionItem>> {
+        completion::completion(pos)
     }
 }

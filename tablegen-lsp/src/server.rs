@@ -1,16 +1,11 @@
 use std::{
-    future::{ready, Future},
+    future::{Future, ready},
     ops::ControlFlow,
 };
 
-use async_lsp::{router::Router, ClientSocket, LanguageClient, ResponseError};
-use lsp_types::{
-    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
-    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, Location,
-    OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
-};
+use async_lsp::{ClientSocket, LanguageClient, ResponseError, router::Router};
+use lsp_types::{CompletionOptions, CompletionParams, CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, Location, notification, OneOf, PublishDiagnosticsParams, ReferenceParams, request, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url};
+
 use tablegen_analyzer::document::Document;
 
 use crate::{
@@ -41,7 +36,8 @@ impl TableGenLanguageServer {
             .request::<request::GotoDefinition, _>(Self::goto_definition)
             .request::<request::References, _>(Self::references)
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
-            .request::<request::HoverRequest, _>(Self::hover);
+            .request::<request::HoverRequest, _>(Self::hover)
+            .request::<request::Completion, _>(Self::completion);
         router
     }
 
@@ -96,6 +92,7 @@ impl TableGenLanguageServer {
                 references_provider: Some(OneOf::Left(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                completion_provider: Some(CompletionOptions::default()),
                 ..Default::default()
             },
         }))
@@ -182,5 +179,22 @@ impl TableGenLanguageServer {
             Some(lsp_hover)
         });
         ready(Ok(hover))
+    }
+
+    fn completion(
+        &mut self,
+        params: CompletionParams,
+    ) -> impl Future<Output=Result<Option<CompletionResponse>, ResponseError>> {
+        let uri = params.text_document_position.text_document.uri;
+        let completion = self.with_document(uri, |_, doc| {
+            let lsp_position = params.text_document_position.position;
+            let position = lsp2analyzer::position(doc, lsp_position);
+            let completion_items = doc.get_completion(position)?;
+            let lsp_completion = completion_items.into_iter()
+                .map(|item| analyzer2lsp::completion_item(item))
+                .collect();
+            Some(CompletionResponse::Array(lsp_completion))
+        });
+        ready(Ok(completion))
     }
 }
