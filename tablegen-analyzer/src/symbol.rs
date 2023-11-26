@@ -137,8 +137,8 @@ impl Record {
         self.template_args.insert(name, template_arg_id);
     }
 
-    pub fn template_args(&self) -> Vec<&SymbolId> {
-        self.template_args.values().collect()
+    pub fn template_args(&self) -> Vec<SymbolId> {
+        self.template_args.values().cloned().collect()
     }
 
     pub fn add_parent(&mut self, parent: SymbolId) {
@@ -153,8 +153,8 @@ impl Record {
         self.fields.insert(name, field_id);
     }
 
-    pub fn fields(&self) -> Vec<&SymbolId> {
-        self.fields.values().collect()
+    pub fn fields(&self) -> Vec<SymbolId> {
+        self.fields.values().cloned().collect()
     }
 
     pub fn find_field(&self, name: &EcoString) -> Option<&SymbolId> {
