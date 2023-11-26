@@ -102,8 +102,6 @@ pub struct Record {
 pub enum RecordKind {
     Class,
     Def,
-    Defset,
-    Defvar,
 }
 
 impl Record {

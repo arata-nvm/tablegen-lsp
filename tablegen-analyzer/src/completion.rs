@@ -91,7 +91,6 @@ fn complete_symbol(symbol_map: &SymbolMap, items: &mut Vec<CompletionItem>) {
                     "def",
                     CompletionItemKind::Def,
                 )),
-                _ => {}
             },
             _ => {}
         }

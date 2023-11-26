@@ -350,12 +350,7 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
         ast::SimpleValue::Identifier(identifier) => with_id(Some(identifier), |name, range| {
             let symbol_id = i.add_symbol_reference(name, range)?;
             match i.symbol(symbol_id)? {
-                Symbol::Record(record)
-                    if matches!(
-                        record.kind(),
-                        RecordKind::Def | RecordKind::Defset | RecordKind::Defvar
-                    ) =>
-                {
+                Symbol::Record(record) if matches!(record.kind(), RecordKind::Def) => {
                     Some(SymbolType::Class(symbol_id, record.name().clone()))
                 }
                 Symbol::RecordField(field) => Some(field.r#type().clone()),
