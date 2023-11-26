@@ -1,4 +1,4 @@
-use tablegen_parser::ast::{AstNode, Class};
+use tablegen_parser::ast::{AstNode, Class, Def};
 use tablegen_parser::parser::TextSize;
 use tablegen_parser::syntax_kind::SyntaxKind;
 
@@ -131,6 +131,25 @@ fn complete_scoped_symbol(
             SyntaxKind::Class => {
                 let class = Class::cast(cur_node.clone())?;
                 let name_range = class.name()?.syntax().text_range();
+                let symbol = doc.symbol_map().get_symbol_at(name_range.start())?;
+                let field_ids = doc.symbol_map().get_all_fields(symbol);
+                let field_items = field_ids
+                    .into_iter()
+                    .filter_map(|field_id| doc.symbol_map().symbol(field_id))
+                    .filter_map(|symbol| symbol.as_field())
+                    .map(|field| {
+                        CompletionItem::new(
+                            field.name(),
+                            field.r#type().to_string(),
+                            CompletionItemKind::Field,
+                        )
+                    });
+                items.extend(field_items);
+                break;
+            }
+            SyntaxKind::Def => {
+                let def = Def::cast(cur_node.clone())?;
+                let name_range = def.name()?.syntax().text_range();
                 let symbol = doc.symbol_map().get_symbol_at(name_range.start())?;
                 let field_ids = doc.symbol_map().get_all_fields(symbol);
                 let field_items = field_ids
