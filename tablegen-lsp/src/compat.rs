@@ -86,6 +86,7 @@ pub mod analyzer2lsp {
         lsp_item.kind = Some(match item.kind {
             CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
             CompletionItemKind::Type => lsp_types::CompletionItemKind::CLASS,
+            CompletionItemKind::Class => lsp_types::CompletionItemKind::CLASS,
         });
         lsp_item
     }

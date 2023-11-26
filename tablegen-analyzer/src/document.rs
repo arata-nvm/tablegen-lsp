@@ -90,6 +90,6 @@ impl Document {
     }
 
     pub fn get_completion(&self, pos: TextSize) -> Option<Vec<CompletionItem>> {
-        completion::completion(pos)
+        completion::completion(pos, &self.symbol_map)
     }
 }

@@ -1,5 +1,8 @@
 use tablegen_parser::parser::TextSize;
 
+use crate::symbol::{RecordKind, Symbol};
+use crate::symbol_map::SymbolMap;
+
 pub struct CompletionItem {
     pub label: String,
     pub detail: String,
@@ -9,8 +12,8 @@ pub struct CompletionItem {
 pub enum CompletionItemKind {
     Keyword,
     Type,
+    Class,
 }
-
 
 impl CompletionItem {
     fn new<S: Into<String>>(label: S, detail: S, kind: CompletionItemKind) -> Self {
@@ -22,10 +25,11 @@ impl CompletionItem {
     }
 }
 
-pub fn completion(_pos: TextSize) -> Option<Vec<CompletionItem>> {
+pub fn completion(_pos: TextSize, symbol_map: &SymbolMap) -> Option<Vec<CompletionItem>> {
     let mut items = Vec::new();
     complete_keyword(&mut items);
     complete_type(&mut items);
+    complete_symbol(symbol_map, &mut items);
     Some(items)
 }
 
@@ -65,5 +69,25 @@ fn complete_type(items: &mut Vec<CompletionItem>) {
 
     for typ in TYPES {
         items.push(CompletionItem::new(typ, "", CompletionItemKind::Type))
+    }
+}
+
+fn complete_symbol(symbol_map: &SymbolMap, items: &mut Vec<CompletionItem>) {
+    for symbol_id in symbol_map.global_symbols() {
+        let Some(symbol) = symbol_map.symbol(*symbol_id) else {
+            continue;
+        };
+
+        match symbol {
+            Symbol::Record(record) => match record.kind() {
+                RecordKind::Class => items.push(CompletionItem::new(
+                    record.name().as_str(),
+                    "class",
+                    CompletionItemKind::Class,
+                )),
+                _ => {}
+            },
+            _ => {}
+        }
     }
 }
