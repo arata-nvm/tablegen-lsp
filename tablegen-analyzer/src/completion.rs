@@ -52,20 +52,16 @@ fn complete_keyword(items: &mut Vec<CompletionItem>) {
     ];
 
     for keyword in KEYWORDS {
-        items.push(CompletionItem::new(keyword, "", CompletionItemKind::Keyword));
+        items.push(CompletionItem::new(
+            keyword,
+            "",
+            CompletionItemKind::Keyword,
+        ));
     }
 }
 
 fn complete_type(items: &mut Vec<CompletionItem>) {
-    const TYPES: [&str; 7] = [
-        "bit",
-        "bits",
-        "code",
-        "dag",
-        "int",
-        "list",
-        "string",
-    ];
+    const TYPES: [&str; 7] = ["bit", "bits", "code", "dag", "int", "list", "string"];
 
     for typ in TYPES {
         items.push(CompletionItem::new(typ, "", CompletionItemKind::Type))

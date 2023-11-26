@@ -67,7 +67,7 @@ pub mod analyzer2lsp {
     fn document_symbols<'a>(
         doc: &'a Document,
         symbols: Vec<&'a SymbolId>,
-    ) -> impl Iterator<Item=lsp_types::DocumentSymbol> + 'a {
+    ) -> impl Iterator<Item = lsp_types::DocumentSymbol> + 'a {
         symbols
             .into_iter()
             .filter_map(|id| doc.symbol_map().symbol(*id))
