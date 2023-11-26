@@ -1,6 +1,6 @@
 use tablegen_parser::parser::TextSize;
 
-use crate::symbol::{RecordKind, Symbol};
+use crate::symbol::{RecordKind, Symbol, VariableKind};
 use crate::symbol_map::SymbolMap;
 
 pub struct CompletionItem {
@@ -14,6 +14,7 @@ pub enum CompletionItemKind {
     Type,
     Class,
     Def,
+    Defset,
 }
 
 impl CompletionItem {
@@ -92,7 +93,15 @@ fn complete_symbol(symbol_map: &SymbolMap, items: &mut Vec<CompletionItem>) {
                     CompletionItemKind::Def,
                 )),
             },
-            _ => {}
+            Symbol::RecordField(_) => {}
+            Symbol::Variable(variable) => match variable.kind() {
+                VariableKind::Defset => items.push(CompletionItem::new(
+                    variable.name().as_str(),
+                    "defset",
+                    CompletionItemKind::Defset,
+                )),
+                _ => {}
+            },
         }
     }
 }
