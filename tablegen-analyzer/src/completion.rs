@@ -1,5 +1,8 @@
+use tablegen_parser::ast::{AstNode, Class};
 use tablegen_parser::parser::TextSize;
+use tablegen_parser::syntax_kind::SyntaxKind;
 
+use crate::document::Document;
 use crate::symbol::{RecordKind, Symbol, VariableKind};
 use crate::symbol_map::SymbolMap;
 
@@ -16,6 +19,7 @@ pub enum CompletionItemKind {
     Def,
     Defset,
     Defvar,
+    Field,
 }
 
 impl CompletionItem {
@@ -28,11 +32,12 @@ impl CompletionItem {
     }
 }
 
-pub fn completion(_pos: TextSize, symbol_map: &SymbolMap) -> Option<Vec<CompletionItem>> {
+pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> {
     let mut items = Vec::new();
     complete_keyword(&mut items);
     complete_type(&mut items);
-    complete_symbol(symbol_map, &mut items);
+    complete_symbol(doc.symbol_map(), &mut items);
+    complete_scoped_symbol(doc, pos, &mut items);
     Some(items)
 }
 
@@ -110,4 +115,42 @@ fn complete_symbol(symbol_map: &SymbolMap, items: &mut Vec<CompletionItem>) {
             },
         }
     }
+}
+
+fn complete_scoped_symbol(
+    doc: &Document,
+    pos: TextSize,
+    items: &mut Vec<CompletionItem>,
+) -> Option<()> {
+    let root = doc.root();
+    let cur_token = root.token_at_offset(pos).left_biased()?;
+
+    let mut cur_node = cur_token.parent()?;
+    loop {
+        match cur_node.kind() {
+            SyntaxKind::Class => {
+                let class = Class::cast(cur_node.clone())?;
+                let name_range = class.name()?.syntax().text_range();
+                let symbol = doc.symbol_map().get_symbol_at(name_range.start())?;
+                let field_ids = doc.symbol_map().get_all_fields(symbol);
+                let field_items = field_ids
+                    .into_iter()
+                    .filter_map(|field_id| doc.symbol_map().symbol(field_id))
+                    .filter_map(|symbol| symbol.as_field())
+                    .map(|field| {
+                        CompletionItem::new(
+                            field.name(),
+                            field.r#type().to_string(),
+                            CompletionItemKind::Field,
+                        )
+                    });
+                items.extend(field_items);
+                break;
+            }
+            _ => {}
+        }
+        cur_node = cur_node.parent()?;
+    }
+
+    None
 }

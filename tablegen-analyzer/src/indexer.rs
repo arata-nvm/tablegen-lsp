@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use ecow::{eco_format, EcoString};
+
 use tablegen_parser::{error::SyntaxError, parser::TextRange};
 
 use crate::{
@@ -174,21 +175,13 @@ impl DocumentIndexer {
         name: EcoString,
         range: TextRange,
     ) -> Option<SymbolId> {
-        let record = self.symbols.symbol(symbol_id)?.as_record()?;
-        if let Some(field_id) = record.find_field(&name).cloned() {
-            let reference_loc = self.to_location(range.clone());
-            self.symbols.add_reference(field_id, reference_loc);
-            return Some(field_id);
-        }
+        let Some(field_id) = self.symbol_map.find_field(symbol_id, name.clone()) else {
+            self.error(range, eco_format!("cannot access field: {}", name));
+            return None;
+        };
 
-        let parents = record.parents().to_vec();
-        for parent in parents.into_iter().rev() {
-            if let Some(field_id) = self.access_field(parent, name.clone(), range.clone()) {
-                return Some(field_id);
-            }
-        }
-
-        self.error(range, eco_format!("cannot access field: {}", name));
-        None
+        let reference_loc = self.to_location(range.clone());
+        self.symbol_map.add_reference(field_id, reference_loc);
+        Some(field_id)
     }
 }

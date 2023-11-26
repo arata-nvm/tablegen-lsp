@@ -2,8 +2,8 @@ use ropey::Rope;
 
 use tablegen_parser::{error::SyntaxError, grammar, language::SyntaxNode, parser::TextSize};
 
-use crate::{analyze, completion, hover, symbol::Location, symbol_map::SymbolMap};
 use crate::completion::CompletionItem;
+use crate::{analyze, completion, hover, symbol::Location, symbol_map::SymbolMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentId(usize);
@@ -90,6 +90,6 @@ impl Document {
     }
 
     pub fn get_completion(&self, pos: TextSize) -> Option<Vec<CompletionItem>> {
-        completion::completion(pos, &self.symbol_map)
+        completion::completion(self, pos)
     }
 }
