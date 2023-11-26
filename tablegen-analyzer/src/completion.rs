@@ -8,6 +8,7 @@ pub struct CompletionItem {
 
 pub enum CompletionItemKind {
     Keyword,
+    Type,
 }
 
 
@@ -24,17 +25,14 @@ impl CompletionItem {
 pub fn completion(_pos: TextSize) -> Option<Vec<CompletionItem>> {
     let mut items = Vec::new();
     complete_keyword(&mut items);
+    complete_type(&mut items);
     Some(items)
 }
 
 fn complete_keyword(items: &mut Vec<CompletionItem>) {
-    const KEYWORDS: [&str; 25] = [
+    const KEYWORDS: [&str; 18] = [
         "assert",
-        "bit",
-        "bits",
         "class",
-        "code",
-        "dag",
         "def",
         "dump",
         "else",
@@ -47,16 +45,29 @@ fn complete_keyword(items: &mut Vec<CompletionItem>) {
         "if",
         "in",
         "include",
-        "int",
         "let",
-        "list",
         "multiclass",
-        "string",
         "then",
         "true",
     ];
 
     for keyword in KEYWORDS {
         items.push(CompletionItem::new(keyword, "", CompletionItemKind::Keyword));
+    }
+}
+
+fn complete_type(items: &mut Vec<CompletionItem>) {
+    const TYPES: [&str; 7] = [
+        "bit",
+        "bits",
+        "code",
+        "dag",
+        "int",
+        "list",
+        "string",
+    ];
+
+    for typ in TYPES {
+        items.push(CompletionItem::new(typ, "", CompletionItemKind::Type))
     }
 }
