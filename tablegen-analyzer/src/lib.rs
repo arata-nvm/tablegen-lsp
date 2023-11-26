@@ -154,7 +154,7 @@ mod tests {
                 (
                     DocumentId::new(0),
                     TextRange::new(pos(&doc, 12, 9), pos(&doc, 12, 12))
-                )
+                ),
             ]),
         );
 
