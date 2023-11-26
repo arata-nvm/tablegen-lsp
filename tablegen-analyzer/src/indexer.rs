@@ -14,7 +14,7 @@ use crate::{
 #[derive(Debug)]
 pub struct DocumentIndexer {
     doc_id: DocumentId,
-    symbols: SymbolMap,
+    symbol_map: SymbolMap,
     scopes: Vec<HashMap<EcoString, SymbolId>>,
     scope_symbols: Vec<SymbolId>,
     errors: Vec<SyntaxError>,
@@ -24,7 +24,7 @@ impl DocumentIndexer {
     pub fn new(doc_id: DocumentId) -> Self {
         Self {
             doc_id,
-            symbols: SymbolMap::new(),
+            symbol_map: SymbolMap::new(),
             scopes: vec![HashMap::new()],
             scope_symbols: Vec::new(),
             errors: Vec::new(),
@@ -32,7 +32,7 @@ impl DocumentIndexer {
     }
 
     pub fn finish(self) -> (SymbolMap, Vec<SyntaxError>) {
-        (self.symbols, self.errors)
+        (self.symbol_map, self.errors)
     }
 
     pub fn push(&mut self, symbol_id: SymbolId) {
@@ -69,7 +69,7 @@ impl DocumentIndexer {
 
         let reference_loc = (self.doc_id, range.clone());
         if let Some(symbol_id) = self.find_symbol_scope(&name).copied() {
-            self.symbols.add_reference(symbol_id, reference_loc);
+            self.symbol_map.add_reference(symbol_id, reference_loc);
             Some(symbol_id)
         } else {
             self.error(range, eco_format!("symbol not found: {}", name));
@@ -78,19 +78,19 @@ impl DocumentIndexer {
     }
 
     pub fn symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
-        self.symbols.symbol(symbol_id)
+        self.symbol_map.symbol(symbol_id)
     }
 
     pub fn add_record(&mut self, name: EcoString, range: TextRange, kind: RecordKind) -> SymbolId {
         let define_loc = self.to_location(range);
-        let symbol_id = self.symbols.new_record(name.clone(), define_loc, kind);
+        let symbol_id = self.symbol_map.new_record(name.clone(), define_loc, kind);
         self.add_symbol_scope(name.clone(), symbol_id);
         symbol_id
     }
 
     pub fn add_template_arg(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
         let define_loc = self.to_location(range);
-        let symbol_id = self.symbols.new_record_field(
+        let symbol_id = self.symbol_map.new_record_field(
             name.clone(),
             define_loc,
             RecordFieldKind::TemplateArg,
@@ -110,7 +110,7 @@ impl DocumentIndexer {
     pub fn add_field(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
         let define_loc = self.to_location(range);
         let symbol_id =
-            self.symbols
+            self.symbol_map
                 .new_record_field(name.clone(), define_loc, RecordFieldKind::Field, typ);
         self.add_symbol_scope(name.clone(), symbol_id);
 
@@ -127,7 +127,7 @@ impl DocumentIndexer {
     ) {
         let define_loc = self.to_location(range);
         let symbol_id = self
-            .symbols
+            .symbol_map
             .new_variable(name.clone(), define_loc, kind, typ);
         self.add_symbol_scope(name, symbol_id);
     }
@@ -135,7 +135,7 @@ impl DocumentIndexer {
     pub fn add_temporary_variable(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
         let define_loc = self.to_location(range);
         let symbol_id =
-            self.symbols
+            self.symbol_map
                 .new_variable(name.clone(), define_loc, VariableKind::Temporary, typ);
         self.add_symbol_scope(name, symbol_id);
     }
@@ -162,7 +162,7 @@ impl DocumentIndexer {
 
     pub fn scope_symbol_mut(&mut self) -> &mut Record {
         let symbol_id = self.scope_symbols.last().unwrap();
-        self.symbols
+        self.symbol_map
             .symbol_mut(*symbol_id)
             .and_then(|symbol| symbol.as_record_mut())
             .unwrap()
