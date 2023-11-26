@@ -98,12 +98,12 @@ fn complete_symbol(symbol_map: &SymbolMap, items: &mut Vec<CompletionItem>) {
             Symbol::Variable(variable) => match variable.kind() {
                 VariableKind::Defset => items.push(CompletionItem::new(
                     variable.name().as_str(),
-                    "defset",
+                    variable.r#type().to_string(),
                     CompletionItemKind::Defset,
                 )),
                 VariableKind::Defvar => items.push(CompletionItem::new(
                     variable.name().as_str(),
-                    "defvar",
+                    variable.r#type().to_string(),
                     CompletionItemKind::Defvar,
                 )),
                 VariableKind::Temporary => {}
