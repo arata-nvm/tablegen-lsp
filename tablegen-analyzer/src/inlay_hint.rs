@@ -1,6 +1,6 @@
 use ecow::EcoString;
 
-use tablegen_parser::ast::{AstNode, ClassRef};
+use tablegen_parser::ast::{AstNode, ClassRef, ClassValue};
 use tablegen_parser::parser::{TextRange, TextSize};
 use tablegen_parser::syntax_kind::SyntaxKind;
 
@@ -56,10 +56,20 @@ fn inlay_hint_class(doc: &Document, range: TextRange, record: &Record) -> Option
         SyntaxKind::Identifier => id_node.into_node()?,
         _ => return None,
     };
-    let class_ref_node = identifier_node.parent()?;
-    let class_ref = ClassRef::cast(class_ref_node)?;
 
-    let arg_list = class_ref.arg_value_list()?;
+    let class_node = identifier_node.parent()?;
+    let arg_list = match class_node.kind() {
+        SyntaxKind::ClassRef => {
+            let class_ref = ClassRef::cast(class_node)?;
+            class_ref.arg_value_list()?
+        }
+        SyntaxKind::ClassValue => {
+            let class_value = ClassValue::cast(class_node)?;
+            class_value.arg_value_list()?
+        }
+        _ => return None,
+    };
+
     let positional = arg_list.positional()?;
     for (value, name) in positional.values().zip(template_arg_names) {
         let value_range = value.syntax().text_range();
