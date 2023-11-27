@@ -105,7 +105,7 @@ pub mod analyzer2lsp {
             text_edits: None,
             tooltip: None,
             padding_left: None,
-            padding_right: None,
+            padding_right: Some(true),
             data: None,
         }
     }

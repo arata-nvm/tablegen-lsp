@@ -1,8 +1,10 @@
+use std::ops::Range;
+
 use ecow::EcoString;
 use id_arena::Arena;
 use iset::IntervalMap;
 
-use tablegen_parser::parser::TextSize;
+use tablegen_parser::parser::{TextRange, TextSize};
 
 use crate::symbol::{
     Location, Record, RecordField, RecordFieldKind, RecordKind, Symbol, SymbolId, SymbolType,
@@ -97,6 +99,13 @@ impl SymbolMap {
             .values_overlap(pos)
             .next()
             .and_then(|&id| self.symbols.get(id))
+    }
+
+    pub fn get_symbols_in(&self, range: TextRange) -> Vec<(Range<TextSize>, SymbolId)> {
+        self.symbol_map
+            .iter::<Range<TextSize>>(range.into())
+            .map(|(range, symbol_id)| (range, *symbol_id))
+            .collect()
     }
 
     pub fn global_symbols(&self) -> &[SymbolId] {

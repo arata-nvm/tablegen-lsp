@@ -138,7 +138,9 @@ impl Record {
     }
 
     pub fn template_args(&self) -> Vec<SymbolId> {
-        self.template_args.values().cloned().collect()
+        let mut args: Vec<SymbolId> = self.template_args.values().cloned().collect();
+        args.sort();
+        args
     }
 
     pub fn add_parent(&mut self, parent: SymbolId) {
