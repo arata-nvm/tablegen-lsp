@@ -119,6 +119,20 @@ impl DocumentIndexer {
         parent.add_field(name.clone(), symbol_id);
     }
 
+    pub fn add_field_let(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
+        let define_loc = self.to_location(range);
+        let symbol_id = self.symbol_map.new_record_field(
+            name.clone(),
+            define_loc,
+            RecordFieldKind::FieldLet,
+            typ,
+        );
+        self.add_symbol_scope(name.clone(), symbol_id);
+
+        let parent = self.scope_symbol_mut();
+        parent.add_field(name.clone(), symbol_id);
+    }
+
     pub fn add_variable(
         &mut self,
         name: EcoString,

@@ -222,6 +222,7 @@ impl RecordField {
 pub enum RecordFieldKind {
     TemplateArg,
     Field,
+    FieldLet,
 }
 
 #[derive(Debug)]

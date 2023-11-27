@@ -30,7 +30,9 @@ fn extract_symbol_info(symbol: &Symbol) -> String {
                 RecordFieldKind::TemplateArg => {
                     format!("**template arg** `{}`", record_field.name())
                 }
-                RecordFieldKind::Field => format!("**field** `{}`", record_field.name()),
+                RecordFieldKind::Field | RecordFieldKind::FieldLet => {
+                    format!("**field** `{}`", record_field.name())
+                }
             };
             let typ = record_field.r#type();
             format!("{name}\n***\nType: `{typ}`\n***\n")

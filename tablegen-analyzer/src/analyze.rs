@@ -116,7 +116,7 @@ fn analyze_field_let(field_let: ast::FieldLet, i: &mut DocumentIndexer) {
         let symbol_id = i.scope_symbol_id();
         let field_id = i.access_field(symbol_id, name.clone(), range)?;
         let field = i.symbol(field_id)?.as_field()?;
-        i.add_field(name, range, field.r#type().clone());
+        i.add_field_let(name, range, field.r#type().clone());
         Some(())
     });
     with(field_let.value(), |value| {

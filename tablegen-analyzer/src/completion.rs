@@ -1,11 +1,9 @@
-use std::collections::HashSet;
-
 use tablegen_parser::ast::{AstNode, Class, Def};
 use tablegen_parser::parser::TextSize;
 use tablegen_parser::syntax_kind::SyntaxKind;
 
 use crate::document::Document;
-use crate::symbol::{RecordKind, Symbol, SymbolId, VariableKind};
+use crate::symbol::{RecordFieldKind, RecordKind, Symbol, SymbolId, VariableKind};
 use crate::symbol_map::SymbolMap;
 
 #[derive(Eq, PartialEq, Hash)]
@@ -166,11 +164,11 @@ fn complete_class_and_def(doc: &Document, symbol: &Symbol, items: &mut Vec<Compl
             .into_iter()
             .filter_map(|symbol_id| doc.symbol_map().symbol(symbol_id))
             .filter_map(|symbol| symbol.as_field())
+            .filter(|field| matches!(field.kind(), RecordFieldKind::Field))
             .map(|field| {
                 CompletionItem::new(field.name(), field.r#type().to_string(), kind.clone())
             });
-        let uniq_new_items: HashSet<CompletionItem> = HashSet::from_iter(new_items);
-        items.extend(uniq_new_items);
+        items.extend(new_items);
     }
 
     if let Some(record) = symbol.as_record() {
