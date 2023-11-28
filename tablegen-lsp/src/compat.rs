@@ -1,4 +1,5 @@
 pub mod analyzer2lsp {
+    use tablegen_analyzer::inlay_hint::InlayHintKind;
     use tablegen_analyzer::{
         completion::{CompletionItem, CompletionItemKind},
         document::Document,
@@ -104,8 +105,14 @@ pub mod analyzer2lsp {
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: None,
-            padding_right: Some(true),
+            padding_left: match hint.kind {
+                InlayHintKind::TemplateArg => None,
+                InlayHintKind::FieldLet => Some(true),
+            },
+            padding_right: match hint.kind {
+                InlayHintKind::TemplateArg => Some(true),
+                InlayHintKind::FieldLet => None,
+            },
             data: None,
         }
     }

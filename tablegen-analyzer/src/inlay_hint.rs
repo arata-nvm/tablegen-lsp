@@ -5,18 +5,27 @@ use tablegen_parser::parser::{TextRange, TextSize};
 use tablegen_parser::syntax_kind::SyntaxKind;
 
 use crate::document::Document;
-use crate::symbol::{Record, RecordKind, Symbol};
+use crate::symbol::{Record, RecordFieldKind, RecordKind, Symbol};
 
+#[derive(Debug)]
 pub struct InlayHint {
     pub position: TextSize,
     pub label: String,
+    pub kind: InlayHintKind,
+}
+
+#[derive(Debug)]
+pub enum InlayHintKind {
+    TemplateArg,
+    FieldLet,
 }
 
 impl InlayHint {
-    fn new(position: TextSize, label: impl Into<String>) -> Self {
+    fn new(position: TextSize, label: impl Into<String>, kind: InlayHintKind) -> Self {
         Self {
             position,
             label: label.into(),
+            kind,
         }
     }
 }
@@ -34,6 +43,13 @@ pub fn inlay_hint(doc: &Document, range: TextRange) -> Option<Vec<InlayHint>> {
                 if let Some(new_hints) = inlay_hint_class(doc, symbol_range, record) {
                     hints.extend(new_hints);
                 }
+            }
+            Symbol::RecordField(field) if matches!(field.kind(), RecordFieldKind::FieldLet) => {
+                hints.push(InlayHint::new(
+                    symbol_range.end - TextSize::new(1), // TODO
+                    format!(":{}", field.r#type()),
+                    InlayHintKind::FieldLet,
+                ));
             }
             _ => {}
         };
@@ -73,7 +89,11 @@ fn inlay_hint_class(doc: &Document, range: TextRange, record: &Record) -> Option
     let positional = arg_list.positional()?;
     for (value, name) in positional.values().zip(template_arg_names) {
         let value_range = value.syntax().text_range();
-        hints.push(InlayHint::new(value_range.start(), format!("{}:", name)));
+        hints.push(InlayHint::new(
+            value_range.start(),
+            format!("{}:", name),
+            InlayHintKind::TemplateArg,
+        ));
     }
 
     Some(hints)
