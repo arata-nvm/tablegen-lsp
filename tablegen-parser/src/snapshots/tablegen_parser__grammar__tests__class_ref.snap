@@ -23,7 +23,7 @@ expression: "parse(\"class Foo : Bar<\")"
             Body@16..16
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 16..16,
             message: "expected '>' in template value list",
         },

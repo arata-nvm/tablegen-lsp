@@ -21,7 +21,7 @@ expression: "parse(\"class Foo<int\")"
             Body@13..13
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 13..13,
             message: "expected identifier in declaration",
         },

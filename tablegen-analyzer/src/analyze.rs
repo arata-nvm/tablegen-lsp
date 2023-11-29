@@ -3,7 +3,7 @@ use ecow::{eco_format, EcoString};
 use tablegen_parser::{
     ast::{self, AstNode},
     bang_operator::BangOperator,
-    error::SyntaxError,
+    error::TableGenError,
     language::SyntaxNode,
     parser::TextRange,
 };
@@ -15,7 +15,7 @@ use crate::{
     symbol_map::SymbolMap,
 };
 
-pub fn analyze(doc_id: DocumentId, root: SyntaxNode) -> (SymbolMap, Vec<SyntaxError>) {
+pub fn analyze(doc_id: DocumentId, root: SyntaxNode) -> (SymbolMap, Vec<TableGenError>) {
     let mut indexer = DocumentIndexer::new(doc_id);
     analyze_root(root, &mut indexer);
     indexer.finish()

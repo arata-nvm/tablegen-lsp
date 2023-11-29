@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ecow::{eco_format, EcoString};
 
-use tablegen_parser::{error::SyntaxError, parser::TextRange};
+use tablegen_parser::{error::TableGenError, parser::TextRange};
 
 use crate::{
     document::DocumentId,
@@ -18,7 +18,7 @@ pub struct DocumentIndexer {
     symbol_map: SymbolMap,
     scopes: Vec<HashMap<EcoString, SymbolId>>,
     scope_symbols: Vec<SymbolId>,
-    errors: Vec<SyntaxError>,
+    errors: Vec<TableGenError>,
 }
 
 impl DocumentIndexer {
@@ -32,7 +32,7 @@ impl DocumentIndexer {
         }
     }
 
-    pub fn finish(self) -> (SymbolMap, Vec<SyntaxError>) {
+    pub fn finish(self) -> (SymbolMap, Vec<TableGenError>) {
         (self.symbol_map, self.errors)
     }
 
@@ -55,7 +55,7 @@ impl DocumentIndexer {
     }
 
     pub fn error(&mut self, range: TextRange, message: impl Into<EcoString>) {
-        self.errors.push(SyntaxError::new(range, message));
+        self.errors.push(TableGenError::new(range, message));
     }
 
     fn to_location(&self, range: TextRange) -> Location {

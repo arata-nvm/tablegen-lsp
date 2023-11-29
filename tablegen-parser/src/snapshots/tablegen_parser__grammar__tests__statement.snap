@@ -9,7 +9,7 @@ expression: "parse(\"a\")"
           Id@0..1 "a"
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 0..1,
             message: "expected class, def, defm, defset, multiclass, let or foreach",
         },

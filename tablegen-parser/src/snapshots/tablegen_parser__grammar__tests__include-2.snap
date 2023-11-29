@@ -10,7 +10,7 @@ expression: "parse(\"include\")"
           String@7..7
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 7..7,
             message: "expected filename after include",
         },

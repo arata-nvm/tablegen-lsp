@@ -30,7 +30,7 @@ expression: "parse(\"class Foo { let A = 1\")"
                       IntVal@20..21 "1"
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 21..21,
             message: "expected ';' after let expression",
         },

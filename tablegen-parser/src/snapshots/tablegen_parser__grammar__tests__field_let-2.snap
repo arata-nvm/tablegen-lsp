@@ -25,11 +25,11 @@ expression: "parse(\"class Foo { let A\")"
                   InnerValue@17..17
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 17..17,
             message: "expected Equal",
         },
-        SyntaxError {
+        TableGenError {
             range: 17..17,
             message: "unknown token when parsing a value",
         },

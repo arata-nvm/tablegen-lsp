@@ -13,11 +13,11 @@ expression: "parse(\"let\")"
               Eof@3..3 ""
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 3..3,
             message: "expected 'in' at end of top-level 'let'",
         },
-        SyntaxError {
+        TableGenError {
             range: 3..3,
             message: "expected class, def, defm, defset, multiclass, let or foreach",
         },

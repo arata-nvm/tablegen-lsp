@@ -29,7 +29,7 @@ pub mod analyzer2lsp {
         lsp_types::Location::new(uri, range)
     }
 
-    pub fn error(doc: &Document, error: error::SyntaxError) -> lsp_types::Diagnostic {
+    pub fn error(doc: &Document, error: error::TableGenError) -> lsp_types::Diagnostic {
         let range = range(doc, error.range);
         let message = error.message.to_string();
         lsp_types::Diagnostic::new_simple(range, message)

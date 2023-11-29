@@ -24,7 +24,7 @@ expression: "parse(\"class Foo { int A\")"
                   Id@16..17 "A"
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 17..17,
             message: "expected ';' after declaration",
         },

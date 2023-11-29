@@ -1,20 +1,18 @@
+use crate::{
+    error::TableGenError, grammar::statement::StatementListType, language::SyntaxNode,
+    parser::Parser, syntax_kind::SyntaxKind, token_kind::TokenKind, T,
+};
+
 pub mod statement;
 pub mod r#type;
 pub mod value;
 
-use crate::{
-    error::SyntaxError, grammar::statement::StatementListType, language::SyntaxNode,
-    parser::Parser, syntax_kind::SyntaxKind, token_kind::TokenKind, T,
-};
-
 const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
 
-pub fn parse(text: &str) -> (SyntaxNode, Vec<SyntaxError>) {
+pub fn parse(text: &str) -> (SyntaxNode, Vec<TableGenError>) {
     let mut parser = Parser::new(text, &RECOVER_TOKENS);
     root(&mut parser);
-
-    let errors = parser.take_errors();
-    (parser.finish(), errors)
+    parser.finish()
 }
 
 // Root ::= StatementList

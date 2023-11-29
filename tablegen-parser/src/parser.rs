@@ -3,7 +3,7 @@ use rowan::GreenNodeBuilder;
 pub use rowan::{TextRange, TextSize};
 
 use crate::{
-    error::SyntaxError, language::SyntaxNode, lexer::Lexer, syntax_kind::SyntaxKind,
+    error::TableGenError, language::SyntaxNode, lexer::Lexer, syntax_kind::SyntaxKind,
     token_kind::TokenKind,
 };
 
@@ -31,9 +31,9 @@ pub(crate) struct Parser<'a> {
     recover_tokens: &'a [TokenKind],
 
     lexer: Lexer<'a>,
-    pub(crate) builder: GreenNodeBuilder<'static>,
+    builder: GreenNodeBuilder<'static>,
 
-    errors: Vec<SyntaxError>,
+    errors: Vec<TableGenError>,
     is_after_error: bool,
 }
 
@@ -51,13 +51,14 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub(crate) fn take_errors(&mut self) -> Vec<SyntaxError> {
-        std::mem::take(&mut self.errors)
+    #[inline]
+    pub(crate) fn finish(self) -> (SyntaxNode, Vec<TableGenError>) {
+        (SyntaxNode::new_root(self.builder.finish()), self.errors)
     }
 
     #[inline]
-    pub(crate) fn finish(self) -> SyntaxNode {
-        SyntaxNode::new_root(self.builder.finish())
+    pub(crate) fn builder(&mut self) -> &mut GreenNodeBuilder<'static> {
+        &mut self.builder
     }
 
     #[inline]
@@ -102,7 +103,7 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
         self.errors
-            .push(SyntaxError::new(self.current_range(), message));
+            .push(TableGenError::new(self.current_range(), message));
         self.is_after_error = true;
     }
 
@@ -135,13 +136,14 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn expect_with_msg(&mut self, kind: TokenKind, message: impl Into<EcoString>) {
-        if self.eat_if(kind) {
-            return;
-        }
-
-        if !self.is_after_error {
+        if !self.eat_if(kind) && !self.is_after_error {
             self.error(message);
         }
+    }
+
+    pub(crate) fn eat(&mut self) {
+        self.consume_token();
+        self.eat_trivia();
     }
 
     pub(crate) fn eat_if(&mut self, kind: TokenKind) -> bool {
@@ -153,9 +155,10 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub(crate) fn eat(&mut self) {
-        self.consume_token();
-        self.eat_trivia();
+    pub(crate) fn eat_trivia(&mut self) {
+        while self.current().is_trivia() {
+            self.consume_token();
+        }
     }
 
     fn consume_token(&mut self) {
@@ -166,13 +169,8 @@ impl<'a> Parser<'a> {
             self.builder
                 .token(self.current().into(), self.current_text());
         }
+
         self.lexer.next();
         self.is_after_error = false;
-    }
-
-    pub(crate) fn eat_trivia(&mut self) {
-        while self.current().is_trivia() {
-            self.consume_token();
-        }
     }
 }

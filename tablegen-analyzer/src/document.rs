@@ -1,7 +1,7 @@
 use ropey::Rope;
 
 use tablegen_parser::parser::TextRange;
-use tablegen_parser::{error::SyntaxError, grammar, language::SyntaxNode, parser::TextSize};
+use tablegen_parser::{error::TableGenError, grammar, language::SyntaxNode, parser::TextSize};
 
 use crate::completion::CompletionItem;
 use crate::inlay_hint::InlayHint;
@@ -27,7 +27,7 @@ pub struct Document {
     doc_id: DocumentId,
     text: Rope,
     root: SyntaxNode,
-    errors: Vec<SyntaxError>,
+    errors: Vec<TableGenError>,
     symbol_map: SymbolMap,
 }
 
@@ -58,7 +58,7 @@ impl Document {
         &self.root
     }
 
-    pub fn take_errors(&mut self) -> Vec<SyntaxError> {
+    pub fn take_errors(&mut self) -> Vec<TableGenError> {
         std::mem::take(&mut self.errors)
     }
 

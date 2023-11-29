@@ -13,7 +13,7 @@ expression: "parse(\"class\")"
             Body@5..5
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 5..5,
             message: "expected class name after 'class' keyword",
         },

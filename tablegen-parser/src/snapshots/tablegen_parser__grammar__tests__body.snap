@@ -15,7 +15,7 @@ expression: "parse(\"class Foo\")"
             Body@9..9
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 9..9,
             message: "expected ';' or '{' to start body",
         },

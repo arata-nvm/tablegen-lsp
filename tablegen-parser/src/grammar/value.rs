@@ -411,10 +411,10 @@ pub(super) fn identifier(p: &mut Parser) -> CompletedMarker {
 
 // ClassValue ::= Identifier ( "<" ArgValueList? ">" )?
 pub(super) fn identifier_or_class_value(p: &mut Parser) -> CompletedMarker {
-    let c = p.builder.checkpoint();
+    let c = p.builder().checkpoint();
     let m = identifier(p);
     if p.eat_if(T![<]) {
-        p.builder.start_node_at(c, SyntaxKind::ClassValue.into());
+        p.builder().start_node_at(c, SyntaxKind::ClassValue.into());
         statement::arg_value_list(p);
         p.expect_with_msg(T![>], "expected '>' at end of value list");
         p.finish_node();

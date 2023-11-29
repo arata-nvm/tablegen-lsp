@@ -22,7 +22,7 @@ expression: "parse(\"class Foo { int\")"
                 Identifier@15..15
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 15..15,
             message: "expected identifier in declaration",
         },

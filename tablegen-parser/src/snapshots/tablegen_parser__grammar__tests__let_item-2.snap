@@ -19,15 +19,15 @@ expression: "parse(\"let A\")"
               Eof@5..5 ""
     ,
     [
-        SyntaxError {
+        TableGenError {
             range: 5..5,
             message: "expected '=' in let expression",
         },
-        SyntaxError {
+        TableGenError {
             range: 5..5,
             message: "unknown token when parsing a value",
         },
-        SyntaxError {
+        TableGenError {
             range: 5..5,
             message: "expected class, def, defm, defset, multiclass, let or foreach",
         },
