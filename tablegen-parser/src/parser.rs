@@ -1,11 +1,11 @@
+use ecow::{eco_format, EcoString};
+use rowan::GreenNodeBuilder;
+pub use rowan::{TextRange, TextSize};
+
 use crate::{
     error::SyntaxError, language::SyntaxNode, lexer::Lexer, syntax_kind::SyntaxKind,
     token_kind::TokenKind,
 };
-use ecow::{eco_format, EcoString};
-use rowan::GreenNodeBuilder;
-
-pub use rowan::{TextRange, TextSize};
 
 #[derive(Debug)]
 pub(crate) enum CompletedMarker {
@@ -28,35 +28,26 @@ impl CompletedMarker {
 #[derive(Debug)]
 pub(crate) struct Parser<'a> {
     text: &'a str,
-    lexer: Lexer<'a>,
-
-    current: TokenKind,
-    current_start: TextSize,
-    current_end: TextSize,
-    is_after_error: bool,
-
-    pub(crate) builder: GreenNodeBuilder<'static>,
     recover_tokens: &'a [TokenKind],
+
+    lexer: Lexer<'a>,
+    pub(crate) builder: GreenNodeBuilder<'static>,
+
     errors: Vec<SyntaxError>,
+    is_after_error: bool,
 }
 
 impl<'a> Parser<'a> {
     pub(crate) fn new(text: &'a str, recover_tokens: &'a [TokenKind]) -> Self {
-        let mut lexer = Lexer::new(text);
-        let current = lexer.next();
-        let current_end = lexer.cursor();
         Self {
             text,
-            lexer,
-
-            current,
-            current_start: 0.into(),
-            current_end,
-            is_after_error: false,
-
-            builder: GreenNodeBuilder::new(),
             recover_tokens,
+
+            lexer: Lexer::new(text),
+            builder: GreenNodeBuilder::new(),
+
             errors: Vec::new(),
+            is_after_error: false,
         }
     }
 
@@ -81,27 +72,27 @@ impl<'a> Parser<'a> {
 
     #[inline]
     pub(crate) fn current(&self) -> TokenKind {
-        self.current
+        self.lexer.current()
     }
 
     #[inline]
     fn current_range(&self) -> TextRange {
-        TextRange::new(self.current_start, self.current_end)
+        self.lexer.current_range()
     }
 
     #[inline]
     fn current_text(&self) -> &'a str {
-        &self.text[self.current_range()]
+        self.lexer.current_text()
     }
 
     #[inline]
     pub(crate) fn at(&self, kind: TokenKind) -> bool {
-        self.current == kind
+        self.current() == kind
     }
 
     #[inline]
     pub(crate) fn at_set(&self, set: &[TokenKind]) -> bool {
-        set.contains(&self.current)
+        set.contains(&self.current())
     }
 
     #[inline]
@@ -172,17 +163,15 @@ impl<'a> Parser<'a> {
             let message = self.lexer.take_error().unwrap();
             self.error(message);
         } else {
-            self.builder.token(self.current.into(), self.current_text());
+            self.builder
+                .token(self.current().into(), self.current_text());
         }
-
-        self.current_start = self.lexer.cursor();
-        self.current = self.lexer.next();
-        self.current_end = self.lexer.cursor();
+        self.lexer.next();
         self.is_after_error = false;
     }
 
     pub(crate) fn eat_trivia(&mut self) {
-        while self.current.is_trivia() {
+        while self.current().is_trivia() {
             self.consume_token();
         }
     }

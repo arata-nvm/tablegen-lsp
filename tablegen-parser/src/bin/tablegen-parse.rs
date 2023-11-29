@@ -21,12 +21,12 @@ fn main() {
 fn token(text: &str) {
     let mut lexer = Lexer::new(text);
     loop {
-        let cursor = lexer.cursor();
+        let range = lexer.current_range();
         let token = lexer.next();
         if let Some(err) = lexer.take_error() {
-            println!("{cursor:?}: Error({err})");
+            println!("{range:?}: Error({err})");
         } else {
-            println!("{cursor:?}: {:?}", token);
+            println!("{range:?}: {:?}", token);
         }
 
         if token == TokenKind::Eof {

@@ -1,28 +1,43 @@
-use crate::{token_kind::TokenKind, T};
 use ecow::EcoString;
-use rowan::TextSize;
+use rowan::{TextRange, TextSize};
 use unscanny::Scanner;
+
+use crate::{token_kind::TokenKind, T};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
     s: Scanner<'a>,
+    current: TokenKind,
+    current_range: TextRange,
     error: Option<EcoString>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(text: &'a str) -> Self {
-        Self {
+        let mut lexer = Self {
             s: Scanner::new(text),
+            current: TokenKind::Eof,
+            current_range: Default::default(),
             error: None,
-        }
+        };
+        lexer.next();
+        lexer
     }
 
     pub fn take_error(&mut self) -> Option<EcoString> {
         self.error.take()
     }
 
-    pub fn cursor(&self) -> TextSize {
-        self.s.cursor().try_into().unwrap()
+    pub fn current(&self) -> TokenKind {
+        self.current
+    }
+
+    pub fn current_range(&self) -> TextRange {
+        self.current_range
+    }
+
+    pub fn current_text(&self) -> &'a str {
+        self.s.get(self.current_range.into())
     }
 
     fn error(&mut self, msg: impl Into<EcoString>) -> TokenKind {
@@ -32,6 +47,18 @@ impl<'a> Lexer<'a> {
 
     pub fn next(&mut self) -> TokenKind {
         let start = self.s.cursor();
+        self.current = self.next_token(start);
+        let end = self.s.cursor();
+
+        self.current_range = TextRange::new(
+            TextSize::new(start.try_into().unwrap()),
+            TextSize::new(end.try_into().unwrap()),
+        );
+
+        self.current
+    }
+
+    fn next_token(&mut self, start: usize) -> TokenKind {
         match self.s.eat() {
             Some(c) if c.is_whitespace() => self.whitespace(),
             Some('/') if self.s.eat_if('/') => self.line_comment(),
@@ -304,6 +331,7 @@ mod tests {
         let mut l = Lexer::new(text);
 
         let mut tokens = Vec::new();
+        tokens.push(l.current());
         while tokens.last() != Some(&TokenKind::Eof) {
             tokens.push(l.next());
         }
@@ -328,11 +356,11 @@ mod tests {
     #[test]
     fn error() {
         let mut l = Lexer::new("..");
-        assert_eq!(l.next(), TokenKind::Error);
+        assert_eq!(l.current(), TokenKind::Error);
         assert_eq!(l.take_error(), Some("Invalid '..' punctuation".into()));
 
         let mut l = Lexer::new("!hoge");
-        assert_eq!(l.next(), TokenKind::Error);
+        assert_eq!(l.current(), TokenKind::Error);
         assert_eq!(l.take_error(), Some("Unknown operator".into()));
     }
 
