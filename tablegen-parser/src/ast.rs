@@ -1,3 +1,9 @@
+use std::iter::FilterMap;
+
+use ecow::EcoString;
+pub use rowan::ast::AstNode;
+use rowan::{SyntaxNodeChildren, TextRange};
+
 use crate::{
     language::{Language, SyntaxNode},
     syntax_kind::SyntaxKind,
@@ -714,6 +720,10 @@ node!(Identifier);
 impl Identifier {
     pub fn value(&self) -> Option<EcoString> {
         Some(self.0.first_token()?.text().into())
+    }
+
+    pub fn range(&self) -> Option<TextRange> {
+        Some(self.0.first_token()?.text_range())
     }
 }
 

@@ -80,7 +80,7 @@ mod tests {
             doc.get_definition(pos(&doc, 2, 6)),
             Some((
                 DocumentId::new(0),
-                TextRange::new(pos(&doc, 2, 6), pos(&doc, 2, 8)),
+                TextRange::new(pos(&doc, 2, 6), pos(&doc, 2, 7)),
             ))
         );
 
@@ -89,7 +89,7 @@ mod tests {
             doc.get_definition(pos(&doc, 4, 6)),
             Some((
                 DocumentId::new(0),
-                TextRange::new(pos(&doc, 4, 6), pos(&doc, 4, 10)),
+                TextRange::new(pos(&doc, 4, 6), pos(&doc, 4, 9)),
             ))
         );
 
@@ -98,7 +98,7 @@ mod tests {
             doc.get_definition(pos(&doc, 6, 17)),
             Some((
                 DocumentId::new(0),
-                TextRange::new(pos(&doc, 6, 17), pos(&doc, 6, 22)),
+                TextRange::new(pos(&doc, 6, 17), pos(&doc, 6, 21)),
             ))
         );
 

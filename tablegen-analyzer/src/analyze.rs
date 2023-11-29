@@ -608,12 +608,12 @@ fn with_id<T>(
     id: Option<ast::Identifier>,
     f: impl FnOnce(EcoString, TextRange) -> Option<T>,
 ) -> Option<T> {
-    let Some(id) = id else {
-        return None;
-    };
-    let Some(name) = id.value() else {
-        return None;
-    };
-    let range = id.syntax().text_range();
-    f(name, range)
+    match id {
+        Some(id) => {
+            let name = id.value()?;
+            let range = id.range()?;
+            f(name, range)
+        }
+        None => None,
+    }
 }
