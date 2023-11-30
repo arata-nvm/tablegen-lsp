@@ -385,7 +385,7 @@ asts! {
     };
     DagArg {
         value: Value,
-        var_nem: VarName,
+        var_name: VarName,
     };
     VarName {
         pub fn value(&self) -> Option<EcoString> {
