@@ -251,8 +251,9 @@ fn analyze_inner_value(inner_value: ast::InnerValue, i: &mut DocumentIndexer) ->
     let mut lhs_typ: SymbolType = analyze_simple_value(simple_value, i);
     for suffix in inner_value.suffixes() {
         let suffixed_type = match suffix {
-            ast::ValueSuffix::RangeSuffix(range_suffix) => {
-                analyze_range_suffix(range_suffix, i);
+            ast::ValueSuffix::RangeSuffix(_) => {
+                // since range suffix is constant, skip for now
+                // analyze_range_suffix(range_suffix, i);
                 match lhs_typ {
                     SymbolType::Bits(_) | SymbolType::Int => Some(SymbolType::Int),
                     _ => None,
@@ -279,19 +280,6 @@ fn analyze_inner_value(inner_value: ast::InnerValue, i: &mut DocumentIndexer) ->
         lhs_typ = suffixed_type.unwrap_or(SymbolType::unknown());
     }
     lhs_typ
-}
-
-fn analyze_range_suffix(range_suffix: ast::RangeSuffix, i: &mut DocumentIndexer) {
-    with(range_suffix.range_list(), |list| {
-        for piece in list.pieces() {
-            with(piece.start(), |value| {
-                analyze_value(value, i);
-            });
-            with(piece.end(), |value| {
-                analyze_value(value, i);
-            });
-        }
-    });
 }
 
 fn analyze_slice_suffix(slice_suffix: ast::SliceSuffix, i: &mut DocumentIndexer) {
