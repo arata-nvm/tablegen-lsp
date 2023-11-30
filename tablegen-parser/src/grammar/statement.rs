@@ -214,23 +214,13 @@ pub(super) fn foreach_iterator(p: &mut Parser) {
     p.finish_node()
 }
 
-// ForeachIteratorInit ::=  "{" RangeList "}" | RangePiece | Value
+// ForeachIteratorInit ::= RangeSuffix | RangePiece | Value
 pub(super) fn foreach_iterator_init(p: &mut Parser) {
-    p.start_node(SyntaxKind::ForeachIteratorInit);
     match p.current() {
-        T!['{'] => {
-            p.assert(T!['{']);
-            value::range_list(p);
-            p.expect(T!['}']);
-        }
-        TokenKind::IntVal => {
-            value::range_piece(p);
-        }
-        _ => {
-            value::value(p);
-        }
-    }
-    p.finish_node();
+        T!['{'] => value::range_suffix(p), // TODO
+        TokenKind::IntVal => value::range_piece(p),
+        _ => value::value(p),
+    };
 }
 
 // If ::= "if" Value "then" ( "{" Statement* "}" | Statement )
