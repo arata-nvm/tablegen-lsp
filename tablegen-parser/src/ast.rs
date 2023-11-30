@@ -420,3 +420,395 @@ asts! {
         value[1]: Value,
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use rowan::ast::AstNode;
+
+    use crate::grammar;
+    use crate::language::Language;
+
+    use super::*;
+
+    fn parse<T: AstNode<Language = Language>>(text: &str) -> T {
+        let (root, _) = grammar::parse(text);
+        root.descendants().find_map(T::cast).unwrap()
+    }
+
+    #[test]
+    fn root() {
+        let node = parse::<Root>("class Foo;");
+        assert!(node.statement_list().is_some());
+    }
+
+    #[test]
+    fn statement_list() {
+        let node = parse::<StatementList>("class Foo; class Bar;");
+        assert_eq!(node.statements().count(), 2);
+    }
+
+    #[test]
+    fn include() {
+        let node = parse::<Include>("include \"foo.td\"");
+        assert!(node.path().is_some());
+    }
+
+    #[test]
+    fn class() {
+        let node = parse::<Class>("class Foo<int A = 1> : Bar<A> { int A = 1; let B = 2; defvar C = 3; assert true, \"\"; };");
+        assert!(node.name().is_some());
+        assert!(node.template_arg_list().is_some());
+        assert!(node.record_body().is_some());
+
+        // template_arg_list
+        let args: Vec<TemplateArgDecl> = node.template_arg_list().unwrap().args().collect();
+        assert_eq!(args.len(), 1);
+
+        // template_arg_decl
+        let arg = args.get(0).unwrap();
+        assert!(arg.r#type().is_some());
+        assert!(arg.name().is_some());
+        assert!(arg.value().is_some());
+
+        // record_body
+        let record_body = node.record_body().unwrap();
+        assert!(record_body.parent_class_list().is_some());
+        assert!(record_body.body().is_some());
+
+        // parent_class_list
+        let classes: Vec<ClassRef> = record_body.parent_class_list().unwrap().classes().collect();
+        assert_eq!(classes.len(), 1);
+
+        // class_ref
+        let class_ref = classes.get(0).unwrap();
+        assert!(class_ref.name().is_some());
+        assert!(class_ref.arg_value_list().is_some());
+
+        // arg_value_list
+        let list = class_ref.arg_value_list().unwrap();
+        assert!(list.positional().is_some());
+
+        // positional_arg_value_list
+        let positional: Vec<Value> = list.positional().unwrap().values().collect();
+        assert_eq!(positional.len(), 1);
+
+        // body
+        let items: Vec<BodyItem> = record_body.body().unwrap().items().collect();
+
+        // field_def
+        let BodyItem::FieldDef(field_def) = items.get(0).unwrap() else {
+            panic!();
+        };
+        assert!(field_def.r#type().is_some());
+        assert!(field_def.name().is_some());
+        assert!(field_def.value().is_some());
+
+        // field_let
+        let BodyItem::FieldLet(field_let) = items.get(1).unwrap() else {
+            panic!();
+        };
+        assert!(field_let.name().is_some());
+        assert!(field_let.value().is_some());
+
+        // defvar
+        let BodyItem::Defvar(_) = items.get(2).unwrap() else {
+            panic!();
+        };
+
+        // assert
+        let BodyItem::Assert(_) = items.get(3).unwrap() else {
+            panic!();
+        };
+    }
+
+    #[test]
+    fn def() {
+        let node = parse::<Def>("def foo: Foo");
+        assert!(node.name().is_some());
+        assert!(node.record_body().is_some());
+    }
+
+    #[test]
+    fn r#let() {
+        let node = parse::<Let>("let foo<1> = 1 {}");
+        assert!(node.let_list().is_some());
+        assert!(node.statement_list().is_some());
+
+        // let_list
+        let items: Vec<LetItem> = node.let_list().unwrap().items().collect();
+        assert_eq!(items.len(), 1);
+
+        // let_item
+        let item = items.get(0).unwrap();
+        assert!(item.name().is_some());
+        assert!(item.range_list().is_some());
+        assert!(item.value().is_some());
+    }
+
+    #[test]
+    fn multi_class() {
+        let node = parse::<MultiClass>("multiclass Foo<int A>: Bar {}");
+        assert!(node.name().is_some());
+        assert!(node.template_arg_list().is_some());
+        assert!(node.parent_class_list().is_some());
+        assert!(node.statement_list().is_some());
+    }
+
+    #[test]
+    fn defm() {
+        let node = parse::<Defm>("defm foo: Foo;");
+        assert!(node.name().is_some());
+        assert!(node.parent_class_list().is_some());
+    }
+
+    #[test]
+    fn defset() {
+        let node = parse::<Defset>("defset list<Foo> Foos = [];");
+        assert!(node.r#type().is_some());
+        assert!(node.name().is_some());
+        assert!(node.statement_list().is_some());
+    }
+
+    #[test]
+    fn defvar() {
+        let node = parse::<Defvar>("defvar foo = 1;");
+        assert!(node.name().is_some());
+        assert!(node.value().is_some());
+    }
+
+    #[test]
+    fn foreach() {
+        let node = parse::<Foreach>("foreach i = {1-4} in {}");
+        assert!(node.iterator().is_some());
+        assert!(node.body().is_some());
+
+        // foreach_iterator
+        let iter = node.iterator().unwrap();
+        assert!(iter.name().is_some());
+        assert!(iter.init().is_some());
+    }
+
+    #[test]
+    fn r#if() {
+        let node = parse::<If>("if 1 then {} else {}");
+        assert!(node.condition().is_some());
+        assert!(node.statement_list().is_some());
+    }
+
+    #[test]
+    fn assert() {
+        let node = parse::<Assert>("assert 1, \"\";");
+        assert!(node.condition().is_some());
+        assert!(node.message().is_some());
+    }
+
+    #[test]
+    fn r#type() {
+        let node = parse::<Class>(
+            "class Foo<bit A, int B, string C, dag D, bits<4> E, list<int> F, Bar G, code H>;",
+        );
+        let types: Vec<Type> = node
+            .template_arg_list()
+            .unwrap()
+            .args()
+            .map(|arg| arg.r#type().unwrap())
+            .collect();
+
+        // bit_type
+        let Type::BitType(_) = types.get(0).unwrap() else {
+            panic!();
+        };
+
+        // int_type
+        let Type::IntType(_) = types.get(1).unwrap() else {
+            panic!();
+        };
+
+        // string_type
+        let Type::StringType(_) = types.get(2).unwrap() else {
+            panic!();
+        };
+        // dag_type
+        let Type::DagType(_) = types.get(3).unwrap() else {
+            panic!();
+        };
+        // bits_type
+        let Type::BitsType(bits) = types.get(4).unwrap() else {
+            panic!();
+        };
+        assert!(bits.length().is_some());
+
+        // list_type
+        let Type::ListType(list) = types.get(5).unwrap() else {
+            panic!();
+        };
+        assert!(list.inner_type().is_some());
+
+        // class_id
+        let Type::ClassId(class_id) = types.get(6).unwrap() else {
+            panic!();
+        };
+        assert!(class_id.name().is_some());
+
+        // code_type
+        let Type::CodeType(_) = types.get(7).unwrap() else {
+            panic!();
+        };
+    }
+
+    #[test]
+    fn value() {
+        let node = parse::<Defvar>("defvar a = \"foo\" # \"bar\"");
+        let values: Vec<InnerValue> = node.value().unwrap().inner_values().collect();
+        assert_eq!(values.len(), 2);
+    }
+
+    #[test]
+    fn inner_value() {
+        let node = parse::<Defvar>("defvar a = a{0-3}[0-3].field;");
+        let inner_value = node.value().unwrap().inner_values().next().unwrap();
+        assert!(inner_value.simple_value().is_some());
+
+        // range_suffix
+        let ValueSuffix::RangeSuffix(range_suffix) = inner_value.suffixes().nth(0).unwrap() else {
+            panic!();
+        };
+        assert!(range_suffix.range_list().is_some());
+
+        // range_list
+        let pieces: Vec<RangePiece> = range_suffix.range_list().unwrap().pieces().collect();
+        assert_eq!(pieces.len(), 1);
+
+        // range_piece
+        let piece = pieces.get(0).unwrap();
+        assert!(piece.start().is_some());
+        assert!(piece.end().is_some());
+
+        // slice_suffix
+        let ValueSuffix::SliceSuffix(slice_suffix) = inner_value.suffixes().nth(1).unwrap() else {
+            panic!();
+        };
+        assert!(slice_suffix.element_list().is_some());
+
+        // slice_elements
+        let elements: Vec<SliceElement> = slice_suffix.element_list().unwrap().elements().collect();
+        assert_eq!(elements.len(), 1);
+
+        let element = elements.get(0).unwrap();
+        assert!(element.start().is_some());
+        assert!(element.end().is_some());
+
+        // field_suffix
+        let ValueSuffix::FieldSuffix(field_suffix) = inner_value.suffixes().nth(2).unwrap() else {
+            panic!();
+        };
+        assert!(field_suffix.name().is_some());
+    }
+
+    #[test]
+    fn simple_value() {
+        fn parse_simple_value(text: &str) -> SimpleValue {
+            let node = parse::<Defvar>(&format!("defvar a = {};", text));
+            node.value()
+                .unwrap()
+                .inner_values()
+                .next()
+                .unwrap()
+                .simple_value()
+                .unwrap()
+        }
+
+        // integer
+        let SimpleValue::Integer(integer) = parse_simple_value("1") else {
+            panic!();
+        };
+        assert!(integer.value().is_some());
+
+        // string
+        let SimpleValue::String(string) = parse_simple_value("\"foo\"") else {
+            panic!();
+        };
+        assert!(!string.value().is_empty());
+
+        // code
+        let SimpleValue::Code(code) = parse_simple_value("[{foo}]") else {
+            panic!();
+        };
+        assert!(code.value().is_some());
+
+        // boolean
+        let SimpleValue::Boolean(boolean) = parse_simple_value("true") else {
+            panic!();
+        };
+        assert!(boolean.value().is_some());
+
+        // uninitialized
+        let SimpleValue::Uninitialized(_) = parse_simple_value("?") else {
+            panic!();
+        };
+
+        // bits
+        let SimpleValue::Bits(bits) = parse_simple_value("{0, 1}") else {
+            panic!();
+        };
+        assert!(bits.value_list().is_some());
+
+        // list
+        let SimpleValue::List(list) = parse_simple_value("[1, 2, 3, 4]") else {
+            panic!();
+        };
+        assert!(list.value_list().is_some());
+
+        // dag
+        let SimpleValue::Dag(dag) = parse_simple_value("(add:$op 1, 2)") else {
+            panic!();
+        };
+        assert!(dag.operator().is_some());
+        assert!(dag.arg_list().is_some());
+
+        // dag_arg
+        let dag_arg = dag.operator().unwrap();
+        assert!(dag_arg.value().is_some());
+        assert!(dag_arg.var_name().is_some());
+
+        // dag_arg_list
+        let args: Vec<DagArg> = dag.arg_list().unwrap().args().collect();
+        assert_eq!(args.len(), 2);
+
+        // identifier
+        let SimpleValue::Identifier(identifier) = parse_simple_value("foo") else {
+            panic!();
+        };
+        assert!(identifier.value().is_some());
+
+        // class_value
+        let SimpleValue::ClassValue(class_value) = parse_simple_value("Foo<1>") else {
+            panic!();
+        };
+        assert!(class_value.name().is_some());
+        assert!(class_value.arg_value_list().is_some());
+
+        // bang_operator
+        let SimpleValue::BangOperator(bang_operator) = parse_simple_value("!add(1, 2)") else {
+            panic!();
+        };
+        assert!(bang_operator.kind().is_some());
+
+        let values: Vec<Value> = bang_operator.values().collect();
+        assert_eq!(values.len(), 2);
+
+        // cond_operator
+        let SimpleValue::CondOperator(cond_operator) =
+            parse_simple_value("!cond(false : 0, true : 1)")
+        else {
+            panic!();
+        };
+        let clauses: Vec<CondClause> = cond_operator.clauses().collect();
+        assert_eq!(clauses.len(), 2);
+
+        // cond_clause
+        let clause = clauses.get(0).unwrap();
+        assert!(clause.condition().is_some());
+        assert!(clause.value().is_some());
+    }
+}
