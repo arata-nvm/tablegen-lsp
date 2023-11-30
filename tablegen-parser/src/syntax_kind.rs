@@ -21,7 +21,6 @@ pub enum SyntaxKind {
     Defvar,
     Foreach,
     ForeachIterator,
-    ForeachIteratorInit,
     If,
     Assert,
     TemplateArgList,
