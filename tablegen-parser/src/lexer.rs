@@ -2,6 +2,7 @@ use ecow::EcoString;
 use rowan::{TextRange, TextSize};
 use unscanny::Scanner;
 
+use crate::token_stream::TokenStream;
 use crate::{token_kind::TokenKind, T};
 
 #[derive(Debug)]
@@ -10,6 +11,37 @@ pub struct Lexer<'a> {
     current: TokenKind,
     current_range: TextRange,
     error: Option<EcoString>,
+}
+
+impl<'a> TokenStream for Lexer<'a> {
+    fn next(&mut self) -> TokenKind {
+        let start = self.s.cursor();
+        self.current = self.next_token(start);
+        let end = self.s.cursor();
+
+        self.current_range = TextRange::new(
+            TextSize::new(start.try_into().unwrap()),
+            TextSize::new(end.try_into().unwrap()),
+        );
+
+        self.current
+    }
+
+    fn take_error(&mut self) -> Option<EcoString> {
+        self.error.take()
+    }
+
+    fn current(&self) -> TokenKind {
+        self.current
+    }
+
+    fn current_range(&self) -> TextRange {
+        self.current_range
+    }
+
+    fn current_text(&self) -> &'a str {
+        self.s.get(self.current_range.into())
+    }
 }
 
 impl<'a> Lexer<'a> {
@@ -24,38 +56,9 @@ impl<'a> Lexer<'a> {
         lexer
     }
 
-    pub fn take_error(&mut self) -> Option<EcoString> {
-        self.error.take()
-    }
-
-    pub fn current(&self) -> TokenKind {
-        self.current
-    }
-
-    pub fn current_range(&self) -> TextRange {
-        self.current_range
-    }
-
-    pub fn current_text(&self) -> &'a str {
-        self.s.get(self.current_range.into())
-    }
-
     fn error(&mut self, msg: impl Into<EcoString>) -> TokenKind {
         self.error = Some(msg.into());
         TokenKind::Error
-    }
-
-    pub fn next(&mut self) -> TokenKind {
-        let start = self.s.cursor();
-        self.current = self.next_token(start);
-        let end = self.s.cursor();
-
-        self.current_range = TextRange::new(
-            TextSize::new(start.try_into().unwrap()),
-            TextSize::new(end.try_into().unwrap()),
-        );
-
-        self.current
     }
 
     fn next_token(&mut self, start: usize) -> TokenKind {
@@ -324,6 +327,7 @@ fn is_newline(c: char) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::token_kind::TokenKind;
+    use crate::token_stream::TokenStream;
 
     use super::Lexer;
 

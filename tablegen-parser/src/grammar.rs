@@ -1,3 +1,4 @@
+use crate::lexer::Lexer;
 use crate::{
     error::TableGenError, grammar::statement::StatementListType, language::SyntaxNode,
     parser::Parser, syntax_kind::SyntaxKind, token_kind::TokenKind, T,
@@ -10,7 +11,8 @@ pub mod value;
 const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
 
 pub fn parse(text: &str) -> (SyntaxNode, Vec<TableGenError>) {
-    let mut parser = Parser::new(text, &RECOVER_TOKENS);
+    let mut lexer = Lexer::new(text);
+    let mut parser = Parser::new(lexer, &RECOVER_TOKENS);
     root(&mut parser);
     parser.finish()
 }

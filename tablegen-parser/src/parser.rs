@@ -2,9 +2,10 @@ use ecow::{eco_format, EcoString};
 use rowan::GreenNodeBuilder;
 pub use rowan::{TextRange, TextSize};
 
+use crate::lexer::Lexer;
+use crate::token_stream::TokenStream;
 use crate::{
-    error::TableGenError, language::SyntaxNode, lexer::Lexer, syntax_kind::SyntaxKind,
-    token_kind::TokenKind,
+    error::TableGenError, language::SyntaxNode, syntax_kind::SyntaxKind, token_kind::TokenKind,
 };
 
 #[derive(Debug)]
@@ -25,25 +26,25 @@ impl CompletedMarker {
     }
 }
 
+pub(crate) type Parser<'a> = ParserBase<'a, Lexer<'a>>;
+
 #[derive(Debug)]
-pub(crate) struct Parser<'a> {
-    text: &'a str,
+pub(crate) struct ParserBase<'a, T: TokenStream> {
     recover_tokens: &'a [TokenKind],
 
-    lexer: Lexer<'a>,
+    token_stream: T,
     builder: GreenNodeBuilder<'static>,
 
     errors: Vec<TableGenError>,
     is_after_error: bool,
 }
 
-impl<'a> Parser<'a> {
-    pub(crate) fn new(text: &'a str, recover_tokens: &'a [TokenKind]) -> Self {
+impl<'a, T: TokenStream> ParserBase<'a, T> {
+    pub(crate) fn new(token_stream: T, recover_tokens: &'a [TokenKind]) -> Self {
         Self {
-            text,
             recover_tokens,
 
-            lexer: Lexer::new(text),
+            token_stream,
             builder: GreenNodeBuilder::new(),
 
             errors: Vec::new(),
@@ -73,17 +74,7 @@ impl<'a> Parser<'a> {
 
     #[inline]
     pub(crate) fn current(&self) -> TokenKind {
-        self.lexer.current()
-    }
-
-    #[inline]
-    fn current_range(&self) -> TextRange {
-        self.lexer.current_range()
-    }
-
-    #[inline]
-    fn current_text(&self) -> &'a str {
-        self.lexer.current_text()
+        self.token_stream.current()
     }
 
     #[inline]
@@ -102,8 +93,10 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
-        self.errors
-            .push(TableGenError::new(self.current_range(), message));
+        self.errors.push(TableGenError::new(
+            self.token_stream.current_range(),
+            message,
+        ));
         self.is_after_error = true;
     }
 
@@ -163,14 +156,14 @@ impl<'a> Parser<'a> {
 
     fn consume_token(&mut self) {
         if self.at(TokenKind::Error) {
-            let message = self.lexer.take_error().unwrap();
+            let message = self.token_stream.take_error().unwrap();
             self.error(message);
         } else {
             self.builder
-                .token(self.current().into(), self.current_text());
+                .token(self.current().into(), self.token_stream.current_text());
         }
 
-        self.lexer.next();
+        self.token_stream.next();
         self.is_after_error = false;
     }
 }

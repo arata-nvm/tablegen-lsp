@@ -8,3 +8,4 @@ pub mod parser;
 pub mod preprocessor;
 pub mod syntax_kind;
 pub mod token_kind;
+pub mod token_stream;
