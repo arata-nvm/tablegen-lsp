@@ -3,6 +3,7 @@ use rowan::GreenNodeBuilder;
 pub use rowan::{TextRange, TextSize};
 
 use crate::lexer::Lexer;
+use crate::preprocessor::PreProcessor;
 use crate::token_stream::TokenStream;
 use crate::{
     error::TableGenError, language::SyntaxNode, syntax_kind::SyntaxKind, token_kind::TokenKind,
@@ -26,7 +27,7 @@ impl CompletedMarker {
     }
 }
 
-pub(crate) type Parser<'a> = ParserBase<'a, Lexer<'a>>;
+pub(crate) type Parser<'a> = ParserBase<'a, PreProcessor<Lexer<'a>>>;
 
 #[derive(Debug)]
 pub(crate) struct ParserBase<'a, T: TokenStream> {
