@@ -57,6 +57,7 @@ impl<T: TokenStream> PreProcessor<T> {
         match self.token_stream.eat() {
             T![#ifdef] => self.process_if(IfKind::Defined),
             T![#ifndef] => self.process_if(IfKind::NotDefined),
+            T![#else] => self.process_else(),
             T![#endif] => self.process_endif(),
             T![#define] => self.process_define(),
             kind => kind,
@@ -81,7 +82,7 @@ impl<T: TokenStream> PreProcessor<T> {
                 match (if_kind, macro_defined) {
                     (IfKind::Defined, true) | (IfKind::NotDefined, false) => self.next_token(),
                     _ => {
-                        self.eat_until_endif();
+                        self.eat_until_else_or_endif();
                         self.next_token()
                     }
                 }
@@ -91,6 +92,11 @@ impl<T: TokenStream> PreProcessor<T> {
                 IfKind::NotDefined => self.error("expected macro name after #ifndef"),
             },
         }
+    }
+
+    fn process_else(&mut self) -> TokenKind {
+        self.eat_until_else_or_endif();
+        self.next_token()
     }
 
     fn process_endif(&mut self) -> TokenKind {
@@ -126,7 +132,7 @@ impl<T: TokenStream> PreProcessor<T> {
         while self.eat_trivia_once() {}
     }
 
-    fn eat_until_endif(&mut self) {
+    fn eat_until_else_or_endif(&mut self) {
         let mut depth = 1;
         loop {
             match self.token_stream.eat() {
@@ -136,7 +142,7 @@ impl<T: TokenStream> PreProcessor<T> {
                 T![#endif] if depth >= 2 => {
                     depth -= 1;
                 }
-                T![#endif] if depth == 1 => {
+                T![#else] | T![#endif] if depth == 1 => {
                     self.eat_trivia_once();
                     break;
                 }
@@ -161,6 +167,7 @@ mod tests {
     use crate::preprocessor::PreProcessor;
     use crate::token_kind::TokenKind;
     use crate::token_stream::TokenStream;
+    use crate::T;
 
     #[test]
     fn define_1() {
@@ -244,6 +251,34 @@ mod tests {
         );
         let mut prep = PreProcessor::new(lexer);
         assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Eof);
+    }
+
+    #[test]
+    fn ifdef_else() {
+        let text = r"text1
+        #ifdef HOGE
+        [
+        #else
+        ]
+        #endif
+        text2";
+
+        let mut prep = PreProcessor::new(Lexer::new(text));
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), T![']']);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Eof);
+
+        let mut prep = PreProcessor::new(Lexer::new(text));
+        prep.define_macro("HOGE");
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), T!['[']);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
