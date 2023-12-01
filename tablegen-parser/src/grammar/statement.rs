@@ -45,7 +45,7 @@ pub(super) fn statement_list(p: &mut Parser, typ: StatementListType) {
 
 // Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Foreach | If | Let | MultiClass
 pub(super) fn statement(p: &mut Parser) {
-    match p.current() {
+    match p.peek() {
         T![include] => include(p),
         T![assert] => r#assert(p),
         T![class] => class(p),
@@ -89,7 +89,7 @@ pub(super) fn def(p: &mut Parser) {
 }
 
 pub(super) fn object_name(p: &mut Parser) {
-    match p.current() {
+    match p.peek() {
         T![:] | T![;] | T!['{'] => {}
         _ => value::opt_name_value(p),
     }
@@ -154,7 +154,7 @@ pub(super) fn multi_class_statements(p: &mut Parser) {
 
 // MultiClassStatement ::= Def | Defm | Foreach | Let
 pub(super) fn multi_class_statement(p: &mut Parser) {
-    match p.current() {
+    match p.peek() {
         T![def] => def(p),
         T![defm] => defm(p),
         T![foreach] => foreach(p),
@@ -216,7 +216,7 @@ pub(super) fn foreach_iterator(p: &mut Parser) {
 
 // ForeachIteratorInit ::= RangeSuffix | RangePiece | Value
 pub(super) fn foreach_iterator_init(p: &mut Parser) {
-    match p.current() {
+    match p.peek() {
         T!['{'] => value::range_suffix(p), // TODO
         TokenKind::IntVal => value::range_piece(p),
         _ => value::value(p),
@@ -376,7 +376,7 @@ pub(super) fn body_item(p: &mut Parser) -> bool {
         return true;
     }
 
-    match p.current() {
+    match p.peek() {
         T![let] => field_let(p),
         T![defvar] => defvar(p),
         T![assert] => r#assert(p),

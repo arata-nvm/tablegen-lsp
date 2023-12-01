@@ -1,5 +1,7 @@
-use crate::{lexer::Lexer, token_kind::TokenKind, T};
 use std::collections::HashMap;
+
+use crate::token_stream::TokenStream;
+use crate::{lexer::Lexer, token_kind::TokenKind, T};
 
 #[derive(Debug)]
 pub struct PreProcessor<'a> {
@@ -16,7 +18,7 @@ impl<'a> PreProcessor<'a> {
     }
 
     pub fn next(&mut self) -> TokenKind {
-        let kind = self.lexer.next();
+        let kind = self.lexer.eat();
         match kind {
             T![#ifdef] => self.process_if(IfKind::Defined),
             T![#ifndef] => self.process_if(IfKind::NotDefined),
@@ -27,7 +29,7 @@ impl<'a> PreProcessor<'a> {
     }
 
     fn process_if(&mut self, kind: IfKind) {
-        let kind = self.lexer.next();
+        let kind = self.lexer.eat();
         match kind {
             TokenKind::Id => {}
             _ => {}

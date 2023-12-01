@@ -24,7 +24,7 @@ fn token(text: &str) {
     let mut lexer = Lexer::new(text);
     loop {
         let range = lexer.current_range();
-        let token = lexer.next();
+        let token = lexer.eat();
         if let Some(err) = lexer.take_error() {
             println!("{range:?}: Error({err})");
         } else {

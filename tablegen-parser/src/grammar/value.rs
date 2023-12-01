@@ -127,7 +127,7 @@ pub(super) fn inner_name_value(p: &mut Parser) -> CompletedMarker {
         return CompletedMarker::Fail;
     }
 
-    while p.current() != T!['{'] && value_suffix(p) {}
+    while !p.at(T!['{']) && value_suffix(p) {}
 
     p.finish_node();
     CompletedMarker::Success
@@ -135,7 +135,7 @@ pub(super) fn inner_name_value(p: &mut Parser) -> CompletedMarker {
 
 // ValueSuffix ::= RangeSuffix | SliceSuffix | FieldSuffix
 pub(super) fn value_suffix(p: &mut Parser) -> bool {
-    match p.current() {
+    match p.peek() {
         T!['{'] => range_suffix(p),
         T!['['] => slice_suffix(p),
         T![.] => field_suffix(p),
@@ -228,7 +228,7 @@ pub(super) fn field_suffix(p: &mut Parser) -> CompletedMarker {
 
 // SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator
 pub(super) fn simple_value(p: &mut Parser) -> CompletedMarker {
-    match p.current() {
+    match p.peek() {
         TokenKind::IntVal | TokenKind::BinaryIntVal => integer(p),
         TokenKind::StrVal => string(p),
         TokenKind::CodeFragment => code(p),
@@ -427,7 +427,7 @@ pub(super) fn identifier_or_class_value(p: &mut Parser) -> CompletedMarker {
 // BangOperator ::= BANGOP ( "<" Type ">" )? "(" ValueList ")"
 pub(super) fn bang_operator(p: &mut Parser) -> CompletedMarker {
     p.start_node(SyntaxKind::BangOperator);
-    if !p.current().is_bang_operator() {
+    if !p.peek().is_bang_operator() {
         p.error_and_recover("expected bang operator");
         p.finish_node();
         return CompletedMarker::Fail;

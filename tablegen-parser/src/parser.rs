@@ -73,18 +73,18 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
     }
 
     #[inline]
-    pub(crate) fn current(&self) -> TokenKind {
-        self.token_stream.current()
+    pub(crate) fn peek(&self) -> TokenKind {
+        self.token_stream.peek()
     }
 
     #[inline]
     pub(crate) fn at(&self, kind: TokenKind) -> bool {
-        self.current() == kind
+        self.peek() == kind
     }
 
     #[inline]
     pub(crate) fn at_set(&self, set: &[TokenKind]) -> bool {
-        set.contains(&self.current())
+        set.contains(&self.peek())
     }
 
     #[inline]
@@ -149,7 +149,7 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
     }
 
     pub(crate) fn eat_trivia(&mut self) {
-        while self.current().is_trivia() {
+        while self.peek().is_trivia() {
             self.consume_token();
         }
     }
@@ -160,10 +160,10 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
             self.error(message);
         } else {
             self.builder
-                .token(self.current().into(), self.token_stream.current_text());
+                .token(self.peek().into(), self.token_stream.current_text());
+            self.is_after_error = false;
         }
 
-        self.token_stream.next();
-        self.is_after_error = false;
+        self.token_stream.eat();
     }
 }

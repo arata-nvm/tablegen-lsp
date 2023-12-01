@@ -13,7 +13,7 @@ pub(super) const TYPE_FIRST_TOKENS: [TokenKind; 8] = [
 
 // Type ::= BitType | IntType | StringType | DagType | BitsType | ListType | ClassId
 pub(super) fn r#type(p: &mut Parser) {
-    match p.current() {
+    match p.peek() {
         T![bit] => bit_type(p),
         T![int] => int_type(p),
         T![string] => string_type(p),
