@@ -1,24 +1,49 @@
 use std::collections::HashMap;
 
+use ecow::EcoString;
+
+use crate::parser::TextRange;
 use crate::token_stream::TokenStream;
-use crate::{lexer::Lexer, token_kind::TokenKind, T};
+use crate::{token_kind::TokenKind, T};
 
 #[derive(Debug)]
-pub struct PreProcessor<'a> {
-    lexer: Lexer<'a>,
+pub struct PreProcessor<T: TokenStream> {
+    token_stream: T,
     macros: HashMap<String, String>,
 }
 
-impl<'a> PreProcessor<'a> {
-    pub fn new(lexer: Lexer<'a>) -> Self {
+impl<T: TokenStream> TokenStream for PreProcessor<T> {
+    fn eat(&mut self) -> TokenKind {
+        self.token_stream.eat()
+    }
+
+    fn peek(&self) -> TokenKind {
+        self.token_stream.peek()
+    }
+
+    fn take_error(&mut self) -> Option<EcoString> {
+        self.token_stream.take_error()
+    }
+
+    fn current_range(&self) -> TextRange {
+        self.token_stream.current_range()
+    }
+
+    fn current_text(&self) -> &str {
+        self.token_stream.current_text()
+    }
+}
+
+impl<T: TokenStream> PreProcessor<T> {
+    pub fn new(token_stream: T) -> Self {
         Self {
-            lexer,
+            token_stream,
             macros: HashMap::new(),
         }
     }
 
     pub fn next(&mut self) -> TokenKind {
-        let kind = self.lexer.eat();
+        let kind = self.token_stream.eat();
         match kind {
             T![#ifdef] => self.process_if(IfKind::Defined),
             T![#ifndef] => self.process_if(IfKind::NotDefined),
@@ -29,7 +54,7 @@ impl<'a> PreProcessor<'a> {
     }
 
     fn process_if(&mut self, kind: IfKind) {
-        let kind = self.lexer.eat();
+        let kind = self.token_stream.eat();
         match kind {
             TokenKind::Id => {}
             _ => {}
