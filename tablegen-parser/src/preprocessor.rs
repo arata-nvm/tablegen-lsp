@@ -127,14 +127,24 @@ impl<T: TokenStream> PreProcessor<T> {
     }
 
     fn eat_until_endif(&mut self) {
+        let mut depth = 1;
         loop {
-            let kind = self.token_stream.eat();
-            if kind == T![#endif] {
-                self.eat_trivia_once();
-                break;
-            }
-            if kind == TokenKind::Eof {
-                break;
+            match self.token_stream.eat() {
+                T![#ifdef] | T![#ifndef] => {
+                    depth += 1;
+                }
+                T![#endif] if depth >= 2 => {
+                    depth -= 1;
+                }
+                T![#endif] if depth == 1 => {
+                    self.eat_trivia_once();
+                    break;
+                }
+                TokenKind::Eof => {
+                    self.error("reached EOF without matching #endif");
+                    break;
+                }
+                _ => {}
             }
         }
     }
@@ -213,6 +223,26 @@ mod tests {
         let mut prep = PreProcessor::new(lexer);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Eof);
+    }
+
+    #[test]
+    fn ifdef_nested() {
+        let lexer = Lexer::new(
+            r"text1
+            #ifdef HOGE
+            text2
+            #ifdef FUGA
+            text3
+            #endif
+            text4
+            #endif
+            text5",
+        );
+        let mut prep = PreProcessor::new(lexer);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
