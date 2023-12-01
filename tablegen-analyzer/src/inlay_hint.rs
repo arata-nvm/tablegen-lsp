@@ -46,7 +46,7 @@ pub fn inlay_hint(doc: &Document, range: TextRange) -> Option<Vec<InlayHint>> {
             }
             Symbol::RecordField(field) if matches!(field.kind(), RecordFieldKind::FieldLet) => {
                 hints.push(InlayHint::new(
-                    symbol_range.end - TextSize::new(1), // TODO
+                    symbol_range.end,
                     format!(":{}", field.r#type()),
                     InlayHintKind::FieldLet,
                 ));
