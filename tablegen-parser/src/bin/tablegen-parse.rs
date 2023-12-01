@@ -23,7 +23,7 @@ fn main() {
 fn token(text: &str) {
     let mut lexer = Lexer::new(text);
     loop {
-        let range = lexer.current_range();
+        let range = lexer.peek_range();
         let token = lexer.eat();
         if let Some(err) = lexer.take_error() {
             println!("{range:?}: Error({err})");

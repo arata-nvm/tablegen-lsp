@@ -8,9 +8,9 @@ pub trait TokenStream {
 
     fn peek(&self) -> TokenKind;
 
+    fn peek_range(&self) -> TextRange;
+
+    fn peek_text(&self) -> &str;
+
     fn take_error(&mut self) -> Option<EcoString>;
-
-    fn current_range(&self) -> TextRange;
-
-    fn current_text(&self) -> &str;
 }

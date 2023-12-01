@@ -24,16 +24,16 @@ impl<'a> TokenStream for Lexer<'a> {
         self.current
     }
 
-    fn take_error(&mut self) -> Option<EcoString> {
-        self.error.take()
-    }
-
-    fn current_range(&self) -> TextRange {
+    fn peek_range(&self) -> TextRange {
         self.current_range
     }
 
-    fn current_text(&self) -> &'a str {
+    fn peek_text(&self) -> &'a str {
         self.s.get(self.current_range.into())
+    }
+
+    fn take_error(&mut self) -> Option<EcoString> {
+        self.error.take()
     }
 }
 

@@ -93,10 +93,8 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
     }
 
     pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
-        self.errors.push(TableGenError::new(
-            self.token_stream.current_range(),
-            message,
-        ));
+        self.errors
+            .push(TableGenError::new(self.token_stream.peek_range(), message));
         self.is_after_error = true;
     }
 
@@ -160,7 +158,7 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
             self.error(message);
         } else {
             self.builder
-                .token(self.peek().into(), self.token_stream.current_text());
+                .token(self.peek().into(), self.token_stream.peek_text());
             self.is_after_error = false;
         }
 
