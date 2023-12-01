@@ -55,8 +55,9 @@ impl<T: TokenStream> PreProcessor<T> {
 
     fn next_token(&mut self) -> TokenKind {
         match self.token_stream.eat() {
-            // T![#ifdef] => self.process_if(IfKind::Defined),
-            // T![#ifndef] => self.process_if(IfKind::NotDefined),
+            T![#ifdef] => self.process_if(IfKind::Defined),
+            T![#ifndef] => self.process_if(IfKind::NotDefined),
+            T![#endif] => self.process_endif(),
             T![#define] => self.process_define(),
             kind => kind,
         }
@@ -67,12 +68,34 @@ impl<T: TokenStream> PreProcessor<T> {
         TokenKind::Error
     }
 
-    fn process_if(&mut self, kind: IfKind) {
-        let kind = self.token_stream.eat();
-        match kind {
-            TokenKind::Id => {}
-            _ => {}
+    fn process_if(&mut self, if_kind: IfKind) -> TokenKind {
+        self.eat_trivia();
+        match self.token_stream.peek() {
+            TokenKind::Id => {
+                let macro_name = self.token_stream.peek_text();
+                let macro_defined = self.macros.contains(macro_name);
+
+                self.token_stream.eat(); // eat Id
+                self.eat_trivia();
+
+                match (if_kind, macro_defined) {
+                    (IfKind::Defined, true) | (IfKind::NotDefined, false) => self.next_token(),
+                    _ => {
+                        self.eat_until_endif();
+                        self.next_token()
+                    }
+                }
+            }
+            _ => match if_kind {
+                IfKind::Defined => self.error("expected macro name after #ifdef"),
+                IfKind::NotDefined => self.error("expected macro name after #ifndef"),
+            },
         }
+    }
+
+    fn process_endif(&mut self) -> TokenKind {
+        self.eat_trivia_once();
+        self.next_token()
     }
 
     fn process_define(&mut self) -> TokenKind {
@@ -90,9 +113,29 @@ impl<T: TokenStream> PreProcessor<T> {
         }
     }
 
-    fn eat_trivia(&mut self) {
-        while self.token_stream.peek().is_trivia() {
+    fn eat_trivia_once(&mut self) -> bool {
+        if self.token_stream.peek().is_trivia() {
             self.token_stream.eat();
+            true
+        } else {
+            false
+        }
+    }
+
+    fn eat_trivia(&mut self) {
+        while self.eat_trivia_once() {}
+    }
+
+    fn eat_until_endif(&mut self) {
+        loop {
+            let kind = self.token_stream.eat();
+            if kind == T![#endif] {
+                self.eat_trivia_once();
+                break;
+            }
+            if kind == TokenKind::Eof {
+                break;
+            }
         }
     }
 }
@@ -127,6 +170,52 @@ mod tests {
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id); // eat define
         assert!(prep.macros().contains("FOO"));
+        assert_eq!(prep.eat(), TokenKind::Eof);
+    }
+
+    #[test]
+    fn ifdef_defined() {
+        let lexer = Lexer::new("text1\n#ifdef HOGE\ntext2\n#endif\ntext3");
+        let mut prep = PreProcessor::new(lexer);
+        prep.define_macro("HOGE");
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Eof);
+    }
+
+    #[test]
+    fn ifdef_not_defined() {
+        let lexer = Lexer::new("text1\n#ifdef HOGE\ntext2\n#endif\ntext3");
+        let mut prep = PreProcessor::new(lexer);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Eof);
+    }
+
+    #[test]
+    fn ifndef_defined() {
+        let lexer = Lexer::new("text1\n#ifndef HOGE\ntext2\n#endif\ntext3");
+        let mut prep = PreProcessor::new(lexer);
+        prep.define_macro("HOGE");
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Eof);
+    }
+
+    #[test]
+    fn ifndef_not_defined() {
+        let lexer = Lexer::new("text1\n#ifndef HOGE\ntext2\n#endif\ntext3");
+        let mut prep = PreProcessor::new(lexer);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
 }
