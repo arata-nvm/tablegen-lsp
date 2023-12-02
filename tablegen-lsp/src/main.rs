@@ -1,4 +1,3 @@
-use async_lsp::stdio::{PipeStdin, PipeStdout};
 use tower::ServiceBuilder;
 
 use tablegen_lsp::server::TableGenLanguageServer;
@@ -7,8 +6,8 @@ use tablegen_lsp::server::TableGenLanguageServer;
 async fn main() {
     #[cfg(unix)]
     let (stdin, stdout) = (
-        PipeStdin::lock_tokio().unwrap(),
-        PipeStdout::lock_tokio().unwrap(),
+        async_lsp::stdio::PipeStdin::lock_tokio().unwrap(),
+        async_lsp::stdio::PipeStdout::lock_tokio().unwrap(),
     );
 
     #[cfg(not(unix))]
