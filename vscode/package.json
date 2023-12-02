@@ -2,12 +2,16 @@
   "name": "tablegen-lsp",
   "displayName": "tablegen-lsp",
   "description": "",
-  "version": "0.0.1",
+  "publisher": "arata-nvm",
+  "repository": {
+    "url": "https://github.com/arata-nvm/tablegen-lsp"
+  },
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.82.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
