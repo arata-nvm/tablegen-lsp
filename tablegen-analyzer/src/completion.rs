@@ -1,3 +1,5 @@
+use tablegen_parser::ast;
+use tablegen_parser::ast::AstNode;
 use tablegen_parser::parser::TextSize;
 use tablegen_parser::syntax_kind::SyntaxKind;
 
@@ -61,6 +63,14 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                             "",
                             CompletionItemKind::Keyword,
                         ));
+                    }
+                }
+                if ast::Type::can_cast(parent_parent_node.kind()) {
+                    // B
+                    const PRIMITIVE_TYPES: [&str; 7] =
+                        ["bit", "bits", "code", "dag", "int", "list", "string"];
+                    for typ in PRIMITIVE_TYPES {
+                        items.push(CompletionItem::new(typ, "", CompletionItemKind::Type));
                     }
                 }
             }
