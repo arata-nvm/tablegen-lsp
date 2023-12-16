@@ -73,6 +73,15 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                         items.push(CompletionItem::new(typ, "", CompletionItemKind::Type));
                     }
                 }
+                if parent_parent_node.kind() == SyntaxKind::Value
+                    || parent_parent_node.kind() == SyntaxKind::InnerValue
+                {
+                    // C
+                    const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
+                    for value in BOOLEAN_VALUES {
+                        items.push(CompletionItem::new(value, "", CompletionItemKind::Keyword));
+                    }
+                }
             }
         }
     }
