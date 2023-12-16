@@ -4,6 +4,7 @@ use tablegen_parser::parser::TextSize;
 use tablegen_parser::syntax_kind::SyntaxKind;
 
 use crate::document::Document;
+use crate::symbol::{RecordKind, Symbol, VariableKind};
 
 #[derive(Eq, PartialEq, Hash)]
 pub struct CompletionItem {
@@ -80,6 +81,37 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                     const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
                     for value in BOOLEAN_VALUES {
                         items.push(CompletionItem::new(value, "", CompletionItemKind::Keyword));
+                    }
+
+                    for symbol_id in doc.symbol_map().global_symbols() {
+                        let Some(symbol) = doc.symbol_map().symbol(*symbol_id) else {
+                            continue;
+                        };
+
+                        match symbol {
+                            Symbol::Record(record) => match record.kind() {
+                                RecordKind::Def => items.push(CompletionItem::new(
+                                    record.name(),
+                                    "def",
+                                    CompletionItemKind::Def,
+                                )),
+                                _ => {}
+                            },
+                            Symbol::RecordField(_) => {}
+                            Symbol::Variable(variable) => match variable.kind() {
+                                VariableKind::Defset => items.push(CompletionItem::new(
+                                    variable.name(),
+                                    variable.r#type().to_string(),
+                                    CompletionItemKind::Defset,
+                                )),
+                                VariableKind::Defvar => items.push(CompletionItem::new(
+                                    variable.name(),
+                                    variable.r#type().to_string(),
+                                    CompletionItemKind::Defvar,
+                                )),
+                                VariableKind::Temporary => {}
+                            },
+                        }
                     }
                 }
             }
