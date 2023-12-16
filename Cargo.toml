@@ -1,2 +1,3 @@
 [workspace]
 members = ["tablegen-analyzer", "tablegen-lsp", "tablegen-parser"]
+resolver = "2"
