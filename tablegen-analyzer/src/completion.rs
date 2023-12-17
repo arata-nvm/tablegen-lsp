@@ -149,6 +149,45 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                                             )
                                         });
                                     items.extend(new_items);
+
+                                    let num_fields_to_complete = class
+                                        .record_body()
+                                        .and_then(|record_body| record_body.body())
+                                        .and_then(|body| {
+                                            body.items()
+                                                .map(|item| item.syntax().text_range())
+                                                .position(|range| range.contains_inclusive(pos))
+                                        })
+                                        .unwrap_or(usize::MAX);
+                                    let new_items = record
+                                        .fields()
+                                        .into_iter()
+                                        .filter_map(|symbol_id| doc.symbol_map().symbol(symbol_id))
+                                        .filter_map(|symbol| symbol.as_field())
+                                        .take(num_fields_to_complete)
+                                        .map(|field| {
+                                            CompletionItem::new(
+                                                field.name(),
+                                                field.r#type().to_string(),
+                                                CompletionItemKind::Field,
+                                            )
+                                        });
+                                    items.extend(new_items);
+
+                                    let new_items = doc
+                                        .symbol_map()
+                                        .get_all_parent_fields(class_symbol)
+                                        .into_iter()
+                                        .filter_map(|symbol_id| doc.symbol_map().symbol(symbol_id))
+                                        .filter_map(|symbol| symbol.as_field())
+                                        .map(|field| {
+                                            CompletionItem::new(
+                                                field.name(),
+                                                field.r#type().to_string(),
+                                                CompletionItemKind::Field,
+                                            )
+                                        });
+                                    items.extend(new_items);
                                 }
                             }
                         }

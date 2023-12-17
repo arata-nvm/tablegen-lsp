@@ -143,4 +143,19 @@ impl SymbolMap {
         }
         fields
     }
+
+    pub fn get_all_parent_fields(&self, symbol: &Symbol) -> Vec<SymbolId> {
+        let Some(record) = symbol.as_record() else {
+            return vec![];
+        };
+
+        let mut fields = vec![];
+        for parent_id in record.parents() {
+            let Some(parent) = self.symbol(*parent_id) else {
+                continue;
+            };
+            fields.extend(self.get_all_fields(parent));
+        }
+        fields
+    }
 }
