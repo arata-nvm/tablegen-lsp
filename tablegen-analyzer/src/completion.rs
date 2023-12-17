@@ -116,6 +116,43 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                             },
                         }
                     }
+
+                    if let Some(class) = parent_node
+                        .ancestors()
+                        .find(|node| node.kind() == SyntaxKind::Class)
+                        .and_then(|node| ast::Class::cast(node))
+                    {
+                        if let Some(name_range) = class.name().and_then(|name| name.range()) {
+                            if let Some(class_symbol) =
+                                doc.symbol_map().get_symbol_at(name_range.start())
+                            {
+                                if let Some(record) = class_symbol.as_record() {
+                                    let num_args_to_complete = class
+                                        .template_arg_list()
+                                        .and_then(|list| {
+                                            list.args()
+                                                .map(|arg| arg.syntax().text_range())
+                                                .position(|range| range.contains_inclusive(pos))
+                                        })
+                                        .unwrap_or(usize::MAX);
+                                    let new_items = record
+                                        .template_args()
+                                        .into_iter()
+                                        .filter_map(|symbol_id| doc.symbol_map().symbol(symbol_id))
+                                        .filter_map(|symbol| symbol.as_field())
+                                        .take(num_args_to_complete)
+                                        .map(|field| {
+                                            CompletionItem::new(
+                                                field.name(),
+                                                field.r#type().to_string(),
+                                                CompletionItemKind::TemplateArg,
+                                            )
+                                        });
+                                    items.extend(new_items);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
