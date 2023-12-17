@@ -87,6 +87,9 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                         let Some(symbol) = doc.symbol_map().symbol(*symbol_id) else {
                             continue;
                         };
+                        if symbol.define_loc().1.start() >= pos {
+                            continue;
+                        }
 
                         match symbol {
                             Symbol::Record(record) => match record.kind() {
