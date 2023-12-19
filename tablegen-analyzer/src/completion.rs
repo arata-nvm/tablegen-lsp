@@ -118,6 +118,7 @@ impl<'a> CompletionContext<'a> {
                 continue;
             };
 
+            // NOTE: symbolが外部のファイルで定義されていた場合、バグる可能性がある
             let symbol_pos = symbol.define_loc().1.start();
             if symbol_pos >= self.pos {
                 continue;
