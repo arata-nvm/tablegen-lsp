@@ -56,6 +56,9 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                     ctx.complete_defs();
                     ctx.complete_values_of_class(parent_node);
                 }
+                if parent_parent_node.kind() == SyntaxKind::ClassRef {
+                    ctx.complete_classes();
+                }
             }
         }
     }
@@ -109,6 +112,31 @@ impl<'a> CompletionContext<'a> {
     fn complete_primitive_values(&mut self) {
         const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
         self.add_items(&BOOLEAN_VALUES, CompletionItemKind::Keyword);
+    }
+
+    fn complete_classes(&mut self) {
+        let symbol_map = self.doc.symbol_map();
+        for symbol_id in symbol_map.global_symbols() {
+            let Some(symbol) = symbol_map.symbol(*symbol_id) else {
+                continue;
+            };
+
+            // NOTE: symbolが外部のファイルで定義されていた場合、バグる可能性がある
+            let symbol_pos = symbol.define_loc().1.start();
+            if symbol_pos >= self.pos {
+                continue;
+            }
+
+            match symbol {
+                Symbol::Record(record) => match record.kind() {
+                    RecordKind::Class => {
+                        self.add_item(record.name(), "class", CompletionItemKind::Def)
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
     }
 
     fn complete_defs(&mut self) {
