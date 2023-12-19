@@ -143,6 +143,10 @@ impl Record {
         args
     }
 
+    pub fn find_template_arg(&self, name: &EcoString) -> Option<&SymbolId> {
+        self.template_args.get(name)
+    }
+
     pub fn add_parent(&mut self, parent: SymbolId) {
         self.parents.push(parent);
     }
