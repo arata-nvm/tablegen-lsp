@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			break;
 		case 'win32':
-			binary = 'tablegen-lsp-master-x86_64-pc-windows-msvc';
+			binary = 'tablegen-lsp-master-x86_64-pc-windows-msvc.exe';
 			break;
 	}
 
