@@ -39,6 +39,7 @@ fn analyze_statement_list(list: ast::StatementList, i: &mut DocumentIndexer) {
 
 fn analyze_statement(stmt: ast::Statement, i: &mut DocumentIndexer) {
     match stmt {
+        ast::Statement::Assert(assert) => analyze_assert(assert, i),
         ast::Statement::Class(class) => analyze_class(class, i),
         ast::Statement::Def(def) => analyze_def(def, i),
         ast::Statement::Defset(defset) => analyze_defset(defset, i),
@@ -46,6 +47,15 @@ fn analyze_statement(stmt: ast::Statement, i: &mut DocumentIndexer) {
         ast::Statement::Let(r#let) => analyze_let(r#let, i),
         _ => {}
     }
+}
+
+fn analyze_assert(assert: ast::Assert, i: &mut DocumentIndexer) {
+    with(assert.condition(), |condition| {
+        analyze_value(condition, i);
+    });
+    with(assert.message(), |message| {
+        analyze_value(message, i);
+    });
 }
 
 fn analyze_class(class: ast::Class, i: &mut DocumentIndexer) {
