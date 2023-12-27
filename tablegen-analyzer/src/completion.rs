@@ -48,6 +48,7 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                 }
                 if ast::Type::can_cast(parent_parent_node.kind()) {
                     ctx.complete_primitive_types();
+                    ctx.complete_let_keyword(parent_node.clone());
                 }
                 if parent_parent_node.kind() == SyntaxKind::Value
                     || parent_parent_node.kind() == SyntaxKind::InnerValue
@@ -139,6 +140,17 @@ impl<'a> CompletionContext<'a> {
                 },
                 _ => {}
             }
+        }
+    }
+
+    fn complete_let_keyword(&mut self, parent_node: SyntaxNode) {
+        let is_in_field_def = parent_node
+            .ancestors()
+            .find(|node| node.kind() == SyntaxKind::FieldDef)
+            .and_then(|node| ast::FieldDef::cast(node))
+            .is_some();
+        if is_in_field_def {
+            self.add_item("let", "", CompletionItemKind::Keyword);
         }
     }
 
