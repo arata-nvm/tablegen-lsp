@@ -40,32 +40,31 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
     let mut ctx = CompletionContext::new(doc, pos);
 
     let root = doc.root();
-    if let Some(cur_token) = root.token_at_offset(pos).left_biased() {
-        if let Some(parent_node) = cur_token.parent() {
-            if let Some(parent_parent_node) = parent_node.parent() {
-                if parent_parent_node.kind() == SyntaxKind::StatementList {
-                    ctx.complete_toplevel_keywords();
-                }
-                if ast::Type::can_cast(parent_parent_node.kind()) {
-                    ctx.complete_primitive_types();
-                    ctx.complete_let_keyword(parent_node.clone());
-                    ctx.complete_classes();
-                }
-                if parent_parent_node.kind() == SyntaxKind::Value
-                    || parent_parent_node.kind() == SyntaxKind::InnerValue
-                {
-                    ctx.complete_primitive_values();
-                    ctx.complete_defs();
-                    ctx.complete_values_of_class(parent_node.clone());
-                }
-                if parent_parent_node.kind() == SyntaxKind::ClassRef {
-                    ctx.complete_classes();
-                }
-                if parent_parent_node.kind() == SyntaxKind::FieldLet {
-                    ctx.complete_values_of_parent_class(parent_node);
-                }
-            }
+    let cur_token = root.token_at_offset(pos).left_biased()?;
+    let parent_node = cur_token.parent()?;
+    let parent_parent_node = parent_node.parent()?;
+
+    match parent_parent_node.kind() {
+        SyntaxKind::StatementList => {
+            ctx.complete_toplevel_keywords();
         }
+        SyntaxKind::Value if parent_node.kind() == SyntaxKind::InnerValue => {
+            ctx.complete_primitive_values();
+            ctx.complete_defs();
+            ctx.complete_values_of_class(parent_node.clone());
+        }
+        SyntaxKind::ClassRef => {
+            ctx.complete_classes();
+        }
+        SyntaxKind::FieldLet => {
+            ctx.complete_values_of_parent_class(parent_node);
+        }
+        _ if ast::Type::can_cast(parent_parent_node.kind()) => {
+            ctx.complete_primitive_types();
+            ctx.complete_classes();
+            ctx.complete_let_keyword(parent_node.clone());
+        }
+        _ => {}
     }
 
     Some(ctx.finish())
@@ -132,26 +131,12 @@ impl<'a> CompletionContext<'a> {
                 continue;
             }
 
-            match symbol {
-                Symbol::Record(record) => match record.kind() {
-                    RecordKind::Class => {
-                        self.add_item(record.name(), "class", CompletionItemKind::Def)
-                    }
-                    _ => {}
-                },
-                _ => {}
+            let Symbol::Record(record) = symbol else {
+                continue;
+            };
+            if matches!(record.kind(), RecordKind::Class) {
+                self.add_item(record.name(), "class", CompletionItemKind::Class)
             }
-        }
-    }
-
-    fn complete_let_keyword(&mut self, parent_node: SyntaxNode) {
-        let is_in_field_def = parent_node
-            .ancestors()
-            .find(|node| node.kind() == SyntaxKind::FieldDef)
-            .and_then(|node| ast::FieldDef::cast(node))
-            .is_some();
-        if is_in_field_def {
-            self.add_item("let", "", CompletionItemKind::Keyword);
         }
     }
 
@@ -310,6 +295,17 @@ impl<'a> CompletionContext<'a> {
                     CompletionItemKind::Field,
                 );
             }
+        }
+    }
+
+    fn complete_let_keyword(&mut self, parent_node: SyntaxNode) {
+        let is_in_field_def = parent_node
+            .ancestors()
+            .find(|node| node.kind() == SyntaxKind::FieldDef)
+            .and_then(|node| ast::FieldDef::cast(node))
+            .is_some();
+        if is_in_field_def {
+            self.add_item("let", "", CompletionItemKind::Keyword);
         }
     }
 
