@@ -54,10 +54,13 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
                 {
                     ctx.complete_primitive_values();
                     ctx.complete_defs();
-                    ctx.complete_values_of_class(parent_node);
+                    ctx.complete_values_of_class(parent_node.clone());
                 }
                 if parent_parent_node.kind() == SyntaxKind::ClassRef {
                     ctx.complete_classes();
+                }
+                if parent_parent_node.kind() == SyntaxKind::FieldLet {
+                    ctx.complete_values_of_parent_class(parent_node);
                 }
             }
         }
@@ -191,7 +194,25 @@ impl<'a> CompletionContext<'a> {
         let body = class.record_body()?.body()?;
         if body.syntax().text_range().contains_inclusive(self.pos) {
             self.complete_fields_of_class(&body, record);
-            self.complete_parent_fields_of_class(class_symbol);
+            self.complete_fields_of_parent_class(class_symbol);
+        }
+
+        Some(())
+    }
+
+    fn complete_values_of_parent_class(&mut self, parent_node: SyntaxNode) -> Option<()> {
+        let symbol_map = self.doc.symbol_map();
+
+        let class = parent_node
+            .ancestors()
+            .find(|node| node.kind() == SyntaxKind::Class)
+            .and_then(|node| ast::Class::cast(node))?;
+        let class_name_range = class.name()?.range()?;
+        let class_symbol = symbol_map.get_symbol_at(class_name_range.start())?;
+
+        let body = class.record_body()?.body()?;
+        if body.syntax().text_range().contains_inclusive(self.pos) {
+            self.complete_fields_of_parent_class(class_symbol);
         }
 
         Some(())
@@ -261,7 +282,7 @@ impl<'a> CompletionContext<'a> {
         Some(())
     }
 
-    fn complete_parent_fields_of_class(&mut self, class_symbol: &Symbol) {
+    fn complete_fields_of_parent_class(&mut self, class_symbol: &Symbol) {
         let symbol_map = self.doc.symbol_map();
 
         let parent_fields = symbol_map.get_all_parent_fields(class_symbol);
