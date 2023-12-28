@@ -1,5 +1,6 @@
 use ecow::{eco_format, EcoString};
 
+use tablegen_parser::ast::ForeachIteratorInit;
 use tablegen_parser::{
     ast::{self, AstNode},
     bang_operator::BangOperator,
@@ -44,6 +45,7 @@ fn analyze_statement(stmt: ast::Statement, i: &mut DocumentIndexer) {
         ast::Statement::Def(def) => analyze_def(def, i),
         ast::Statement::Defset(defset) => analyze_defset(defset, i),
         ast::Statement::Defvar(defvar) => analyze_defvar(defvar, i),
+        ast::Statement::Foreach(foreach) => analyze_foreach(foreach, i),
         ast::Statement::Let(r#let) => analyze_let(r#let, i),
         _ => {}
     }
@@ -184,6 +186,33 @@ fn analyze_defvar(defvar: ast::Defvar, i: &mut DocumentIndexer) {
         });
         Some(())
     });
+}
+
+fn analyze_foreach(foreach: ast::Foreach, i: &mut DocumentIndexer) {
+    i.push_temporary();
+    with(foreach.iterator(), |iterator| {
+        with(iterator.init(), |init| {
+            let typ = analyze_foreach_iterator_init(init, i);
+            with_id(iterator.name(), |name, range| {
+                i.add_temporary_variable(name, range, typ);
+                Some(())
+            });
+        });
+    });
+    with(foreach.body(), |statement_list| {
+        analyze_statement_list(statement_list, i);
+    });
+    i.pop_temporary();
+}
+
+fn analyze_foreach_iterator_init(init: ForeachIteratorInit, i: &mut DocumentIndexer) -> SymbolType {
+    match init {
+        ForeachIteratorInit::RangeSuffix(_) => SymbolType::Int,
+        ForeachIteratorInit::RangePiece(_) => SymbolType::Int,
+        ForeachIteratorInit::Value(value) => analyze_value(value, i)
+            .element_typ()
+            .unwrap_or(SymbolType::unknown()),
+    }
 }
 
 fn analyze_let(r#let: ast::Let, i: &mut DocumentIndexer) {
