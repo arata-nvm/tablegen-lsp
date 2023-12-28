@@ -83,6 +83,9 @@ fn analyze_template_arg(arg: ast::TemplateArgDecl, i: &mut DocumentIndexer) {
         i.add_template_arg(name, range, typ);
         Some(())
     });
+    with(arg.value(), |value| {
+        analyze_value(value, i);
+    });
 }
 
 fn analyze_record_body(record_body: ast::RecordBody, i: &mut DocumentIndexer) {
