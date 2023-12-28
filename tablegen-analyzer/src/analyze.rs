@@ -140,13 +140,15 @@ fn analyze_field_let(field_let: ast::FieldLet, i: &mut DocumentIndexer) {
 }
 
 fn analyze_def(def: ast::Def, i: &mut DocumentIndexer) {
-    let Some(name) = def.name() else {
-        return;
+    let symbol_id = match def.name() {
+        Some(name_value) => {
+            let Some((name, range)) = analyze_name_value(name_value) else {
+                return;
+            };
+            i.add_record(name, range, RecordKind::Def)
+        }
+        None => i.add_anonymous_record(),
     };
-    let Some((name, range)) = analyze_name_value(name) else {
-        return;
-    };
-    let symbol_id = i.add_record(name, range, RecordKind::Def);
 
     i.push(symbol_id);
     with(def.record_body(), |record_body| {

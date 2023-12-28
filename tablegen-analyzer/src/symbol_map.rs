@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use ecow::EcoString;
+use ecow::{eco_format, EcoString};
 use id_arena::Arena;
 use iset::IntervalMap;
 
@@ -16,6 +16,7 @@ pub struct SymbolMap {
     symbols: Arena<Symbol>,
     symbol_map: IntervalMap<TextSize, SymbolId>,
     global_symbols: Vec<SymbolId>,
+    anonymous_index: usize,
 }
 
 impl SymbolMap {
@@ -24,6 +25,7 @@ impl SymbolMap {
             symbols: Arena::new(),
             symbol_map: IntervalMap::new(),
             global_symbols: Vec::new(),
+            anonymous_index: 0,
         }
     }
 
@@ -38,6 +40,17 @@ impl SymbolMap {
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
         self.global_symbols.push(symbol_id);
         symbol_id
+    }
+
+    pub fn new_anonymous_record(&mut self, define_loc: Location) -> SymbolId {
+        let name = self.next_anonymous_name();
+        let record = Record::new(name, define_loc.clone(), RecordKind::Def);
+        self.symbols.alloc(Symbol::Record(record))
+    }
+
+    fn next_anonymous_name(&mut self) -> EcoString {
+        self.anonymous_index += 1;
+        eco_format!("anonymous_{}", self.anonymous_index)
     }
 
     pub fn new_record_field(

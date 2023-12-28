@@ -89,6 +89,11 @@ impl DocumentIndexer {
         symbol_id
     }
 
+    pub fn add_anonymous_record(&mut self) -> SymbolId {
+        let define_loc = self.to_location(TextRange::default());
+        self.symbol_map.new_anonymous_record(define_loc)
+    }
+
     pub fn add_template_arg(&mut self, name: EcoString, range: TextRange, typ: SymbolType) {
         let define_loc = self.to_location(range);
         let symbol_id = self.symbol_map.new_record_field(
