@@ -1,6 +1,5 @@
 use ecow::{eco_format, EcoString};
 
-use tablegen_parser::ast::ForeachIteratorInit;
 use tablegen_parser::{
     ast::{self, AstNode},
     bang_operator::BangOperator,
@@ -205,11 +204,14 @@ fn analyze_foreach(foreach: ast::Foreach, i: &mut DocumentIndexer) {
     i.pop_temporary();
 }
 
-fn analyze_foreach_iterator_init(init: ForeachIteratorInit, i: &mut DocumentIndexer) -> SymbolType {
+fn analyze_foreach_iterator_init(
+    init: ast::ForeachIteratorInit,
+    i: &mut DocumentIndexer,
+) -> SymbolType {
     match init {
-        ForeachIteratorInit::RangeSuffix(_) => SymbolType::Int,
-        ForeachIteratorInit::RangePiece(_) => SymbolType::Int,
-        ForeachIteratorInit::Value(value) => analyze_value(value, i)
+        ast::ForeachIteratorInit::RangeSuffix(_) => SymbolType::Int,
+        ast::ForeachIteratorInit::RangePiece(_) => SymbolType::Int,
+        ast::ForeachIteratorInit::Value(value) => analyze_value(value, i)
             .element_typ()
             .unwrap_or(SymbolType::unknown()),
     }
