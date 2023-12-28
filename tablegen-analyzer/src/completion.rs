@@ -51,7 +51,7 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
         SyntaxKind::Value if parent_node.kind() == SyntaxKind::InnerValue => {
             ctx.complete_primitive_values();
             ctx.complete_defs();
-            ctx.complete_values_of_class(parent_node.clone());
+            ctx.complete_values_of_class(parent_node);
         }
         SyntaxKind::ClassRef => {
             ctx.complete_classes();
@@ -62,7 +62,7 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
         _ if ast::Type::can_cast(parent_parent_node.kind()) => {
             ctx.complete_primitive_types();
             ctx.complete_classes();
-            ctx.complete_let_keyword(parent_node.clone());
+            ctx.complete_let_keyword(parent_node);
         }
         _ => {}
     }
