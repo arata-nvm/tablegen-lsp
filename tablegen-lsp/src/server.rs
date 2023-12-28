@@ -104,7 +104,10 @@ impl TableGenLanguageServer {
                 references_provider: Some(OneOf::Left(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
-                completion_provider: Some(CompletionOptions::default()),
+                completion_provider: Some(CompletionOptions {
+                    trigger_characters: Some(vec!["!".into()]),
+                    ..Default::default()
+                }),
                 inlay_hint_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },

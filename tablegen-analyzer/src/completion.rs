@@ -44,6 +44,10 @@ pub fn completion(doc: &Document, pos: TextSize) -> Option<Vec<CompletionItem>> 
     let parent_node = cur_token.parent()?;
     let parent_parent_node = parent_node.parent()?;
 
+    if cur_token.kind() == SyntaxKind::Error && cur_token.text() == "!" {
+        ctx.complete_bang_operators();
+    }
+
     match parent_parent_node.kind() {
         SyntaxKind::StatementList => {
             ctx.complete_toplevel_keywords();
@@ -116,6 +120,60 @@ impl<'a> CompletionContext<'a> {
     fn complete_primitive_values(&mut self) {
         const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
         self.add_items(&BOOLEAN_VALUES, CompletionItemKind::Keyword);
+    }
+
+    fn complete_bang_operators(&mut self) {
+        const BANG_OPERATORS: [&str; 48] = [
+            "concat",
+            "add",
+            "sub",
+            "mul",
+            "div",
+            "not",
+            "log2",
+            "and",
+            "or",
+            "xor",
+            "sra",
+            "srl",
+            "shl",
+            "listconcat",
+            "listsplat",
+            "strconcat",
+            "interleave",
+            "substr",
+            "find",
+            "cast",
+            "subst",
+            "foreach",
+            "filter",
+            "foldl",
+            "head",
+            "tail",
+            "size",
+            "empty",
+            "if",
+            "eq",
+            "isa",
+            "dag",
+            "ne",
+            "le",
+            "lt",
+            "ge",
+            "gt",
+            "setdagop",
+            "getdagop",
+            "exists",
+            "listremove",
+            "tolower",
+            "toupper",
+            "range",
+            "getdagarg",
+            "getdagname",
+            "setdagarg",
+            "setdagname",
+        ];
+        self.add_items(&BANG_OPERATORS, CompletionItemKind::Keyword);
     }
 
     fn complete_classes(&mut self) {

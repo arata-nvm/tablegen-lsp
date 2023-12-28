@@ -154,12 +154,12 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
     }
 
     fn consume_token(&mut self) {
+        self.builder
+            .token(self.peek().into(), self.token_stream.peek_text());
         if self.at(TokenKind::Error) {
             let message = self.token_stream.take_error().unwrap();
             self.error(message);
         } else {
-            self.builder
-                .token(self.peek().into(), self.token_stream.peek_text());
             self.is_after_error = false;
         }
 
