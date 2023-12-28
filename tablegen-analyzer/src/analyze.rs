@@ -45,6 +45,7 @@ fn analyze_statement(stmt: ast::Statement, i: &mut DocumentIndexer) {
         ast::Statement::Defset(defset) => analyze_defset(defset, i),
         ast::Statement::Defvar(defvar) => analyze_defvar(defvar, i),
         ast::Statement::Foreach(foreach) => analyze_foreach(foreach, i),
+        ast::Statement::If(r#if) => analyze_if(r#if, i),
         ast::Statement::Let(r#let) => analyze_let(r#let, i),
         _ => {}
     }
@@ -202,6 +203,15 @@ fn analyze_foreach(foreach: ast::Foreach, i: &mut DocumentIndexer) {
         analyze_statement_list(statement_list, i);
     });
     i.pop_temporary();
+}
+
+fn analyze_if(r#if: ast::If, i: &mut DocumentIndexer) {
+    with(r#if.condition(), |condition| {
+        analyze_value(condition, i);
+    });
+    with(r#if.statement_list(), |statement_list| {
+        analyze_statement_list(statement_list, i);
+    });
 }
 
 fn analyze_foreach_iterator_init(
