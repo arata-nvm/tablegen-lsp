@@ -1,30 +1,26 @@
-use std::path::PathBuf;
 use std::{
-    fs,
     future::{ready, Future},
     ops::ControlFlow,
 };
 
-use async_lsp::{router::Router, ClientSocket, LanguageClient, ResponseError};
+use async_lsp::{router::Router, ClientSocket, ResponseError};
 use lsp_types::{
     notification, request, CompletionOptions, CompletionParams, CompletionResponse,
     DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
     DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
     HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams,
-    Location, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    Location, OneOf, ReferenceParams, ServerCapabilities, TextDocumentSyncCapability,
+    TextDocumentSyncKind, Url,
 };
 
-use tablegen_analyzer::document::{Document, DocumentId};
-use tablegen_analyzer::source::{Dependencies, Source, SourceSet};
-use tablegen_parser::ast::AstNode;
-use tablegen_parser::language::SyntaxNode;
-use tablegen_parser::{ast, grammar};
+use tablegen_analyzer::document::Document;
 
 use crate::{
     compat::{analyzer2lsp, lsp2analyzer},
     document_map::DocumentMap,
 };
+
+mod internal;
 
 type NotifyResult = ControlFlow<async_lsp::Result<()>>;
 
@@ -64,74 +60,6 @@ impl TableGenLanguageServer {
 }
 
 impl TableGenLanguageServer {
-    fn on_change(&mut self, uri: Url, version: i32, text: String) {
-        let doc_id = self.document_map.assign_document_id(uri.clone());
-
-        let extract_include_paths = |root: SyntaxNode| {
-            let root = ast::Root::cast(root).unwrap();
-            let statement_list = root.statement_list().unwrap();
-            statement_list
-                .statements()
-                .filter_map(|stmt| match stmt {
-                    ast::Statement::Include(include) => Some(include),
-                    _ => None,
-                })
-                .filter_map(|include| include.path())
-                .map(|path| path.value())
-                .collect::<Vec<String>>()
-        };
-
-        let resolve_path = |path: &str, base_path: PathBuf| {
-            let parent_dir = base_path.parent()?;
-            let resolved_path = parent_dir.join(path);
-            if resolved_path.exists() {
-                Some(resolved_path)
-            } else {
-                None
-            }
-        };
-
-        let mut list_dependencies =
-            |text: &str, text_path: PathBuf, dependencies: &mut Dependencies| {
-                let (root, _) = grammar::parse(text);
-                let include_paths = extract_include_paths(root);
-                for include_path in include_paths {
-                    let Some(resolved_path) = resolve_path(&include_path, text_path.clone()) else {
-                        continue;
-                    };
-                    let Ok(doc_uri) = Url::from_file_path(&resolved_path) else {
-                        continue;
-                    };
-                    let Ok(doc_text) = fs::read_to_string(resolved_path) else {
-                        continue;
-                    };
-                    let doc_id = self.document_map.assign_document_id(doc_uri);
-                    dependencies.insert(include_path, Source::new(doc_id, doc_text));
-                }
-            };
-
-        let mut to_source_set = |uri: Url, doc_id: DocumentId, doc_text: String| {
-            let text_path = PathBuf::from(uri.path());
-            let mut dependencies = Dependencies::new();
-            list_dependencies(&doc_text, text_path, &mut dependencies);
-            SourceSet::new(Source::new(doc_id, doc_text), dependencies)
-        };
-
-        let source_set = to_source_set(uri.clone(), doc_id, text);
-        let mut document = Document::parse_set(source_set);
-
-        let diags = document
-            .take_errors()
-            .into_iter()
-            .map(|error| analyzer2lsp::error(&document, error))
-            .collect();
-        self.client
-            .publish_diagnostics(PublishDiagnosticsParams::new(uri, diags, Some(version)))
-            .unwrap();
-
-        self.document_map.update_document(doc_id, document);
-    }
-
     fn with_document<T>(
         &self,
         uri: Url,
@@ -173,7 +101,7 @@ impl TableGenLanguageServer {
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> NotifyResult {
-        self.on_change(
+        self.check_file(
             params.text_document.uri,
             params.text_document.version,
             params.text_document.text,
@@ -182,7 +110,7 @@ impl TableGenLanguageServer {
     }
 
     fn did_change(&mut self, mut params: DidChangeTextDocumentParams) -> NotifyResult {
-        self.on_change(
+        self.check_file(
             params.text_document.uri,
             params.text_document.version,
             std::mem::take(&mut params.content_changes[0].text),
