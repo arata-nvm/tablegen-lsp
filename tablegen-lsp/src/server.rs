@@ -22,8 +22,6 @@ use crate::{
 
 mod internal;
 
-type NotifyResult = ControlFlow<async_lsp::Result<()>>;
-
 pub struct TableGenLanguageServer {
     client: ClientSocket,
     document_map: DocumentMap,
@@ -51,7 +49,7 @@ impl TableGenLanguageServer {
         router
     }
 
-    pub fn new(client: ClientSocket) -> Self {
+    fn new(client: ClientSocket) -> Self {
         Self {
             client,
             document_map: DocumentMap::new(),
@@ -59,21 +57,7 @@ impl TableGenLanguageServer {
     }
 }
 
-impl TableGenLanguageServer {
-    fn with_document<T>(
-        &self,
-        uri: Url,
-        f: impl FnOnce(&DocumentMap, &Document) -> Option<T>,
-    ) -> Option<T> {
-        let Some(doc_id) = self.document_map.to_document_id(&uri) else {
-            return None;
-        };
-        let Some(document) = self.document_map.find_document(doc_id) else {
-            return None;
-        };
-        f(&self.document_map, document)
-    }
-}
+type NotifyResult = ControlFlow<async_lsp::Result<()>>;
 
 impl TableGenLanguageServer {
     fn initialize(
@@ -217,5 +201,17 @@ impl TableGenLanguageServer {
             Some(lsp_inlay_hint)
         });
         ready(Ok(inlay_hint))
+    }
+}
+
+impl TableGenLanguageServer {
+    fn with_document<T>(
+        &self,
+        uri: Url,
+        f: impl FnOnce(&DocumentMap, &Document) -> Option<T>,
+    ) -> Option<T> {
+        let doc_id = self.document_map.to_document_id(&uri)?;
+        let document = self.document_map.find_document(doc_id)?;
+        f(&self.document_map, document)
     }
 }
