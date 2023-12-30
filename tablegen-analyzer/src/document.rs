@@ -5,6 +5,7 @@ use tablegen_parser::{error::TableGenError, grammar, language::SyntaxNode, parse
 
 use crate::completion::CompletionItem;
 use crate::inlay_hint::InlayHint;
+use crate::source::{Dependencies, SourceSet};
 use crate::{analyze, completion, hover, inlay_hint, symbol::Location, symbol_map::SymbolMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -38,12 +39,37 @@ impl Document {
         let (root, parse_errors) = grammar::parse(text);
         errors.extend(parse_errors);
 
-        let (symbol_map, index_errors) = analyze::analyze(doc_id, root.clone());
+        let (symbol_map, index_errors) =
+            analyze::analyze(doc_id, Dependencies::new(), root.clone());
         errors.extend(index_errors);
 
         Self {
             doc_id,
             text: Rope::from_str(text),
+            root,
+            errors,
+            symbol_map,
+        }
+    }
+
+    pub fn parse_set(source_set: SourceSet) -> Self {
+        let mut errors = Vec::new();
+
+        let source_root = source_set.root;
+
+        let (root, parse_errors) = grammar::parse(&source_root.text);
+        errors.extend(parse_errors);
+
+        let (symbol_map, index_errors) = analyze::analyze(
+            source_root.document_id,
+            source_set.dependencies,
+            root.clone(),
+        );
+        errors.extend(index_errors);
+
+        Self {
+            doc_id: source_root.document_id,
+            text: Rope::from_str(&source_root.text),
             root,
             errors,
             symbol_map,

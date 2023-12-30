@@ -2,8 +2,10 @@ use std::collections::HashMap;
 
 use ecow::{eco_format, EcoString};
 
-use tablegen_parser::{error::TableGenError, parser::TextRange};
+use tablegen_parser::language::SyntaxNode;
+use tablegen_parser::{error::TableGenError, grammar, parser::TextRange};
 
+use crate::source::Dependencies;
 use crate::{
     document::DocumentId,
     symbol::{
@@ -14,7 +16,8 @@ use crate::{
 
 #[derive(Debug)]
 pub struct DocumentIndexer {
-    doc_id: DocumentId,
+    doc_ids: Vec<DocumentId>,
+    dependencies: Dependencies,
     symbol_map: SymbolMap,
     scopes: Vec<HashMap<EcoString, SymbolId>>,
     scope_symbols: Vec<SymbolId>,
@@ -22,9 +25,10 @@ pub struct DocumentIndexer {
 }
 
 impl DocumentIndexer {
-    pub fn new(doc_id: DocumentId) -> Self {
+    pub fn new(doc_id: DocumentId, dependencies: Dependencies) -> Self {
         Self {
-            doc_id,
+            doc_ids: vec![doc_id],
+            dependencies,
             symbol_map: SymbolMap::new(),
             scopes: vec![HashMap::new()],
             scope_symbols: Vec::new(),
@@ -58,8 +62,12 @@ impl DocumentIndexer {
         self.errors.push(TableGenError::new(range, message));
     }
 
+    fn doc_id(&self) -> DocumentId {
+        *self.doc_ids.last().unwrap()
+    }
+
     fn to_location(&self, range: TextRange) -> Location {
-        (self.doc_id, range)
+        (self.doc_id(), range)
     }
 
     pub fn add_symbol_reference(&mut self, name: EcoString, range: TextRange) -> Option<SymbolId> {
@@ -68,7 +76,7 @@ impl DocumentIndexer {
             return None;
         }
 
-        let reference_loc = (self.doc_id, range.clone());
+        let reference_loc = self.to_location(range);
         if let Some(symbol_id) = self.find_symbol_scope(&name).copied() {
             self.symbol_map.add_reference(symbol_id, reference_loc);
             Some(symbol_id)
@@ -202,5 +210,22 @@ impl DocumentIndexer {
         let reference_loc = self.to_location(range.clone());
         self.symbol_map.add_reference(field_id, reference_loc);
         Some(field_id)
+    }
+
+    pub fn enter_dependency(&mut self, path: String, range: TextRange) -> Option<SyntaxNode> {
+        let Some(dependency) = self.dependencies.get(&path) else {
+            self.error(range, eco_format!("could not find include file '{path}'"));
+            return None;
+        };
+
+        self.doc_ids.push(dependency.document_id);
+
+        // TODO: reuse SyntaxNode
+        let (root, _) = grammar::parse(&dependency.text);
+        Some(root)
+    }
+
+    pub fn leave_dependency(&mut self) {
+        self.doc_ids.pop();
     }
 }

@@ -8,6 +8,7 @@ use tablegen_parser::{
     parser::TextRange,
 };
 
+use crate::source::Dependencies;
 use crate::{
     document::DocumentId,
     indexer::DocumentIndexer,
@@ -15,8 +16,12 @@ use crate::{
     symbol_map::SymbolMap,
 };
 
-pub fn analyze(doc_id: DocumentId, root: SyntaxNode) -> (SymbolMap, Vec<TableGenError>) {
-    let mut indexer = DocumentIndexer::new(doc_id);
+pub fn analyze(
+    doc_id: DocumentId,
+    dependencies: Dependencies,
+    root: SyntaxNode,
+) -> (SymbolMap, Vec<TableGenError>) {
+    let mut indexer = DocumentIndexer::new(doc_id, dependencies);
     analyze_root(root, &mut indexer);
     indexer.finish()
 }
@@ -39,6 +44,7 @@ fn analyze_statement_list(list: ast::StatementList, i: &mut DocumentIndexer) {
 
 fn analyze_statement(stmt: ast::Statement, i: &mut DocumentIndexer) {
     match stmt {
+        ast::Statement::Include(include) => analyze_include(include, i),
         ast::Statement::Assert(assert) => analyze_assert(assert, i),
         ast::Statement::Class(class) => analyze_class(class, i),
         ast::Statement::Def(def) => analyze_def(def, i),
@@ -49,6 +55,16 @@ fn analyze_statement(stmt: ast::Statement, i: &mut DocumentIndexer) {
         ast::Statement::Let(r#let) => analyze_let(r#let, i),
         _ => {}
     }
+}
+
+fn analyze_include(include: ast::Include, i: &mut DocumentIndexer) {
+    with(include.path(), |path| {
+        let dependency_root = i.enter_dependency(path.value(), path.syntax().text_range());
+        with(dependency_root, |dependency_root| {
+            analyze_root(dependency_root, i);
+            i.leave_dependency();
+        });
+    });
 }
 
 fn analyze_assert(assert: ast::Assert, i: &mut DocumentIndexer) {
