@@ -49,9 +49,9 @@ impl TableGenLanguageServer {
         dependencies: &mut Dependencies,
     ) {
         let path = path.as_ref();
-        let include_paths = self.extract_include_paths(root.clone()).unwrap_or(vec![]);
+        let include_paths = extract_include_paths(root.clone()).unwrap_or(vec![]);
         for include_path in include_paths {
-            let Some(resolved_path) = self.resolve_path(path, &include_path) else {
+            let Some(resolved_path) = resolve_path(path, &include_path) else {
                 continue;
             };
 
@@ -69,33 +69,29 @@ impl TableGenLanguageServer {
             self.list_dependencies(resolved_path, doc_root, dependencies);
         }
     }
+}
 
-    fn extract_include_paths(&mut self, root: SyntaxNode) -> Option<Vec<String>> {
-        let root = ast::Root::cast(root)?;
-        let statement_list = root.statement_list()?;
-        let include_paths = statement_list
-            .statements()
-            .filter_map(|stmt| match stmt {
-                ast::Statement::Include(include) => Some(include),
-                _ => None,
-            })
-            .filter_map(|include| include.path())
-            .map(|path| path.value())
-            .collect();
-        Some(include_paths)
-    }
+fn extract_include_paths(root: SyntaxNode) -> Option<Vec<String>> {
+    let root = ast::Root::cast(root)?;
+    let statement_list = root.statement_list()?;
+    let include_paths = statement_list
+        .statements()
+        .filter_map(|stmt| match stmt {
+            ast::Statement::Include(include) => Some(include),
+            _ => None,
+        })
+        .filter_map(|include| include.path())
+        .map(|path| path.value())
+        .collect();
+    Some(include_paths)
+}
 
-    fn resolve_path<P: AsRef<Path>>(
-        &mut self,
-        base_path: P,
-        include_path: &str,
-    ) -> Option<PathBuf> {
-        let parent_dir = base_path.as_ref().parent()?;
-        let resolved_path = parent_dir.join(include_path);
-        if resolved_path.exists() {
-            Some(resolved_path)
-        } else {
-            None
-        }
+fn resolve_path<P: AsRef<Path>>(base_path: P, include_path: &str) -> Option<PathBuf> {
+    let parent_dir = base_path.as_ref().parent()?;
+    let resolved_path = parent_dir.join(include_path);
+    if resolved_path.exists() {
+        Some(resolved_path)
+    } else {
+        None
     }
 }
