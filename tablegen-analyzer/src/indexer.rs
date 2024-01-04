@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ecow::{eco_format, EcoString};
 
 use tablegen_parser::language::SyntaxNode;
-use tablegen_parser::{error::TableGenError, grammar, parser::TextRange};
+use tablegen_parser::{error::TableGenError, parser::TextRange};
 
 use crate::source::Dependencies;
 use crate::{
@@ -217,12 +217,8 @@ impl DocumentIndexer {
             self.error(range, eco_format!("could not find include file '{path}'"));
             return None;
         };
-
         self.doc_ids.push(dependency.document_id);
-
-        // TODO: reuse SyntaxNode
-        let (root, _) = grammar::parse(&dependency.text);
-        Some(root)
+        Some(dependency.root_node.clone())
     }
 
     pub fn leave_dependency(&mut self) {

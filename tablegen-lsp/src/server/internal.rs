@@ -1,11 +1,11 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use async_lsp::LanguageClient;
 use lsp_types::{PublishDiagnosticsParams, Url};
 
 use tablegen_analyzer::document::Document;
-use tablegen_analyzer::source::{Dependencies, Source, SourceSet};
+use tablegen_analyzer::source::{Dependencies, Source, SourceSet, SourceWithText};
 use tablegen_parser::ast::AstNode;
 use tablegen_parser::language::SyntaxNode;
 use tablegen_parser::{ast, grammar};
@@ -34,27 +34,39 @@ impl TableGenLanguageServer {
 
     fn to_source_set(&mut self, uri: Url, text: String) -> SourceSet {
         let doc_id = self.document_map.assign_document_id(uri.clone());
-        let path = PathBuf::from(uri.path());
+        let (root_node, _) = grammar::parse(&text);
+
         let mut dependencies = Dependencies::new();
-        self.list_dependencies(path, &text, &mut dependencies);
-        SourceSet::new(Source::new(doc_id, text), dependencies)
+        self.list_dependencies(uri.path(), root_node.clone(), &mut dependencies);
+
+        SourceSet::new(SourceWithText::new(doc_id, text, root_node), dependencies)
     }
 
-    fn list_dependencies(&mut self, path: PathBuf, text: &str, dependencies: &mut Dependencies) {
-        let (root, _) = grammar::parse(text);
-        let include_paths = self.extract_include_paths(root).unwrap_or(vec![]);
+    fn list_dependencies<P: AsRef<Path>>(
+        &mut self,
+        path: P,
+        root: SyntaxNode,
+        dependencies: &mut Dependencies,
+    ) {
+        let path = path.as_ref();
+        let include_paths = self.extract_include_paths(root.clone()).unwrap_or(vec![]);
         for include_path in include_paths {
-            let Some(resolved_path) = self.resolve_path(path.clone(), &include_path) else {
+            let Some(resolved_path) = self.resolve_path(path, &include_path) else {
                 continue;
             };
+
             let Ok(doc_uri) = Url::from_file_path(&resolved_path) else {
                 continue;
             };
-            let Ok(doc_text) = fs::read_to_string(resolved_path) else {
+            let doc_id = self.document_map.assign_document_id(doc_uri);
+
+            let Ok(doc_text) = fs::read_to_string(&resolved_path) else {
                 continue;
             };
-            let doc_id = self.document_map.assign_document_id(doc_uri);
-            dependencies.insert(include_path, Source::new(doc_id, doc_text));
+            let (doc_root, _) = grammar::parse(&doc_text);
+
+            dependencies.insert(include_path, Source::new(doc_id, doc_root.clone()));
+            self.list_dependencies(resolved_path, doc_root, dependencies);
         }
     }
 
@@ -73,8 +85,12 @@ impl TableGenLanguageServer {
         Some(include_paths)
     }
 
-    fn resolve_path(&mut self, base_path: PathBuf, include_path: &str) -> Option<PathBuf> {
-        let parent_dir = base_path.parent()?;
+    fn resolve_path<P: AsRef<Path>>(
+        &mut self,
+        base_path: P,
+        include_path: &str,
+    ) -> Option<PathBuf> {
+        let parent_dir = base_path.as_ref().parent()?;
         let resolved_path = parent_dir.join(include_path);
         if resolved_path.exists() {
             Some(resolved_path)
