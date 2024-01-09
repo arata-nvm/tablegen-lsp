@@ -185,7 +185,7 @@ impl DocumentIndexer {
     }
 
     pub fn scope_symbol_id(&self) -> SymbolId {
-        self.scope_symbols.last().unwrap().clone()
+        *self.scope_symbols.last().unwrap()
     }
 
     pub fn scope_symbol_mut(&mut self) -> &mut Record {
@@ -207,7 +207,7 @@ impl DocumentIndexer {
             return None;
         };
 
-        let reference_loc = self.to_location(range.clone());
+        let reference_loc = self.to_location(range);
         self.symbol_map.add_reference(field_id, reference_loc);
         Some(field_id)
     }

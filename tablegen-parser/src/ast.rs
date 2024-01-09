@@ -322,7 +322,7 @@ asts! {
             if let Some(rest) = text.strip_prefix("0x") {
                 i64::from_str_radix(rest, 16).ok()
             } else {
-                i64::from_str_radix(text, 10).ok()
+                text.parse::<i64>().ok()
             }
         }
     };
@@ -465,7 +465,7 @@ mod tests {
         assert_eq!(args.len(), 1);
 
         // template_arg_decl
-        let arg = args.get(0).unwrap();
+        let arg = args.first().unwrap();
         assert!(arg.r#type().is_some());
         assert!(arg.name().is_some());
         assert!(arg.value().is_some());
@@ -480,7 +480,7 @@ mod tests {
         assert_eq!(classes.len(), 1);
 
         // class_ref
-        let class_ref = classes.get(0).unwrap();
+        let class_ref = classes.first().unwrap();
         assert!(class_ref.name().is_some());
         assert!(class_ref.arg_value_list().is_some());
 
@@ -496,7 +496,7 @@ mod tests {
         let items: Vec<BodyItem> = record_body.body().unwrap().items().collect();
 
         // field_def
-        let BodyItem::FieldDef(field_def) = items.get(0).unwrap() else {
+        let BodyItem::FieldDef(field_def) = items.first().unwrap() else {
             panic!();
         };
         assert!(field_def.r#type().is_some());
@@ -539,7 +539,7 @@ mod tests {
         assert_eq!(items.len(), 1);
 
         // let_item
-        let item = items.get(0).unwrap();
+        let item = items.first().unwrap();
         assert!(item.name().is_some());
         assert!(item.range_list().is_some());
         assert!(item.value().is_some());
@@ -615,7 +615,7 @@ mod tests {
             .collect();
 
         // bit_type
-        let Type::BitType(_) = types.get(0).unwrap() else {
+        let Type::BitType(_) = types.first().unwrap() else {
             panic!();
         };
 
@@ -670,7 +670,7 @@ mod tests {
         assert!(inner_value.simple_value().is_some());
 
         // range_suffix
-        let ValueSuffix::RangeSuffix(range_suffix) = inner_value.suffixes().nth(0).unwrap() else {
+        let ValueSuffix::RangeSuffix(range_suffix) = inner_value.suffixes().next().unwrap() else {
             panic!();
         };
         assert!(range_suffix.range_list().is_some());
@@ -680,7 +680,7 @@ mod tests {
         assert_eq!(pieces.len(), 1);
 
         // range_piece
-        let piece = pieces.get(0).unwrap();
+        let piece = pieces.first().unwrap();
         assert!(piece.start().is_some());
         assert!(piece.end().is_some());
 
@@ -694,7 +694,7 @@ mod tests {
         let elements: Vec<SliceElement> = slice_suffix.element_list().unwrap().elements().collect();
         assert_eq!(elements.len(), 1);
 
-        let element = elements.get(0).unwrap();
+        let element = elements.first().unwrap();
         assert!(element.start().is_some());
         assert!(element.end().is_some());
 
@@ -807,7 +807,7 @@ mod tests {
         assert_eq!(clauses.len(), 2);
 
         // cond_clause
-        let clause = clauses.get(0).unwrap();
+        let clause = clauses.first().unwrap();
         assert!(clause.condition().is_some());
         assert!(clause.value().is_some());
     }

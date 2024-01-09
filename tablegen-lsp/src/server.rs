@@ -143,7 +143,7 @@ impl TableGenLanguageServer {
         let symbols = self.with_document(uri, |_, doc| {
             let symbols = doc.symbol_map().global_symbols();
             let lsp_symbols = symbols
-                .into_iter()
+                .iter()
                 .filter_map(|symbol_id| doc.symbol_map().symbol(*symbol_id))
                 .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
                 .collect();
@@ -178,7 +178,7 @@ impl TableGenLanguageServer {
             let completion_items = doc.get_completion(position)?;
             let lsp_completion = completion_items
                 .into_iter()
-                .map(|item| analyzer2lsp::completion_item(item))
+                .map(analyzer2lsp::completion_item)
                 .collect();
             Some(CompletionResponse::Array(lsp_completion))
         });

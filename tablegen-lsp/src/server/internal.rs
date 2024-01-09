@@ -15,7 +15,7 @@ use crate::server::TableGenLanguageServer;
 
 impl TableGenLanguageServer {
     pub(super) fn check_file(&mut self, uri: Url, version: i32, text: String) {
-        let source_set = self.to_source_set(uri.clone(), text);
+        let source_set = self.convert_source_to_source_set(uri.clone(), text);
         let mut document = Document::parse_set(source_set);
         self.publish_errors(uri, version, &mut document);
         self.document_map.update_document(document.id(), document);
@@ -25,14 +25,14 @@ impl TableGenLanguageServer {
         let diags = document
             .take_errors()
             .into_iter()
-            .map(|error| analyzer2lsp::error(&document, error))
+            .map(|error| analyzer2lsp::error(document, error))
             .collect();
         self.client
             .publish_diagnostics(PublishDiagnosticsParams::new(uri, diags, Some(version)))
             .unwrap();
     }
 
-    fn to_source_set(&mut self, uri: Url, text: String) -> SourceSet {
+    fn convert_source_to_source_set(&mut self, uri: Url, text: String) -> SourceSet {
         let doc_id = self.document_map.assign_document_id(uri.clone());
         let (root_node, _) = grammar::parse(&text);
 
@@ -49,7 +49,7 @@ impl TableGenLanguageServer {
         dependencies: &mut Dependencies,
     ) {
         let path = path.as_ref();
-        let include_paths = extract_include_paths(root.clone()).unwrap_or(vec![]);
+        let include_paths = extract_include_paths(root.clone()).unwrap_or_default();
         for include_path in include_paths {
             let Some(resolved_path) = resolve_path(path, &include_path) else {
                 continue;

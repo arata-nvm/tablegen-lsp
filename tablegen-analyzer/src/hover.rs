@@ -3,7 +3,7 @@ use tablegen_parser::{language::SyntaxNode, parser::TextRange, syntax_kind::Synt
 use crate::symbol::{RecordFieldKind, RecordKind, Symbol, VariableKind};
 
 pub fn hover(symbol: &Symbol, root: SyntaxNode) -> Option<String> {
-    let (_, range) = symbol.define_loc().clone();
+    let (_, range) = *symbol.define_loc();
 
     let symbol_info = extract_symbol_info(symbol);
     let symbol_doc = extract_doc_comments(range, root);

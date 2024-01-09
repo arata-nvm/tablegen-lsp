@@ -104,7 +104,7 @@ impl Document {
 
     pub fn get_definition(&self, pos: TextSize) -> Option<Location> {
         let symbol = self.symbol_map.get_symbol_at(pos)?;
-        Some(symbol.define_loc().clone())
+        Some(*symbol.define_loc())
     }
 
     pub fn get_references(&self, pos: TextSize) -> Option<Vec<Location>> {

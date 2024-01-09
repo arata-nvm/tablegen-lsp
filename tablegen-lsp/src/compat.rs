@@ -48,7 +48,7 @@ pub mod analyzer2lsp {
             Symbol::RecordField(_) => (vec![], lsp_types::SymbolKind::PROPERTY),
             Symbol::Variable(_) => (vec![], lsp_types::SymbolKind::CONSTANT),
         };
-        let define_loc = range(doc, symbol.define_loc().1.clone());
+        let define_loc = range(doc, symbol.define_loc().1);
 
         lsp_types::DocumentSymbol {
             name: symbol.name().to_string(),
@@ -58,7 +58,7 @@ pub mod analyzer2lsp {
             deprecated: None,
             range: define_loc,
             selection_range: define_loc,
-            children: if children.len() > 0 {
+            children: if children.is_empty() {
                 Some(children)
             } else {
                 None

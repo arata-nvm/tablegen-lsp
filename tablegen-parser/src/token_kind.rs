@@ -191,6 +191,7 @@ impl TokenKind {
 }
 
 #[macro_export]
+#[allow(non_snake_case)]
 macro_rules! T {
     [-] => {$crate::token_kind::TokenKind::Minus};
     [+] => {$crate::token_kind::TokenKind::Plus};

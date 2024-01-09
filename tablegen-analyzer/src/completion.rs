@@ -212,10 +212,11 @@ impl<'a> CompletionContext<'a> {
             }
 
             match symbol {
-                Symbol::Record(record) => match record.kind() {
-                    RecordKind::Def => self.add_item(record.name(), "def", CompletionItemKind::Def),
-                    _ => {}
-                },
+                Symbol::Record(record) => {
+                    if let RecordKind::Def = record.kind() {
+                        self.add_item(record.name(), "def", CompletionItemKind::Def)
+                    }
+                }
                 Symbol::RecordField(_) => {}
                 Symbol::Variable(variable) => match variable.kind() {
                     VariableKind::Defset => self.add_item(
@@ -240,7 +241,7 @@ impl<'a> CompletionContext<'a> {
         let class = parent_node
             .ancestors()
             .find(|node| node.kind() == SyntaxKind::Class)
-            .and_then(|node| ast::Class::cast(node))?;
+            .and_then(ast::Class::cast)?;
         let class_name_range = class.name()?.range()?;
         let class_symbol = symbol_map.get_symbol_at(class_name_range.start())?;
         let record = class_symbol.as_record()?;
@@ -262,7 +263,7 @@ impl<'a> CompletionContext<'a> {
         let class = parent_node
             .ancestors()
             .find(|node| node.kind() == SyntaxKind::Class)
-            .and_then(|node| ast::Class::cast(node))?;
+            .and_then(ast::Class::cast)?;
         let class_name_range = class.name()?.range()?;
         let class_symbol = symbol_map.get_symbol_at(class_name_range.start())?;
 
@@ -315,23 +316,20 @@ impl<'a> CompletionContext<'a> {
                 break;
             }
 
-            match item {
-                BodyItem::FieldDef(field_def) => {
-                    let field = field_def
-                        .name()
-                        .and_then(|name| name.value())
-                        .and_then(|name| record.find_field(&name))
-                        .and_then(|symbol_id| symbol_map.symbol(*symbol_id))
-                        .and_then(|symbol| symbol.as_field());
-                    if let Some(field) = field {
-                        self.add_item(
-                            field.name(),
-                            field.r#type().to_string(),
-                            CompletionItemKind::Field,
-                        );
-                    }
+            if let BodyItem::FieldDef(field_def) = item {
+                let field = field_def
+                    .name()
+                    .and_then(|name| name.value())
+                    .and_then(|name| record.find_field(&name))
+                    .and_then(|symbol_id| symbol_map.symbol(*symbol_id))
+                    .and_then(|symbol| symbol.as_field());
+                if let Some(field) = field {
+                    self.add_item(
+                        field.name(),
+                        field.r#type().to_string(),
+                        CompletionItemKind::Field,
+                    );
                 }
-                _ => {}
             }
         }
 
@@ -360,7 +358,7 @@ impl<'a> CompletionContext<'a> {
         let is_in_field_def = parent_node
             .ancestors()
             .find(|node| node.kind() == SyntaxKind::FieldDef)
-            .and_then(|node| ast::FieldDef::cast(node))
+            .and_then(ast::FieldDef::cast)
             .is_some();
         if is_in_field_def {
             self.add_item("let", "", CompletionItemKind::Keyword);

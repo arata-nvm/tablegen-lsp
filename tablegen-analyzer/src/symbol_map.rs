@@ -35,7 +35,7 @@ impl SymbolMap {
         define_loc: Location,
         kind: RecordKind,
     ) -> SymbolId {
-        let record = Record::new(name, define_loc.clone(), kind);
+        let record = Record::new(name, define_loc, kind);
         let symbol_id = self.symbols.alloc(Symbol::Record(record));
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
         self.global_symbols.push(symbol_id);
@@ -44,7 +44,7 @@ impl SymbolMap {
 
     pub fn new_anonymous_record(&mut self, define_loc: Location) -> SymbolId {
         let name = self.next_anonymous_name();
-        let record = Record::new(name, define_loc.clone(), RecordKind::Def);
+        let record = Record::new(name, define_loc, RecordKind::Def);
         self.symbols.alloc(Symbol::Record(record))
     }
 
@@ -60,7 +60,7 @@ impl SymbolMap {
         kind: RecordFieldKind,
         typ: SymbolType,
     ) -> SymbolId {
-        let field = RecordField::new(name, define_loc.clone(), kind, typ);
+        let field = RecordField::new(name, define_loc, kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::RecordField(field));
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
         symbol_id
@@ -73,7 +73,7 @@ impl SymbolMap {
         kind: VariableKind,
         typ: SymbolType,
     ) -> SymbolId {
-        let variable = Variable::new(name, define_loc.clone(), kind, typ);
+        let variable = Variable::new(name, define_loc, kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::Variable(variable));
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
         self.global_symbols.push(symbol_id);
@@ -87,7 +87,7 @@ impl SymbolMap {
         kind: VariableKind,
         typ: SymbolType,
     ) -> SymbolId {
-        let variable = Variable::new(name, define_loc.clone(), kind, typ);
+        let variable = Variable::new(name, define_loc, kind, typ);
         let symbol_id = self.symbols.alloc(Symbol::Variable(variable));
         self.symbol_map.insert(define_loc.1.into(), symbol_id);
         symbol_id
@@ -103,7 +103,7 @@ impl SymbolMap {
 
     pub fn add_reference(&mut self, symbol_id: SymbolId, loc: Location) {
         let symbol = self.symbol_mut(symbol_id).unwrap();
-        symbol.add_reference(loc.clone());
+        symbol.add_reference(loc);
         self.symbol_map.insert(loc.1.into(), symbol_id);
     }
 

@@ -389,7 +389,7 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
             };
             let value_typs: Vec<SymbolType> =
                 list.values().map(|value| analyze_value(value, i)).collect();
-            let first_value_typ = value_typs.get(0).cloned().unwrap_or(SymbolType::unknown());
+            let first_value_typ = value_typs.first().cloned().unwrap_or(SymbolType::unknown());
             SymbolType::List(Box::new(first_value_typ.clone()))
         }
         ast::SimpleValue::Dag(dag) => {
@@ -447,7 +447,7 @@ fn analyze_simple_value(simple_value: ast::SimpleValue, i: &mut DocumentIndexer)
                     value_typ.unwrap_or(SymbolType::unknown())
                 })
                 .collect();
-            clauses.get(0).cloned().unwrap_or(SymbolType::unknown())
+            clauses.first().cloned().unwrap_or(SymbolType::unknown())
         }
     }
 }
@@ -476,7 +476,7 @@ fn analyze_bang_operator(
         arg_predicate: ast::Value,
         i: &mut DocumentIndexer,
     ) -> Option<SymbolType> {
-        let arg_var = arg_var.inner_values().nth(0)?;
+        let arg_var = arg_var.inner_values().next()?;
         let ast::SimpleValue::Identifier(arg_var) = arg_var.simple_value()? else {
             return None;
         };
@@ -509,7 +509,7 @@ fn analyze_bang_operator(
         arg_expr: ast::Value,
         i: &mut DocumentIndexer,
     ) -> Option<SymbolType> {
-        let arg_var = arg_var.inner_values().nth(0)?;
+        let arg_var = arg_var.inner_values().next()?;
         let ast::SimpleValue::Identifier(arg_var) = arg_var.simple_value()? else {
             return None;
         };
@@ -546,12 +546,12 @@ fn analyze_bang_operator(
         arg_expr: ast::Value,
         i: &mut DocumentIndexer,
     ) -> Option<SymbolType> {
-        let arg_acc = arg_acc.inner_values().nth(0)?;
+        let arg_acc = arg_acc.inner_values().next()?;
         let ast::SimpleValue::Identifier(arg_acc) = arg_acc.simple_value()? else {
             return None;
         };
 
-        let arg_var = arg_var.inner_values().nth(0)?;
+        let arg_var = arg_var.inner_values().next()?;
         let ast::SimpleValue::Identifier(arg_var) = arg_var.simple_value()? else {
             return None;
         };
@@ -623,14 +623,14 @@ fn analyze_bang_operator(
         XGetDagName => SymbolType::String,
         XGetDagOp => analyze_type(bang_op.r#type()?, i)?,
         XGt => SymbolType::Bit,
-        XHead => value_types.get(0)?.element_typ()?,
+        XHead => value_types.first()?.element_typ()?,
         XIf => value_types.get(1)?.clone(),
         XInterleave => SymbolType::String, // TODO
         XIsA => SymbolType::Bit,
         XLe => SymbolType::Bit,
-        XListConcat => value_types.get(0)?.clone(),
-        XListRemove => value_types.get(0)?.clone(),
-        XListSplat => SymbolType::List(Box::new(value_types.get(0)?.clone())),
+        XListConcat => value_types.first()?.clone(),
+        XListRemove => value_types.first()?.clone(),
+        XListSplat => SymbolType::List(Box::new(value_types.first()?.clone())),
         XLog2 => SymbolType::Int,
         XLt => SymbolType::Bit,
         XMul => SymbolType::Int,
@@ -649,7 +649,7 @@ fn analyze_bang_operator(
         XSub => SymbolType::Int,
         XSubst => SymbolType::String,
         XSubstr => SymbolType::String,
-        XTail => value_types.get(0)?.element_typ()?,
+        XTail => value_types.first()?.element_typ()?,
         XToLower => SymbolType::String,
         XToUpper => SymbolType::String,
         XXor => SymbolType::Bit,
