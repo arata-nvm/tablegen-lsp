@@ -3,21 +3,20 @@ use std::{
     ops::ControlFlow,
 };
 
-use async_lsp::{router::Router, ClientSocket, ResponseError};
+use async_lsp::{router::Router, ClientSocket, LanguageClient, ResponseError};
 use lsp_types::{
     notification, request, CompletionOptions, CompletionParams, CompletionResponse,
     DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
     DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
     HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams,
-    Location, OneOf, ReferenceParams, ServerCapabilities, TextDocumentSyncCapability,
-    TextDocumentSyncKind, Url,
+    Location, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 
 use tablegen_analyzer::server_impl::TableGenLanguageServerImpl;
+use tablegen_parser::error::TableGenError;
 
 use crate::compat::{analyzer2lsp, lsp2analyzer};
-
-mod internal;
 
 pub type DocumentMap = tablegen_analyzer::document_map::DocumentMap<Url>;
 
@@ -84,21 +83,41 @@ impl TableGenLanguageServer {
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> NotifyResult {
-        self.check_file(
+        let errors = self
+            .impl_
+            .check_file(params.text_document.uri.clone(), params.text_document.text);
+        self.publish_errors(
             params.text_document.uri,
             params.text_document.version,
-            params.text_document.text,
+            errors,
         );
         ControlFlow::Continue(())
     }
 
     fn did_change(&mut self, mut params: DidChangeTextDocumentParams) -> NotifyResult {
-        self.check_file(
-            params.text_document.uri,
-            params.text_document.version,
+        let errors = self.impl_.check_file(
+            params.text_document.uri.clone(),
             std::mem::take(&mut params.content_changes[0].text),
         );
+        self.publish_errors(
+            params.text_document.uri,
+            params.text_document.version,
+            errors,
+        );
         ControlFlow::Continue(())
+    }
+
+    fn publish_errors(&mut self, uri: Url, version: i32, errors: Vec<TableGenError>) {
+        self.impl_.with_document(uri.clone(), |_, document| {
+            let diags = errors
+                .into_iter()
+                .map(|error| analyzer2lsp::error(document, error))
+                .collect();
+            self.client
+                .publish_diagnostics(PublishDiagnosticsParams::new(uri, diags, Some(version)))
+                .unwrap();
+            Some(())
+        });
     }
 
     fn goto_definition(
