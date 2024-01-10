@@ -161,8 +161,6 @@ impl TableGenLanguageServer {
         let symbols = self.impl_.with_document(uri, |_, doc| {
             let symbols = doc.symbol_map().global_symbols();
             let lsp_symbols = symbols
-                .iter()
-                .filter_map(|symbol_id| doc.symbol_map().symbol(*symbol_id))
                 .map(|symbol| analyzer2lsp::document_symbol(doc, symbol))
                 .collect();
             Some(DocumentSymbolResponse::Nested(lsp_symbols))

@@ -178,11 +178,7 @@ impl<'a> CompletionContext<'a> {
 
     fn complete_classes(&mut self) {
         let symbol_map = self.doc.symbol_map();
-        for symbol_id in symbol_map.global_symbols() {
-            let Some(symbol) = symbol_map.symbol(*symbol_id) else {
-                continue;
-            };
-
+        for symbol in symbol_map.global_symbols() {
             // NOTE: symbolが外部のファイルで定義されていた場合、バグる可能性がある
             let symbol_pos = symbol.define_loc().1.start();
             if symbol_pos >= self.pos {
@@ -200,11 +196,7 @@ impl<'a> CompletionContext<'a> {
 
     fn complete_defs(&mut self) {
         let symbol_map = self.doc.symbol_map();
-        for symbol_id in symbol_map.global_symbols() {
-            let Some(symbol) = symbol_map.symbol(*symbol_id) else {
-                continue;
-            };
-
+        for symbol in symbol_map.global_symbols() {
             // NOTE: symbolが外部のファイルで定義されていた場合、バグる可能性がある
             let symbol_pos = symbol.define_loc().1.start();
             if symbol_pos >= self.pos {

@@ -114,15 +114,21 @@ impl SymbolMap {
             .and_then(|&id| self.symbols.get(id))
     }
 
-    pub fn get_symbols_in(&self, range: TextRange) -> Vec<(Range<TextSize>, SymbolId)> {
+    pub fn get_symbols_in(
+        &self,
+        range: TextRange,
+    ) -> impl Iterator<Item = (Range<TextSize>, &Symbol)> {
         self.symbol_map
             .iter::<Range<TextSize>>(range.into())
-            .map(|(range, symbol_id)| (range, *symbol_id))
-            .collect()
+            .filter_map(|(range, symbol_id)| {
+                self.symbols.get(*symbol_id).map(|symbol| (range, symbol))
+            })
     }
 
-    pub fn global_symbols(&self) -> &[SymbolId] {
-        &self.global_symbols
+    pub fn global_symbols(&self) -> impl Iterator<Item = &Symbol> {
+        self.global_symbols
+            .iter()
+            .filter_map(|symbol_id| self.symbols.get(*symbol_id))
     }
 
     pub fn find_field(&self, symbol_id: SymbolId, name: EcoString) -> Option<SymbolId> {

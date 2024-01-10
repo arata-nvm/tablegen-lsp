@@ -32,10 +32,7 @@ impl InlayHint {
 
 pub fn inlay_hint(doc: &Document, range: TextRange) -> Option<Vec<InlayHint>> {
     let mut hints = vec![];
-    for (symbol_range, symbol_id) in doc.symbol_map().get_symbols_in(range) {
-        let Some(symbol) = doc.symbol_map().symbol(symbol_id) else {
-            continue;
-        };
+    for (symbol_range, symbol) in doc.symbol_map().get_symbols_in(range) {
         if symbol.define_loc().0 != doc.id() {
             continue;
         }
