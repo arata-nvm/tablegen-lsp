@@ -11,7 +11,7 @@ use crate::document_map::{DocumentMap, DocumentPath};
 use crate::source::{Dependencies, Source, SourceSet, SourceWithText};
 
 pub struct TableGenLanguageServerImpl<P: DocumentPath> {
-    pub document_map: DocumentMap<P>,
+    document_map: DocumentMap<P>,
 }
 
 impl<P: DocumentPath> TableGenLanguageServerImpl<P> {
