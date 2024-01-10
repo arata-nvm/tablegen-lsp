@@ -13,7 +13,7 @@ use lsp_types::{
     TextDocumentSyncKind, Url,
 };
 
-use tablegen_analyzer::document::Document;
+use tablegen_analyzer::server_impl::TableGenLanguageServerImpl;
 
 use crate::compat::{analyzer2lsp, lsp2analyzer};
 
@@ -23,7 +23,7 @@ pub type DocumentMap = tablegen_analyzer::document_map::DocumentMap<Url>;
 
 pub struct TableGenLanguageServer {
     client: ClientSocket,
-    document_map: DocumentMap,
+    impl_: TableGenLanguageServerImpl<Url>,
 }
 
 impl TableGenLanguageServer {
@@ -51,7 +51,7 @@ impl TableGenLanguageServer {
     fn new(client: ClientSocket) -> Self {
         Self {
             client,
-            document_map: DocumentMap::new(),
+            impl_: TableGenLanguageServerImpl::new(),
         }
     }
 }
@@ -106,7 +106,7 @@ impl TableGenLanguageServer {
         params: GotoDefinitionParams,
     ) -> impl Future<Output = Result<Option<GotoDefinitionResponse>, ResponseError>> {
         let uri = params.text_document_position_params.text_document.uri;
-        let definition = self.with_document(uri, |doc_map, doc| {
+        let definition = self.impl_.with_document(uri, |doc_map, doc| {
             let lsp_position = params.text_document_position_params.position;
             let position = lsp2analyzer::position(doc, lsp_position);
             let definition = doc.get_definition(position)?;
@@ -121,7 +121,7 @@ impl TableGenLanguageServer {
         params: ReferenceParams,
     ) -> impl Future<Output = Result<Option<Vec<Location>>, ResponseError>> {
         let uri = params.text_document_position.text_document.uri;
-        let references = self.with_document(uri, |doc_map, doc| {
+        let references = self.impl_.with_document(uri, |doc_map, doc| {
             let lsp_position = params.text_document_position.position;
             let position = lsp2analyzer::position(doc, lsp_position);
             let references = doc.get_references(position)?;
@@ -139,7 +139,7 @@ impl TableGenLanguageServer {
         params: DocumentSymbolParams,
     ) -> impl Future<Output = Result<Option<DocumentSymbolResponse>, ResponseError>> {
         let uri = params.text_document.uri;
-        let symbols = self.with_document(uri, |_, doc| {
+        let symbols = self.impl_.with_document(uri, |_, doc| {
             let symbols = doc.symbol_map().global_symbols();
             let lsp_symbols = symbols
                 .iter()
@@ -156,7 +156,7 @@ impl TableGenLanguageServer {
         params: HoverParams,
     ) -> impl Future<Output = Result<Option<Hover>, ResponseError>> {
         let uri = params.text_document_position_params.text_document.uri;
-        let hover = self.with_document(uri, |_, doc| {
+        let hover = self.impl_.with_document(uri, |_, doc| {
             let lsp_position = params.text_document_position_params.position;
             let position = lsp2analyzer::position(doc, lsp_position);
             let hover = doc.get_hover(position)?;
@@ -171,7 +171,7 @@ impl TableGenLanguageServer {
         params: CompletionParams,
     ) -> impl Future<Output = Result<Option<CompletionResponse>, ResponseError>> {
         let uri = params.text_document_position.text_document.uri;
-        let completion = self.with_document(uri, |_, doc| {
+        let completion = self.impl_.with_document(uri, |_, doc| {
             let lsp_position = params.text_document_position.position;
             let position = lsp2analyzer::position(doc, lsp_position);
             let completion_items = doc.get_completion(position)?;
@@ -189,7 +189,7 @@ impl TableGenLanguageServer {
         params: InlayHintParams,
     ) -> impl Future<Output = Result<Option<Vec<InlayHint>>, ResponseError>> {
         let uri = params.text_document.uri;
-        let inlay_hint = self.with_document(uri, |_, doc| {
+        let inlay_hint = self.impl_.with_document(uri, |_, doc| {
             let lsp_range = params.range;
             let range = lsp2analyzer::range(doc, lsp_range);
             let inlay_hint = doc.get_inlay_hint(range)?;
@@ -200,17 +200,5 @@ impl TableGenLanguageServer {
             Some(lsp_inlay_hint)
         });
         ready(Ok(inlay_hint))
-    }
-}
-
-impl TableGenLanguageServer {
-    fn with_document<T>(
-        &self,
-        uri: Url,
-        f: impl FnOnce(&DocumentMap, &Document) -> Option<T>,
-    ) -> Option<T> {
-        let doc_id = self.document_map.to_document_id(&uri)?;
-        let document = self.document_map.find_document(doc_id)?;
-        f(&self.document_map, document)
     }
 }

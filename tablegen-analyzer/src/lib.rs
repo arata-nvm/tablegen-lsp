@@ -5,6 +5,7 @@ pub mod document_map;
 pub mod hover;
 pub mod indexer;
 pub mod inlay_hint;
+pub mod server_impl;
 pub mod source;
 pub mod symbol;
 pub mod symbol_map;

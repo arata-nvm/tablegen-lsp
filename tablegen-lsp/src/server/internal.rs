@@ -18,7 +18,9 @@ impl TableGenLanguageServer {
         let source_set = self.convert_source_to_source_set(uri.clone(), text);
         let mut document = Document::parse_set(source_set);
         self.publish_errors(uri, version, &mut document);
-        self.document_map.update_document(document.id(), document);
+        self.impl_
+            .document_map
+            .update_document(document.id(), document);
     }
 
     fn publish_errors(&mut self, uri: Url, version: i32, document: &mut Document) {
@@ -33,7 +35,7 @@ impl TableGenLanguageServer {
     }
 
     fn convert_source_to_source_set(&mut self, uri: Url, text: String) -> SourceSet {
-        let doc_id = self.document_map.assign_document_id(uri.clone());
+        let doc_id = self.impl_.document_map.assign_document_id(uri.clone());
         let (root_node, _) = grammar::parse(&text);
 
         let mut dependencies = Dependencies::new();
@@ -58,7 +60,7 @@ impl TableGenLanguageServer {
             let Ok(doc_uri) = Url::from_file_path(&resolved_path) else {
                 continue;
             };
-            let doc_id = self.document_map.assign_document_id(doc_uri);
+            let doc_id = self.impl_.document_map.assign_document_id(doc_uri);
 
             let Ok(doc_text) = fs::read_to_string(&resolved_path) else {
                 continue;
