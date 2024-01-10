@@ -7,6 +7,7 @@ use iset::IntervalMap;
 
 use tablegen_parser::parser::{TextRange, TextSize};
 
+use crate::document::DocumentId;
 use crate::symbol::{
     Location, Record, RecordField, RecordFieldKind, RecordKind, Symbol, SymbolId, SymbolType,
     Variable, VariableKind,
@@ -14,6 +15,7 @@ use crate::symbol::{
 
 #[derive(Debug)]
 pub struct SymbolMap {
+    doc_id: DocumentId,
     symbols: Arena<Symbol>,
     symbol_map: IntervalMap<TextSize, SymbolId>,
     global_symbols: Vec<SymbolId>,
@@ -21,8 +23,9 @@ pub struct SymbolMap {
 }
 
 impl SymbolMap {
-    pub fn new() -> Self {
+    pub fn new(doc_id: DocumentId) -> Self {
         Self {
+            doc_id,
             symbols: Arena::new(),
             symbol_map: IntervalMap::new(),
             global_symbols: Vec::new(),
@@ -108,13 +111,15 @@ impl SymbolMap {
         self.symbol_map.insert(loc.1.into(), symbol_id);
     }
 
+    // doc_idが指すDocumentで定義されたシンボルのみを扱う
     pub fn get_symbol_at(&self, pos: TextSize) -> Option<&Symbol> {
         self.symbol_map
             .values_overlap(pos)
-            .next()
-            .and_then(|&id| self.symbols.get(id))
+            .filter_map(|symbol_id| self.symbols.get(*symbol_id))
+            .find(|symbol| symbol.define_loc().0 == self.doc_id)
     }
 
+    // doc_idが指すDocumentで定義されたシンボルのみを扱う
     pub fn get_symbols_in(
         &self,
         range: TextRange,
@@ -124,12 +129,15 @@ impl SymbolMap {
             .filter_map(|(range, symbol_id)| {
                 self.symbols.get(*symbol_id).map(|symbol| (range, symbol))
             })
+            .filter(|(_, symbol)| symbol.define_loc().0 == self.doc_id)
     }
 
+    // doc_idが指すDocumentで定義されたシンボルのみを扱う
     pub fn global_symbols(&self) -> impl Iterator<Item = &Symbol> {
         self.global_symbols
             .iter()
             .filter_map(|symbol_id| self.symbols.get(*symbol_id))
+            .filter(|symbol| symbol.define_loc().0 == self.doc_id)
     }
 
     pub fn find_field(&self, symbol_id: SymbolId, name: EcoString) -> Option<SymbolId> {

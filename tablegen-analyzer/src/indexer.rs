@@ -29,7 +29,7 @@ impl DocumentIndexer {
         Self {
             doc_ids: vec![doc_id],
             dependencies,
-            symbol_map: SymbolMap::new(),
+            symbol_map: SymbolMap::new(doc_id),
             scopes: vec![HashMap::new()],
             scope_symbols: Vec::new(),
             errors: Vec::new(),
