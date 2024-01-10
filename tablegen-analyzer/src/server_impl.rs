@@ -2,12 +2,15 @@ use std::hash::Hash;
 
 use crate::document::Document;
 use crate::document_map::DocumentMap;
+use crate::document_map::{DocumentMap, DocumentPath};
 
 pub struct TableGenLanguageServerImpl<P: Eq + Hash + Clone> {
+pub struct TableGenLanguageServerImpl<P: DocumentPath> {
     pub document_map: DocumentMap<P>,
 }
 
 impl<P: Eq + Hash + Clone> TableGenLanguageServerImpl<P> {
+impl<P: DocumentPath> TableGenLanguageServerImpl<P> {
     pub fn new() -> Self {
         Self {
             document_map: DocumentMap::new(),

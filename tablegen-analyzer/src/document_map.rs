@@ -1,15 +1,22 @@
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::path::Path;
 
 use crate::document::{Document, DocumentId};
 
-pub struct DocumentMap<P: Eq + Hash + Clone> {
+pub trait DocumentPath: Eq + Hash + Clone {
+    fn to_path(&self) -> &Path;
+
+    fn from_path(path: &Path) -> Option<Self>;
+}
+
+pub struct DocumentMap<P: DocumentPath> {
     path_to_id: HashMap<P, DocumentId>,
     id_to_path: Vec<P>,
     document_map: HashMap<DocumentId, Document>,
 }
 
-impl<P: Eq + Hash + Clone> DocumentMap<P> {
+impl<P: DocumentPath> DocumentMap<P> {
     pub fn new() -> Self {
         Self {
             path_to_id: HashMap::new(),
