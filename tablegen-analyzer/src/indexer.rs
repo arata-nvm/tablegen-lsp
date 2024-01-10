@@ -59,7 +59,10 @@ impl DocumentIndexer {
     }
 
     pub fn error(&mut self, range: TextRange, message: impl Into<EcoString>) {
-        self.errors.push(TableGenError::new(range, message));
+        // dependencyで発生したエラーは無視する
+        if self.doc_ids.len() == 1 {
+            self.errors.push(TableGenError::new(range, message));
+        }
     }
 
     fn doc_id(&self) -> DocumentId {
