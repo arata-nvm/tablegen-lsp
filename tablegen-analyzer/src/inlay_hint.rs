@@ -36,6 +36,9 @@ pub fn inlay_hint(doc: &Document, range: TextRange) -> Option<Vec<InlayHint>> {
         let Some(symbol) = doc.symbol_map().symbol(symbol_id) else {
             continue;
         };
+        if symbol.define_loc().0 != doc.id() {
+            continue;
+        }
 
         match symbol {
             Symbol::Record(record) if matches!(record.kind(), RecordKind::Class) => {
