@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use url::Url;
 
@@ -10,6 +10,16 @@ pub trait DocumentPath: Eq + Hash + Clone {
     fn to_path(&self) -> &Path;
 
     fn from_path(path: &Path) -> Option<Self>;
+}
+
+impl DocumentPath for PathBuf {
+    fn to_path(&self) -> &Path {
+        self
+    }
+
+    fn from_path(path: &Path) -> Option<Self> {
+        Some(path.into())
+    }
 }
 
 impl DocumentPath for Url {
