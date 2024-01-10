@@ -15,12 +15,11 @@ use lsp_types::{
 
 use tablegen_analyzer::document::Document;
 
-use crate::{
-    compat::{analyzer2lsp, lsp2analyzer},
-    document_map::DocumentMap,
-};
+use crate::compat::{analyzer2lsp, lsp2analyzer};
 
 mod internal;
+
+pub type DocumentMap = tablegen_analyzer::document_map::DocumentMap<Url>;
 
 pub struct TableGenLanguageServer {
     client: ClientSocket,

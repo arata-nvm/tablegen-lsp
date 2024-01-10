@@ -8,7 +8,7 @@ pub mod analyzer2lsp {
     };
     use tablegen_parser::{error, parser};
 
-    use crate::document_map::DocumentMap;
+    use crate::server::DocumentMap;
 
     pub fn range(doc: &Document, range: parser::TextRange) -> lsp_types::Range {
         let start = position(doc, range.start());
@@ -24,7 +24,7 @@ pub mod analyzer2lsp {
     }
 
     pub fn location(doc_map: &DocumentMap, doc: &Document, loc: Location) -> lsp_types::Location {
-        let uri = doc_map.to_uri(loc.0).unwrap().clone();
+        let uri = doc_map.to_path(loc.0).unwrap().clone();
         let range = range(doc, loc.1);
         lsp_types::Location::new(uri, range)
     }
