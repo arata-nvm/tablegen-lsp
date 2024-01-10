@@ -133,6 +133,10 @@ impl SymbolMap {
 
         let parents = record.parents().to_vec();
         for parent_symbol_id in parents.into_iter().rev() {
+            // FIXME: 2つ以上のシンボルがまたがっているとcyclicな依存関係を見逃す場合がある
+            if parent_symbol_id == symbol_id {
+                break;
+            }
             if let Some(field_id) = self.find_field(parent_symbol_id, name.clone()) {
                 return Some(field_id);
             }
