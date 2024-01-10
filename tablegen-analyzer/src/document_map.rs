@@ -2,12 +2,24 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::path::Path;
 
+use url::Url;
+
 use crate::document::{Document, DocumentId};
 
 pub trait DocumentPath: Eq + Hash + Clone {
     fn to_path(&self) -> &Path;
 
     fn from_path(path: &Path) -> Option<Self>;
+}
+
+impl DocumentPath for Url {
+    fn to_path(&self) -> &Path {
+        self.path().as_ref()
+    }
+
+    fn from_path(path: &Path) -> Option<Self> {
+        Url::from_file_path(path).ok()
+    }
 }
 
 pub struct DocumentMap<P: DocumentPath> {
