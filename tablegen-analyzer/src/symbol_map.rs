@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::ops::Range;
 
 use ecow::{eco_format, EcoString};
@@ -151,34 +152,27 @@ impl SymbolMap {
         None
     }
 
-    pub fn get_all_fields(&self, symbol: &Symbol) -> Vec<SymbolId> {
-        let Some(record) = symbol.as_record() else {
-            return vec![];
-        };
-
-        let mut fields = vec![];
-        fields.extend(record.fields());
-        for parent_id in record.parents() {
-            let Some(parent) = self.symbol(*parent_id) else {
-                continue;
-            };
-            fields.extend(self.get_all_fields(parent));
-        }
-        fields
-    }
-
     pub fn get_all_parent_fields(&self, symbol: &Symbol) -> Vec<SymbolId> {
         let Some(record) = symbol.as_record() else {
             return vec![];
         };
 
         let mut fields = vec![];
-        for parent_id in record.parents() {
-            let Some(parent) = self.symbol(*parent_id) else {
+
+        let mut parents = VecDeque::new();
+        parents.extend(record.parents());
+        while let Some(parent_id) = parents.pop_front() {
+            let Some(parent) = self.symbol(parent_id) else {
                 continue;
             };
-            fields.extend(self.get_all_fields(parent));
+            let Some(record) = parent.as_record() else {
+                continue;
+            };
+
+            parents.extend(record.parents());
+            fields.extend(record.fields());
         }
+
         fields
     }
 }
