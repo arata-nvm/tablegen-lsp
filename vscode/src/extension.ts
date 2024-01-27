@@ -6,56 +6,56 @@ import { LanguageClient, LanguageClientOptions, ServerOptions } from 'vscode-lan
 let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext) {
-	var binary = '';
-	switch (platform()) {
-		case 'darwin':
-			switch (arch()) {
-				case 'arm64':
-					binary = 'tablegen-lsp-master-aarch64-apple-darwin';
-					break;
-				case 'x64':
-					binary = 'tablegen-lsp-master-x86_64-apple-darwin';
-					break;
-			}
-			break;
-		case 'linux':
-			switch (arch()) {
-				case 'arm64':
-					binary = 'tablegen-lsp-master-aarch64-unknown-linux-gnu';
-					break;
-				case 'x64':
-					binary = 'tablegen-lsp-master-x86_64-unknown-linux-gnu';
-					break;
-			}
-			break;
-		case 'win32':
-			binary = 'tablegen-lsp-master-x86_64-pc-windows-msvc.exe';
-			break;
-	}
+	initialize(context).catch((err) => {
+		vscode.window.showErrorMessage(`Error initializing tablegen-lsp: ${err}`);
+		throw err;
+	});
+}
 
-	if (binary === '') {
-		vscode.window.showInformationMessage('This platform is currently not supported');
-		return;
+async function initialize(context: vscode.ExtensionContext): Promise<void> {
+	const serverCommand = getServer();
+	const serverOptions: ServerOptions = {
+		command: serverCommand,
 	}
-
-	const command = context.asAbsolutePath(
-		path.join('binary', binary)
-	);
-	const serverOptions: ServerOptions = { command };
 
 	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'tablegen' }],
 	};
 
-	client = new LanguageClient('tablegen-lsp', serverOptions, clientOptions);
-	client.start();
+	client = new LanguageClient('tablegen-lsp', 'TableGen Language Server', serverOptions, clientOptions);
 
-	vscode.commands.registerCommand('tablegen-lsp.restartServer', () => client.restart());
+	context.subscriptions.push(
+		vscode.commands.registerCommand('tablegen-lsp.restartServer', () => client.restart())
+	);
+
+	client.start();
 }
 
 export function deactivate(): Thenable<void> | undefined {
-	if (!client) {
-		return undefined;
+	return client?.stop();
+}
+
+function getServer(): string {
+	switch (platform()) {
+		case 'darwin':
+			switch (arch()) {
+				case 'arm64':
+					return 'tablegen-lsp-master-aarch64-apple-darwin';
+				case 'x64':
+					return 'tablegen-lsp-master-x86_64-apple-darwin';
+			}
+			break;
+		case 'linux':
+			switch (arch()) {
+				case 'arm64':
+					return 'tablegen-lsp-master-aarch64-unknown-linux-gnu';
+				case 'x64':
+					return 'tablegen-lsp-master-x86_64-unknown-linux-gnu';
+			}
+			break;
+		case 'win32':
+			return 'tablegen-lsp-master-x86_64-pc-windows-msvc.exe';
 	}
-	return client.stop();
+
+	throw new Error('This platform is currently not supported');
 }
