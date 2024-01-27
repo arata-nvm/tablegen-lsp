@@ -16,7 +16,10 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "${defaultBuildTask}"
+			"preLaunchTask": "${defaultBuildTask}",
+			"env": {
+				"RUST_BACKTRACE": "1",
+			}
 		},
 		{
 			"name": "Extension Tests",
