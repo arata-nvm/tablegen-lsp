@@ -32,7 +32,7 @@ impl InlayHint {
 
 pub fn inlay_hint(doc: &Document, range: TextRange) -> Option<Vec<InlayHint>> {
     let mut hints = vec![];
-    for (symbol_range, symbol) in doc.symbol_map().get_symbols_in(range) {
+    for (symbol_range, symbol) in doc.symbol_map().get_symbols_in(range)? {
         match symbol {
             Symbol::Record(record) if matches!(record.kind(), RecordKind::Class) => {
                 let symbol_range = TextRange::new(symbol_range.start, symbol_range.end);

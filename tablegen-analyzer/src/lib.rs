@@ -252,4 +252,11 @@ mod tests {
             Some("**def** `foo`\n***\ndocument 2".into()),
         );
     }
+
+    #[test]
+    fn empty() {
+        let doc = Document::parse(DocumentId::new(0), "");
+        let result = doc.get_inlay_hint(TextRange::empty(TextSize::new(0)));
+        assert!(result.is_none());
+    }
 }

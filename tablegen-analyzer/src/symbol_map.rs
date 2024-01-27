@@ -123,13 +123,19 @@ impl SymbolMap {
     pub fn get_symbols_in(
         &self,
         range: TextRange,
-    ) -> impl Iterator<Item = (Range<TextSize>, &Symbol)> {
-        self.symbol_map
+    ) -> Option<impl Iterator<Item = (Range<TextSize>, &Symbol)>> {
+        if range.is_empty() {
+            return None;
+        }
+
+        let iter = self
+            .symbol_map
             .iter::<Range<TextSize>>(range.into())
             .filter_map(|(range, symbol_id)| {
                 self.symbols.get(*symbol_id).map(|symbol| (range, symbol))
             })
-            .filter(|(_, symbol)| symbol.define_loc().0 == self.doc_id)
+            .filter(|(_, symbol)| symbol.define_loc().0 == self.doc_id);
+        Some(iter)
     }
 
     // doc_idが指すDocumentで定義されたシンボルのみを扱う
