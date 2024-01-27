@@ -13,10 +13,15 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function initialize(context: vscode.ExtensionContext): Promise<void> {
-	const serverCommand = getServer();
 	const serverOptions: ServerOptions = {
-		command: serverCommand,
-	}
+		run: {
+			command: getServer(),
+		},
+		debug: {
+			command: context.asAbsolutePath(path.join('..', 'target', 'debug', 'tablegen-lsp')),
+			options: { env: Object.assign({}, process.env, { RUST_BACKTRACE: '1' }), }
+		},
+	};
 
 	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'tablegen' }],
