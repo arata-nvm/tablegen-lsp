@@ -111,12 +111,11 @@ impl SymbolMap {
         self.symbol_map.insert(loc.1.into(), symbol_id);
     }
 
-    // doc_idが指すDocumentで定義されたシンボルのみを扱う
     pub fn get_symbol_at(&self, pos: TextSize) -> Option<&Symbol> {
         self.symbol_map
             .values_overlap(pos)
             .filter_map(|symbol_id| self.symbols.get(*symbol_id))
-            .find(|symbol| symbol.define_loc().0 == self.doc_id)
+            .next()
     }
 
     // doc_idが指すDocumentで定義されたシンボルのみを扱う
@@ -139,11 +138,18 @@ impl SymbolMap {
     }
 
     // doc_idが指すDocumentで定義されたシンボルのみを扱う
-    pub fn global_symbols(&self) -> impl Iterator<Item = &Symbol> {
+    pub fn document_symbols(&self) -> impl Iterator<Item = &Symbol> {
         self.global_symbols
             .iter()
             .filter_map(|symbol_id| self.symbols.get(*symbol_id))
             .filter(|symbol| symbol.define_loc().0 == self.doc_id)
+    }
+
+    // すべてのシンボルを扱う
+    pub fn global_symbols(&self) -> impl Iterator<Item = &Symbol> {
+        self.global_symbols
+            .iter()
+            .filter_map(|symbol_id| self.symbols.get(*symbol_id))
     }
 
     pub fn find_field(&self, symbol_id: SymbolId, name: EcoString) -> Option<SymbolId> {
