@@ -158,8 +158,8 @@ impl<'a> Lexer<'a> {
         let number = self.s.get(start..self.s.cursor());
         if i64::from_str_radix(number, base).is_err() {
             match base {
-                2 => return self.error("Invalid number"),
-                10 => return self.error("Invalid binary number"),
+                2 => return self.error("Invalid binary number"),
+                10 => return self.error("Invalid number"),
                 16 => return self.error("Invalid hexadecimal number"),
                 _ => unreachable!(),
             }
