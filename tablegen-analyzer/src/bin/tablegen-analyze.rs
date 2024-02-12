@@ -1,80 +1,62 @@
 use std::fs;
+use std::path::PathBuf;
 
-use tablegen_analyzer::document::{Document, DocumentId};
-use tablegen_parser::parser::TextSize;
+use tablegen_analyzer::server_impl::TableGenLanguageServerImpl;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 3 {
-        println!("usage: tablegen-analyze [def|ref|hover] <file>");
+    if args.len() != 2 {
+        println!("usage: tablegen-analyze <file>");
         return;
     }
 
-    let text = fs::read_to_string(&args[2]).unwrap();
-    let doc = Document::parse(DocumentId::new(0), &text);
+    let mut impl_ = TableGenLanguageServerImpl::new();
 
-    fn convert_pos(pos: TextSize, doc: &Document) -> (usize, usize) {
-        let line = doc.pos_to_line(pos).unwrap();
-        let char_ = pos - doc.line_to_pos(line).unwrap();
-        (line + 1, Into::<usize>::into(char_) + 1)
+    let path = PathBuf::from(&args[1]);
+    let text = fs::read_to_string(&path).unwrap();
+    let errors = impl_.check_file(path.clone(), text);
+
+    println!("--- errors ---");
+    for error in errors {
+        println!("{error:?}")
     }
 
-    match args[1].as_str() {
-        "def" => {
-            println!("--- definitions ---");
-            for cursor_pos in 0..text.len() {
-                let cursor_pos: TextSize = cursor_pos.try_into().unwrap();
-                let Some(symbol) = doc.symbol_map().get_symbol_at(cursor_pos) else {
-                    continue;
-                };
-                let (doc_id, range) = symbol.define_loc();
-                println!(
-                    "{cursor:3?} -> {symbol_start:3?}..{symbol_end:3?}: {symbol_name} @ {symbol_doc:?}",
-                    cursor = convert_pos(cursor_pos, &doc),
-                    symbol_start = convert_pos(range.start(), &doc),
-                    symbol_end = convert_pos(range.end(), &doc),
-                    symbol_name = symbol.name(),
-                    symbol_doc = doc_id,
-                );
-            }
+    println!("--- symbols ---");
+    impl_.with_document(path, |_, document| {
+        for symbol in document.symbol_map().document_symbols() {
+            print!("{}", symbol.name());
+            let Some(record) = symbol.as_record() else {
+                println!();
+                continue;
+            };
+
+            let parents = record
+                .parents()
+                .iter()
+                .filter_map(|symbol_id| document.symbol_map().symbol(*symbol_id))
+                .map(|symbol| symbol.name().to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            let template_args = record
+                .template_args()
+                .iter()
+                .filter_map(|symbol_id| document.symbol_map().symbol(*symbol_id))
+                .map(|symbol| symbol.name().to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            let fields = record
+                .fields()
+                .iter()
+                .filter_map(|symbol_id| document.symbol_map().symbol(*symbol_id))
+                .filter_map(|symbol| symbol.as_field())
+                .map(|field| field.name().to_string())
+                .collect::<Vec<String>>()
+                .join(";\n");
+
+            println!("<{template_args}>: {parents} {{\n{fields}}}");
         }
-        "ref" => {
-            println!("--- references ---");
-            for cursor_pos in 0..text.len() {
-                let cursor_pos: TextSize = cursor_pos.try_into().unwrap();
-                let Some(symbol) = doc.symbol_map().get_symbol_at(cursor_pos) else {
-                    continue;
-                };
-                let refs = symbol.reference_locs();
-                println!(
-                    "{cursor:3?} -> {symbol_name} @ {symbol_doc:?}:",
-                    cursor = convert_pos(cursor_pos, &doc),
-                    symbol_name = symbol.name(),
-                    symbol_doc = symbol.define_loc().0,
-                );
-                for (doc_id, range) in refs {
-                    println!(
-                        "    {ref_start:3?}..{ref_end:3?} @ {doc_id:?}",
-                        ref_start = convert_pos(range.start(), &doc),
-                        ref_end = convert_pos(range.end(), &doc),
-                    );
-                }
-            }
-        }
-        "hover" => {
-            println!("--- hovers ---");
-            for cursor_pos in 0..text.len() {
-                let cursor_pos: TextSize = cursor_pos.try_into().unwrap();
-                let Some(hover) = doc.get_hover(cursor_pos) else {
-                    continue;
-                };
-                println!(
-                    "{cursor:3?} -> {hover:?}",
-                    cursor = convert_pos(cursor_pos, &doc),
-                    hover = hover,
-                );
-            }
-        }
-        _ => unimplemented!(),
-    }
+        Some(())
+    });
 }
