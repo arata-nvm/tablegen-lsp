@@ -13,6 +13,37 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function initialize(context: vscode.ExtensionContext): Promise<void> {
+	client = createClient(context);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('tablegen-lsp.restartServer', async () => {
+			// FIXME: OUTPUTのtablegen-lspの項目が増殖する
+			await client.dispose();
+			client = createClient(context);
+			await client.start();
+		})
+	);
+
+	vscode.workspace.onDidChangeConfiguration(async (event) => {
+		if (!event.affectsConfiguration('tablegen-lsp')) {
+			return;
+		}
+
+		const message = "The tablegen-lsp configuration has been updated. Please restart the language server for the changes to take effect.";
+		const userResponse = await vscode.window.showInformationMessage(message, "Restart now");
+		if (userResponse) {
+			await vscode.commands.executeCommand('tablegen-lsp.restartServer');
+		}
+	});
+
+	client.start();
+}
+
+export function deactivate(): Thenable<void> | undefined {
+	return client?.stop();
+}
+
+function createClient(context: vscode.ExtensionContext): LanguageClient {
 	const serverOptions: ServerOptions = {
 		run: {
 			command: getServer(),
@@ -29,17 +60,7 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
 		initializationOptions: config,
 	};
 
-	client = new LanguageClient('tablegen-lsp', 'TableGen Language Server', serverOptions, clientOptions);
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand('tablegen-lsp.restartServer', () => client.restart())
-	);
-
-	client.start();
-}
-
-export function deactivate(): Thenable<void> | undefined {
-	return client?.stop();
+	return new LanguageClient('tablegen-lsp', 'TableGen Language Server', serverOptions, clientOptions);
 }
 
 function getServer(): string {
