@@ -38,7 +38,20 @@
         "title": "Restart server",
         "category": "tablegen-lsp"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "tablegen-lsp",
+      "properties": {
+        "tablegen-lsp.includePath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "An array of paths to workspace folders containing tablegen files."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

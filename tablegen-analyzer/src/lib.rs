@@ -1,5 +1,6 @@
 pub mod analyze;
 pub mod completion;
+pub mod config;
 pub mod document;
 pub mod document_map;
 pub mod hover;

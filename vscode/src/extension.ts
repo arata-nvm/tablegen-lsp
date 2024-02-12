@@ -23,8 +23,10 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
 		},
 	};
 
+	const config = vscode.workspace.getConfiguration('tablegen-lsp');
 	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'tablegen' }],
+		initializationOptions: config,
 	};
 
 	client = new LanguageClient('tablegen-lsp', 'TableGen Language Server', serverOptions, clientOptions);

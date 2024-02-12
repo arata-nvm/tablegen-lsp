@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::{
     future::{ready, Future},
     ops::ControlFlow,
@@ -60,8 +61,10 @@ type NotifyResult = ControlFlow<async_lsp::Result<()>>;
 impl TableGenLanguageServer {
     fn initialize(
         &mut self,
-        _params: InitializeParams,
+        params: InitializeParams,
     ) -> impl Future<Output = Result<InitializeResult, ResponseError>> {
+        self.update_config(params);
+
         ready(Ok(InitializeResult {
             server_info: None,
             capabilities: ServerCapabilities {
@@ -80,6 +83,22 @@ impl TableGenLanguageServer {
                 ..Default::default()
             },
         }))
+    }
+
+    fn update_config(&mut self, params: InitializeParams) {
+        let options = params.initialization_options.unwrap();
+        let include_path = options
+            .as_object()
+            .unwrap()
+            .get("includePath")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|it| it.as_str())
+            .map(|it| PathBuf::from(it.to_string()))
+            .collect::<Vec<PathBuf>>();
+        self.impl_.set_include_path(include_path);
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> NotifyResult {
