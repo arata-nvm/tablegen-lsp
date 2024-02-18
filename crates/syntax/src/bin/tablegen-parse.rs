@@ -1,8 +1,6 @@
 use std::fs;
 
-use tablegen_parser::{
-    grammar::parse, lexer::Lexer, token_kind::TokenKind, token_stream::TokenStream,
-};
+use syntax::{grammar::parse, lexer::Lexer, token_kind::TokenKind, token_stream::TokenStream};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

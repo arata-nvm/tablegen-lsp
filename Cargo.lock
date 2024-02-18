@@ -116,7 +116,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2aeaf503862c419d66959f5d7ca015337d864e9c49485d771b732e2a20453597"
 
 [[package]]
-name = "tablegen-parser"
+name = "syntax"
 version = "0.1.0"
 dependencies = [
  "drop_bomb",
