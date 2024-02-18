@@ -15,7 +15,9 @@ impl Server {
         let mut router = Router::new(this);
         router
             .request::<request::Initialize, _>(Self::initialize)
-            .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()));
+            .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
+            .request::<request::Shutdown, _>(|_, _| ready(Ok(())))
+            .notification::<notification::Exit>(|_, _| ControlFlow::Continue(()));
         router
     }
 
