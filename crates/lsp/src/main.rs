@@ -1,3 +1,7 @@
+use async_lsp::client_monitor::ClientProcessMonitorLayer;
+use async_lsp::concurrency::ConcurrencyLayer;
+use async_lsp::server::LifecycleLayer;
+use async_lsp::tracing::TracingLayer;
 use tower::ServiceBuilder;
 
 use lsp::server::Server;
@@ -17,7 +21,12 @@ async fn main() {
     );
 
     let (mainloop, _) = async_lsp::MainLoop::new_server(|client| {
-        ServiceBuilder::new().service(Server::new_router(client))
+        ServiceBuilder::new()
+            .layer(TracingLayer::default())
+            .layer(LifecycleLayer::default())
+            .layer(ConcurrencyLayer::default())
+            .layer(ClientProcessMonitorLayer::new(client.clone()))
+            .service(Server::new_router(client))
     });
 
     mainloop.run_buffered(stdin, stdout).await.unwrap();
