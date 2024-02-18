@@ -1,0 +1,4 @@
+[package]
+name = "ide"
+version.workspace = true
+edition.workspace = true
