@@ -1,6 +1,6 @@
 use std::fs;
 
-use syntax::{grammar::parse, lexer::Lexer, token_kind::TokenKind, token_stream::TokenStream};
+use syntax::{lexer::Lexer, parse, token_kind::TokenKind, token_stream::TokenStream};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -36,12 +36,12 @@ fn token(text: &str) {
 }
 
 fn node(text: &str) {
-    let (node, _) = parse(text);
-    println!("{node:#?}");
+    let root_node = parse(text).root_node();
+    println!("{root_node:#?}");
 }
 
 fn error(text: &str) {
-    for error in parse(text).1 {
+    for error in parse(text).errors() {
         println!("{error}");
     }
 }

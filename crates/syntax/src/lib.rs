@@ -1,4 +1,11 @@
+use rowan::ast::AstNode;
+
+use crate::error::SyntaxError;
+use crate::lexer::Lexer;
+use crate::parser::Parser;
+use crate::preprocessor::PreProcessor;
 use crate::syntax_kind::SyntaxKind;
+use crate::token_kind::TokenKind;
 
 pub mod ast;
 pub mod error;
@@ -29,3 +36,34 @@ impl rowan::Language for Language {
 pub type SyntaxNode = rowan::SyntaxNode<Language>;
 pub type SyntaxToken = rowan::SyntaxToken<Language>;
 pub type SyntaxElement = rowan::NodeOrToken<SyntaxNode, SyntaxToken>;
+
+#[derive(Debug, Clone)]
+pub struct Parse {
+    root_node: SyntaxNode,
+    errors: Vec<SyntaxError>,
+}
+
+impl Parse {
+    pub fn root_node(&self) -> SyntaxNode {
+        self.root_node.clone()
+    }
+
+    pub fn root(&self) -> Option<ast::Root> {
+        ast::Root::cast(self.root_node.clone())
+    }
+
+    pub fn errors(&self) -> &[SyntaxError] {
+        &self.errors
+    }
+}
+
+const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
+
+pub fn parse(text: &str) -> Parse {
+    let lexer = Lexer::new(text);
+    let preprocessor = PreProcessor::new(lexer);
+    let mut parser = Parser::new(preprocessor, &RECOVER_TOKENS);
+    grammar::root(&mut parser);
+    let (root_node, errors) = parser.finish();
+    Parse { root_node, errors }
+}

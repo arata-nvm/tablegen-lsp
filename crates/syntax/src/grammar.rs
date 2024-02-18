@@ -1,26 +1,14 @@
-use crate::lexer::Lexer;
-use crate::preprocessor::PreProcessor;
 use crate::{
-    error::SyntaxError, grammar::statement::StatementListType, parser::Parser,
-    syntax_kind::SyntaxKind, token_kind::TokenKind, SyntaxNode, T,
+    grammar::statement::StatementListType, parser::Parser, syntax_kind::SyntaxKind,
+    token_kind::TokenKind,
 };
 
 pub mod statement;
 pub mod r#type;
 pub mod value;
 
-const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
-
-pub fn parse(text: &str) -> (SyntaxNode, Vec<SyntaxError>) {
-    let lexer = Lexer::new(text);
-    let preprocessor = PreProcessor::new(lexer);
-    let mut parser = Parser::new(preprocessor, &RECOVER_TOKENS);
-    root(&mut parser);
-    parser.finish()
-}
-
 // Root ::= StatementList
-fn root(p: &mut Parser) {
+pub(crate) fn root(p: &mut Parser) {
     p.start_node(SyntaxKind::Root);
     statement::statement_list(p, StatementListType::TopLevel);
     if !p.eof() {
@@ -46,7 +34,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::grammar::parse;
+    use crate::parse;
 
     #[test]
     fn statement() {

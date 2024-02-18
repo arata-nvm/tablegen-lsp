@@ -425,14 +425,13 @@ asts! {
 mod tests {
     use rowan::ast::AstNode;
 
-    use crate::grammar;
     use crate::Language;
 
     use super::*;
 
     fn parse<T: AstNode<Language = Language>>(text: &str) -> T {
-        let (root, _) = grammar::parse(text);
-        root.descendants().find_map(T::cast).unwrap()
+        let root_node = crate::parse(text).root_node();
+        root_node.descendants().find_map(T::cast).unwrap()
     }
 
     #[test]
