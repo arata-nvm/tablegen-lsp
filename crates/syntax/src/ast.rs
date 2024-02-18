@@ -426,7 +426,7 @@ mod tests {
     use rowan::ast::AstNode;
 
     use crate::grammar;
-    use crate::language::Language;
+    use crate::Language;
 
     use super::*;
 
