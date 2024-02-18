@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"assert hoge, \\\"fuga\\\";\")"
 ---
-Parse {
-    root_node: SourceFile@0..20
+(
+    SourceFile@0..20
       StatementList@0..20
         Assert@0..20
           AssertKw@0..6 "assert"
@@ -20,5 +20,5 @@ Parse {
                 StrVal@13..19 "\"fuga\""
           Semi@19..20 ";"
     ,
-    errors: [],
-}
+    [],
+)

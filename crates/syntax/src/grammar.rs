@@ -36,7 +36,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::parse;
+    use crate::error::SyntaxError;
+    use crate::SyntaxNode;
+
+    fn parse(text: &str) -> (SyntaxNode, Vec<SyntaxError>) {
+        let parse = crate::parse(text);
+        (parse.syntax_node(), parse.errors)
+    }
 
     #[test]
     fn statement() {

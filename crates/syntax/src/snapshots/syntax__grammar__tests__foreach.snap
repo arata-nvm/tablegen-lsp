@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"foreach i = [0, 1] in {\n                def Foo # i : Base<i>;\n            }\")"
 ---
-Parse {
-    root_node: SourceFile@0..76
+(
+    SourceFile@0..76
       StatementList@0..76
         Foreach@0..76
           ForeachKw@0..7 "foreach"
@@ -70,5 +70,5 @@ Parse {
                   Whitespace@62..75 "\n            "
             RBrace@75..76 "}"
     ,
-    errors: [],
-}
+    [],
+)

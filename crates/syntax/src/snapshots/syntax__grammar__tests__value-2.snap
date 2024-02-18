@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"defvar a = A#B;\")"
 ---
-Parse {
-    root_node: SourceFile@0..15
+(
+    SourceFile@0..15
       StatementList@0..15
         Defvar@0..15
           DefvarKw@0..6 "defvar"
@@ -23,5 +23,5 @@ Parse {
                 Id@13..14 "B"
           Semi@14..15 ";"
     ,
-    errors: [],
-}
+    [],
+)

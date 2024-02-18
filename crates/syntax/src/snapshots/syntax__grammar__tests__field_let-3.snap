@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo { let A = 1\")"
 ---
-Parse {
-    root_node: SourceFile@0..21
+(
+    SourceFile@0..21
       StatementList@0..21
         Class@0..21
           ClassKw@0..5 "class"
@@ -29,10 +29,10 @@ Parse {
                     Integer@20..21
                       IntVal@20..21 "1"
     ,
-    errors: [
+    [
         SyntaxError {
             range: 21..21,
             message: "expected ';' after let expression",
         },
     ],
-}
+)

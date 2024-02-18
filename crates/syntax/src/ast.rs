@@ -430,7 +430,7 @@ mod tests {
     use super::*;
 
     fn parse<T: AstNode<Language = Language>>(text: &str) -> T {
-        let root_node = crate::parse(text).root_node();
+        let root_node = crate::parse(text).syntax_node();
         root_node.descendants().find_map(T::cast).unwrap()
     }
 

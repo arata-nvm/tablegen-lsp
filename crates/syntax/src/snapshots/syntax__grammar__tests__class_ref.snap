@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo : Bar<\")"
 ---
-Parse {
-    root_node: SourceFile@0..16
+(
+    SourceFile@0..16
       StatementList@0..16
         Class@0..16
           ClassKw@0..5 "class"
@@ -22,10 +22,10 @@ Parse {
                 ArgValueList@16..16
             Body@16..16
     ,
-    errors: [
+    [
         SyntaxError {
             range: 16..16,
             message: "expected '>' in template value list",
         },
     ],
-}
+)

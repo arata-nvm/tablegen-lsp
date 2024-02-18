@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(r#\"include \"foo.td\"\"#)"
 ---
-Parse {
-    root_node: SourceFile@0..16
+(
+    SourceFile@0..16
       StatementList@0..16
         Include@0..16
           IncludeKw@0..7 "include"
@@ -11,5 +11,5 @@ Parse {
           String@8..16
             StrVal@8..16 "\"foo.td\""
     ,
-    errors: [],
-}
+    [],
+)

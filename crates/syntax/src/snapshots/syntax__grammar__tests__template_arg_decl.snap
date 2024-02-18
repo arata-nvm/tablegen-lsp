@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo<int\")"
 ---
-Parse {
-    root_node: SourceFile@0..13
+(
+    SourceFile@0..13
       StatementList@0..13
         Class@0..13
           ClassKw@0..5 "class"
@@ -20,10 +20,10 @@ Parse {
             ParentClassList@13..13
             Body@13..13
     ,
-    errors: [
+    [
         SyntaxError {
             range: 13..13,
             message: "expected identifier in declaration",
         },
     ],
-}
+)

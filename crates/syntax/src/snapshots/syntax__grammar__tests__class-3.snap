@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"class\")"
 ---
-Parse {
-    root_node: SourceFile@0..5
+(
+    SourceFile@0..5
       StatementList@0..5
         Class@0..5
           ClassKw@0..5 "class"
@@ -12,10 +12,10 @@ Parse {
             ParentClassList@5..5
             Body@5..5
     ,
-    errors: [
+    [
         SyntaxError {
             range: 5..5,
             message: "expected class name after 'class' keyword",
         },
     ],
-}
+)

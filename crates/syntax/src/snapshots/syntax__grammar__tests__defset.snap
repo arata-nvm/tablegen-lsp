@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : Base<0>;\n                def Foo1 : Base<1>;\n            }\")"
 ---
-Parse {
-    root_node: SourceFile@0..116
+(
+    SourceFile@0..116
       StatementList@0..116
         Defset@0..116
           DefsetKw@0..6 "defset"
@@ -78,5 +78,5 @@ Parse {
                   Whitespace@102..115 "\n            "
             RBrace@115..116 "}"
     ,
-    errors: [],
-}
+    [],
+)

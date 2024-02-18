@@ -1,12 +1,12 @@
 use ecow::{eco_format, EcoString};
-use rowan::GreenNodeBuilder;
+use rowan::{GreenNode, GreenNodeBuilder};
 pub use rowan::{TextRange, TextSize};
 
 use crate::grammar::RECOVER_TOKENS;
 use crate::lexer::Lexer;
 use crate::preprocessor::PreProcessor;
 use crate::token_stream::TokenStream;
-use crate::{error::SyntaxError, syntax_kind::SyntaxKind, token_kind::TokenKind, SyntaxNode};
+use crate::{error::SyntaxError, syntax_kind::SyntaxKind, token_kind::TokenKind};
 
 #[derive(Debug)]
 pub(crate) enum CompletedMarker {
@@ -49,8 +49,8 @@ impl<T: TokenStream> ParserBase<T> {
     }
 
     #[inline]
-    pub(crate) fn finish(self) -> (SyntaxNode, Vec<SyntaxError>) {
-        (SyntaxNode::new_root(self.builder.finish()), self.errors)
+    pub(crate) fn finish(self) -> (GreenNode, Vec<SyntaxError>) {
+        (self.builder.finish(), self.errors)
     }
 
     #[inline]

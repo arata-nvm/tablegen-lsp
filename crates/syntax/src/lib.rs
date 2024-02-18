@@ -1,4 +1,5 @@
 use rowan::ast::AstNode;
+use rowan::GreenNode;
 
 use crate::error::SyntaxError;
 use crate::lexer::Lexer;
@@ -36,19 +37,19 @@ pub type SyntaxNode = rowan::SyntaxNode<Language>;
 pub type SyntaxToken = rowan::SyntaxToken<Language>;
 pub type SyntaxElement = rowan::NodeOrToken<SyntaxNode, SyntaxToken>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Parse {
-    root_node: SyntaxNode,
+    green_node: GreenNode,
     errors: Vec<SyntaxError>,
 }
 
 impl Parse {
-    pub fn root_node(&self) -> SyntaxNode {
-        self.root_node.clone()
+    pub fn syntax_node(&self) -> SyntaxNode {
+        SyntaxNode::new_root(self.green_node.clone())
     }
 
     pub fn source_file(&self) -> Option<ast::SourceFile> {
-        ast::SourceFile::cast(self.root_node.clone())
+        ast::SourceFile::cast(self.syntax_node())
     }
 
     pub fn errors(&self) -> &[SyntaxError] {
@@ -61,6 +62,6 @@ pub fn parse(text: &str) -> Parse {
     let preprocessor = PreProcessor::new(lexer);
     let mut parser = Parser::new(preprocessor);
     grammar::source_file(&mut parser);
-    let (root_node, errors) = parser.finish();
-    Parse { root_node, errors }
+    let (green_node, errors) = parser.finish();
+    Parse { green_node, errors }
 }

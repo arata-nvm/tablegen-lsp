@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo { let A\")"
 ---
-Parse {
-    root_node: SourceFile@0..17
+(
+    SourceFile@0..17
       StatementList@0..17
         Class@0..17
           ClassKw@0..5 "class"
@@ -24,7 +24,7 @@ Parse {
                 Value@17..17
                   InnerValue@17..17
     ,
-    errors: [
+    [
         SyntaxError {
             range: 17..17,
             message: "expected Equal",
@@ -34,4 +34,4 @@ Parse {
             message: "unknown token when parsing a value",
         },
     ],
-}
+)

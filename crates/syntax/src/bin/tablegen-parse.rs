@@ -36,7 +36,7 @@ fn token(text: &str) {
 }
 
 fn node(text: &str) {
-    let root_node = parse(text).root_node();
+    let root_node = parse(text).syntax_node();
     println!("{root_node:#?}");
 }
 

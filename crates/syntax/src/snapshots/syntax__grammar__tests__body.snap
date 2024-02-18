@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo\")"
 ---
-Parse {
-    root_node: SourceFile@0..9
+(
+    SourceFile@0..9
       StatementList@0..9
         Class@0..9
           ClassKw@0..5 "class"
@@ -14,10 +14,10 @@ Parse {
             ParentClassList@9..9
             Body@9..9
     ,
-    errors: [
+    [
         SyntaxError {
             range: 9..9,
             message: "expected ';' or '{' to start body",
         },
     ],
-}
+)

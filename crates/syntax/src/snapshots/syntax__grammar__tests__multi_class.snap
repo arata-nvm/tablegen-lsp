@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"multiclass foo {\n                def _foo1;\n                def _foo2;\n            }\")"
 ---
-Parse {
-    root_node: SourceFile@0..84
+(
+    SourceFile@0..84
       StatementList@0..84
         MultiClass@0..84
           MultiClassKw@0..10 "multiclass"
@@ -41,5 +41,5 @@ Parse {
                   Whitespace@70..83 "\n            "
             RBrace@83..84 "}"
     ,
-    errors: [],
-}
+    [],
+)

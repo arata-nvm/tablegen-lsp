@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"let A = 1 {\")"
 ---
-Parse {
-    root_node: SourceFile@0..11
+(
+    SourceFile@0..11
       StatementList@0..11
         Let@0..11
           LetKw@0..3 "let"
@@ -27,7 +27,7 @@ Parse {
             Error@11..11
               Eof@11..11 ""
     ,
-    errors: [
+    [
         SyntaxError {
             range: 11..11,
             message: "expected '}' at end of bit range list",
@@ -37,4 +37,4 @@ Parse {
             message: "expected class, def, defm, defset, multiclass, let or foreach",
         },
     ],
-}
+)

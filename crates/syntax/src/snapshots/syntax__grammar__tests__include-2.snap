@@ -2,17 +2,17 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"include\")"
 ---
-Parse {
-    root_node: SourceFile@0..7
+(
+    SourceFile@0..7
       StatementList@0..7
         Include@0..7
           IncludeKw@0..7 "include"
           String@7..7
     ,
-    errors: [
+    [
         SyntaxError {
             range: 7..7,
             message: "expected filename after include",
         },
     ],
-}
+)

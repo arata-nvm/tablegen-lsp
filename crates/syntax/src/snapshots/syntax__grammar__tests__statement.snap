@@ -2,16 +2,16 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"a\")"
 ---
-Parse {
-    root_node: SourceFile@0..1
+(
+    SourceFile@0..1
       StatementList@0..1
         Error@0..1
           Id@0..1 "a"
     ,
-    errors: [
+    [
         SyntaxError {
             range: 0..1,
             message: "expected class, def, defm, defset, multiclass, let or foreach",
         },
     ],
-}
+)

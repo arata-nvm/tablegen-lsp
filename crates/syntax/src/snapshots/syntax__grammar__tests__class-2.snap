@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo<int A> {\n                int B;\n                int C = A;\n                let D = A;\n            }\")"
 ---
-Parse {
-    root_node: SourceFile@0..109
+(
+    SourceFile@0..109
       StatementList@0..109
         Class@0..109
           ClassKw@0..5 "class"
@@ -64,5 +64,5 @@ Parse {
                 Whitespace@95..108 "\n            "
               RBrace@108..109 "}"
     ,
-    errors: [],
-}
+    [],
+)

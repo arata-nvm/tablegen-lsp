@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"def Foo : Bar;\")"
 ---
-Parse {
-    root_node: SourceFile@0..14
+(
+    SourceFile@0..14
       StatementList@0..14
         Def@0..14
           DefKw@0..3 "def"
@@ -23,5 +23,5 @@ Parse {
             Body@13..14
               Semi@13..14 ";"
     ,
-    errors: [],
-}
+    [],
+)

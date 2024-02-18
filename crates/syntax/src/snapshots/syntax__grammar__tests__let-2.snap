@@ -2,8 +2,8 @@
 source: crates/syntax/src/grammar.rs
 expression: "parse(\"let A = 1\")"
 ---
-Parse {
-    root_node: SourceFile@0..9
+(
+    SourceFile@0..9
       StatementList@0..9
         Let@0..9
           LetKw@0..3 "let"
@@ -23,7 +23,7 @@ Parse {
             Error@9..9
               Eof@9..9 ""
     ,
-    errors: [
+    [
         SyntaxError {
             range: 9..9,
             message: "expected 'in' at end of top-level 'let'",
@@ -33,4 +33,4 @@ Parse {
             message: "expected class, def, defm, defset, multiclass, let or foreach",
         },
     ],
-}
+)
