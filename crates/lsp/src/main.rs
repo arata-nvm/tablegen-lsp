@@ -3,6 +3,7 @@ use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::server::LifecycleLayer;
 use async_lsp::tracing::TracingLayer;
 use tower::ServiceBuilder;
+use tracing_subscriber::EnvFilter;
 
 use lsp::server::Server;
 
@@ -28,6 +29,12 @@ async fn main() {
             .layer(ClientProcessMonitorLayer::new(client.clone()))
             .service(Server::new_router(client))
     });
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_ansi(false)
+        .with_writer(std::io::stderr)
+        .init();
 
     mainloop.run_buffered(stdin, stdout).await.unwrap();
 }
