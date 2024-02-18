@@ -5,7 +5,6 @@ use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::preprocessor::PreProcessor;
 use crate::syntax_kind::SyntaxKind;
-use crate::token_kind::TokenKind;
 
 pub mod ast;
 pub mod error;
@@ -57,12 +56,10 @@ impl Parse {
     }
 }
 
-const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
-
 pub fn parse(text: &str) -> Parse {
     let lexer = Lexer::new(text);
     let preprocessor = PreProcessor::new(lexer);
-    let mut parser = Parser::new(preprocessor, &RECOVER_TOKENS);
+    let mut parser = Parser::new(preprocessor);
     grammar::root(&mut parser);
     let (root_node, errors) = parser.finish();
     Parse { root_node, errors }

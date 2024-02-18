@@ -1,11 +1,13 @@
 use crate::{
     grammar::statement::StatementListType, parser::Parser, syntax_kind::SyntaxKind,
-    token_kind::TokenKind,
+    token_kind::TokenKind, T,
 };
 
 pub mod statement;
 pub mod r#type;
 pub mod value;
+
+pub(crate) const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
 
 // Root ::= StatementList
 pub(crate) fn root(p: &mut Parser) {

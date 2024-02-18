@@ -2,6 +2,7 @@ use ecow::{eco_format, EcoString};
 use rowan::GreenNodeBuilder;
 pub use rowan::{TextRange, TextSize};
 
+use crate::grammar::RECOVER_TOKENS;
 use crate::lexer::Lexer;
 use crate::preprocessor::PreProcessor;
 use crate::token_stream::TokenStream;
@@ -25,12 +26,10 @@ impl CompletedMarker {
     }
 }
 
-pub(crate) type Parser<'a> = ParserBase<'a, PreProcessor<Lexer<'a>>>;
+pub(crate) type Parser<'a> = ParserBase<PreProcessor<Lexer<'a>>>;
 
 #[derive(Debug)]
-pub(crate) struct ParserBase<'a, T: TokenStream> {
-    recover_tokens: &'a [TokenKind],
-
+pub(crate) struct ParserBase<T: TokenStream> {
     token_stream: T,
     builder: GreenNodeBuilder<'static>,
 
@@ -38,11 +37,9 @@ pub(crate) struct ParserBase<'a, T: TokenStream> {
     is_after_error: bool,
 }
 
-impl<'a, T: TokenStream> ParserBase<'a, T> {
-    pub(crate) fn new(token_stream: T, recover_tokens: &'a [TokenKind]) -> Self {
+impl<T: TokenStream> ParserBase<T> {
+    pub(crate) fn new(token_stream: T) -> Self {
         Self {
-            recover_tokens,
-
             token_stream,
             builder: GreenNodeBuilder::new(),
 
@@ -108,7 +105,7 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
     pub(crate) fn error_and_recover(&mut self, message: impl Into<EcoString>) {
         self.error(message);
 
-        if !self.at_set(self.recover_tokens) && !self.eof() {
+        if !self.at_set(&RECOVER_TOKENS) && !self.eof() {
             self.builder.start_node(SyntaxKind::Error.into());
             self.eat();
             self.builder.finish_node();
