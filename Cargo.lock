@@ -341,6 +341,7 @@ version = "0.1.0"
 dependencies = [
  "async-lsp",
  "futures",
+ "ide",
  "tokio",
  "tokio-util",
  "tower",
