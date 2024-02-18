@@ -2,3 +2,6 @@
 name = "ide"
 version.workspace = true
 edition.workspace = true
+
+[dependencies]
+salsa = "0.16.1"

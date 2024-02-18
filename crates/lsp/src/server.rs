@@ -1,4 +1,5 @@
 use std::ops::ControlFlow;
+use std::sync::Arc;
 
 use async_lsp::lsp_types::{
     notification, request, DidOpenTextDocumentParams, InitializeParams, InitializeResult,
@@ -8,9 +9,12 @@ use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageServer, ResponseError};
 use futures::future::{ready, BoxFuture};
 
+use ide::db::AnalysisHost;
+
 use crate::vfs::{UrlExt, Vfs};
 
 pub struct Server {
+    host: AnalysisHost,
     vfs: Vfs,
     client: ClientSocket,
 }
@@ -30,6 +34,7 @@ impl Server {
 
     fn new(client: ClientSocket) -> Self {
         Self {
+            host: AnalysisHost::new(),
             vfs: Vfs::new(),
             client,
         }
@@ -59,6 +64,8 @@ impl LanguageServer for Server {
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         let path = UrlExt::to_file_path(&params.text_document.uri);
         let file_id = self.vfs.assign_or_get_file_id(path);
+        let text = Arc::from(params.text_document.text);
+        self.host.set_file_content(file_id, text);
 
         ControlFlow::Continue(())
     }
