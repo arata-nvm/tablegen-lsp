@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo<int\")"
 ---
-(
-    Root@0..13
+Parse {
+    root_node: Root@0..13
       StatementList@0..13
         Class@0..13
           ClassKw@0..5 "class"
@@ -20,10 +20,10 @@ expression: "parse(\"class Foo<int\")"
             ParentClassList@13..13
             Body@13..13
     ,
-    [
-        TableGenError {
+    errors: [
+        SyntaxError {
             range: 13..13,
             message: "expected identifier in declaration",
         },
     ],
-)
+}

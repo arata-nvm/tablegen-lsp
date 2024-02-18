@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"assert hoge, \\\"fuga\\\";\")"
 ---
-(
-    Root@0..20
+Parse {
+    root_node: Root@0..20
       StatementList@0..20
         Assert@0..20
           AssertKw@0..6 "assert"
@@ -20,5 +20,5 @@ expression: "parse(\"assert hoge, \\\"fuga\\\";\")"
                 StrVal@13..19 "\"fuga\""
           Semi@19..20 ";"
     ,
-    [],
-)
+    errors: [],
+}

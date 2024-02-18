@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo { let\")"
 ---
-(
-    Root@0..15
+Parse {
+    root_node: Root@0..15
       StatementList@0..15
         Class@0..15
           ClassKw@0..5 "class"
@@ -22,14 +22,14 @@ expression: "parse(\"class Foo { let\")"
                 Value@15..15
                   InnerValue@15..15
     ,
-    [
-        TableGenError {
+    errors: [
+        SyntaxError {
             range: 15..15,
             message: "expected field identifier after let",
         },
-        TableGenError {
+        SyntaxError {
             range: 15..15,
             message: "unknown token when parsing a value",
         },
     ],
-)
+}

@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"defm foo : bar;\")"
 ---
-(
-    Root@0..15
+Parse {
+    root_node: Root@0..15
       StatementList@0..15
         Defm@0..15
           DefmKw@0..4 "defm"
@@ -21,5 +21,5 @@ expression: "parse(\"defm foo : bar;\")"
                 Id@11..14 "bar"
           Semi@14..15 ";"
     ,
-    [],
-)
+    errors: [],
+}

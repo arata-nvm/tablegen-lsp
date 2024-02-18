@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo\")"
 ---
-(
-    Root@0..9
+Parse {
+    root_node: Root@0..9
       StatementList@0..9
         Class@0..9
           ClassKw@0..5 "class"
@@ -14,10 +14,10 @@ expression: "parse(\"class Foo\")"
             ParentClassList@9..9
             Body@9..9
     ,
-    [
-        TableGenError {
+    errors: [
+        SyntaxError {
             range: 9..9,
             message: "expected ';' or '{' to start body",
         },
     ],
-)
+}

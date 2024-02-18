@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo { let A\")"
 ---
-(
-    Root@0..17
+Parse {
+    root_node: Root@0..17
       StatementList@0..17
         Class@0..17
           ClassKw@0..5 "class"
@@ -24,14 +24,14 @@ expression: "parse(\"class Foo { let A\")"
                 Value@17..17
                   InnerValue@17..17
     ,
-    [
-        TableGenError {
+    errors: [
+        SyntaxError {
             range: 17..17,
             message: "expected Equal",
         },
-        TableGenError {
+        SyntaxError {
             range: 17..17,
             message: "unknown token when parsing a value",
         },
     ],
-)
+}

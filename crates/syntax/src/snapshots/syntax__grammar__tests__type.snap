@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;\")"
 ---
-(
-    Root@0..73
+Parse {
+    root_node: Root@0..73
       StatementList@0..73
         Class@0..73
           ClassKw@0..5 "class"
@@ -81,5 +81,5 @@ expression: "parse(\"class Foo<bit A, int B, string C, dag D, bits<32> E, list<i
             Body@72..73
               Semi@72..73 ";"
     ,
-    [],
-)
+    errors: [],
+}

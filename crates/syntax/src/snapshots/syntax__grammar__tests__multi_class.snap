@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"multiclass foo {\n                def _foo1;\n                def _foo2;\n            }\")"
 ---
-(
-    Root@0..84
+Parse {
+    root_node: Root@0..84
       StatementList@0..84
         MultiClass@0..84
           MultiClassKw@0..10 "multiclass"
@@ -41,5 +41,5 @@ expression: "parse(\"multiclass foo {\n                def _foo1;\n             
                   Whitespace@70..83 "\n            "
             RBrace@83..84 "}"
     ,
-    [],
-)
+    errors: [],
+}

@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"defvar i = 0;\")"
 ---
-(
-    Root@0..13
+Parse {
+    root_node: Root@0..13
       StatementList@0..13
         Defvar@0..13
           DefvarKw@0..6 "defvar"
@@ -19,5 +19,5 @@ expression: "parse(\"defvar i = 0;\")"
                 IntVal@11..12 "0"
           Semi@12..13 ";"
     ,
-    [],
-)
+    errors: [],
+}

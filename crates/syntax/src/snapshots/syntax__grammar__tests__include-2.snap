@@ -1,18 +1,18 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"include\")"
 ---
-(
-    Root@0..7
+Parse {
+    root_node: Root@0..7
       StatementList@0..7
         Include@0..7
           IncludeKw@0..7 "include"
           String@7..7
     ,
-    [
-        TableGenError {
+    errors: [
+        SyntaxError {
             range: 7..7,
             message: "expected filename after include",
         },
     ],
-)
+}

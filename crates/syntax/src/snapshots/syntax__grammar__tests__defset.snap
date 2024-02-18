@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : Base<0>;\n                def Foo1 : Base<1>;\n            }\")"
 ---
-(
-    Root@0..116
+Parse {
+    root_node: Root@0..116
       StatementList@0..116
         Defset@0..116
           DefsetKw@0..6 "defset"
@@ -78,5 +78,5 @@ expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : 
                   Whitespace@102..115 "\n            "
             RBrace@115..116 "}"
     ,
-    [],
-)
+    errors: [],
+}

@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"class\")"
 ---
-(
-    Root@0..5
+Parse {
+    root_node: Root@0..5
       StatementList@0..5
         Class@0..5
           ClassKw@0..5 "class"
@@ -12,10 +12,10 @@ expression: "parse(\"class\")"
             ParentClassList@5..5
             Body@5..5
     ,
-    [
-        TableGenError {
+    errors: [
+        SyntaxError {
             range: 5..5,
             message: "expected class name after 'class' keyword",
         },
     ],
-)
+}

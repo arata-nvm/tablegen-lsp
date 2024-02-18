@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"if true then { class Foo; }\")"
 ---
-(
-    Root@0..27
+Parse {
+    root_node: Root@0..27
       StatementList@0..27
         If@0..27
           IfKw@0..2 "if"
@@ -30,5 +30,5 @@ expression: "parse(\"if true then { class Foo; }\")"
                   Whitespace@25..26 " "
             RBrace@26..27 "}"
     ,
-    [],
-)
+    errors: [],
+}

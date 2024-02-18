@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(r#\"include \"foo.td\"\"#)"
 ---
-(
-    Root@0..16
+Parse {
+    root_node: Root@0..16
       StatementList@0..16
         Include@0..16
           IncludeKw@0..7 "include"
@@ -11,5 +11,5 @@ expression: "parse(r#\"include \"foo.td\"\"#)"
           String@8..16
             StrVal@8..16 "\"foo.td\""
     ,
-    [],
-)
+    errors: [],
+}

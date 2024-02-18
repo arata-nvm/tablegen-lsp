@@ -1,9 +1,9 @@
 ---
-source: tablegen-parser/src/grammar.rs
+source: crates/syntax/src/grammar.rs
 expression: "parse(\"class Foo { int A\")"
 ---
-(
-    Root@0..17
+Parse {
+    root_node: Root@0..17
       StatementList@0..17
         Class@0..17
           ClassKw@0..5 "class"
@@ -23,10 +23,10 @@ expression: "parse(\"class Foo { int A\")"
                 Identifier@16..17
                   Id@16..17 "A"
     ,
-    [
-        TableGenError {
+    errors: [
+        SyntaxError {
             range: 17..17,
             message: "expected ';' after declaration",
         },
     ],
-)
+}
