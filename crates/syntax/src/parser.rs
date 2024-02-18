@@ -5,9 +5,7 @@ pub use rowan::{TextRange, TextSize};
 use crate::lexer::Lexer;
 use crate::preprocessor::PreProcessor;
 use crate::token_stream::TokenStream;
-use crate::{
-    error::TableGenError, language::SyntaxNode, syntax_kind::SyntaxKind, token_kind::TokenKind,
-};
+use crate::{error::TableGenError, syntax_kind::SyntaxKind, token_kind::TokenKind, SyntaxNode};
 
 #[derive(Debug)]
 pub(crate) enum CompletedMarker {

@@ -1,8 +1,8 @@
 use crate::lexer::Lexer;
 use crate::preprocessor::PreProcessor;
 use crate::{
-    error::TableGenError, grammar::statement::StatementListType, language::SyntaxNode,
-    parser::Parser, syntax_kind::SyntaxKind, token_kind::TokenKind, T,
+    error::TableGenError, grammar::statement::StatementListType, parser::Parser,
+    syntax_kind::SyntaxKind, token_kind::TokenKind, SyntaxNode, T,
 };
 
 pub mod statement;

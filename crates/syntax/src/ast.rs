@@ -1,9 +1,9 @@
 use ecow::EcoString;
 pub use rowan::ast::AstNode;
 
-use crate::language::{Language, SyntaxNode};
 use crate::parser::TextRange;
 use crate::syntax_kind::SyntaxKind;
+use crate::{Language, SyntaxNode};
 
 macro_rules! asts {
     () => {};
