@@ -96,7 +96,7 @@ macro_rules! ast_field {
 }
 
 asts! {
-    Root {
+    SourceFile {
         statement_list: StatementList,
     };
     StatementList {
@@ -435,8 +435,8 @@ mod tests {
     }
 
     #[test]
-    fn root() {
-        let node = parse::<Root>("class Foo;");
+    fn source_file() {
+        let node = parse::<SourceFile>("class Foo;");
         assert!(node.statement_list().is_some());
     }
 

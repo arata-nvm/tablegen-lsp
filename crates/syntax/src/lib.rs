@@ -47,8 +47,8 @@ impl Parse {
         self.root_node.clone()
     }
 
-    pub fn root(&self) -> Option<ast::Root> {
-        ast::Root::cast(self.root_node.clone())
+    pub fn source_file(&self) -> Option<ast::SourceFile> {
+        ast::SourceFile::cast(self.root_node.clone())
     }
 
     pub fn errors(&self) -> &[SyntaxError] {
@@ -60,7 +60,7 @@ pub fn parse(text: &str) -> Parse {
     let lexer = Lexer::new(text);
     let preprocessor = PreProcessor::new(lexer);
     let mut parser = Parser::new(preprocessor);
-    grammar::root(&mut parser);
+    grammar::source_file(&mut parser);
     let (root_node, errors) = parser.finish();
     Parse { root_node, errors }
 }

@@ -3,7 +3,7 @@ source: crates/syntax/src/grammar.rs
 expression: "parse(\"let A = 1, B<1...3> = 0b101 in { class Foo; }\")"
 ---
 Parse {
-    root_node: Root@0..45
+    root_node: SourceFile@0..45
       StatementList@0..45
         Let@0..45
           LetKw@0..3 "let"

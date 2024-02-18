@@ -9,9 +9,9 @@ pub mod value;
 
 pub(crate) const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
 
-// Root ::= StatementList
-pub(crate) fn root(p: &mut Parser) {
-    p.start_node(SyntaxKind::Root);
+// SourceFile ::= StatementList
+pub(crate) fn source_file(p: &mut Parser) {
+    p.start_node(SyntaxKind::SourceFile);
     statement::statement_list(p, StatementListType::TopLevel);
     if !p.eof() {
         p.error("unexpected input at top level");

@@ -7,7 +7,7 @@ pub enum SyntaxKind {
     Error,
 
     // --- syntax ---
-    Root,
+    SourceFile,
     StatementList,
     Include,
     Class,

@@ -1,4 +1,4 @@
-File ::= StatementList
+SourceFile ::= StatementList
 StatementList ::= Statement*
 Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Foreach | If | Let | MultiClass
 

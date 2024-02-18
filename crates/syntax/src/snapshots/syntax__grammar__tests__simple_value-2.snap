@@ -3,7 +3,7 @@ source: crates/syntax/src/grammar.rs
 expression: "parse(\"defvar A = [[1], [1,], [1,2]];\")"
 ---
 Parse {
-    root_node: Root@0..30
+    root_node: SourceFile@0..30
       StatementList@0..30
         Defvar@0..30
           DefvarKw@0..6 "defvar"
