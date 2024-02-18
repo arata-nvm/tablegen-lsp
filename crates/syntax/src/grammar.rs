@@ -1,7 +1,7 @@
 use crate::lexer::Lexer;
 use crate::preprocessor::PreProcessor;
 use crate::{
-    error::TableGenError, grammar::statement::StatementListType, parser::Parser,
+    error::SyntaxError, grammar::statement::StatementListType, parser::Parser,
     syntax_kind::SyntaxKind, token_kind::TokenKind, SyntaxNode, T,
 };
 
@@ -11,7 +11,7 @@ pub mod value;
 
 const RECOVER_TOKENS: [TokenKind; 5] = [T![include], T![class], T![def], T![let], T![;]];
 
-pub fn parse(text: &str) -> (SyntaxNode, Vec<TableGenError>) {
+pub fn parse(text: &str) -> (SyntaxNode, Vec<SyntaxError>) {
     let lexer = Lexer::new(text);
     let preprocessor = PreProcessor::new(lexer);
     let mut parser = Parser::new(preprocessor, &RECOVER_TOKENS);

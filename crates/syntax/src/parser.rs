@@ -5,7 +5,7 @@ pub use rowan::{TextRange, TextSize};
 use crate::lexer::Lexer;
 use crate::preprocessor::PreProcessor;
 use crate::token_stream::TokenStream;
-use crate::{error::TableGenError, syntax_kind::SyntaxKind, token_kind::TokenKind, SyntaxNode};
+use crate::{error::SyntaxError, syntax_kind::SyntaxKind, token_kind::TokenKind, SyntaxNode};
 
 #[derive(Debug)]
 pub(crate) enum CompletedMarker {
@@ -34,7 +34,7 @@ pub(crate) struct ParserBase<'a, T: TokenStream> {
     token_stream: T,
     builder: GreenNodeBuilder<'static>,
 
-    errors: Vec<TableGenError>,
+    errors: Vec<SyntaxError>,
     is_after_error: bool,
 }
 
@@ -52,7 +52,7 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
     }
 
     #[inline]
-    pub(crate) fn finish(self) -> (SyntaxNode, Vec<TableGenError>) {
+    pub(crate) fn finish(self) -> (SyntaxNode, Vec<SyntaxError>) {
         (SyntaxNode::new_root(self.builder.finish()), self.errors)
     }
 
@@ -93,7 +93,7 @@ impl<'a, T: TokenStream> ParserBase<'a, T> {
 
     pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
         self.errors
-            .push(TableGenError::new(self.token_stream.peek_range(), message));
+            .push(SyntaxError::new(self.token_stream.peek_range(), message));
         self.is_after_error = true;
     }
 
