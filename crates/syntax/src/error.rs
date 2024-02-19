@@ -1,8 +1,9 @@
-use ecow::EcoString;
-use rowan::TextRange;
 use std::fmt;
 
-#[derive(Debug, Clone)]
+use ecow::EcoString;
+use rowan::TextRange;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SyntaxError {
     pub range: TextRange,
     pub message: EcoString,
