@@ -3,6 +3,7 @@ use std::sync::Arc;
 use syntax::Parse;
 
 use crate::file::FileId;
+use crate::line_index::LineIndex;
 
 #[salsa::database(SourceDatabaseStorage)]
 #[derive(Default)]
@@ -25,7 +26,14 @@ pub trait SourceDatabase {
     #[salsa::input]
     fn file_content(&self, file_id: FileId) -> Arc<str>;
 
+    fn line_index(&self, file_id: FileId) -> Arc<LineIndex>;
+
     fn parse(&self, file_id: FileId) -> Parse;
+}
+
+fn line_index(db: &dyn SourceDatabase, file_id: FileId) -> Arc<LineIndex> {
+    let text = db.file_content(file_id);
+    Arc::new(LineIndex::new(&text))
 }
 
 fn parse(db: &dyn SourceDatabase, file_id: FileId) -> Parse {

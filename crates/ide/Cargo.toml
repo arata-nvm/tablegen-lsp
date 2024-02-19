@@ -4,5 +4,6 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+ropey = "1.6.1"
 salsa = "0.16.1"
 syntax = { path = "../syntax" }
