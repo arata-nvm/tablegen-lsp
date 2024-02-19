@@ -3,21 +3,25 @@ use std::sync::Arc;
 
 use async_lsp::lsp_types::{
     notification, request, DidOpenTextDocumentParams, InitializeParams, InitializeResult,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    PublishDiagnosticsParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+    Url,
 };
 use async_lsp::router::Router;
-use async_lsp::{ClientSocket, LanguageServer, ResponseError};
+use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
 use futures::future::{ready, BoxFuture};
 
 use ide::analysis::AnalysisHost;
+use ide::db::SourceDatabase;
 use ide::file::FileId;
 
+use crate::to_proto;
 use crate::vfs::{UrlExt, Vfs};
 
 pub struct Server {
     host: AnalysisHost,
     vfs: Vfs,
     client: ClientSocket,
+    diagnostic_version: i32,
 }
 
 impl Server {
@@ -38,6 +42,7 @@ impl Server {
             host: AnalysisHost::new(),
             vfs: Vfs::new(),
             client,
+            diagnostic_version: 0,
         }
     }
 }
@@ -79,7 +84,31 @@ impl Server {
     }
 
     fn update_diagnostics(&mut self, file_id: FileId) {
+        let Some(file_path) = self.vfs.path_for_file(&file_id) else {
+            tracing::info!("cannot retrieve file path: {file_id:?}");
+            return;
+        };
+        let file_uri = UrlExt::from_file_path(&file_path);
+
         let analysis = self.host.analysis();
-        let _diags = analysis.diagnostics(file_id);
+        let diags = analysis.diagnostics(file_id);
+        let line_index = analysis.snapshot().line_index(file_id);
+        let lsp_diags = diags
+            .into_iter()
+            .filter_map(|diag| to_proto::diagnostic(&line_index, diag))
+            .collect();
+
+        let params = PublishDiagnosticsParams::new(
+            file_uri,
+            lsp_diags,
+            Some(self.bump_diagnostic_version()),
+        );
+        self.client.publish_diagnostics(params).unwrap();
+    }
+
+    fn bump_diagnostic_version(&mut self) -> i32 {
+        let version = self.diagnostic_version;
+        self.diagnostic_version += 1;
+        version
     }
 }

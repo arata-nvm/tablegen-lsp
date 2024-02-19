@@ -381,6 +381,7 @@ dependencies = [
  "async-lsp",
  "futures",
  "ide",
+ "text-size",
  "tokio",
  "tokio-util",
  "tower",

@@ -12,3 +12,4 @@ tower = "0.4.13"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 ide = { path = "../ide" }
+text-size = "1.1.1"
