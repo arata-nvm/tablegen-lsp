@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 salsa = "0.16.1"
+syntax = { path = "../syntax" }
