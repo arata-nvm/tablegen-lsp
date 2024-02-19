@@ -2,9 +2,9 @@ use std::ops::ControlFlow;
 use std::sync::Arc;
 
 use async_lsp::lsp_types::{
-    notification, request, DidOpenTextDocumentParams, InitializeParams, InitializeResult,
-    PublishDiagnosticsParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-    Url,
+    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    InitializeParams, InitializeResult, PublishDiagnosticsParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -33,7 +33,8 @@ impl Server {
             .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
             .request::<request::Shutdown, _>(|_, _| ready(Ok(())))
             .notification::<notification::Exit>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidOpenTextDocument>(Self::did_open);
+            .notification::<notification::DidOpenTextDocument>(Self::did_open)
+            .notification::<notification::DidChangeTextDocument>(Self::did_change);
         router
     }
 
@@ -70,6 +71,14 @@ impl LanguageServer for Server {
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         let file_id = self.set_file_content(&params.text_document.uri, &params.text_document.text);
         self.update_diagnostics(file_id);
+        ControlFlow::Continue(())
+    }
+
+    fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
+        if let Some(change) = params.content_changes.first() {
+            let file_id = self.set_file_content(&params.text_document.uri, &change.text);
+            self.update_diagnostics(file_id);
+        }
         ControlFlow::Continue(())
     }
 }
