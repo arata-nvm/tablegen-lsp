@@ -9,7 +9,7 @@ use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageServer, ResponseError};
 use futures::future::{ready, BoxFuture};
 
-use ide::db::AnalysisHost;
+use ide::analysis::AnalysisHost;
 
 use crate::vfs::{UrlExt, Vfs};
 
