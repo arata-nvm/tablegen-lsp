@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_lsp::lsp_types::{
     notification, request, DidOpenTextDocumentParams, InitializeParams, InitializeResult,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageServer, ResponseError};
@@ -62,11 +62,16 @@ impl LanguageServer for Server {
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
-        let path = UrlExt::to_file_path(&params.text_document.uri);
-        let file_id = self.vfs.assign_or_get_file_id(path);
-        let text = Arc::from(params.text_document.text);
-        self.host.set_file_content(file_id, text);
-
+        self.update_file_content(&params.text_document.uri, &params.text_document.text);
         ControlFlow::Continue(())
+    }
+}
+
+impl Server {
+    fn update_file_content(&mut self, uri: &Url, text: &str) {
+        let path = UrlExt::to_file_path(uri);
+        let file_id = self.vfs.assign_or_get_file_id(path);
+        let text = Arc::from(text);
+        self.host.set_file_content(file_id, text);
     }
 }
