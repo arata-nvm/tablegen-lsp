@@ -12,6 +12,14 @@ pub struct RootDatabase {
 
 impl salsa::Database for RootDatabase {}
 
+impl salsa::ParallelDatabase for RootDatabase {
+    fn snapshot(&self) -> salsa::Snapshot<Self> {
+        salsa::Snapshot::new(RootDatabase {
+            storage: self.storage.snapshot(),
+        })
+    }
+}
+
 #[salsa::query_group(SourceDatabaseStorage)]
 pub trait SourceDatabase {
     #[salsa::input]

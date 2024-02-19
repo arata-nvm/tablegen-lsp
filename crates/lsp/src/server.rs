@@ -10,6 +10,7 @@ use async_lsp::{ClientSocket, LanguageServer, ResponseError};
 use futures::future::{ready, BoxFuture};
 
 use ide::analysis::AnalysisHost;
+use ide::file::FileId;
 
 use crate::vfs::{UrlExt, Vfs};
 
@@ -62,16 +63,23 @@ impl LanguageServer for Server {
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
-        self.update_file_content(&params.text_document.uri, &params.text_document.text);
+        let file_id = self.set_file_content(&params.text_document.uri, &params.text_document.text);
+        self.update_diagnostics(file_id);
         ControlFlow::Continue(())
     }
 }
 
 impl Server {
-    fn update_file_content(&mut self, uri: &Url, text: &str) {
+    fn set_file_content(&mut self, uri: &Url, text: &str) -> FileId {
         let path = UrlExt::to_file_path(uri);
         let file_id = self.vfs.assign_or_get_file_id(path);
         let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
+        file_id
+    }
+
+    fn update_diagnostics(&mut self, file_id: FileId) {
+        let analysis = self.host.analysis();
+        let _diags = analysis.diagnostics(file_id);
     }
 }
