@@ -3,8 +3,9 @@ use std::sync::Arc;
 
 use async_lsp::lsp_types::{
     notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    InitializeParams, InitializeResult, PublishDiagnosticsParams, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    DocumentSymbolParams, DocumentSymbolResponse, InitializeParams, InitializeResult, OneOf,
+    PublishDiagnosticsParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+    Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -34,7 +35,8 @@ impl Server {
             .request::<request::Shutdown, _>(|_, _| ready(Ok(())))
             .notification::<notification::Exit>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
-            .notification::<notification::DidChangeTextDocument>(Self::did_change);
+            .notification::<notification::DidChangeTextDocument>(Self::did_change)
+            .request::<request::DocumentSymbolRequest, _>(Self::document_symbol);
         router
     }
 
@@ -63,9 +65,30 @@ impl LanguageServer for Server {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
         })))
+    }
+
+    fn document_symbol(
+        &mut self,
+        params: DocumentSymbolParams,
+    ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
+        tracing::info!("document_symbol: {params:?}");
+        let path = UrlExt::to_file_path(&params.text_document.uri);
+        let file_id = self.vfs.assign_or_get_file_id(path);
+        let analysis = self.host.analysis();
+        Box::pin(async move {
+            let symbols = analysis.document_symbol(file_id).map(|symbols| {
+                let symbols = symbols
+                    .into_iter()
+                    .filter_map(to_proto::document_symbol)
+                    .collect();
+                DocumentSymbolResponse::Nested(symbols)
+            });
+            Ok(symbols)
+        })
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {

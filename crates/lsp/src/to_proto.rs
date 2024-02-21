@@ -1,8 +1,9 @@
 use async_lsp::lsp_types;
+use text_size::{TextRange, TextSize};
 
 use ide::handlers::diagnostics::Diagnostic;
+use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
-use text_size::{TextRange, TextSize};
 
 pub fn position(line_index: &LineIndex, position: TextSize) -> Option<lsp_types::Position> {
     let line = line_index.pos_to_line(position)?;
@@ -23,4 +24,18 @@ pub fn diagnostic(line_index: &LineIndex, diag: Diagnostic) -> Option<lsp_types:
         range(line_index, diag.range)?,
         diag.message,
     ))
+}
+
+#[allow(deprecated)]
+pub fn document_symbol(symbol: DocumentSymbol) -> Option<lsp_types::DocumentSymbol> {
+    Some(lsp_types::DocumentSymbol {
+        name: symbol.name.to_string(),
+        detail: None,
+        kind: lsp_types::SymbolKind::CLASS,
+        tags: None,
+        deprecated: None,
+        range: Default::default(),
+        selection_range: Default::default(),
+        children: None,
+    })
 }

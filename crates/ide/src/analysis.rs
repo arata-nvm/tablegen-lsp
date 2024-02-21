@@ -4,8 +4,9 @@ use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
 use crate::file::FileId;
-use crate::handlers::diagnostics;
 use crate::handlers::diagnostics::Diagnostic;
+use crate::handlers::document_symbol::DocumentSymbol;
+use crate::handlers::{diagnostics, document_symbol};
 
 #[derive(Default)]
 pub struct AnalysisHost {
@@ -39,5 +40,9 @@ impl Analysis {
 
     pub fn diagnostics(&self, file_id: FileId) -> Vec<Diagnostic> {
         diagnostics::diagnostics(&*self.db, file_id)
+    }
+
+    pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
+        document_symbol::document_symbol(&*self.db, file_id)
     }
 }
