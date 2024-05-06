@@ -36,6 +36,8 @@ impl Server {
             .notification::<notification::Exit>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
+            .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
+            .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol);
         router
     }
