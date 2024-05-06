@@ -43,8 +43,8 @@ impl Analysis {
         &self.db
     }
 
-    pub fn diagnostics(&self, file_id: FileId) -> Vec<Diagnostic> {
-        diagnostics::diagnostics(&*self.db, file_id)
+    pub fn diagnostics(&self) -> Vec<Diagnostic> {
+        diagnostics::diagnostics(&*self.db)
     }
 
     pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {

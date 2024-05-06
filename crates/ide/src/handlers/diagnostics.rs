@@ -1,18 +1,16 @@
 use syntax::error::SyntaxError;
 use syntax::parser::TextRange;
 
-use crate::{
-    eval::{EvalDatabase, EvalError},
-    file_system::FileId,
-};
+use crate::eval::{EvalDatabase, EvalError};
 
-pub fn diagnostics(db: &dyn EvalDatabase, file_id: FileId) -> Vec<Diagnostic> {
+pub fn diagnostics(db: &dyn EvalDatabase) -> Vec<Diagnostic> {
     let mut diagnostic_list = Vec::new();
 
-    let parse = db.parse(file_id);
+    let source_root = db.source_root();
+    let parse = db.parse(source_root.root());
     diagnostic_list.extend(parse.errors().iter().map(Diagnostic::from));
 
-    let evaluation = db.eval(file_id);
+    let evaluation = db.eval();
     diagnostic_list.extend(evaluation.errors().iter().map(Diagnostic::from));
 
     diagnostic_list

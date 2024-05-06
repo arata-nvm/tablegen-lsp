@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use ecow::EcoString;
 use id_arena::{Arena, Id};
+
+use crate::file_system::FileId;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Class {
@@ -16,7 +20,8 @@ impl Class {
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct SymbolMap {
-    classes: Arena<Class>,
+    class_list: Arena<Class>,
+    file_to_class_list: HashMap<FileId, Vec<ClassId>>,
 }
 
 // immutable api
@@ -28,15 +33,27 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
-    pub fn add_class(&mut self, class: Class) -> ClassId {
-        self.classes.alloc(class)
+    pub fn add_class(&mut self, class: Class, file_id: FileId) -> ClassId {
+        let id = self.class_list.alloc(class);
+        self.file_to_class_list
+            .entry(file_id)
+            .or_insert_with(Vec::new)
+            .push(id);
+        id
     }
 
     pub fn class(&self, class_id: ClassId) -> Option<&Class> {
-        self.classes.get(class_id)
+        self.class_list.get(class_id)
     }
 
     pub fn iter_class(&self) -> impl Iterator<Item = (ClassId, &Class)> {
-        self.classes.iter()
+        self.class_list.iter()
+    }
+
+    pub fn iter_class_in(&self, file_id: FileId) -> Option<impl Iterator<Item = ClassId>> {
+        self.file_to_class_list
+            .get(&file_id)
+            .cloned()
+            .map(|class_list| class_list.into_iter())
     }
 }
