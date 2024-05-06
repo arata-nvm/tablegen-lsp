@@ -3,7 +3,7 @@ use std::sync::Arc;
 use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
-use crate::file::FileId;
+use crate::file_system::FileId;
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
 use crate::handlers::{diagnostics, document_symbol};

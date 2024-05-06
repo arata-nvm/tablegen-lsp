@@ -2,7 +2,7 @@ use syntax::error::SyntaxError;
 use syntax::parser::TextRange;
 
 use crate::db::SourceDatabase;
-use crate::file::FileId;
+use crate::file_system::FileId;
 
 pub fn diagnostics(db: &dyn SourceDatabase, file_id: FileId) -> Vec<Diagnostic> {
     let parse = db.parse(file_id);

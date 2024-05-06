@@ -7,7 +7,7 @@ use syntax::ast::AstNode;
 use syntax::ast::SourceFile;
 
 use crate::db::SourceDatabase;
-use crate::file::FileId;
+use crate::file_system::FileId;
 use crate::symbol_map::{Class, SymbolMap};
 
 #[salsa::query_group(EvalDatabaseStorage)]

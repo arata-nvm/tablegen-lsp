@@ -13,7 +13,7 @@ use futures::future::{ready, BoxFuture};
 
 use ide::analysis::AnalysisHost;
 use ide::db::SourceDatabase;
-use ide::file::FileId;
+use ide::file_system::FileId;
 
 use crate::to_proto;
 use crate::vfs::{UrlExt, Vfs};

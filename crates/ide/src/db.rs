@@ -3,7 +3,7 @@ use std::sync::Arc;
 use syntax::Parse;
 
 use crate::eval::EvalDatabaseStorage;
-use crate::file::FileId;
+use crate::file_system::FileId;
 use crate::line_index::LineIndex;
 
 #[salsa::database(SourceDatabaseStorage, EvalDatabaseStorage)]

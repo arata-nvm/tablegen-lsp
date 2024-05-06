@@ -1,7 +1,7 @@
 use ecow::EcoString;
 
 use crate::eval::EvalDatabase;
-use crate::file::FileId;
+use crate::file_system::FileId;
 
 pub fn document_symbol(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
     let mut symbols = Vec::new();

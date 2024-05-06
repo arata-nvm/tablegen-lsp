@@ -1,6 +1,6 @@
 use async_lsp::lsp_types::Url;
 
-use ide::file::{FileId, FilePath, FileSet};
+use ide::file_system::{FileId, FilePath, FileSet};
 
 #[derive(Debug, Default)]
 pub struct Vfs {
