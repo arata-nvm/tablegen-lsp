@@ -3,7 +3,7 @@ use std::sync::Arc;
 use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
-use crate::file_system::FileId;
+use crate::file_system::{self, FileId, FileSystem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
 use crate::handlers::{diagnostics, document_symbol};
@@ -26,6 +26,11 @@ impl AnalysisHost {
 
     pub fn set_file_content(&mut self, file_id: FileId, text: Arc<str>) {
         self.db.set_file_content(file_id, text);
+    }
+
+    pub fn set_root_file<FS: FileSystem>(&mut self, fs: &mut FS, root_file: FileId) {
+        let source_root = file_system::collect_sources(&mut self.db, fs, root_file);
+        self.db.set_source_root(Arc::new(source_root));
     }
 }
 

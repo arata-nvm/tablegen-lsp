@@ -1,6 +1,8 @@
+use std::fs;
+
 use async_lsp::lsp_types::Url;
 
-use ide::file_system::{FileId, FilePath, FileSet};
+use ide::file_system::{FileId, FilePath, FileSet, FileSystem};
 
 #[derive(Debug, Default)]
 pub struct Vfs {
@@ -13,7 +15,15 @@ impl Vfs {
         Self::default()
     }
 
-    pub fn assign_or_get_file_id(&mut self, path: FilePath) -> FileId {
+    fn alloc_file_id(&mut self) -> FileId {
+        let file_id = FileId(self.next_file_id);
+        self.next_file_id += 1;
+        file_id
+    }
+}
+
+impl FileSystem for Vfs {
+    fn assign_or_get_file_id(&mut self, path: FilePath) -> FileId {
         match self.file_set.file_for_path(&path) {
             Some(file_id) => file_id,
             None => {
@@ -25,14 +35,22 @@ impl Vfs {
         }
     }
 
-    pub fn path_for_file(&mut self, file_id: &FileId) -> Option<FilePath> {
+    fn path_for_file(&self, file_id: &FileId) -> Option<FilePath> {
         self.file_set.path_for_file(file_id)
     }
 
-    fn alloc_file_id(&mut self) -> FileId {
-        let file_id = FileId(self.next_file_id);
-        self.next_file_id += 1;
-        file_id
+    fn read_content(&self, file_id: &FileId) -> Option<String> {
+        let Some(file_path) = self.file_set.path_for_file(file_id) else {
+            tracing::info!("file not found: {file_id:?}");
+            return None;
+        };
+
+        let Ok(content) = fs::read_to_string(&file_path.0) else {
+            tracing::info!("failed to read file: file_id={file_id:?}, file_path={file_path:?}");
+            return None;
+        };
+
+        Some(content)
     }
 }
 

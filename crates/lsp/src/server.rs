@@ -13,7 +13,7 @@ use futures::future::{ready, BoxFuture};
 
 use ide::analysis::AnalysisHost;
 use ide::db::SourceDatabase;
-use ide::file_system::FileId;
+use ide::file_system::{FileId, FileSystem};
 
 use crate::to_proto;
 use crate::vfs::{UrlExt, Vfs};
@@ -114,6 +114,7 @@ impl Server {
         let file_id = self.vfs.assign_or_get_file_id(path);
         let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
+        self.host.set_root_file(&mut self.vfs, file_id);
         file_id
     }
 

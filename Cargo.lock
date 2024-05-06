@@ -292,6 +292,7 @@ dependencies = [
  "ropey",
  "salsa",
  "syntax",
+ "tracing",
 ]
 
 [[package]]

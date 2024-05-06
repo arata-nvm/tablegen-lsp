@@ -3,7 +3,7 @@ use std::sync::Arc;
 use syntax::Parse;
 
 use crate::eval::EvalDatabaseStorage;
-use crate::file_system::FileId;
+use crate::file_system::{FileId, SourceRoot};
 use crate::line_index::LineIndex;
 
 #[salsa::database(SourceDatabaseStorage, EvalDatabaseStorage)]
@@ -26,6 +26,9 @@ impl salsa::ParallelDatabase for RootDatabase {
 pub trait SourceDatabase {
     #[salsa::input]
     fn file_content(&self, file_id: FileId) -> Arc<str>;
+
+    #[salsa::input]
+    fn source_root(&self) -> Arc<SourceRoot>;
 
     fn line_index(&self, file_id: FileId) -> Arc<LineIndex>;
 
