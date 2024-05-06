@@ -58,11 +58,12 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
     },
     debug: {
       command: context.asAbsolutePath(
-        path.join("..", "target", "debug", "tablegen-lsp"),
+        path.join("..", "target", "debug", "lsp"),
       ),
       options: {
         env: Object.assign({}, process.env, {
           RUST_BACKTRACE: "1",
+          RUST_LOG: "DEBUG",
         }),
       },
     },
