@@ -1,4 +1,5 @@
 use ecow::EcoString;
+use syntax::parser::TextRange;
 
 use crate::eval::EvalDatabase;
 use crate::file_system::FileId;
@@ -21,6 +22,7 @@ pub fn document_symbol(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<Doc
 
         symbols.push(DocumentSymbol {
             name: class.name.clone(),
+            range: class.range.1,
         });
     }
     Some(symbols)
@@ -28,4 +30,5 @@ pub fn document_symbol(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<Doc
 
 pub struct DocumentSymbol {
     pub name: EcoString,
+    pub range: TextRange,
 }

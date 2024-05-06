@@ -81,11 +81,12 @@ impl LanguageServer for Server {
         let path = UrlExt::to_file_path(&params.text_document.uri);
         let file_id = self.vfs.assign_or_get_file_id(path);
         let analysis = self.host.analysis();
+        let line_index = analysis.snapshot().line_index(file_id);
         Box::pin(async move {
             let symbols = analysis.document_symbol(file_id).map(|symbols| {
                 let symbols = symbols
                     .into_iter()
-                    .filter_map(to_proto::document_symbol)
+                    .filter_map(|it| to_proto::document_symbol(&line_index, it))
                     .collect();
                 DocumentSymbolResponse::Nested(symbols)
             });

@@ -159,7 +159,8 @@ impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.eval(ctx)?;
-        let class = Class::new(name);
+        let range = (ctx.current_file_id(), self.syntax().text_range());
+        let class = Class::new(name, range);
         ctx.symbol_map.add_class(class, ctx.current_file_id());
         Some(())
     }

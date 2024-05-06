@@ -27,15 +27,19 @@ pub fn diagnostic(line_index: &LineIndex, diag: Diagnostic) -> Option<lsp_types:
 }
 
 #[allow(deprecated)]
-pub fn document_symbol(symbol: DocumentSymbol) -> Option<lsp_types::DocumentSymbol> {
+pub fn document_symbol(
+    line_index: &LineIndex,
+    symbol: DocumentSymbol,
+) -> Option<lsp_types::DocumentSymbol> {
+    let range = range(line_index, symbol.range)?;
     Some(lsp_types::DocumentSymbol {
         name: symbol.name.to_string(),
         detail: None,
         kind: lsp_types::SymbolKind::CLASS,
         tags: None,
         deprecated: None,
-        range: Default::default(),
-        selection_range: Default::default(),
+        range,
+        selection_range: range,
         children: None,
     })
 }
