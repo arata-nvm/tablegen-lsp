@@ -1,10 +1,11 @@
+use core::fmt;
 use std::sync::Arc;
 
 use ecow::EcoString;
 
 use syntax::ast;
 use syntax::ast::AstNode;
-use syntax::ast::SourceFile;
+use syntax::parser::TextRange;
 
 use crate::db::SourceDatabase;
 use crate::file_system::FileId;
@@ -12,29 +13,75 @@ use crate::symbol_map::{Class, SymbolMap};
 
 #[salsa::query_group(EvalDatabaseStorage)]
 pub trait EvalDatabase: SourceDatabase {
-    fn symbol_map(&self, file_id: FileId) -> Arc<SymbolMap>;
+    fn eval(&self, file_id: FileId) -> Arc<Evaluation>;
 }
 
-fn symbol_map(db: &dyn EvalDatabase, file_id: FileId) -> Arc<SymbolMap> {
+#[derive(Debug, Eq, PartialEq)]
+pub struct Evaluation {
+    symbol_map: SymbolMap,
+    errors: Vec<EvalError>,
+}
+
+impl Evaluation {
+    pub fn symbol_map(&self) -> &SymbolMap {
+        &self.symbol_map
+    }
+
+    pub fn errors(&self) -> &[EvalError] {
+        &self.errors
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct EvalError {
+    pub range: TextRange,
+    pub message: EcoString,
+}
+
+impl EvalError {
+    pub fn new(range: TextRange, message: impl Into<EcoString>) -> Self {
+        Self {
+            range,
+            message: message.into(),
+        }
+    }
+}
+
+impl fmt::Display for EvalError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}:{}", self.range, self.message)
+    }
+}
+
+fn eval(db: &dyn EvalDatabase, file_id: FileId) -> Arc<Evaluation> {
     let parse = db.parse(file_id);
     let source_file = ast::SourceFile::cast(parse.syntax_node()).unwrap();
-    Arc::new(eval(source_file))
-}
 
-fn eval(source_file: SourceFile) -> SymbolMap {
     let mut ctx = EvalCtx::new();
     source_file.eval(&mut ctx);
-    ctx.symbol_map
+    Arc::new(ctx.finish())
 }
 
 #[derive(Debug, Default)]
 pub struct EvalCtx {
     symbol_map: SymbolMap,
+    errors: Vec<EvalError>,
 }
 
 impl EvalCtx {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn error(&mut self, range: TextRange, message: impl Into<EcoString>) {
+        self.errors.push(EvalError::new(range, message));
+    }
+
+    pub fn finish(self) -> Evaluation {
+        Evaluation {
+            symbol_map: self.symbol_map,
+            errors: Vec::new(),
+        }
     }
 }
 
