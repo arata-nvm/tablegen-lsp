@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-ecow = "0.2.0"
-id-arena = "2.2.1"
-ropey = "1.6.1"
-salsa = "0.16.1"
 syntax = { path = "../syntax" }
+ecow.workspace = true
+id-arena.workspace = true
+ropey.workspace = true
+salsa.workspace = true
