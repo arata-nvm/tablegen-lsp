@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use syntax::Parse;
 
 use crate::eval::EvalDatabaseStorage;
-use crate::file_system::{FileId, SourceRoot};
+use crate::file_system::{FileId, IncludeId, SourceRoot};
 use crate::line_index::LineIndex;
 
 #[salsa::database(SourceDatabaseStorage, EvalDatabaseStorage)]
@@ -33,6 +34,9 @@ pub trait SourceDatabase {
     fn line_index(&self, file_id: FileId) -> Arc<LineIndex>;
 
     fn parse(&self, file_id: FileId) -> Parse;
+
+    #[salsa::input]
+    fn resolved_include_map(&self, file_id: FileId) -> HashMap<IncludeId, FileId>;
 }
 
 fn line_index(db: &dyn SourceDatabase, file_id: FileId) -> Arc<LineIndex> {

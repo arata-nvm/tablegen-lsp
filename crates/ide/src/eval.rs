@@ -6,9 +6,10 @@ use ecow::{eco_format, EcoString};
 use syntax::ast::AstNode;
 use syntax::ast::{self};
 use syntax::parser::TextRange;
+use syntax::SyntaxNodePtr;
 
 use crate::db::SourceDatabase;
-use crate::file_system::{FileId, SourceRoot};
+use crate::file_system::{FileId, IncludeId};
 use crate::symbol_map::{Class, SymbolMap};
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -59,25 +60,23 @@ fn eval(db: &dyn EvalDatabase) -> Arc<Evaluation> {
     let parse = db.parse(source_root.root());
     let source_file = ast::SourceFile::cast(parse.syntax_node()).unwrap();
 
-    let mut ctx = EvalCtx::new(db, &*source_root);
+    let mut ctx = EvalCtx::new(db, source_root.root());
     source_file.eval(&mut ctx);
     Arc::new(ctx.finish())
 }
 
 pub struct EvalCtx<'a> {
     db: &'a dyn EvalDatabase,
-    source_root: &'a SourceRoot,
     file_trace: Vec<FileId>,
     symbol_map: SymbolMap,
     errors: Vec<EvalError>,
 }
 
 impl<'a> EvalCtx<'a> {
-    pub fn new(db: &'a dyn EvalDatabase, source_root: &'a SourceRoot) -> Self {
+    pub fn new(db: &'a dyn EvalDatabase, root_file: FileId) -> Self {
         Self {
             db,
-            file_trace: vec![source_root.root()],
-            source_root,
+            file_trace: vec![root_file],
             symbol_map: SymbolMap::default(),
             errors: Vec::new(),
         }
@@ -93,17 +92,6 @@ impl<'a> EvalCtx<'a> {
 
     pub fn pop_file(&mut self) {
         self.file_trace.pop().expect("file_trace is empty");
-    }
-
-    pub fn find_include_file(&self, include_path: &str) -> Option<(FileId, ast::SourceFile)> {
-        let current_file_path = self.source_root.path_for_file(&self.current_file_id())?;
-        let current_file_dir = current_file_path.parent()?;
-
-        let include_file_path = current_file_dir.join(include_path);
-        let include_file_id = self.source_root.file_for_path(&include_file_path)?;
-
-        let parse = self.db.parse(include_file_id);
-        ast::SourceFile::cast(parse.syntax_node()).map(|it| (include_file_id, it))
     }
 
     pub fn error(&mut self, range: TextRange, message: impl Into<EcoString>) {
@@ -169,17 +157,25 @@ impl Eval for ast::Class {
 impl Eval for ast::Include {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let include_path = self.path()?.value();
-        if let Some((file_id, source_file)) = ctx.find_include_file(&include_path) {
-            ctx.push_file(file_id);
-            source_file.eval(ctx);
-            ctx.pop_file();
-        } else {
+        let file_id = ctx.current_file_id();
+        let include_map = ctx.db.resolved_include_map(file_id);
+
+        let include_id = IncludeId(SyntaxNodePtr::new(self.syntax()));
+        let Some(include_file_id) = include_map.get(&include_id) else {
+            let path = self.path().map(|it| it.value()).unwrap_or_default();
             ctx.error(
                 self.syntax().text_range(),
-                eco_format!("include file not found: {include_path:?}"),
+                eco_format!("include file not found: {path}"),
             );
-        }
+            return Some(());
+        };
+
+        let parse = ctx.db.parse(*include_file_id);
+        let source_file = ast::SourceFile::cast(parse.syntax_node())?;
+
+        ctx.push_file(file_id);
+        source_file.eval(ctx);
+        ctx.pop_file();
         Some(())
     }
 }

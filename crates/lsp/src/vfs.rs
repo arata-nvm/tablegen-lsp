@@ -39,14 +39,9 @@ impl FileSystem for Vfs {
         self.file_set.path_for_file(file_id)
     }
 
-    fn read_content(&self, file_id: &FileId) -> Option<String> {
-        let Some(file_path) = self.file_set.path_for_file(file_id) else {
-            tracing::info!("file not found: {file_id:?}");
-            return None;
-        };
-
+    fn read_content(&self, file_path: &FilePath) -> Option<String> {
         let Ok(content) = fs::read_to_string(&file_path.0) else {
-            tracing::info!("failed to read file: file_id={file_id:?}, file_path={file_path:?}");
+            tracing::info!("failed to read file: file_path={file_path:?}");
             return None;
         };
 
