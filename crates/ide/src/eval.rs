@@ -58,7 +58,8 @@ fn eval(db: &dyn EvalDatabase) -> Arc<Evaluation> {
     let source_root = db.source_root();
 
     let parse = db.parse(source_root.root());
-    let source_file = ast::SourceFile::cast(parse.syntax_node()).unwrap();
+    let source_file =
+        ast::SourceFile::cast(parse.syntax_node()).expect("failed to SourceFile::cast");
 
     let mut ctx = EvalCtx::new(db, source_root.root());
     source_file.eval(&mut ctx);

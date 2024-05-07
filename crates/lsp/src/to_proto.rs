@@ -6,10 +6,13 @@ use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
 
 pub fn position(line_index: &LineIndex, position: TextSize) -> Option<lsp_types::Position> {
-    let line = line_index.pos_to_line(position)?;
-    let line_first = line_index.line_to_pos(line)?;
+    let line = line_index.pos_to_line(position);
+    let line_first = line_index.line_to_pos(line);
     let character = position - line_first;
-    Some(lsp_types::Position::new(line as u32, character.into()))
+    Some(lsp_types::Position::new(
+        line.try_into().expect("line out of range"),
+        character.into(),
+    ))
 }
 
 pub fn range(line_index: &LineIndex, range: TextRange) -> Option<lsp_types::Range> {

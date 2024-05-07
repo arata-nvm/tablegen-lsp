@@ -139,7 +139,9 @@ impl Server {
             lsp_diags,
             Some(self.bump_diagnostic_version()),
         );
-        self.client.publish_diagnostics(params).unwrap();
+        self.client
+            .publish_diagnostics(params)
+            .expect("failed to publish diagnostics");
     }
 
     fn bump_diagnostic_version(&mut self) -> i32 {

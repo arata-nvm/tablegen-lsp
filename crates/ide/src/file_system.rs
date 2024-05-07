@@ -109,8 +109,8 @@ pub fn collect_sources<FS: FileSystem>(
     while let Some(file_id) = files.pop_front() {
         let parse = db.parse(file_id);
 
-        let file_path = fs.path_for_file(&file_id).unwrap();
-        let file_dir = file_path.parent().unwrap();
+        let file_path = fs.path_for_file(&file_id).expect("file path not found");
+        let file_dir = file_path.parent().expect("file dir not found");
         file_set.insert(file_id, file_path);
 
         let mut include_map = HashMap::new();

@@ -60,8 +60,8 @@ impl<'a> Lexer<'a> {
         let end = self.s.cursor();
 
         self.current_range = TextRange::new(
-            TextSize::new(start.try_into().unwrap()),
-            TextSize::new(end.try_into().unwrap()),
+            TextSize::try_from(start).expect("start is too large"),
+            TextSize::try_from(end).expect("end is too large"),
         );
     }
 

@@ -152,7 +152,10 @@ impl<T: TokenStream> ParserBase<T> {
         self.builder
             .token(self.peek().into(), self.token_stream.peek_text());
         if self.at(TokenKind::Error) {
-            let message = self.token_stream.take_error().unwrap();
+            let message = self
+                .token_stream
+                .take_error()
+                .expect("error token without message");
             self.error(message);
         } else {
             self.is_after_error = false;

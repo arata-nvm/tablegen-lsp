@@ -57,11 +57,14 @@ pub(crate) trait UrlExt: Sized {
 impl UrlExt for Url {
     fn to_file_path(&self) -> FilePath {
         // TODO: Url::to_file_pathがErrを返したときの処理
-        self.to_file_path().unwrap().as_path().into()
+        self.to_file_path()
+            .expect("failed to convert url to file path")
+            .as_path()
+            .into()
     }
 
     fn from_file_path(path: &FilePath) -> Self {
         // TODO: Url::from_file_pathがErrを返したときの処理
-        Url::from_file_path(&path.0).unwrap()
+        Url::from_file_path(&path.0).expect("failed to convert file path to url")
     }
 }

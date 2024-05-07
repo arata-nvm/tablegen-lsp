@@ -14,14 +14,12 @@ impl LineIndex {
         }
     }
 
-    pub fn pos_to_line(&self, pos: TextSize) -> Option<usize> {
-        self.rope.try_char_to_line(pos.into()).ok()
+    pub fn pos_to_line(&self, pos: TextSize) -> usize {
+        self.rope.char_to_line(pos.into())
     }
 
-    pub fn line_to_pos(&self, line: usize) -> Option<TextSize> {
-        self.rope
-            .try_line_to_char(line)
-            .map(|pos| pos.try_into().unwrap())
-            .ok()
+    pub fn line_to_pos(&self, line: usize) -> TextSize {
+        let pos = self.rope.line_to_char(line);
+        TextSize::try_from(pos).expect("line index out of bounds")
     }
 }
