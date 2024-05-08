@@ -6,7 +6,7 @@ Some(
     [
         DocumentSymbol {
             name: "Foo",
-            range: 17..29,
+            range: 23..26,
         },
     ],
 )
