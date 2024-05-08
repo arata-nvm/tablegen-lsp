@@ -22,7 +22,7 @@ pub fn exec(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
 
     let mut diagnostic_map = HashMap::new();
     for diagnostic in diagnostic_list {
-        let file_id = diagnostic.range.file;
+        let file_id = diagnostic.location.file;
         let diagnostics = diagnostic_map.entry(file_id).or_insert_with(Vec::new);
         diagnostics.push(diagnostic);
     }
@@ -31,14 +31,14 @@ pub fn exec(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Diagnostic {
-    pub range: FileRange,
+    pub location: FileRange,
     pub message: String,
 }
 
 impl Diagnostic {
-    pub fn new(range: FileRange, message: impl Into<String>) -> Self {
+    pub fn new(location: FileRange, message: impl Into<String>) -> Self {
         Self {
-            range,
+            location,
             message: message.into(),
         }
     }
