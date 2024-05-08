@@ -11,3 +11,4 @@ ropey.workspace = true
 salsa.workspace = true
 tracing.workspace = true
 insta.workspace = true
+iset.workspace = true

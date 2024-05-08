@@ -4,10 +4,10 @@ use std::sync::Arc;
 use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
-use crate::file_system::{self, FileId, FileSystem};
+use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
-use crate::handlers::{diagnostics, document_symbol};
+use crate::handlers::{diagnostics, document_symbol, goto_definition};
 use crate::line_index::LineIndex;
 
 #[derive(Default)]
@@ -51,5 +51,9 @@ impl Analysis {
 
     pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
         document_symbol::exec(&*self.db, file_id)
+    }
+
+    pub fn goto_definition(&self, pos: FilePosition) -> Option<FileRange> {
+        goto_definition::exec(&*self.db, pos)
     }
 }

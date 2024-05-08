@@ -3,9 +3,9 @@ use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
     notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentSymbolParams, DocumentSymbolResponse, InitializeParams, InitializeResult, OneOf,
-    PublishDiagnosticsParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-    Url,
+    DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
+    InitializeParams, InitializeResult, OneOf, PublishDiagnosticsParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -38,7 +38,8 @@ impl Server {
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
             .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
-            .request::<request::DocumentSymbolRequest, _>(Self::document_symbol);
+            .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
+            .request::<request::GotoDefinition, _>(Self::definition);
         router
     }
 
@@ -68,6 +69,7 @@ impl LanguageServer for Server {
                     TextDocumentSyncKind::FULL,
                 )),
                 document_symbol_provider: Some(OneOf::Left(true)),
+                definition_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
         })))
@@ -89,6 +91,25 @@ impl LanguageServer for Server {
                 .map(|it| to_proto::document_symbol(&line_index, it))
                 .collect();
             Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn definition(
+        &mut self,
+        params: GotoDefinitionParams,
+    ) -> BoxFuture<'static, Result<Option<GotoDefinitionResponse>, Self::Error>> {
+        tracing::info!("goto_definition: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (pos, line_index) =
+                from_proto::file_pos(&snap, params.text_document_position_params);
+            let Some(location) = snap.analysis.goto_definition(pos) else {
+                return Ok(None);
+            };
+
+            let vfs = snap.vfs.read().unwrap();
+            let lsp_location = to_proto::location(&vfs, &line_index, location);
+            Ok(Some(GotoDefinitionResponse::Scalar(lsp_location)))
         });
         Box::pin(async move { task.await.unwrap() })
     }

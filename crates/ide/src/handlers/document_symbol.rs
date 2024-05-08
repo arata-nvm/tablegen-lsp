@@ -15,14 +15,10 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
 
     let mut symbols = Vec::new();
     for class_id in iter {
-        let Some(class) = symbol_map.class(class_id) else {
-            tracing::info!("class not found: {class_id:?}");
-            continue;
-        };
-
+        let class = symbol_map.class(class_id);
         symbols.push(DocumentSymbol {
             name: class.name.clone(),
-            range: class.define_range.range,
+            range: class.define_loc.range,
         });
     }
     Some(symbols)
