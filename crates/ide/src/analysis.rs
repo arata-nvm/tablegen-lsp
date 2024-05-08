@@ -8,6 +8,7 @@ use crate::file_system::{self, FileId, FileSystem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
 use crate::handlers::{diagnostics, document_symbol};
+use crate::line_index::LineIndex;
 
 #[derive(Default)]
 pub struct AnalysisHost {
@@ -40,8 +41,8 @@ pub struct Analysis {
 }
 
 impl Analysis {
-    pub fn snapshot(&self) -> &salsa::Snapshot<RootDatabase> {
-        &self.db
+    pub fn line_index(&self, file_id: FileId) -> Arc<LineIndex> {
+        self.db.line_index(file_id)
     }
 
     pub fn diagnostics(&self) -> HashMap<FileId, Vec<Diagnostic>> {

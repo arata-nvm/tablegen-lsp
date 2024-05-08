@@ -15,6 +15,10 @@ impl Vfs {
         Self::default()
     }
 
+    pub fn file_for_path(&self, path: &FilePath) -> Option<FileId> {
+        self.file_set.file_for_path(path)
+    }
+
     fn alloc_file_id(&mut self) -> FileId {
         let file_id = FileId(self.next_file_id);
         self.next_file_id += 1;
