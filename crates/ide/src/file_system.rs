@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -119,7 +120,9 @@ pub fn collect_sources<FS: FileSystem>(
             file_dir,
             FilePath(
                 PathBuf::from_str(
-                    "~/src/github.com/arata-nvm/tablegen-lsp/testdata/llvm-project/llvm/include",
+                    env::var("INCLUDE_DIR")
+                        .expect("env `INCLUDE_DIR` is not set")
+                        .as_str(),
                 )
                 .unwrap(),
             ),
