@@ -1,4 +1,4 @@
-use ecow::{eco_format, EcoString};
+use ecow::eco_format;
 use rowan::{GreenNode, GreenNodeBuilder};
 pub use rowan::{TextRange, TextSize};
 
@@ -19,7 +19,7 @@ impl CompletedMarker {
         matches!(self, Self::Success)
     }
 
-    pub(crate) fn or_error(self, parser: &mut Parser, message: impl Into<EcoString>) {
+    pub(crate) fn or_error(self, parser: &mut Parser, message: impl Into<String>) {
         if !self.is_success() {
             parser.error(message);
         }
@@ -88,13 +88,13 @@ impl<T: TokenStream> ParserBase<T> {
         self.at(TokenKind::Eof)
     }
 
-    pub(crate) fn error(&mut self, message: impl Into<EcoString>) {
+    pub(crate) fn error(&mut self, message: impl Into<String>) {
         self.errors
             .push(SyntaxError::new(self.token_stream.peek_range(), message));
         self.is_after_error = true;
     }
 
-    pub(crate) fn error_and_eat(&mut self, message: impl Into<EcoString>) {
+    pub(crate) fn error_and_eat(&mut self, message: impl Into<String>) {
         self.error(message);
 
         self.builder.start_node(SyntaxKind::Error.into());
@@ -102,7 +102,7 @@ impl<T: TokenStream> ParserBase<T> {
         self.builder.finish_node();
     }
 
-    pub(crate) fn error_and_recover(&mut self, message: impl Into<EcoString>) {
+    pub(crate) fn error_and_recover(&mut self, message: impl Into<String>) {
         self.error(message);
 
         if !self.at_set(&RECOVER_TOKENS) && !self.eof() {
@@ -122,7 +122,7 @@ impl<T: TokenStream> ParserBase<T> {
         self.expect_with_msg(kind, eco_format!("expected {kind:?}"))
     }
 
-    pub(crate) fn expect_with_msg(&mut self, kind: TokenKind, message: impl Into<EcoString>) {
+    pub(crate) fn expect_with_msg(&mut self, kind: TokenKind, message: impl Into<String>) {
         if !self.eat_if(kind) && !self.is_after_error {
             self.error(message);
         }

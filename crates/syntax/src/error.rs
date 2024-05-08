@@ -1,16 +1,15 @@
 use std::fmt;
 
-use ecow::EcoString;
 use rowan::TextRange;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SyntaxError {
     pub range: TextRange,
-    pub message: EcoString,
+    pub message: String,
 }
 
 impl SyntaxError {
-    pub fn new(range: TextRange, message: impl Into<EcoString>) -> Self {
+    pub fn new(range: TextRange, message: impl Into<String>) -> Self {
         Self {
             range,
             message: message.into(),
