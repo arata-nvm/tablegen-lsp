@@ -3,19 +3,24 @@ use std::collections::HashMap;
 use ecow::EcoString;
 use id_arena::{Arena, Id};
 
-use crate::file_system::{FileId, FileRange};
+use crate::file_system::{FileId, FileLocation, FileRange};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Class {
     pub name: EcoString,
-    pub file_range: FileRange,
+    pub define_range: FileRange,
+    pub define_loc: FileLocation,
 }
 
 pub type ClassId = Id<Class>;
 
 impl Class {
-    pub fn new(name: EcoString, file_range: FileRange) -> Self {
-        Self { name, file_range }
+    pub fn new(name: EcoString, define_range: FileRange, define_loc: FileLocation) -> Self {
+        Self {
+            name,
+            define_range,
+            define_loc,
+        }
     }
 }
 

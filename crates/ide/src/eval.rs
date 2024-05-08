@@ -9,7 +9,7 @@ use syntax::parser::TextRange;
 use syntax::SyntaxNodePtr;
 
 use crate::db::SourceDatabase;
-use crate::file_system::{FileId, FileRange, IncludeId};
+use crate::file_system::{FileId, FileLocation, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{Class, SymbolMap};
 
@@ -150,9 +150,11 @@ impl Eval for ast::Statement {
 impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let name = self.name()?.eval(ctx)?;
-        let range = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
-        let class = Class::new(name, range);
+        let cur_file = ctx.current_file_id();
+        let name_node = self.name()?;
+        let define_range = FileRange::new(cur_file, self.syntax().text_range());
+        let define_loc = FileLocation::new(cur_file, name_node.syntax().text_range().start());
+        let class = Class::new(name_node.eval(ctx)?, define_range, define_loc);
         ctx.symbol_map.add_class(class, ctx.current_file_id());
         Some(())
     }
