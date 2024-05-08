@@ -86,7 +86,7 @@ impl LanguageServer for Server {
             let symbols = analysis.document_symbol(file_id).map(|symbols| {
                 let symbols = symbols
                     .into_iter()
-                    .filter_map(|it| to_proto::document_symbol(&line_index, it))
+                    .map(|it| to_proto::document_symbol(&line_index, it))
                     .collect();
                 DocumentSymbolResponse::Nested(symbols)
             });
@@ -127,7 +127,7 @@ impl Server {
             let line_index = snapshot.line_index(file_id);
             let lsp_diags = diagnostics
                 .into_iter()
-                .filter_map(|diag| to_proto::diagnostic(&line_index, diag))
+                .map(|diag| to_proto::diagnostic(&line_index, diag))
                 .collect();
 
             let file_path = self.vfs.path_for_file(&file_id);
