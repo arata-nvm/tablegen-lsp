@@ -10,6 +10,7 @@ use syntax::SyntaxNodePtr;
 
 use crate::db::SourceDatabase;
 use crate::file_system::{FileId, IncludeId};
+use crate::handlers::diagnostics::FileRange;
 use crate::symbol_map::{Class, SymbolMap};
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -35,12 +36,12 @@ impl Evaluation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EvalError {
-    pub range: TextRange,
+    pub range: FileRange,
     pub message: EcoString,
 }
 
 impl EvalError {
-    pub fn new(range: TextRange, message: impl Into<EcoString>) -> Self {
+    pub fn new(range: FileRange, message: impl Into<EcoString>) -> Self {
         Self {
             range,
             message: message.into(),
@@ -96,7 +97,9 @@ impl<'a> EvalCtx<'a> {
     }
 
     pub fn error(&mut self, range: TextRange, message: impl Into<EcoString>) {
-        self.errors.push(EvalError::new(range, message));
+        let file = self.current_file_id();
+        self.errors
+            .push(EvalError::new(FileRange::new(file, range), message));
     }
 
     pub fn finish(self) -> Evaluation {

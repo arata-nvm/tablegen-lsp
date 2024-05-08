@@ -127,11 +127,11 @@ impl Server {
         let file_uri = UrlExt::from_file_path(&file_path);
 
         let analysis = self.host.analysis();
-        let line_index = analysis.snapshot().line_index(file_id);
+        let snapshot = analysis.snapshot();
         let lsp_diags = analysis
             .diagnostics()
             .into_iter()
-            .filter_map(|diag| to_proto::diagnostic(&line_index, diag))
+            .filter_map(|diag| to_proto::diagnostic(&**snapshot, diag))
             .collect();
 
         let params = PublishDiagnosticsParams::new(
