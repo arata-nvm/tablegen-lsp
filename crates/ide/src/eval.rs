@@ -1,4 +1,3 @@
-use core::fmt;
 use std::sync::Arc;
 
 use ecow::{eco_format, EcoString};
@@ -31,27 +30,6 @@ impl Evaluation {
 
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct EvalError {
-    pub range: FileRange,
-    pub message: EcoString,
-}
-
-impl EvalError {
-    pub fn new(range: FileRange, message: impl Into<EcoString>) -> Self {
-        Self {
-            range,
-            message: message.into(),
-        }
-    }
-}
-
-impl fmt::Display for EvalError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}:{}", self.range, self.message)
     }
 }
 
