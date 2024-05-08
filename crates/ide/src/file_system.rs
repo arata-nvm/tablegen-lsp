@@ -7,7 +7,7 @@ use std::sync::Arc;
 use syntax::ast::AstNode;
 use syntax::{ast, SyntaxNode, SyntaxNodePtr};
 
-use crate::db::{RootDatabase, SourceDatabase};
+use crate::db::SourceDatabase;
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct FileId(pub u32);
@@ -99,7 +99,7 @@ pub trait FileSystem {
 }
 
 pub fn collect_sources<FS: FileSystem>(
-    db: &mut RootDatabase,
+    db: &mut dyn SourceDatabase,
     fs: &mut FS,
     root_file: FileId,
 ) -> SourceRoot {
@@ -165,7 +165,7 @@ fn list_includes(root_node: SyntaxNode) -> Vec<(IncludeId, String)> {
 }
 
 fn resolve_include_file<FS: FileSystem>(
-    db: &mut RootDatabase,
+    db: &mut dyn SourceDatabase,
     fs: &mut FS,
     include_path: String,
     include_dir_list: &[FilePath],

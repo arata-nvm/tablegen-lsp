@@ -289,6 +289,7 @@ version = "0.1.0"
 dependencies = [
  "ecow",
  "id-arena",
+ "insta",
  "ropey",
  "salsa",
  "syntax",

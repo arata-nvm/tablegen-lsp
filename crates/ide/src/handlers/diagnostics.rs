@@ -54,3 +54,22 @@ impl Diagnostic {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::tests;
+
+    #[test]
+    fn syntax() {
+        let (db, _) = tests::single_file("clas");
+        let diags = super::diagnostics(&db);
+        insta::assert_debug_snapshot!(diags);
+    }
+
+    #[test]
+    fn eval() {
+        let (db, _) = tests::single_file(r#"include "not_exist.td""#);
+        let diags = super::diagnostics(&db);
+        insta::assert_debug_snapshot!(diags);
+    }
+}

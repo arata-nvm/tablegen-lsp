@@ -1,0 +1,19 @@
+---
+source: crates/ide/src/handlers/diagnostics.rs
+expression: diags
+---
+{
+    FileId(
+        0,
+    ): [
+        Diagnostic {
+            range: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 0..22,
+            },
+            message: "include file not found: not_exist.td",
+        },
+    ],
+}
