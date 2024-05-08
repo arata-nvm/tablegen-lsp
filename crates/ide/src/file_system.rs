@@ -14,14 +14,14 @@ use crate::db::SourceDatabase;
 pub struct FileId(pub u32);
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct FileLocation {
+pub struct FilePosition {
     pub file: FileId,
-    pub location: TextSize,
+    pub position: TextSize,
 }
 
-impl FileLocation {
-    pub fn new(file: FileId, location: TextSize) -> Self {
-        Self { file, location }
+impl FilePosition {
+    pub fn new(file: FileId, position: TextSize) -> Self {
+        Self { file, position }
     }
 }
 
