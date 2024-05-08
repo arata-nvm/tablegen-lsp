@@ -5,7 +5,7 @@ use crate::{
     file_system::{FileId, FileRange},
 };
 
-pub fn diagnostics(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
+pub fn exec(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
     let mut diagnostic_list = Vec::new();
 
     let source_root = db.source_root();
@@ -51,14 +51,14 @@ mod tests {
     #[test]
     fn syntax() {
         let (db, _) = tests::single_file("clas");
-        let diags = super::diagnostics(&db);
+        let diags = super::exec(&db);
         insta::assert_debug_snapshot!(diags);
     }
 
     #[test]
     fn eval() {
         let (db, _) = tests::single_file(r#"include "not_exist.td""#);
-        let diags = super::diagnostics(&db);
+        let diags = super::exec(&db);
         insta::assert_debug_snapshot!(diags);
     }
 }

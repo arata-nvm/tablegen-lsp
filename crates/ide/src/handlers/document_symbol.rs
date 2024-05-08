@@ -4,7 +4,7 @@ use syntax::parser::TextRange;
 use crate::eval::EvalDatabase;
 use crate::file_system::FileId;
 
-pub fn document_symbol(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
+pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
     let evaluation = db.eval();
     let symbol_map = evaluation.symbol_map();
 
@@ -41,7 +41,7 @@ mod tests {
     #[test]
     fn single_file() {
         let (db, f) = tests::single_file("class Foo; class Bar;");
-        let symbols = super::document_symbol(&db, f.root_file());
+        let symbols = super::exec(&db, f.root_file());
         insta::assert_debug_snapshot!(symbols);
     }
 
@@ -57,7 +57,7 @@ class Foo;
 class Bar;
             "#,
         );
-        let symbols = super::document_symbol(&db, f.root_file());
+        let symbols = super::exec(&db, f.root_file());
         insta::assert_debug_snapshot!(symbols);
     }
 }
