@@ -129,6 +129,7 @@ pub fn collect_sources<FS: FileSystem>(
                 resolve_include_file(db, fs, include_path, &include_dir_list)
             {
                 include_map.insert(include_id, resolved_file_id);
+                files.push_back(resolved_file_id);
             }
         }
         db.set_resolved_include_map(file_id, include_map)

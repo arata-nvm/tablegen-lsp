@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use salsa::ParallelDatabase;
@@ -43,7 +44,7 @@ impl Analysis {
         &self.db
     }
 
-    pub fn diagnostics(&self) -> Vec<Diagnostic> {
+    pub fn diagnostics(&self) -> HashMap<FileId, Vec<Diagnostic>> {
         diagnostics::diagnostics(&*self.db)
     }
 

@@ -165,7 +165,7 @@ impl Eval for ast::Include {
         let include_map = ctx.db.resolved_include_map(file_id);
 
         let include_id = IncludeId(SyntaxNodePtr::new(self.syntax()));
-        let Some(include_file_id) = include_map.get(&include_id) else {
+        let Some(include_file_id) = include_map.get(&include_id).copied() else {
             let path = self.path().map(|it| it.value()).unwrap_or_default();
             ctx.error(
                 self.syntax().text_range(),
@@ -174,10 +174,10 @@ impl Eval for ast::Include {
             return Some(());
         };
 
-        let parse = ctx.db.parse(*include_file_id);
+        let parse = ctx.db.parse(include_file_id);
         let source_file = ast::SourceFile::cast(parse.syntax_node())?;
 
-        ctx.push_file(file_id);
+        ctx.push_file(include_file_id);
         source_file.eval(ctx);
         ctx.pop_file();
         Some(())

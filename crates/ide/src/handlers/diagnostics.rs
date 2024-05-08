@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use syntax::parser::TextRange;
 
 use crate::{eval::EvalDatabase, file_system::FileId};
 
-pub fn diagnostics(db: &dyn EvalDatabase) -> Vec<Diagnostic> {
+pub fn diagnostics(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
     let mut diagnostic_list = Vec::new();
 
     let source_root = db.source_root();
@@ -17,7 +19,13 @@ pub fn diagnostics(db: &dyn EvalDatabase) -> Vec<Diagnostic> {
     let evaluation = db.eval();
     diagnostic_list.extend(evaluation.diagnostics().iter().cloned());
 
-    diagnostic_list
+    let mut diagnostic_map = HashMap::new();
+    for diagnostic in diagnostic_list {
+        let file_id = diagnostic.range.file;
+        let diagnostics = diagnostic_map.entry(file_id).or_insert_with(Vec::new);
+        diagnostics.push(diagnostic);
+    }
+    diagnostic_map
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

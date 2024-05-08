@@ -13,7 +13,7 @@ use futures::future::{ready, BoxFuture};
 
 use ide::analysis::AnalysisHost;
 use ide::db::SourceDatabase;
-use ide::file_system::{FileId, FileSystem};
+use ide::file_system::FileSystem;
 
 use crate::to_proto;
 use crate::vfs::{UrlExt, Vfs};
@@ -95,53 +95,53 @@ impl LanguageServer for Server {
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
-        let file_id = self.set_file_content(&params.text_document.uri, &params.text_document.text);
-        self.update_diagnostics(file_id);
+        self.set_file_content(&params.text_document.uri, &params.text_document.text);
+        self.update_diagnostics();
         ControlFlow::Continue(())
     }
 
     fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
         if let Some(change) = params.content_changes.first() {
-            let file_id = self.set_file_content(&params.text_document.uri, &change.text);
-            self.update_diagnostics(file_id);
+            self.set_file_content(&params.text_document.uri, &change.text);
+            self.update_diagnostics();
         }
         ControlFlow::Continue(())
     }
 }
 
 impl Server {
-    fn set_file_content(&mut self, uri: &Url, text: &str) -> FileId {
+    fn set_file_content(&mut self, uri: &Url, text: &str) {
         let path = UrlExt::to_file_path(uri);
         let file_id = self.vfs.assign_or_get_file_id(path);
         let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
         self.host.set_root_file(&mut self.vfs, file_id);
-        file_id
     }
 
-    fn update_diagnostics(&mut self, file_id: FileId) {
-        let Some(file_path) = self.vfs.path_for_file(&file_id) else {
-            tracing::info!("cannot retrieve file path: {file_id:?}");
-            return;
-        };
-        let file_uri = UrlExt::from_file_path(&file_path);
-
+    fn update_diagnostics(&mut self) {
         let analysis = self.host.analysis();
         let snapshot = analysis.snapshot();
-        let lsp_diags = analysis
-            .diagnostics()
-            .into_iter()
-            .filter_map(|diag| to_proto::diagnostic(&**snapshot, diag))
-            .collect();
 
-        let params = PublishDiagnosticsParams::new(
-            file_uri,
-            lsp_diags,
-            Some(self.bump_diagnostic_version()),
-        );
-        self.client
-            .publish_diagnostics(params)
-            .expect("failed to publish diagnostics");
+        let diagnostic_version = self.bump_diagnostic_version();
+        for (file_id, diagnostics) in analysis.diagnostics() {
+            let line_index = snapshot.line_index(file_id);
+            let lsp_diags = diagnostics
+                .into_iter()
+                .filter_map(|diag| to_proto::diagnostic(&line_index, diag))
+                .collect();
+
+            let Some(file_path) = self.vfs.path_for_file(&file_id) else {
+                tracing::info!("cannot retrieve file path: {file_id:?}");
+                return;
+            };
+            let file_uri = UrlExt::from_file_path(&file_path);
+
+            let params =
+                PublishDiagnosticsParams::new(file_uri, lsp_diags, Some(diagnostic_version));
+            self.client
+                .publish_diagnostics(params)
+                .expect("failed to publish diagnostics");
+        }
     }
 
     fn bump_diagnostic_version(&mut self) -> i32 {
