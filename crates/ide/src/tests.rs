@@ -105,7 +105,7 @@ impl Fixture {
             .collect()
     }
 
-    fn root_file(&self) -> FileId {
+    pub fn root_file(&self) -> FileId {
         self.file_ids
             .first()
             .expect("at least one file must be exist")

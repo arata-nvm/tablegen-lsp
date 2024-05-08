@@ -28,7 +28,36 @@ pub fn document_symbol(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<Doc
     Some(symbols)
 }
 
+#[derive(Debug)]
 pub struct DocumentSymbol {
     pub name: EcoString,
     pub range: TextRange,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tests;
+
+    #[test]
+    fn single_file() {
+        let (db, f) = tests::single_file("class Foo; class Bar;");
+        let symbols = super::document_symbol(&db, f.root_file());
+        insta::assert_debug_snapshot!(symbols);
+    }
+
+    #[test]
+    fn multiple_files() {
+        let (db, f) = tests::multiple_files(
+            r#"
+; main.td
+include "sub.td"
+class Foo;
+
+; sub.td
+class Bar;
+            "#,
+        );
+        let symbols = super::document_symbol(&db, f.root_file());
+        insta::assert_debug_snapshot!(symbols);
+    }
 }
