@@ -7,7 +7,7 @@ expression: diags
         0,
     ): [
         Diagnostic {
-            range: FileRange {
+            location: FileRange {
                 file: FileId(
                     0,
                 ),
