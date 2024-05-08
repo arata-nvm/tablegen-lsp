@@ -130,11 +130,8 @@ impl Server {
                 .filter_map(|diag| to_proto::diagnostic(&line_index, diag))
                 .collect();
 
-            let Some(file_path) = self.vfs.path_for_file(&file_id) else {
-                tracing::info!("cannot retrieve file path: {file_id:?}");
-                return;
-            };
-            let file_uri = UrlExt::from_file_path(&file_path);
+            let file_path = self.vfs.path_for_file(&file_id);
+            let file_uri = UrlExt::from_file_path(file_path);
 
             let params =
                 PublishDiagnosticsParams::new(file_uri, lsp_diags, Some(diagnostic_version));

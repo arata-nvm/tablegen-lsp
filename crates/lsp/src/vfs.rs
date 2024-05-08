@@ -35,7 +35,7 @@ impl FileSystem for Vfs {
         }
     }
 
-    fn path_for_file(&self, file_id: &FileId) -> Option<FilePath> {
+    fn path_for_file(&self, file_id: &FileId) -> &FilePath {
         self.file_set.path_for_file(file_id)
     }
 

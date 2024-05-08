@@ -86,8 +86,8 @@ impl FileSet {
         self.path_to_id.get(path).copied()
     }
 
-    pub fn path_for_file(&self, file_id: &FileId) -> Option<FilePath> {
-        self.id_to_path.get(file_id).cloned()
+    pub fn path_for_file(&self, file_id: &FileId) -> &FilePath {
+        &self.id_to_path[file_id]
     }
 }
 
@@ -110,7 +110,7 @@ impl SourceRoot {
         self.file_set.file_for_path(path)
     }
 
-    pub fn path_for_file(&self, file_id: &FileId) -> Option<FilePath> {
+    pub fn path_for_file(&self, file_id: &FileId) -> &FilePath {
         self.file_set.path_for_file(file_id)
     }
 }
@@ -118,7 +118,7 @@ impl SourceRoot {
 pub trait FileSystem {
     fn assign_or_get_file_id(&mut self, path: FilePath) -> FileId;
 
-    fn path_for_file(&self, file_id: &FileId) -> Option<FilePath>;
+    fn path_for_file(&self, file_id: &FileId) -> &FilePath;
 
     fn read_content(&self, file_path: &FilePath) -> Option<String>;
 }
@@ -135,9 +135,9 @@ pub fn collect_sources<FS: FileSystem>(
     while let Some(file_id) = files.pop_front() {
         let parse = db.parse(file_id);
 
-        let file_path = fs.path_for_file(&file_id).expect("file path not found");
+        let file_path = fs.path_for_file(&file_id);
         let file_dir = file_path.parent().expect("file dir not found");
-        file_set.insert(file_id, file_path);
+        file_set.insert(file_id, file_path.clone());
 
         let mut include_map = HashMap::new();
         // FIXME
