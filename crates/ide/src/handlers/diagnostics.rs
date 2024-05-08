@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use syntax::parser::TextRange;
-
-use crate::{eval::EvalDatabase, file_system::FileId};
+use crate::{
+    eval::EvalDatabase,
+    file_system::{FileId, FileRange},
+};
 
 pub fn diagnostics(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
     let mut diagnostic_list = Vec::new();
@@ -26,18 +27,6 @@ pub fn diagnostics(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
         diagnostics.push(diagnostic);
     }
     diagnostic_map
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct FileRange {
-    pub file: FileId,
-    pub range: TextRange,
-}
-
-impl FileRange {
-    pub fn new(file: FileId, range: TextRange) -> Self {
-        Self { file, range }
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

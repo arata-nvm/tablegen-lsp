@@ -9,8 +9,8 @@ use syntax::parser::TextRange;
 use syntax::SyntaxNodePtr;
 
 use crate::db::SourceDatabase;
-use crate::file_system::{FileId, IncludeId};
-use crate::handlers::diagnostics::{Diagnostic, FileRange};
+use crate::file_system::{FileId, FileRange, IncludeId};
+use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{Class, SymbolMap};
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -151,7 +151,7 @@ impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.eval(ctx)?;
-        let range = (ctx.current_file_id(), self.syntax().text_range());
+        let range = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
         let class = Class::new(name, range);
         ctx.symbol_map.add_class(class, ctx.current_file_id());
         Some(())

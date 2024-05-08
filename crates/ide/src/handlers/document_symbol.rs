@@ -22,7 +22,7 @@ pub fn document_symbol(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<Doc
 
         symbols.push(DocumentSymbol {
             name: class.name.clone(),
-            range: class.range.1,
+            range: class.file_range.range,
         });
     }
     Some(symbols)

@@ -2,23 +2,20 @@ use std::collections::HashMap;
 
 use ecow::EcoString;
 use id_arena::{Arena, Id};
-use syntax::parser::TextRange;
 
-use crate::file_system::FileId;
-
-pub type SymbolRange = (FileId, TextRange);
+use crate::file_system::{FileId, FileRange};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Class {
     pub name: EcoString,
-    pub range: SymbolRange,
+    pub file_range: FileRange,
 }
 
 pub type ClassId = Id<Class>;
 
 impl Class {
-    pub fn new(name: EcoString, range: SymbolRange) -> Self {
-        Self { name, range }
+    pub fn new(name: EcoString, file_range: FileRange) -> Self {
+        Self { name, file_range }
     }
 }
 

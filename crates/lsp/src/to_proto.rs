@@ -1,7 +1,8 @@
 use async_lsp::lsp_types;
+use ide::file_system::FileRange;
 use text_size::{TextRange, TextSize};
 
-use ide::handlers::diagnostics::{Diagnostic, FileRange};
+use ide::handlers::diagnostics::Diagnostic;
 use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
 

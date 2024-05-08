@@ -5,12 +5,25 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use syntax::ast::AstNode;
+use syntax::parser::TextRange;
 use syntax::{ast, SyntaxNode, SyntaxNodePtr};
 
 use crate::db::SourceDatabase;
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct FileId(pub u32);
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct FileRange {
+    pub file: FileId,
+    pub range: TextRange,
+}
+
+impl FileRange {
+    pub fn new(file: FileId, range: TextRange) -> Self {
+        Self { file, range }
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FilePath(pub PathBuf);
