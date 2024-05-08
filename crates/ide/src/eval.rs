@@ -10,7 +10,7 @@ use syntax::SyntaxNodePtr;
 
 use crate::db::SourceDatabase;
 use crate::file_system::{FileId, IncludeId};
-use crate::handlers::diagnostics::FileRange;
+use crate::handlers::diagnostics::{Diagnostic, FileRange};
 use crate::symbol_map::{Class, SymbolMap};
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -21,7 +21,7 @@ pub trait EvalDatabase: SourceDatabase {
 #[derive(Debug, Eq, PartialEq)]
 pub struct Evaluation {
     symbol_map: SymbolMap,
-    errors: Vec<EvalError>,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl Evaluation {
@@ -29,8 +29,8 @@ impl Evaluation {
         &self.symbol_map
     }
 
-    pub fn errors(&self) -> &[EvalError] {
-        &self.errors
+    pub fn diagnostics(&self) -> &[Diagnostic] {
+        &self.diagnostics
     }
 }
 
@@ -71,7 +71,7 @@ pub struct EvalCtx<'a> {
     db: &'a dyn EvalDatabase,
     file_trace: Vec<FileId>,
     symbol_map: SymbolMap,
-    errors: Vec<EvalError>,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> EvalCtx<'a> {
@@ -80,7 +80,7 @@ impl<'a> EvalCtx<'a> {
             db,
             file_trace: vec![root_file],
             symbol_map: SymbolMap::default(),
-            errors: Vec::new(),
+            diagnostics: Vec::new(),
         }
     }
 
@@ -96,16 +96,16 @@ impl<'a> EvalCtx<'a> {
         self.file_trace.pop().expect("file_trace is empty");
     }
 
-    pub fn error(&mut self, range: TextRange, message: impl Into<EcoString>) {
+    pub fn error(&mut self, range: TextRange, message: impl Into<String>) {
         let file = self.current_file_id();
-        self.errors
-            .push(EvalError::new(FileRange::new(file, range), message));
+        self.diagnostics
+            .push(Diagnostic::new(FileRange::new(file, range), message));
     }
 
     pub fn finish(self) -> Evaluation {
         Evaluation {
             symbol_map: self.symbol_map,
-            errors: self.errors,
+            diagnostics: self.diagnostics,
         }
     }
 }

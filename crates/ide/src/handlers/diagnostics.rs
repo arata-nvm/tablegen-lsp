@@ -1,9 +1,6 @@
 use syntax::parser::TextRange;
 
-use crate::{
-    eval::{EvalDatabase, EvalError},
-    file_system::FileId,
-};
+use crate::{eval::EvalDatabase, file_system::FileId};
 
 pub fn diagnostics(db: &dyn EvalDatabase) -> Vec<Diagnostic> {
     let mut diagnostic_list = Vec::new();
@@ -18,7 +15,7 @@ pub fn diagnostics(db: &dyn EvalDatabase) -> Vec<Diagnostic> {
     }));
 
     let evaluation = db.eval();
-    diagnostic_list.extend(evaluation.errors().iter().cloned().map(Diagnostic::from));
+    diagnostic_list.extend(evaluation.diagnostics().iter().cloned());
 
     diagnostic_list
 }
@@ -35,22 +32,17 @@ impl FileRange {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Diagnostic {
     pub range: FileRange,
     pub message: String,
 }
 
 impl Diagnostic {
-    pub fn new(range: FileRange, message: String) -> Self {
-        Self { range, message }
-    }
-}
-
-impl From<EvalError> for Diagnostic {
-    fn from(value: EvalError) -> Self {
+    pub fn new(range: FileRange, message: impl Into<String>) -> Self {
         Self {
-            range: value.range,
-            message: value.message.to_string(),
+            range,
+            message: message.into(),
         }
     }
 }
