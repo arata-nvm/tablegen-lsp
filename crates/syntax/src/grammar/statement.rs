@@ -331,6 +331,7 @@ pub(super) fn positional_arg_value_list(p: &mut Parser) {
 }
 
 // NamedArgValueList ::= ( NamedArgValue ( "," NamedArgValue )* )?
+#[allow(unused)]
 pub(super) fn named_arg_value_list(p: &mut Parser) {
     p.start_node(SyntaxKind::NamedArgValueList);
     while !p.eof() {
@@ -343,6 +344,7 @@ pub(super) fn named_arg_value_list(p: &mut Parser) {
 }
 
 // NamedArgValue ::= Value "=" Value
+#[allow(unused)]
 pub(super) fn named_arg_value(p: &mut Parser) {
     p.start_node(SyntaxKind::NamedArgValue);
     value::value(p);
