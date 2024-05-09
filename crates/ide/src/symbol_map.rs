@@ -12,13 +12,18 @@ use crate::file_system::{FileId, FilePosition, FileRange};
 pub struct Class {
     pub name: EcoString,
     pub define_loc: FileRange,
+    pub reference_locs: Vec<FileRange>,
 }
 
 pub type ClassId = Id<Class>;
 
 impl Class {
     pub fn new(name: EcoString, define_loc: FileRange) -> Self {
-        Self { name, define_loc }
+        Self {
+            name,
+            define_loc,
+            reference_locs: Vec::new(),
+        }
     }
 }
 
@@ -50,6 +55,15 @@ impl SymbolMap {
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), id);
         id
+    }
+
+    pub fn add_class_reference(&mut self, class_id: ClassId, reference_loc: FileRange) {
+        let class = self.class_mut(class_id);
+        class.reference_locs.push(reference_loc);
+        self.pos_to_class_map
+            .entry(reference_loc.file)
+            .or_insert_with(IntervalMap::new)
+            .insert(reference_loc.range.into(), class_id);
     }
 
     pub fn class(&self, class_id: ClassId) -> &Class {

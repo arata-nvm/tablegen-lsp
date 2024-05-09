@@ -1,0 +1,12 @@
+---
+source: crates/ide/src/handlers/goto_definition.rs
+expression: symbols
+---
+Some(
+    FileRange {
+        file: FileId(
+            1,
+        ),
+        range: 6..9,
+    },
+)

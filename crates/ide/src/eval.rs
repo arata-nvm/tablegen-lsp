@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use ecow::{eco_format, EcoString};
@@ -10,7 +11,7 @@ use syntax::SyntaxNodePtr;
 use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
-use crate::symbol_map::{Class, SymbolMap};
+use crate::symbol_map::{Class, ClassId, SymbolMap};
 
 #[salsa::query_group(EvalDatabaseStorage)]
 pub trait EvalDatabase: SourceDatabase {
@@ -50,6 +51,7 @@ pub struct EvalCtx<'a> {
     file_trace: Vec<FileId>,
     symbol_map: SymbolMap,
     diagnostics: Vec<Diagnostic>,
+    scope: Scope,
 }
 
 impl<'a> EvalCtx<'a> {
@@ -59,6 +61,7 @@ impl<'a> EvalCtx<'a> {
             file_trace: vec![root_file],
             symbol_map: SymbolMap::default(),
             diagnostics: Vec::new(),
+            scope: Scope::default(),
         }
     }
 
@@ -85,6 +88,21 @@ impl<'a> EvalCtx<'a> {
             symbol_map: self.symbol_map,
             diagnostics: self.diagnostics,
         }
+    }
+}
+
+#[derive(Debug, Default)]
+struct Scope {
+    scope: HashMap<EcoString, ClassId>,
+}
+
+impl Scope {
+    fn add_class(&mut self, name: EcoString, class_id: ClassId) {
+        self.scope.insert(name, class_id);
+    }
+
+    fn find_class(&mut self, name: &EcoString) -> Option<ClassId> {
+        self.scope.get(name).cloned()
     }
 }
 
@@ -132,8 +150,42 @@ impl Eval for ast::Class {
         let name_node = self.name()?;
         let define_loc = FileRange::new(cur_file, name_node.syntax().text_range());
         let class = Class::new(name_node.eval(ctx)?, define_loc);
-        ctx.symbol_map.add_class(class, ctx.current_file_id());
+        let class_name = class.name.clone();
+        let class_id = ctx.symbol_map.add_class(class, ctx.current_file_id());
+        ctx.scope.add_class(class_name, class_id);
+
+        let parent_class_list = self.record_body()?.eval(ctx)?;
+        for (class_id, reference_loc) in parent_class_list {
+            ctx.symbol_map.add_class_reference(class_id, reference_loc);
+        }
         Some(())
+    }
+}
+
+impl Eval for ast::RecordBody {
+    type Output = Vec<(ClassId, FileRange)>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        self.parent_class_list()?.eval(ctx)
+    }
+}
+
+impl Eval for ast::ParentClassList {
+    type Output = Vec<(ClassId, FileRange)>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        Some(self.classes().filter_map(|node| node.eval(ctx)).collect())
+    }
+}
+
+impl Eval for ast::ClassRef {
+    type Output = (ClassId, FileRange);
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let class_name = self.name()?.value()?;
+        let Some(class_id) = ctx.scope.find_class(&class_name) else {
+            ctx.error(self.syntax().text_range(), "class not found: {class_name}");
+            return None;
+        };
+        let range = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
+        Some((class_id, range))
     }
 }
 
