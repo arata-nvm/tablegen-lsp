@@ -325,7 +325,7 @@ impl SymbolMap {
 }
 
 #[derive(Debug, Default)]
-pub struct SymbolMapBuilder(SymbolMap);
+pub struct SymbolMapBuilder(pub SymbolMap);
 
 impl SymbolMapBuilder {
     pub fn build(self) -> SymbolMap {

@@ -1,0 +1,23 @@
+---
+source: crates/ide/src/handlers/document_symbol.rs
+expression: symbols
+---
+Some(
+    [
+        DocumentSymbol {
+            name: "Foo",
+            typ: "class",
+            range: 7..11,
+            kind: Class,
+            children: [
+                DocumentSymbol {
+                    name: "g",
+                    typ: "Foo",
+                    range: 17..18,
+                    kind: Field,
+                    children: [],
+                },
+            ],
+        },
+    ],
+)

@@ -122,4 +122,11 @@ class Foo {
         let symbols = super::exec(&db, f.root_file());
         insta::assert_debug_snapshot!(symbols);
     }
+
+    #[test]
+    fn recursive_class() {
+        let (db, f) = tests::single_file(r#" class Foo { Foo g; } "#);
+        let symbols = super::exec(&db, f.root_file());
+        insta::assert_debug_snapshot!(symbols);
+    }
 }

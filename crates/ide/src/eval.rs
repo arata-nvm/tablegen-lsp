@@ -173,6 +173,10 @@ impl Eval for ast::Class {
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
 
+        let class = Class::new(name.clone(), define_loc, Vec::new(), Vec::new(), Vec::new());
+        let id = ctx.symbol_map.add_class(class);
+        ctx.scope.add_symbol(name, id);
+
         ctx.scope.push();
         let template_arg_list = self
             .template_arg_list()
@@ -185,15 +189,10 @@ impl Eval for ast::Class {
             .unwrap_or_default();
         ctx.scope.pop();
 
-        let class = Class::new(
-            name.clone(),
-            define_loc,
-            template_arg_list,
-            parent_class_list,
-            field_list,
-        );
-        let id = ctx.symbol_map.add_class(class);
-        ctx.scope.add_symbol(name, id);
+        let class = ctx.symbol_map.0.class_mut(id);
+        let _ = std::mem::replace(&mut class.template_arg_list, template_arg_list);
+        let _ = std::mem::replace(&mut class.parent_class_list, parent_class_list);
+        let _ = std::mem::replace(&mut class.field_list, field_list);
 
         Some(())
     }
