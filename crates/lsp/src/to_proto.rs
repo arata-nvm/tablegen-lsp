@@ -58,7 +58,7 @@ pub fn document_symbol(
     };
     lsp_types::DocumentSymbol {
         name: symbol.name.to_string(),
-        detail: None,
+        detail: Some(symbol.typ.to_string()),
         kind: match symbol.kind {
             DocumentSymbolKind::Class => lsp_types::SymbolKind::CLASS,
             DocumentSymbolKind::TemplateArgument => lsp_types::SymbolKind::PROPERTY,

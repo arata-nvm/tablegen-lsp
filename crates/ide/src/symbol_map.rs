@@ -78,6 +78,7 @@ impl Class {
 #[derive(Debug, Eq, PartialEq)]
 pub struct TemplateArgument {
     pub name: EcoString,
+    pub typ: Type,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
@@ -91,9 +92,10 @@ impl From<TemplateArgumentId> for SymbolId {
 }
 
 impl TemplateArgument {
-    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
+    pub fn new(name: EcoString, typ: Type, define_loc: FileRange) -> Self {
         Self {
             name,
+            typ,
             define_loc,
             reference_locs: Vec::new(),
         }
@@ -103,6 +105,7 @@ impl TemplateArgument {
 #[derive(Debug, Eq, PartialEq)]
 pub struct Field {
     pub name: EcoString,
+    pub typ: Type,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
@@ -116,9 +119,10 @@ impl From<FieldId> for SymbolId {
 }
 
 impl Field {
-    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
+    pub fn new(name: EcoString, typ: Type, define_loc: FileRange) -> Self {
         Self {
             name,
+            typ,
             define_loc,
             reference_locs: Vec::new(),
         }
@@ -192,6 +196,33 @@ impl<'a> SymbolMut<'a> {
             Self::Class(class) => class.reference_locs.push(reference_loc),
             Self::TemplateArgument(template_arg) => template_arg.reference_locs.push(reference_loc),
             Self::Field(field) => field.reference_locs.push(reference_loc),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Type {
+    Bit,
+    Int,
+    String,
+    Dag,
+    Bits(i64),
+    List(Box<Type>),
+    Class((ClassId, EcoString)),
+    Code,
+}
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bit => write!(f, "bit"),
+            Self::Int => write!(f, "int"),
+            Self::String => write!(f, "string"),
+            Self::Dag => write!(f, "dag"),
+            Self::Bits(width) => write!(f, "bits<{}>", width),
+            Self::List(typ) => write!(f, "list<{}>", typ),
+            Self::Class((_, name)) => write!(f, "{}", name),
+            Self::Code => write!(f, "code"),
         }
     }
 }

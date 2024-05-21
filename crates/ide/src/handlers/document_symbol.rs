@@ -22,6 +22,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
             .map(|id| symbol_map.template_arg(*id))
             .map(|arg| DocumentSymbol {
                 name: arg.name.clone(),
+                typ: arg.typ.to_string().into(),
                 range: arg.define_loc.range,
                 kind: DocumentSymbolKind::TemplateArgument,
                 children: Vec::new(),
@@ -33,6 +34,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
             .map(|id| symbol_map.field(*id))
             .map(|field| DocumentSymbol {
                 name: field.name.clone(),
+                typ: field.typ.to_string().into(),
                 range: field.define_loc.range,
                 kind: DocumentSymbolKind::Field,
                 children: Vec::new(),
@@ -40,6 +42,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
 
         symbols.push(DocumentSymbol {
             name: class.name.clone(),
+            typ: "class".into(),
             range: class.define_loc.range,
             kind: DocumentSymbolKind::Class,
             children: template_argument_list.chain(field_list).collect(),
@@ -51,6 +54,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
 #[derive(Debug)]
 pub struct DocumentSymbol {
     pub name: EcoString,
+    pub typ: EcoString,
     pub range: TextRange,
     pub kind: DocumentSymbolKind,
     pub children: Vec<DocumentSymbol>,
@@ -92,6 +96,27 @@ class Foo;
 
 ; sub.td
 class Bar;
+            "#,
+        );
+        let symbols = super::exec(&db, f.root_file());
+        insta::assert_debug_snapshot!(symbols);
+    }
+
+    #[test]
+    fn class() {
+        let (db, f) = tests::single_file(
+            r#"
+class Bar;
+class Foo {
+    bit a;
+    int b;
+    string c;
+    dag d;
+    bits<4> e;
+    list<int> f;
+    Bar g;
+    code h;
+}
             "#,
         );
         let symbols = super::exec(&db, f.root_file());

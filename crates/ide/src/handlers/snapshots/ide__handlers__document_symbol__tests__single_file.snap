@@ -6,11 +6,13 @@ Some(
     [
         DocumentSymbol {
             name: "Foo",
+            typ: "class",
             range: 6..9,
             kind: Class,
             children: [
                 DocumentSymbol {
                     name: "size",
+                    typ: "int",
                     range: 14..18,
                     kind: TemplateArgument,
                     children: [],
@@ -19,6 +21,7 @@ Some(
         },
         DocumentSymbol {
             name: "Bar",
+            typ: "class",
             range: 46..49,
             kind: Class,
             children: [],

@@ -13,7 +13,7 @@ use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
     Class, ClassId, Field, FieldId, SymbolId, SymbolMap, SymbolMapBuilder, TemplateArgument,
-    TemplateArgumentId,
+    TemplateArgumentId, Type,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -210,8 +210,9 @@ impl Eval for ast::TemplateArgDecl {
     type Output = TemplateArgumentId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.eval(ctx)?;
+        let typ = self.r#type()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        let template_arg = TemplateArgument::new(name.clone(), define_loc);
+        let template_arg = TemplateArgument::new(name.clone(), typ, define_loc);
         let id = ctx.symbol_map.add_template_argument(template_arg);
         ctx.scope.add_symbol(name, id);
         Some(id)
@@ -293,9 +294,10 @@ impl Eval for ast::FieldDef {
     type Output = FieldId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.eval(ctx)?;
+        let typ = self.r#type()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
         self.value().and_then(|it| it.eval(ctx));
-        let field = Field::new(name.clone(), define_loc);
+        let field = Field::new(name.clone(), typ, define_loc);
         let id = ctx.symbol_map.add_field(field);
         ctx.scope.add_symbol(name, id);
         Some(id)
@@ -325,6 +327,34 @@ impl Eval for ast::Include {
         source_file.eval(ctx);
         ctx.pop_file();
         Some(())
+    }
+}
+
+impl Eval for ast::Type {
+    type Output = Type;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        match self {
+            ast::Type::BitType(_) => Some(Type::Bit),
+            ast::Type::IntType(_) => Some(Type::Int),
+            ast::Type::StringType(_) => Some(Type::String),
+            ast::Type::DagType(_) => Some(Type::Dag),
+            ast::Type::BitsType(bits_typ) => Some(Type::Bits(bits_typ.length()?.value()?)),
+            ast::Type::ListType(list_typ) => {
+                Some(Type::List(Box::new(list_typ.inner_type()?.eval(ctx)?)))
+            }
+            ast::Type::ClassId(class_id) => {
+                let name = class_id.name()?.eval(ctx)?;
+                let Some(id) = ctx.scope.find_symbol(&name).and_then(|it| it.as_class_id()) else {
+                    ctx.error(
+                        class_id.name()?.range()?,
+                        format!("class not found: {name}"),
+                    );
+                    return None;
+                };
+                Some(Type::Class((id, name)))
+            }
+            ast::Type::CodeType(_) => Some(Type::Code),
+        }
     }
 }
 

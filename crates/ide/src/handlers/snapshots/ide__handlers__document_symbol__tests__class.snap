@@ -1,0 +1,79 @@
+---
+source: crates/ide/src/handlers/document_symbol.rs
+expression: symbols
+---
+Some(
+    [
+        DocumentSymbol {
+            name: "Bar",
+            typ: "class",
+            range: 6..9,
+            kind: Class,
+            children: [],
+        },
+        DocumentSymbol {
+            name: "Foo",
+            typ: "class",
+            range: 17..21,
+            kind: Class,
+            children: [
+                DocumentSymbol {
+                    name: "a",
+                    typ: "bit",
+                    range: 31..32,
+                    kind: Field,
+                    children: [],
+                },
+                DocumentSymbol {
+                    name: "b",
+                    typ: "int",
+                    range: 42..43,
+                    kind: Field,
+                    children: [],
+                },
+                DocumentSymbol {
+                    name: "c",
+                    typ: "string",
+                    range: 56..57,
+                    kind: Field,
+                    children: [],
+                },
+                DocumentSymbol {
+                    name: "d",
+                    typ: "dag",
+                    range: 67..68,
+                    kind: Field,
+                    children: [],
+                },
+                DocumentSymbol {
+                    name: "e",
+                    typ: "bits<4>",
+                    range: 82..83,
+                    kind: Field,
+                    children: [],
+                },
+                DocumentSymbol {
+                    name: "f",
+                    typ: "list<int>",
+                    range: 99..100,
+                    kind: Field,
+                    children: [],
+                },
+                DocumentSymbol {
+                    name: "g",
+                    typ: "Bar",
+                    range: 110..111,
+                    kind: Field,
+                    children: [],
+                },
+                DocumentSymbol {
+                    name: "h",
+                    typ: "code",
+                    range: 122..123,
+                    kind: Field,
+                    children: [],
+                },
+            ],
+        },
+    ],
+)
