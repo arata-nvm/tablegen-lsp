@@ -4,9 +4,8 @@ use crate::file_system::{FilePosition, FileRange};
 pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<FileRange> {
     let evaluation = db.eval();
     let symbol_map = evaluation.symbol_map();
-    let class_id = symbol_map.find_class_at(pos)?;
-    let class = symbol_map.class(class_id);
-    Some(class.define_loc)
+    let symbol = symbol_map.find_symbol_at(pos)?;
+    Some(*symbol.define_loc())
 }
 
 #[cfg(test)]

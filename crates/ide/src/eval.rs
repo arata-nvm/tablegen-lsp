@@ -185,7 +185,9 @@ impl Eval for ast::TemplateArgDecl {
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
         let template_arg = TemplateArgument::new(name, define_loc);
-        let id = ctx.symbol_map.add_template_argument(template_arg);
+        let id = ctx
+            .symbol_map
+            .add_template_argument(template_arg, ctx.current_file_id());
         Some(id)
     }
 }

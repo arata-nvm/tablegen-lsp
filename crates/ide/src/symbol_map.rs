@@ -50,12 +50,54 @@ impl TemplateArgument {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum Symbol<'a> {
+    Class(&'a Class),
+    TemplateArgument(&'a TemplateArgument),
+}
+
+impl<'a> Symbol<'a> {
+    pub fn name(&self) -> &EcoString {
+        match self {
+            Symbol::Class(class) => &class.name,
+            Symbol::TemplateArgument(template_arg) => &template_arg.name,
+        }
+    }
+
+    pub fn define_loc(&self) -> &FileRange {
+        match self {
+            Symbol::Class(class) => &class.define_loc,
+            Symbol::TemplateArgument(template_arg) => &template_arg.define_loc,
+        }
+    }
+
+    pub fn as_class(&self) -> Option<&Class> {
+        match self {
+            Symbol::Class(class) => Some(class),
+            _ => None,
+        }
+    }
+
+    pub fn as_template_argument(&self) -> Option<&TemplateArgument> {
+        match self {
+            Symbol::TemplateArgument(template_arg) => Some(template_arg),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, PartialOrd, Ord)]
+pub enum SymbolId {
+    ClassId(ClassId),
+    TemplateArgumentId(TemplateArgumentId),
+}
+
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct SymbolMap {
     class_list: Arena<Class>,
     template_arg_list: Arena<TemplateArgument>,
     file_to_class_list: HashMap<FileId, Vec<ClassId>>,
-    pos_to_class_map: HashMap<FileId, IntervalMap<TextSize, ClassId>>,
+    pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
 
 // immutable api
@@ -71,24 +113,34 @@ impl SymbolMap {
         let define_loc = class.define_loc;
         let id = self.class_list.alloc(class);
         self.file_to_class_list.entry(file_id).or_default().push(id);
-        self.pos_to_class_map
+        self.pos_to_symbol_map
             .entry(file_id)
             .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), id);
+            .insert(define_loc.range.into(), SymbolId::ClassId(id));
         id
     }
 
     pub fn add_class_reference(&mut self, class_id: ClassId, reference_loc: FileRange) {
         let class = self.class_mut(class_id);
         class.reference_locs.push(reference_loc);
-        self.pos_to_class_map
+        self.pos_to_symbol_map
             .entry(reference_loc.file)
             .or_insert_with(IntervalMap::new)
-            .insert(reference_loc.range.into(), class_id);
+            .insert(reference_loc.range.into(), SymbolId::ClassId(class_id));
     }
 
-    pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
-        self.template_arg_list.alloc(template_arg)
+    pub fn add_template_argument(
+        &mut self,
+        template_arg: TemplateArgument,
+        file_id: FileId,
+    ) -> TemplateArgumentId {
+        let define_loc = template_arg.define_loc;
+        let id = self.template_arg_list.alloc(template_arg);
+        self.pos_to_symbol_map
+            .entry(file_id)
+            .or_insert_with(IntervalMap::new)
+            .insert(define_loc.range.into(), SymbolId::TemplateArgumentId(id));
+        id
     }
 
     pub fn class(&self, class_id: ClassId) -> &Class {
@@ -110,10 +162,18 @@ impl SymbolMap {
             .map(|class_list| class_list.into_iter())
     }
 
-    pub fn find_class_at(&self, pos: FilePosition) -> Option<ClassId> {
-        self.pos_to_class_map
+    pub fn find_symbol_at(&self, pos: FilePosition) -> Option<Symbol> {
+        let id = self
+            .pos_to_symbol_map
             .get(&pos.file)
-            .and_then(|map| map.values_overlap(pos.position).next().cloned())
+            .and_then(|map| map.values_overlap(pos.position).next().cloned())?;
+
+        match id {
+            SymbolId::ClassId(class_id) => Some(Symbol::Class(self.class(class_id))),
+            SymbolId::TemplateArgumentId(template_arg_id) => {
+                Some(Symbol::TemplateArgument(self.template_arg(template_arg_id)))
+            }
+        }
     }
 
     pub fn template_arg(&self, template_arg_id: TemplateArgumentId) -> &TemplateArgument {
