@@ -25,14 +25,24 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
                 range: arg.define_loc.range,
                 kind: DocumentSymbolKind::TemplateArgument,
                 children: Vec::new(),
-            })
-            .collect();
+            });
+
+        let field_list = class
+            .field_list
+            .iter()
+            .map(|id| symbol_map.field(*id))
+            .map(|field| DocumentSymbol {
+                name: field.name.clone(),
+                range: field.define_loc.range,
+                kind: DocumentSymbolKind::Field,
+                children: Vec::new(),
+            });
 
         symbols.push(DocumentSymbol {
             name: class.name.clone(),
             range: class.define_loc.range,
             kind: DocumentSymbolKind::Class,
-            children: template_argument_list,
+            children: template_argument_list.chain(field_list).collect(),
         });
     }
     Some(symbols)
@@ -50,6 +60,7 @@ pub struct DocumentSymbol {
 pub enum DocumentSymbolKind {
     Class,
     TemplateArgument,
+    Field,
 }
 
 #[cfg(test)]
@@ -58,7 +69,15 @@ mod tests {
 
     #[test]
     fn single_file() {
-        let (db, f) = tests::single_file("class Foo<int size>; class Bar;");
+        let (db, f) = tests::single_file(
+            r#"
+class Foo<int size> {
+    int field;
+}
+
+class Bar;
+"#,
+        );
         let symbols = super::exec(&db, f.root_file());
         insta::assert_debug_snapshot!(symbols);
     }

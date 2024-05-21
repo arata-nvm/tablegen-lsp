@@ -62,6 +62,7 @@ pub fn document_symbol(
         kind: match symbol.kind {
             DocumentSymbolKind::Class => lsp_types::SymbolKind::CLASS,
             DocumentSymbolKind::TemplateArgument => lsp_types::SymbolKind::PROPERTY,
+            DocumentSymbolKind::Field => lsp_types::SymbolKind::FIELD,
         },
         tags: None,
         deprecated: None,

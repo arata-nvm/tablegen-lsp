@@ -19,7 +19,7 @@ Some(
         },
         DocumentSymbol {
             name: "Bar",
-            range: 27..30,
+            range: 46..49,
             kind: Class,
             children: [],
         },

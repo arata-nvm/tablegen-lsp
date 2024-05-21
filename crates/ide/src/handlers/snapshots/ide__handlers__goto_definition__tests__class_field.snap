@@ -1,0 +1,12 @@
+---
+source: crates/ide/src/handlers/goto_definition.rs
+expression: definition
+---
+Some(
+    FileRange {
+        file: FileId(
+            0,
+        ),
+        range: 15..18,
+    },
+)

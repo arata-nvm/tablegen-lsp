@@ -197,7 +197,7 @@ impl Eval for ast::TemplateArgDecl {
 impl Eval for ast::RecordBody {
     type Output = (Vec<ClassId>, Vec<FieldId>);
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let parent_class_list = self.parent_class_list()?.eval(ctx);
+        let parent_class_list = self.parent_class_list().and_then(|it| it.eval(ctx));
         let field_list = self.body().and_then(|it| it.eval(ctx));
         parent_class_list.zip(field_list)
     }

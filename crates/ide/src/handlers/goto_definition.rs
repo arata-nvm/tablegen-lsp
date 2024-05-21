@@ -34,6 +34,13 @@ mod tests {
     }
 
     #[test]
+    fn class_field() {
+        let (db, f) = tests::single_file("class Foo {int $foo}");
+        let definition = super::exec(&db, f.marker(0));
+        insta::assert_debug_snapshot!(definition);
+    }
+
+    #[test]
     fn multiple_files() {
         let (db, f) = tests::multiple_files(
             r#"
