@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use ecow::{eco_format, EcoString};
+use ecow::EcoString;
 
 use syntax::ast::AstNode;
 use syntax::ast::{self};
@@ -12,7 +12,7 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    Class, ClassId, Field, FieldId, SymbolMap, SymbolMapBuilder, TemplateArgument,
+    Class, ClassId, Field, FieldId, SymbolId, SymbolMap, SymbolMapBuilder, TemplateArgument,
     TemplateArgumentId,
 };
 
@@ -96,16 +96,31 @@ impl<'a> EvalCtx<'a> {
 
 #[derive(Debug, Default)]
 struct Scope {
-    scope: HashMap<EcoString, ClassId>,
+    scopes: Vec<HashMap<EcoString, SymbolId>>,
 }
 
 impl Scope {
-    fn add_class(&mut self, name: EcoString, class_id: ClassId) {
-        self.scope.insert(name, class_id);
+    fn push(&mut self) {
+        self.scopes.push(HashMap::new());
     }
 
-    fn find_class(&mut self, name: &EcoString) -> Option<ClassId> {
-        self.scope.get(name).cloned()
+    fn pop(&mut self) {
+        self.scopes.pop().expect("scope is empty");
+    }
+
+    fn add_symbol(&mut self, name: EcoString, symbol_id: impl Into<SymbolId>) {
+        self.scopes
+            .last_mut()
+            .expect("scope is empty")
+            .insert(name, symbol_id.into());
+    }
+
+    fn find_symbol(&mut self, name: &EcoString) -> Option<SymbolId> {
+        self.scopes
+            .iter()
+            .rev()
+            .find_map(|it| it.get(name))
+            .cloned()
     }
 }
 
@@ -149,6 +164,8 @@ impl Eval for ast::Statement {
 impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        ctx.scope.push();
+
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
 
@@ -170,8 +187,9 @@ impl Eval for ast::Class {
             field_list,
         );
         let id = ctx.symbol_map.add_class(class);
-        ctx.scope.add_class(name, id);
+        ctx.scope.add_symbol(name, id);
 
+        ctx.scope.pop();
         Some(())
     }
 }
@@ -188,8 +206,9 @@ impl Eval for ast::TemplateArgDecl {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        let template_arg = TemplateArgument::new(name, define_loc);
+        let template_arg = TemplateArgument::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_template_argument(template_arg);
+        ctx.scope.add_symbol(name, id);
         Some(id)
     }
 }
@@ -214,12 +233,15 @@ impl Eval for ast::ClassRef {
     type Output = ClassId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.value()?;
-        let Some(class_id) = ctx.scope.find_class(&name) else {
-            ctx.error(self.syntax().text_range(), "class not found: {name}");
+        let Some(class_id) = ctx.scope.find_symbol(&name).and_then(|it| it.as_class_id()) else {
+            ctx.error(
+                self.syntax().text_range(),
+                format!("class not found: {name}"),
+            );
             return None;
         };
         let range = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        ctx.symbol_map.add_class_reference(class_id, range);
+        ctx.symbol_map.add_reference(class_id, range);
         Some(class_id)
     }
 }
@@ -250,8 +272,10 @@ impl Eval for ast::FieldDef {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        let field = Field::new(name, define_loc);
+        let _ = self.value()?.eval(ctx);
+        let field = Field::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_field(field);
+        ctx.scope.add_symbol(name, id);
         Some(id)
     }
 }
@@ -267,7 +291,7 @@ impl Eval for ast::Include {
             let path = self.path().map(|it| it.value()).unwrap_or_default();
             ctx.error(
                 self.syntax().text_range(),
-                eco_format!("include file not found: {path}"),
+                format!("include file not found: {path}"),
             );
             return Some(());
         };
@@ -282,7 +306,43 @@ impl Eval for ast::Include {
     }
 }
 
-impl Eval for ast::
+impl Eval for ast::Value {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let inner_values: Vec<_> = self
+            .inner_values()
+            .filter_map(|it| it.simple_value())
+            .filter_map(|it| it.eval(ctx))
+            .collect();
+        if inner_values.len() != 1 {
+            ctx.error(self.syntax().text_range(), "not implemented");
+        }
+        Some(())
+    }
+}
+
+impl Eval for ast::SimpleValue {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let range = self.syntax().text_range();
+        match self {
+            ast::SimpleValue::Identifier(identifier) => {
+                let name = identifier.eval(ctx)?;
+                let Some(symbol_id) = ctx.scope.find_symbol(&name) else {
+                    ctx.error(range, format!("symbol not found: {name}"));
+                    return None;
+                };
+                let reference_loc = FileRange::new(ctx.current_file_id(), range);
+                ctx.symbol_map.add_reference(symbol_id, reference_loc);
+                Some(())
+            }
+            _ => {
+                ctx.error(self.syntax().text_range(), "not implemented");
+                None
+            }
+        }
+    }
+}
 
 impl Eval for ast::Identifier {
     type Output = EcoString;
