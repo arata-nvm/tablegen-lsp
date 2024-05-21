@@ -44,12 +44,9 @@ impl SymbolMap {
 // mutable api
 impl SymbolMap {
     pub fn add_class(&mut self, class: Class, file_id: FileId) -> ClassId {
-        let define_loc = class.define_loc.clone();
+        let define_loc = class.define_loc;
         let id = self.class_list.alloc(class);
-        self.file_to_class_list
-            .entry(file_id)
-            .or_insert_with(Vec::new)
-            .push(id);
+        self.file_to_class_list.entry(file_id).or_default().push(id);
         self.pos_to_class_map
             .entry(file_id)
             .or_insert_with(IntervalMap::new)
@@ -88,7 +85,7 @@ impl SymbolMap {
     pub fn find_class_at(&self, pos: FilePosition) -> Option<ClassId> {
         self.pos_to_class_map
             .get(&pos.file)
-            .and_then(|map| map.values_overlap(pos.position.into()).next().cloned())
+            .and_then(|map| map.values_overlap(pos.position).next().cloned())
     }
 }
 
@@ -130,10 +127,6 @@ impl<T: PartialOrd + Copy + Debug, V: Debug + PartialEq + Eq> PartialEq for Inte
             }
         }
         true
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(other)
     }
 }
 

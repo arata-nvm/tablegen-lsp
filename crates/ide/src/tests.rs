@@ -90,8 +90,8 @@ impl Fixture {
             if line.starts_with("; ") {
                 break;
             }
-            if content.len() != 0 {
-                content.push_str("\n");
+            if !content.is_empty() {
+                content.push('\n');
             }
 
             let line = lines.next().expect("line must be present");
@@ -124,10 +124,10 @@ impl Fixture {
     }
 
     pub fn root_file(&self) -> FileId {
-        self.file_ids
+        *self
+            .file_ids
             .first()
             .expect("at least one file must be exist")
-            .clone()
     }
 
     pub fn marker(&self, index: usize) -> FilePosition {

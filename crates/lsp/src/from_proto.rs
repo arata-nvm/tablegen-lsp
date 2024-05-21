@@ -23,7 +23,7 @@ pub fn file_pos(
     let path = UrlExt::to_file_path(&doc.text_document.uri);
     let file_id = vfs.file_for_path(&path).unwrap();
     let line_index = snap.analysis.line_index(file_id);
-    let pos = FilePosition::new(file_id, position(&*line_index, doc.position));
+    let pos = FilePosition::new(file_id, position(&line_index, doc.position));
     (pos, line_index)
 }
 
