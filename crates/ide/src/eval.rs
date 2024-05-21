@@ -12,7 +12,8 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    Class, ClassId, SymbolMap, SymbolMapBuilder, TemplateArgument, TemplateArgumentId,
+    Class, ClassId, Field, FieldId, SymbolMap, SymbolMapBuilder, TemplateArgument,
+    TemplateArgumentId,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -156,7 +157,7 @@ impl Eval for ast::Class {
             .and_then(|it| it.eval(ctx))
             .unwrap_or_default();
 
-        let parent_class_list = self
+        let (parent_class_list, field_list) = self
             .record_body()
             .and_then(|it| it.eval(ctx))
             .unwrap_or_default();
@@ -166,8 +167,9 @@ impl Eval for ast::Class {
             define_loc,
             template_arg_list,
             parent_class_list,
+            field_list,
         );
-        let id = ctx.symbol_map.add_class(class, ctx.current_file_id());
+        let id = ctx.symbol_map.add_class(class);
         ctx.scope.add_class(name, id);
 
         Some(())
@@ -187,17 +189,17 @@ impl Eval for ast::TemplateArgDecl {
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
         let template_arg = TemplateArgument::new(name, define_loc);
-        let id = ctx
-            .symbol_map
-            .add_template_argument(template_arg, ctx.current_file_id());
+        let id = ctx.symbol_map.add_template_argument(template_arg);
         Some(id)
     }
 }
 
 impl Eval for ast::RecordBody {
-    type Output = Vec<ClassId>;
+    type Output = (Vec<ClassId>, Vec<FieldId>);
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        self.parent_class_list()?.eval(ctx)
+        let parent_class_list = self.parent_class_list()?.eval(ctx);
+        let field_list = self.body().and_then(|it| it.eval(ctx));
+        parent_class_list.zip(field_list)
     }
 }
 
@@ -219,6 +221,38 @@ impl Eval for ast::ClassRef {
         let range = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
         ctx.symbol_map.add_class_reference(class_id, range);
         Some(class_id)
+    }
+}
+
+impl Eval for ast::Body {
+    type Output = Vec<FieldId>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let field_list = self.items().filter_map(|it| it.eval(ctx)).collect();
+        Some(field_list)
+    }
+}
+
+impl Eval for ast::BodyItem {
+    type Output = FieldId;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        match self {
+            ast::BodyItem::FieldDef(field_def) => field_def.eval(ctx),
+            _ => {
+                ctx.error(self.syntax().text_range(), "not implemented");
+                None
+            }
+        }
+    }
+}
+
+impl Eval for ast::FieldDef {
+    type Output = FieldId;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let name = self.name()?.eval(ctx)?;
+        let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
+        let field = Field::new(name, define_loc);
+        let id = ctx.symbol_map.add_field(field);
+        Some(id)
     }
 }
 
