@@ -213,12 +213,12 @@ impl Eval for ast::ParentClassList {
 impl Eval for ast::ClassRef {
     type Output = ClassId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let class_name = self.name()?.value()?;
-        let Some(class_id) = ctx.scope.find_class(&class_name) else {
-            ctx.error(self.syntax().text_range(), "class not found: {class_name}");
+        let name = self.name()?.value()?;
+        let Some(class_id) = ctx.scope.find_class(&name) else {
+            ctx.error(self.syntax().text_range(), "class not found: {name}");
             return None;
         };
-        let range = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
+        let range = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
         ctx.symbol_map.add_class_reference(class_id, range);
         Some(class_id)
     }
@@ -281,6 +281,8 @@ impl Eval for ast::Include {
         Some(())
     }
 }
+
+impl Eval for ast::
 
 impl Eval for ast::Identifier {
     type Output = EcoString;
