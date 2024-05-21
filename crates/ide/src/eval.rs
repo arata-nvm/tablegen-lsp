@@ -11,7 +11,7 @@ use syntax::SyntaxNodePtr;
 use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
-use crate::symbol_map::{Class, ClassId, SymbolMap};
+use crate::symbol_map::{Class, ClassId, SymbolMap, TemplateArgument, TemplateArgumentId};
 
 #[salsa::query_group(EvalDatabaseStorage)]
 pub trait EvalDatabase: SourceDatabase {
@@ -149,16 +149,44 @@ impl Eval for ast::Class {
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
 
+        let template_arg_list = self
+            .template_arg_list()
+            .and_then(|it| it.eval(ctx))
+            .unwrap_or_default();
+
         let parent_class_list = self
             .record_body()
             .and_then(|it| it.eval(ctx))
             .unwrap_or_default();
 
-        let class = Class::new(name.clone(), define_loc, parent_class_list);
+        let class = Class::new(
+            name.clone(),
+            define_loc,
+            template_arg_list,
+            parent_class_list,
+        );
         let id = ctx.symbol_map.add_class(class, ctx.current_file_id());
         ctx.scope.add_class(name, id);
 
         Some(())
+    }
+}
+
+impl Eval for ast::TemplateArgList {
+    type Output = Vec<TemplateArgumentId>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        Some(self.args().filter_map(|it| it.eval(ctx)).collect())
+    }
+}
+
+impl Eval for ast::TemplateArgDecl {
+    type Output = TemplateArgumentId;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let name = self.name()?.eval(ctx)?;
+        let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
+        let template_arg = TemplateArgument::new(name, define_loc);
+        let id = ctx.symbol_map.add_template_argument(template_arg);
+        Some(id)
     }
 }
 

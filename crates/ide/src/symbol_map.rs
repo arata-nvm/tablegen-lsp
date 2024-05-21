@@ -13,25 +13,47 @@ pub struct Class {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
+    pub template_arg_list: Vec<TemplateArgumentId>,
     pub parent_class_list: Vec<ClassId>,
 }
 
 pub type ClassId = Id<Class>;
 
 impl Class {
-    pub fn new(name: EcoString, define_loc: FileRange, parent_class_list: Vec<ClassId>) -> Self {
+    pub fn new(
+        name: EcoString,
+        define_loc: FileRange,
+        template_arg_list: Vec<TemplateArgumentId>,
+        parent_class_list: Vec<ClassId>,
+    ) -> Self {
         Self {
             name,
             define_loc,
             reference_locs: Vec::new(),
+            template_arg_list,
             parent_class_list,
         }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct TemplateArgument {
+    pub name: EcoString,
+    pub define_loc: FileRange,
+}
+
+pub type TemplateArgumentId = Id<TemplateArgument>;
+
+impl TemplateArgument {
+    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
+        Self { name, define_loc }
     }
 }
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct SymbolMap {
     class_list: Arena<Class>,
+    template_arg_list: Arena<TemplateArgument>,
     file_to_class_list: HashMap<FileId, Vec<ClassId>>,
     pos_to_class_map: HashMap<FileId, IntervalMap<TextSize, ClassId>>,
 }
@@ -63,6 +85,10 @@ impl SymbolMap {
             .entry(reference_loc.file)
             .or_insert_with(IntervalMap::new)
             .insert(reference_loc.range.into(), class_id);
+    }
+
+    pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
+        self.template_arg_list.alloc(template_arg)
     }
 
     pub fn class(&self, class_id: ClassId) -> &Class {
