@@ -12,8 +12,8 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    Class, ClassId, Field, FieldId, SymbolId, SymbolMap, SymbolMapBuilder, TemplateArgument,
-    TemplateArgumentId, Type, Value,
+    Class, ClassId, Expr, Field, FieldId, SimpleExpr, SymbolId, SymbolMap, SymbolMapBuilder,
+    TemplateArgument, TemplateArgumentId, Type,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -295,7 +295,10 @@ impl Eval for ast::FieldDef {
         let name = self.name()?.eval(ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        let value = self.value().and_then(|it| it.eval(ctx)).unwrap_or_default();
+        let value = self
+            .value()
+            .and_then(|it| it.eval(ctx))
+            .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
         let field = Field::new(name.clone(), typ, value, define_loc);
         let id = ctx.symbol_map.add_field(field);
         ctx.scope.add_symbol(name, id);
@@ -361,13 +364,9 @@ impl Eval for ast::Type {
 }
 
 impl Eval for ast::Value {
-    type Output = Value;
+    type Output = Expr;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let inner_values: Vec<_> = self
-            .inner_values()
-            .filter_map(|it| it.simple_value())
-            .filter_map(|it| it.eval(ctx))
-            .collect();
+        let inner_values: Vec<_> = self.inner_values().filter_map(|it| it.eval(ctx)).collect();
         if inner_values.len() != 1 {
             ctx.error(self.syntax().text_range(), "not implemented");
             return None;
@@ -376,24 +375,31 @@ impl Eval for ast::Value {
     }
 }
 
+impl Eval for ast::InnerValue {
+    type Output = Expr;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        Some(Expr::Simple(self.simple_value()?.eval(ctx)?))
+    }
+}
+
 impl Eval for ast::SimpleValue {
-    type Output = Value;
+    type Output = SimpleExpr;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let range = self.syntax().text_range();
         match self {
-            ast::SimpleValue::Uninitialized(_) => Some(Value::Uninitialized),
-            ast::SimpleValue::Integer(integer) => integer.value().map(Value::Int),
-            ast::SimpleValue::String(string) => Some(Value::String(string.value())),
-            ast::SimpleValue::Code(string) => string.value().map(Value::Code),
-            ast::SimpleValue::Boolean(boolean) => boolean.value().map(Value::Boolean),
+            ast::SimpleValue::Uninitialized(_) => Some(SimpleExpr::Uninitialized),
+            ast::SimpleValue::Integer(integer) => integer.value().map(SimpleExpr::Integer),
+            ast::SimpleValue::String(string) => Some(SimpleExpr::String(string.value())),
+            ast::SimpleValue::Code(string) => string.value().map(SimpleExpr::Code),
+            ast::SimpleValue::Boolean(boolean) => boolean.value().map(SimpleExpr::Boolean),
             ast::SimpleValue::Bits(bits) => bits
                 .value_list()
                 .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
-                .map(Value::Bits),
+                .map(SimpleExpr::Bits),
             ast::SimpleValue::List(list) => list
                 .value_list()
                 .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
-                .map(Value::List),
+                .map(SimpleExpr::List),
             ast::SimpleValue::Identifier(identifier) => {
                 let name = identifier.eval(ctx)?;
                 let Some(symbol_id) = ctx.scope.find_symbol(&name) else {
@@ -402,7 +408,7 @@ impl Eval for ast::SimpleValue {
                 };
                 let reference_loc = FileRange::new(ctx.current_file_id(), range);
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
-                Some(Value::Identifier((symbol_id, name)))
+                Some(SimpleExpr::Identifier((symbol_id, name)))
             }
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");

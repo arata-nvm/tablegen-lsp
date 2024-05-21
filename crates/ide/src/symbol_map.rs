@@ -106,7 +106,7 @@ impl TemplateArgument {
 pub struct Field {
     pub name: EcoString,
     pub typ: Type,
-    pub value: Value,
+    pub value: Expr,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
@@ -120,7 +120,7 @@ impl From<FieldId> for SymbolId {
 }
 
 impl Field {
-    pub fn new(name: EcoString, typ: Type, value: Value, define_loc: FileRange) -> Self {
+    pub fn new(name: EcoString, typ: Type, value: Expr, define_loc: FileRange) -> Self {
         Self {
             name,
             typ,
@@ -129,6 +129,92 @@ impl Field {
             reference_locs: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Expr {
+    Simple(SimpleExpr),
+    // RangeSuffix(Box<Expr>, Vec<Range>),
+    // SliceSuffix(Box<Expr>, Vec<Slice>),
+    // FieldSuffix(Box<Expr>, EcoString),
+    // Paste(Box<Expr>, SimpleExpr),
+}
+
+// #[derive(Debug, Eq, PartialEq)]
+// pub struct Range {
+//     start: i64,
+//     end: i64,
+// }
+
+// #[derive(Debug, Eq, PartialEq)]
+// pub struct Slice {
+//     start: Expr,
+//     end: Expr,
+// }
+
+impl std::fmt::Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Simple(value) => write!(f, "{}", value),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum SimpleExpr {
+    Integer(i64),
+    String(String),
+    Code(EcoString),
+    Boolean(bool),
+    Uninitialized,
+    Bits(Vec<Expr>),
+    List(Vec<Expr>),
+    // Dag(DagArg, Vec<DagArg>),
+    Identifier((SymbolId, EcoString)),
+    // ClassValue,
+    // BangOperator,
+    // CondOperator,
+}
+
+impl std::fmt::Display for SimpleExpr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Uninitialized => write!(f, "?"),
+            Self::Integer(value) => write!(f, "{value}"),
+            Self::String(value) => write!(f, "\"{value}\""),
+            Self::Code(value) => write!(f, "[{{ {value} }}]"),
+            Self::Boolean(value) => write!(f, "{value}"),
+            Self::Bits(values) => {
+                write!(
+                    f,
+                    "{{ {} }}",
+                    values
+                        .iter()
+                        .map(|it| it.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Self::List(values) => {
+                write!(
+                    f,
+                    "[ {} ]",
+                    values
+                        .iter()
+                        .map(|it| it.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Self::Identifier((_, name)) => write!(f, "{name}"),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct DagArg {
+    value: Expr,
+    var_name: EcoString,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -225,54 +311,6 @@ impl std::fmt::Display for Type {
             Self::List(typ) => write!(f, "list<{}>", typ),
             Self::Class((_, name)) => write!(f, "{}", name),
             Self::Code => write!(f, "code"),
-        }
-    }
-}
-
-#[derive(Debug, Default, Eq, PartialEq)]
-pub enum Value {
-    #[default]
-    Uninitialized,
-    Int(i64),
-    String(String),
-    Code(EcoString),
-    Boolean(bool),
-    Bits(Vec<Value>),
-    List(Vec<Value>),
-    Identifier((SymbolId, EcoString)),
-}
-
-impl std::fmt::Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Uninitialized => write!(f, "?"),
-            Self::Int(value) => write!(f, "{value}"),
-            Self::String(value) => write!(f, "\"{value}\""),
-            Self::Code(value) => write!(f, "[{{ {value} }}]"),
-            Self::Boolean(value) => write!(f, "{value}"),
-            Self::Bits(values) => {
-                write!(
-                    f,
-                    "{{ {} }}",
-                    values
-                        .iter()
-                        .map(|it| it.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-            Self::List(values) => {
-                write!(
-                    f,
-                    "[ {} ]",
-                    values
-                        .iter()
-                        .map(|it| it.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-            Self::Identifier((_, name)) => write!(f, "{name}"),
         }
     }
 }
