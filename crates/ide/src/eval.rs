@@ -146,38 +146,38 @@ impl Eval for ast::Statement {
 impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let cur_file = ctx.current_file_id();
-        let name_node = self.name()?;
-        let define_loc = FileRange::new(cur_file, name_node.syntax().text_range());
-        let class = Class::new(name_node.eval(ctx)?, define_loc);
-        let class_name = class.name.clone();
-        let class_id = ctx.symbol_map.add_class(class, ctx.current_file_id());
-        ctx.scope.add_class(class_name, class_id);
+        let name = self.name()?.eval(ctx)?;
+        let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
 
-        let parent_class_list = self.record_body()?.eval(ctx)?;
-        for (class_id, reference_loc) in parent_class_list {
-            ctx.symbol_map.add_class_reference(class_id, reference_loc);
-        }
+        let parent_class_list = self
+            .record_body()
+            .and_then(|it| it.eval(ctx))
+            .unwrap_or_default();
+
+        let class = Class::new(name.clone(), define_loc, parent_class_list);
+        let id = ctx.symbol_map.add_class(class, ctx.current_file_id());
+        ctx.scope.add_class(name, id);
+
         Some(())
     }
 }
 
 impl Eval for ast::RecordBody {
-    type Output = Vec<(ClassId, FileRange)>;
+    type Output = Vec<ClassId>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         self.parent_class_list()?.eval(ctx)
     }
 }
 
 impl Eval for ast::ParentClassList {
-    type Output = Vec<(ClassId, FileRange)>;
+    type Output = Vec<ClassId>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         Some(self.classes().filter_map(|node| node.eval(ctx)).collect())
     }
 }
 
 impl Eval for ast::ClassRef {
-    type Output = (ClassId, FileRange);
+    type Output = ClassId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let class_name = self.name()?.value()?;
         let Some(class_id) = ctx.scope.find_class(&class_name) else {
@@ -185,7 +185,8 @@ impl Eval for ast::ClassRef {
             return None;
         };
         let range = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
-        Some((class_id, range))
+        ctx.symbol_map.add_class_reference(class_id, range);
+        Some(class_id)
     }
 }
 

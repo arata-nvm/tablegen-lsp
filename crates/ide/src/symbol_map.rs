@@ -13,16 +13,18 @@ pub struct Class {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
+    pub parent_class_list: Vec<ClassId>,
 }
 
 pub type ClassId = Id<Class>;
 
 impl Class {
-    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
+    pub fn new(name: EcoString, define_loc: FileRange, parent_class_list: Vec<ClassId>) -> Self {
         Self {
             name,
             define_loc,
             reference_locs: Vec::new(),
+            parent_class_list,
         }
     }
 }
