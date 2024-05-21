@@ -195,7 +195,6 @@ impl Eval for ast::Class {
         let id = ctx.symbol_map.add_class(class);
         ctx.scope.add_symbol(name, id);
 
-        ctx.scope.pop();
         Some(())
     }
 }
@@ -248,7 +247,24 @@ impl Eval for ast::ClassRef {
         };
         let range = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
         ctx.symbol_map.add_reference(class_id, range);
+        self.arg_value_list().and_then(|it| it.eval(ctx));
         Some(class_id)
+    }
+}
+
+impl Eval for ast::ArgValueList {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        self.positional().and_then(|it| it.eval(ctx));
+        Some(())
+    }
+}
+
+impl Eval for ast::PositionalArgValueList {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let _: Vec<_> = self.values().filter_map(|it| it.eval(ctx)).collect();
+        Some(())
     }
 }
 
@@ -278,7 +294,7 @@ impl Eval for ast::FieldDef {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        let _ = self.value()?.eval(ctx);
+        self.value().and_then(|it| it.eval(ctx));
         let field = Field::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_field(field);
         ctx.scope.add_symbol(name, id);

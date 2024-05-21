@@ -35,6 +35,11 @@ mod tests {
     }
 
     #[test]
+    fn class_parent_arg() {
+        insta::assert_debug_snapshot!(check("class Foo<int x>; class Bar<int y> : Foo<$y>;"));
+    }
+
+    #[test]
     fn class_field() {
         insta::assert_debug_snapshot!(check("class Foo {int $foo}"));
     }
