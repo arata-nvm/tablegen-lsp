@@ -1,0 +1,7 @@
+---
+source: crates/ide/src/handlers/references.rs
+expression: "check(\"class $Foo; class Bar: Foo;\")"
+---
+[
+    "Foo",
+]

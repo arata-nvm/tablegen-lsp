@@ -7,7 +7,7 @@ use crate::db::{RootDatabase, SourceDatabase};
 use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
-use crate::handlers::{diagnostics, document_symbol, goto_definition};
+use crate::handlers::{diagnostics, document_symbol, goto_definition, references};
 use crate::line_index::LineIndex;
 
 #[derive(Default)]
@@ -55,5 +55,9 @@ impl Analysis {
 
     pub fn goto_definition(&self, pos: FilePosition) -> Option<FileRange> {
         goto_definition::exec(&*self.db, pos)
+    }
+
+    pub fn references(&self, pos: FilePosition) -> Option<Vec<FileRange>> {
+        references::exec(&*self.db, pos)
     }
 }
