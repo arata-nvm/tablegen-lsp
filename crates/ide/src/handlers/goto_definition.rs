@@ -12,32 +12,31 @@ pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<FileRange> {
 mod tests {
     use crate::tests;
 
+    fn check(s: &str) -> String {
+        let (db, f) = tests::single_file(s);
+        let definition = super::exec(&db, f.marker(0)).expect("definition not found");
+        let content = f.file_content(&f.root_file());
+        content[definition.range].to_string()
+    }
+
     #[test]
     fn class() {
-        let (db, f) = tests::single_file("class Foo; class $Bar : Foo;");
-        let definition = super::exec(&db, f.marker(0));
-        insta::assert_debug_snapshot!(definition);
+        insta::assert_debug_snapshot!(check("class Foo; class $Bar : Foo;"));
     }
 
     #[test]
     fn class_template_arg() {
-        let (db, f) = tests::single_file("class Foo<int $foo>;");
-        let definition = super::exec(&db, f.marker(0));
-        insta::assert_debug_snapshot!(definition);
+        insta::assert_debug_snapshot!(check("class Foo<int $foo>;"));
     }
 
     #[test]
     fn class_parent() {
-        let (db, f) = tests::single_file("class Foo; class Bar : $Foo;");
-        let definition = super::exec(&db, f.marker(0));
-        insta::assert_debug_snapshot!(definition);
+        insta::assert_debug_snapshot!(check("class Foo; class Bar : $Foo;"));
     }
 
     #[test]
     fn class_field() {
-        let (db, f) = tests::single_file("class Foo {int $foo}");
-        let definition = super::exec(&db, f.marker(0));
-        insta::assert_debug_snapshot!(definition);
+        insta::assert_debug_snapshot!(check("class Foo {int $foo}"));
     }
 
     #[test]

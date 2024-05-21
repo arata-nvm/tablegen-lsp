@@ -1,12 +1,5 @@
 ---
 source: crates/ide/src/handlers/goto_definition.rs
-expression: definition
+expression: "check(\"class Foo; class Bar : $Foo;\")"
 ---
-Some(
-    FileRange {
-        file: FileId(
-            0,
-        ),
-        range: 6..9,
-    },
-)
+"Foo"

@@ -134,6 +134,11 @@ impl Fixture {
         self.markers[index]
     }
 
+    pub fn file_content(&self, id: &FileId) -> String {
+        let path = self.file_set.path_for_file(id);
+        self.file_contents[path].clone()
+    }
+
     fn insert_file(&mut self, path: FilePath, content: String) {
         let res = self.file_contents.insert(path.clone(), content);
         assert!(res.is_none(), "duplicate file path");
