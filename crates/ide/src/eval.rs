@@ -350,6 +350,9 @@ impl Eval for ast::Type {
                     );
                     return None;
                 };
+                let reference_loc =
+                    FileRange::new(ctx.current_file_id(), class_id.name()?.range()?);
+                ctx.symbol_map.add_reference(id, reference_loc);
                 Some(Type::Class((id, name)))
             }
             ast::Type::CodeType(_) => Some(Type::Code),
