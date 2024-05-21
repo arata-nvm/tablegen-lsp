@@ -109,40 +109,6 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
-    pub fn add_class(&mut self, class: Class, file_id: FileId) -> ClassId {
-        let define_loc = class.define_loc;
-        let id = self.class_list.alloc(class);
-        self.file_to_class_list.entry(file_id).or_default().push(id);
-        self.pos_to_symbol_map
-            .entry(file_id)
-            .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), SymbolId::ClassId(id));
-        id
-    }
-
-    pub fn add_class_reference(&mut self, class_id: ClassId, reference_loc: FileRange) {
-        let class = self.class_mut(class_id);
-        class.reference_locs.push(reference_loc);
-        self.pos_to_symbol_map
-            .entry(reference_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(reference_loc.range.into(), SymbolId::ClassId(class_id));
-    }
-
-    pub fn add_template_argument(
-        &mut self,
-        template_arg: TemplateArgument,
-        file_id: FileId,
-    ) -> TemplateArgumentId {
-        let define_loc = template_arg.define_loc;
-        let id = self.template_arg_list.alloc(template_arg);
-        self.pos_to_symbol_map
-            .entry(file_id)
-            .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), SymbolId::TemplateArgumentId(id));
-        id
-    }
-
     pub fn class(&self, class_id: ClassId) -> &Class {
         self.class_list.get(class_id).expect("invalid class id")
     }
@@ -180,6 +146,56 @@ impl SymbolMap {
         self.template_arg_list
             .get(template_arg_id)
             .expect("invalid template argument id")
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct SymbolMapBuilder(SymbolMap);
+
+impl SymbolMapBuilder {
+    pub fn build(self) -> SymbolMap {
+        self.0
+    }
+
+    pub fn add_class(&mut self, class: Class, file_id: FileId) -> ClassId {
+        let define_loc = class.define_loc;
+        let id = self.0.class_list.alloc(class);
+        self.0
+            .file_to_class_list
+            .entry(file_id)
+            .or_default()
+            .push(id);
+        self.0
+            .pos_to_symbol_map
+            .entry(file_id)
+            .or_insert_with(IntervalMap::new)
+            .insert(define_loc.range.into(), SymbolId::ClassId(id));
+        id
+    }
+
+    pub fn add_class_reference(&mut self, class_id: ClassId, reference_loc: FileRange) {
+        let class = self.0.class_mut(class_id);
+        class.reference_locs.push(reference_loc);
+        self.0
+            .pos_to_symbol_map
+            .entry(reference_loc.file)
+            .or_insert_with(IntervalMap::new)
+            .insert(reference_loc.range.into(), SymbolId::ClassId(class_id));
+    }
+
+    pub fn add_template_argument(
+        &mut self,
+        template_arg: TemplateArgument,
+        file_id: FileId,
+    ) -> TemplateArgumentId {
+        let define_loc = template_arg.define_loc;
+        let id = self.0.template_arg_list.alloc(template_arg);
+        self.0
+            .pos_to_symbol_map
+            .entry(file_id)
+            .or_insert_with(IntervalMap::new)
+            .insert(define_loc.range.into(), SymbolId::TemplateArgumentId(id));
+        id
     }
 }
 

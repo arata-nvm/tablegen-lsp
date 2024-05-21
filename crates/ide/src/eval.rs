@@ -11,7 +11,9 @@ use syntax::SyntaxNodePtr;
 use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
-use crate::symbol_map::{Class, ClassId, SymbolMap, TemplateArgument, TemplateArgumentId};
+use crate::symbol_map::{
+    Class, ClassId, SymbolMap, SymbolMapBuilder, TemplateArgument, TemplateArgumentId,
+};
 
 #[salsa::query_group(EvalDatabaseStorage)]
 pub trait EvalDatabase: SourceDatabase {
@@ -49,7 +51,7 @@ fn eval(db: &dyn EvalDatabase) -> Arc<Evaluation> {
 pub struct EvalCtx<'a> {
     db: &'a dyn EvalDatabase,
     file_trace: Vec<FileId>,
-    symbol_map: SymbolMap,
+    symbol_map: SymbolMapBuilder,
     diagnostics: Vec<Diagnostic>,
     scope: Scope,
 }
@@ -59,7 +61,7 @@ impl<'a> EvalCtx<'a> {
         Self {
             db,
             file_trace: vec![root_file],
-            symbol_map: SymbolMap::default(),
+            symbol_map: SymbolMapBuilder::default(),
             diagnostics: Vec::new(),
             scope: Scope::default(),
         }
@@ -85,7 +87,7 @@ impl<'a> EvalCtx<'a> {
 
     pub fn finish(self) -> Evaluation {
         Evaluation {
-            symbol_map: self.symbol_map,
+            symbol_map: self.symbol_map.build(),
             diagnostics: self.diagnostics,
         }
     }
