@@ -1,5 +1,8 @@
 use async_lsp::lsp_types;
-use ide::file_system::{FileRange, FileSystem};
+use ide::{
+    file_system::{FileRange, FileSystem},
+    handlers::document_symbol::DocumentSymbolKind,
+};
 use text_size::{TextRange, TextSize};
 
 use ide::handlers::diagnostics::Diagnostic;
@@ -43,14 +46,27 @@ pub fn document_symbol(
     symbol: DocumentSymbol,
 ) -> lsp_types::DocumentSymbol {
     let range = range(line_index, symbol.range);
+    let children = match symbol.children.is_empty() {
+        true => None,
+        false => Some(
+            symbol
+                .children
+                .into_iter()
+                .map(|it| document_symbol(line_index, it))
+                .collect(),
+        ),
+    };
     lsp_types::DocumentSymbol {
         name: symbol.name.to_string(),
         detail: None,
-        kind: lsp_types::SymbolKind::CLASS,
+        kind: match symbol.kind {
+            DocumentSymbolKind::Class => lsp_types::SymbolKind::CLASS,
+            DocumentSymbolKind::TemplateArgument => lsp_types::SymbolKind::PROPERTY,
+        },
         tags: None,
         deprecated: None,
         range,
         selection_range: range,
-        children: None,
+        children,
     }
 }

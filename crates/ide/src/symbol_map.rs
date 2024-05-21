@@ -115,6 +115,12 @@ impl SymbolMap {
             .get(&pos.file)
             .and_then(|map| map.values_overlap(pos.position).next().cloned())
     }
+
+    pub fn template_arg(&self, template_arg_id: TemplateArgumentId) -> &TemplateArgument {
+        self.template_arg_list
+            .get(template_arg_id)
+            .expect("invalid template argument id")
+    }
 }
 
 // FIXME

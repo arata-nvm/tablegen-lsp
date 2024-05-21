@@ -7,6 +7,8 @@ Some(
         DocumentSymbol {
             name: "Foo",
             range: 23..26,
+            kind: Class,
+            children: [],
         },
     ],
 )

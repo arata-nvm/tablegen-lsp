@@ -7,10 +7,21 @@ Some(
         DocumentSymbol {
             name: "Foo",
             range: 6..9,
+            kind: Class,
+            children: [
+                DocumentSymbol {
+                    name: "size",
+                    range: 14..18,
+                    kind: TemplateArgument,
+                    children: [],
+                },
+            ],
         },
         DocumentSymbol {
             name: "Bar",
-            range: 17..20,
+            range: 27..30,
+            kind: Class,
+            children: [],
         },
     ],
 )
