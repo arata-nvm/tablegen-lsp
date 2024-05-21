@@ -64,7 +64,7 @@ impl<'a> EvalCtx<'a> {
             file_trace: vec![root_file],
             symbol_map: SymbolMapBuilder::default(),
             diagnostics: Vec::new(),
-            scope: Scope::default(),
+            scope: Scope::new(),
         }
     }
 
@@ -94,12 +94,18 @@ impl<'a> EvalCtx<'a> {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Scope {
     scopes: Vec<HashMap<EcoString, SymbolId>>,
 }
 
 impl Scope {
+    fn new() -> Self {
+        Self {
+            scopes: vec![HashMap::new()],
+        }
+    }
+
     fn push(&mut self) {
         self.scopes.push(HashMap::new());
     }
@@ -164,11 +170,10 @@ impl Eval for ast::Statement {
 impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        ctx.scope.push();
-
         let name = self.name()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
 
+        ctx.scope.push();
         let template_arg_list = self
             .template_arg_list()
             .and_then(|it| it.eval(ctx))
@@ -178,6 +183,7 @@ impl Eval for ast::Class {
             .record_body()
             .and_then(|it| it.eval(ctx))
             .unwrap_or_default();
+        ctx.scope.pop();
 
         let class = Class::new(
             name.clone(),
