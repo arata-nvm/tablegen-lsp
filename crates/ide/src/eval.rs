@@ -13,7 +13,7 @@ use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
     Class, ClassId, Field, FieldId, SymbolId, SymbolMap, SymbolMapBuilder, TemplateArgument,
-    TemplateArgumentId, Type,
+    TemplateArgumentId, Type, Value,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -295,8 +295,8 @@ impl Eval for ast::FieldDef {
         let name = self.name()?.eval(ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
         let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        self.value().and_then(|it| it.eval(ctx));
-        let field = Field::new(name.clone(), typ, define_loc);
+        let value = self.value().and_then(|it| it.eval(ctx)).unwrap_or_default();
+        let field = Field::new(name.clone(), typ, value, define_loc);
         let id = ctx.symbol_map.add_field(field);
         ctx.scope.add_symbol(name, id);
         Some(id)
@@ -361,7 +361,7 @@ impl Eval for ast::Type {
 }
 
 impl Eval for ast::Value {
-    type Output = ();
+    type Output = Value;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let inner_values: Vec<_> = self
             .inner_values()
@@ -370,16 +370,30 @@ impl Eval for ast::Value {
             .collect();
         if inner_values.len() != 1 {
             ctx.error(self.syntax().text_range(), "not implemented");
+            return None;
         }
-        Some(())
+        Some(inner_values.into_iter().next().unwrap())
     }
 }
 
 impl Eval for ast::SimpleValue {
-    type Output = ();
+    type Output = Value;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let range = self.syntax().text_range();
         match self {
+            ast::SimpleValue::Uninitialized(_) => Some(Value::Uninitialized),
+            ast::SimpleValue::Integer(integer) => integer.value().map(Value::Int),
+            ast::SimpleValue::String(string) => Some(Value::String(string.value())),
+            ast::SimpleValue::Code(string) => string.value().map(Value::Code),
+            ast::SimpleValue::Boolean(boolean) => boolean.value().map(Value::Boolean),
+            ast::SimpleValue::Bits(bits) => bits
+                .value_list()
+                .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
+                .map(Value::Bits),
+            ast::SimpleValue::List(list) => list
+                .value_list()
+                .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
+                .map(Value::List),
             ast::SimpleValue::Identifier(identifier) => {
                 let name = identifier.eval(ctx)?;
                 let Some(symbol_id) = ctx.scope.find_symbol(&name) else {
@@ -388,7 +402,7 @@ impl Eval for ast::SimpleValue {
                 };
                 let reference_loc = FileRange::new(ctx.current_file_id(), range);
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
-                Some(())
+                Some(Value::Identifier(symbol_id))
             }
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");

@@ -106,6 +106,7 @@ impl TemplateArgument {
 pub struct Field {
     pub name: EcoString,
     pub typ: Type,
+    pub value: Value,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
@@ -119,10 +120,11 @@ impl From<FieldId> for SymbolId {
 }
 
 impl Field {
-    pub fn new(name: EcoString, typ: Type, define_loc: FileRange) -> Self {
+    pub fn new(name: EcoString, typ: Type, value: Value, define_loc: FileRange) -> Self {
         Self {
             name,
             typ,
+            value,
             define_loc,
             reference_locs: Vec::new(),
         }
@@ -225,6 +227,19 @@ impl std::fmt::Display for Type {
             Self::Code => write!(f, "code"),
         }
     }
+}
+
+#[derive(Debug, Default, Eq, PartialEq)]
+pub enum Value {
+    #[default]
+    Uninitialized,
+    Int(i64),
+    String(String),
+    Code(EcoString),
+    Boolean(bool),
+    Bits(Vec<Value>),
+    List(Vec<Value>),
+    Identifier(SymbolId),
 }
 
 #[derive(Debug, Default, Eq, PartialEq)]
