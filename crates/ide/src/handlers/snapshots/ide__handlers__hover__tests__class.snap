@@ -1,0 +1,5 @@
+---
+source: crates/ide/src/handlers/hover.rs
+expression: "check(\"class $Foo;\")"
+---
+"class Foo"

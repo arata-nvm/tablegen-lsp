@@ -239,7 +239,42 @@ pub enum Value {
     Boolean(bool),
     Bits(Vec<Value>),
     List(Vec<Value>),
-    Identifier(SymbolId),
+    Identifier((SymbolId, EcoString)),
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Uninitialized => write!(f, "?"),
+            Self::Int(value) => write!(f, "{value}"),
+            Self::String(value) => write!(f, "\"{value}\""),
+            Self::Code(value) => write!(f, "[{{ {value} }}]"),
+            Self::Boolean(value) => write!(f, "{value}"),
+            Self::Bits(values) => {
+                write!(
+                    f,
+                    "{{ {} }}",
+                    values
+                        .iter()
+                        .map(|it| it.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Self::List(values) => {
+                write!(
+                    f,
+                    "[ {} ]",
+                    values
+                        .iter()
+                        .map(|it| it.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Self::Identifier((_, name)) => write!(f, "{name}"),
+        }
+    }
 }
 
 #[derive(Debug, Default, Eq, PartialEq)]

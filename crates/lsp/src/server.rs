@@ -4,8 +4,9 @@ use std::sync::{Arc, RwLock};
 use async_lsp::lsp_types::{
     notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
     DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
-    InitializeParams, InitializeResult, Location, OneOf, PublishDiagnosticsParams, ReferenceParams,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, Location,
+    OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -40,7 +41,8 @@ impl Server {
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
             .request::<request::GotoDefinition, _>(Self::definition)
-            .request::<request::References, _>(Self::references);
+            .request::<request::References, _>(Self::references)
+            .request::<request::HoverRequest, _>(Self::hover);
         router
     }
 
@@ -72,6 +74,7 @@ impl LanguageServer for Server {
                 document_symbol_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
                 ..Default::default()
             },
         })))
@@ -132,6 +135,22 @@ impl LanguageServer for Server {
                 .map(|it| to_proto::location(&vfs, &line_index, it))
                 .collect();
             Ok(Some(lsp_location_list))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn hover(
+        &mut self,
+        params: HoverParams,
+    ) -> BoxFuture<'static, Result<Option<Hover>, Self::Error>> {
+        tracing::info!("hover: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
+            let Some(hover) = snap.analysis.hover(pos) else {
+                return Ok(None);
+            };
+            let lsp_hover = to_proto::hover(hover);
+            Ok(Some(lsp_hover))
         });
         Box::pin(async move { task.await.unwrap() })
     }

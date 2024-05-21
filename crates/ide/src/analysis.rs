@@ -7,7 +7,8 @@ use crate::db::{RootDatabase, SourceDatabase};
 use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
-use crate::handlers::{diagnostics, document_symbol, goto_definition, references};
+use crate::handlers::hover::Hover;
+use crate::handlers::{diagnostics, document_symbol, goto_definition, hover, references};
 use crate::line_index::LineIndex;
 
 #[derive(Default)]
@@ -59,5 +60,9 @@ impl Analysis {
 
     pub fn references(&self, pos: FilePosition) -> Option<Vec<FileRange>> {
         references::exec(&*self.db, pos)
+    }
+
+    pub fn hover(&self, pos: FilePosition) -> Option<Hover> {
+        hover::exec(&*self.db, pos)
     }
 }

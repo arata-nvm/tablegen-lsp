@@ -1,7 +1,7 @@
 use async_lsp::lsp_types;
 use ide::{
     file_system::{FileRange, FileSystem},
-    handlers::document_symbol::DocumentSymbolKind,
+    handlers::{document_symbol::DocumentSymbolKind, hover::Hover},
 };
 use text_size::{TextRange, TextSize};
 
@@ -69,5 +69,17 @@ pub fn document_symbol(
         range,
         selection_range: range,
         children,
+    }
+}
+
+pub fn hover(hover: Hover) -> lsp_types::Hover {
+    lsp_types::Hover {
+        contents: lsp_types::HoverContents::Scalar(lsp_types::MarkedString::LanguageString(
+            lsp_types::LanguageString {
+                language: String::from("tablegen"),
+                value: hover.content,
+            },
+        )),
+        range: None,
     }
 }

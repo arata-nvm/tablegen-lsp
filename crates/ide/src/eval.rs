@@ -402,7 +402,7 @@ impl Eval for ast::SimpleValue {
                 };
                 let reference_loc = FileRange::new(ctx.current_file_id(), range);
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
-                Some(Value::Identifier(symbol_id))
+                Some(Value::Identifier((symbol_id, name)))
             }
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");
