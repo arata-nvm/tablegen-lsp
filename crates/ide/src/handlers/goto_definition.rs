@@ -13,17 +13,24 @@ mod tests {
     use crate::tests;
 
     #[test]
-    fn myself() {
+    fn class() {
         let (db, f) = tests::single_file("class Foo; class $Bar : Foo;");
-        let symbols = super::exec(&db, f.marker(0));
-        insta::assert_debug_snapshot!(symbols);
+        let definition = super::exec(&db, f.marker(0));
+        insta::assert_debug_snapshot!(definition);
     }
 
     #[test]
-    fn other() {
+    fn class_template_arg() {
+        let (db, f) = tests::single_file("class Foo<int $foo>;");
+        let definition = super::exec(&db, f.marker(0));
+        insta::assert_debug_snapshot!(definition);
+    }
+
+    #[test]
+    fn class_parent() {
         let (db, f) = tests::single_file("class Foo; class Bar : $Foo;");
-        let symbols = super::exec(&db, f.marker(0));
-        insta::assert_debug_snapshot!(symbols);
+        let definition = super::exec(&db, f.marker(0));
+        insta::assert_debug_snapshot!(definition);
     }
 
     #[test]
