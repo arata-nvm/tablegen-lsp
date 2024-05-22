@@ -106,9 +106,21 @@ impl<'a> EvalCtx<'a> {
         self.scope.add_symbol(name, id);
     }
 
-    pub fn add_parent_class(&mut self, class_id: ClassId, reference_loc: FileRange) {
+    pub fn add_parent_class(
+        &mut self,
+        parent_class_id: ClassId,
+        arg_value_list: Vec<Expr>,
+        reference_loc: FileRange,
+    ) {
         let current_class = self.current_class.as_mut().expect("current_class is None");
-        current_class.inherit(&mut self.symbol_map, class_id, reference_loc);
+        if let Err((range, err)) = current_class.inherit(
+            &mut self.symbol_map,
+            parent_class_id,
+            arg_value_list,
+            reference_loc,
+        ) {
+            self.error(range, err.to_string());
+        }
     }
 
     pub fn add_field(&mut self, field: Field) {
@@ -284,26 +296,31 @@ impl Eval for ast::ClassRef {
             ctx.error(reference_loc.range, format!("class not found: {name}"));
             return None;
         };
-        self.arg_value_list().and_then(|it| it.eval(ctx));
+        let arg_value_list = self
+            .arg_value_list()
+            .and_then(|it| it.eval(ctx))
+            .unwrap_or_default();
 
-        ctx.add_parent_class(class_id, reference_loc);
+        ctx.add_parent_class(class_id, arg_value_list, reference_loc);
         Some(())
     }
 }
 
 impl Eval for ast::ArgValueList {
-    type Output = ();
+    type Output = Vec<Expr>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        self.positional().and_then(|it| it.eval(ctx));
-        Some(())
+        let positional_arg_value_list = self.positional().and_then(|it| it.eval(ctx));
+        if self.named().is_some() {
+            ctx.error(self.syntax().text_range(), "not implemented");
+        }
+        positional_arg_value_list
     }
 }
 
 impl Eval for ast::PositionalArgValueList {
-    type Output = ();
+    type Output = Vec<Expr>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let _: Vec<_> = self.values().filter_map(|it| it.eval(ctx)).collect();
-        Some(())
+        Some(self.values().filter_map(|it| it.eval(ctx)).collect())
     }
 }
 

@@ -16,7 +16,7 @@ pub struct Class {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
-    pub name_to_template_arg: BTreeMap<EcoString, TemplateArgumentId>,
+    pub template_arg_list: Vec<TemplateArgumentId>,
     pub name_to_field: BTreeMap<EcoString, FieldId>,
     pub parent_class_list: Vec<ClassId>,
 }
@@ -43,7 +43,7 @@ impl Class {
             name,
             define_loc,
             reference_locs: Vec::new(),
-            name_to_template_arg: BTreeMap::new(),
+            template_arg_list: Vec::new(),
             name_to_field: BTreeMap::new(),
             parent_class_list: Vec::new(),
         }
@@ -54,14 +54,13 @@ impl Class {
         symbol_map: &mut SymbolMap,
         template_arg: TemplateArgument,
     ) -> TemplateArgumentId {
-        let name = template_arg.name.clone();
         let id = symbol_map.add_template_argument(template_arg);
-        self.name_to_template_arg.insert(name, id);
+        self.template_arg_list.push(id);
         id
     }
 
     pub fn iter_template_arg(&self) -> impl Iterator<Item = TemplateArgumentId> + '_ {
-        self.name_to_template_arg.values().copied()
+        self.template_arg_list.iter().copied()
     }
 
     pub fn add_field(
@@ -116,14 +115,37 @@ impl Class {
         &mut self,
         symbol_map: &mut SymbolMap,
         parent_class_id: ClassId,
+        arg_value_list: Vec<Expr>,
         reference_loc: FileRange,
-    ) {
+    ) -> Result<(), (TextRange, ClassError)> {
         symbol_map.add_reference(parent_class_id, reference_loc);
         self.parent_class_list.push(parent_class_id);
 
+        let mut new_field_list = Vec::new();
         let parent_class = symbol_map.class(parent_class_id);
-        self.name_to_field
-            .extend(parent_class.name_to_field.clone());
+
+        let mut replacement = HashMap::new();
+        let mut iter_arg_value_list = arg_value_list.into_iter();
+        for i in 0..parent_class.template_arg_list.len() {
+            replacement.insert(
+                parent_class.template_arg_list[i],
+                iter_arg_value_list
+                    .next()
+                    .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized)),
+            );
+        }
+
+        for field_id in parent_class.name_to_field.values() {
+            let mut new_field = symbol_map.field(*field_id).clone();
+            new_field.value = new_field.value.replaced(&replacement);
+            new_field_list.push(new_field)
+        }
+
+        for new_field in new_field_list {
+            self.add_field(symbol_map, new_field)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -154,7 +176,7 @@ impl TemplateArgument {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Field {
     pub name: EcoString,
     pub typ: Type,
@@ -183,13 +205,29 @@ impl Field {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+pub type Replacement = HashMap<TemplateArgumentId, Expr>;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
     Simple(SimpleExpr),
     // RangeSuffix(Box<Expr>, Vec<Range>),
     // SliceSuffix(Box<Expr>, Vec<Slice>),
     // FieldSuffix(Box<Expr>, EcoString),
     // Paste(Box<Expr>, SimpleExpr),
+}
+
+impl Expr {
+    pub fn replaced(self, replacement: &Replacement) -> Self {
+        match self {
+            Self::Simple(SimpleExpr::Identifier((SymbolId::TemplateArgumentId(id), _))) => {
+                match replacement.get(&id) {
+                    Some(expr) => expr.clone(),
+                    None => self,
+                }
+            }
+            _ => self,
+        }
+    }
 }
 
 // #[derive(Debug, Eq, PartialEq)]
@@ -212,7 +250,7 @@ impl std::fmt::Display for Expr {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum SimpleExpr {
     Integer(i64),
     String(String),
