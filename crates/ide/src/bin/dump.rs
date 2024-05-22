@@ -23,6 +23,10 @@ pub fn main() {
     host.set_root_file(&mut vfs, file_id);
 
     let evaluation = host.analysis().eval();
+    for diag in evaluation.diagnostics() {
+        println!("{:?}", diag);
+    }
+
     let symbol_map = evaluation.symbol_map();
 
     for symbol_id in symbol_map

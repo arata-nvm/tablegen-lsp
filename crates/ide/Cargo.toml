@@ -9,6 +9,7 @@ ecow.workspace = true
 id-arena.workspace = true
 ropey.workspace = true
 salsa.workspace = true
+thiserror.workspace = true
 tracing.workspace = true
 insta.workspace = true
 iset.workspace = true

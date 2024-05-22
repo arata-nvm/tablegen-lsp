@@ -6,7 +6,8 @@ use std::{collections::HashMap, ops::Deref};
 use ecow::EcoString;
 use id_arena::{Arena, Id};
 
-use syntax::parser::TextSize;
+use syntax::parser::{TextRange, TextSize};
+use thiserror::Error;
 
 use crate::file_system::{FileId, FilePosition, FileRange};
 
@@ -26,6 +27,14 @@ impl From<ClassId> for SymbolId {
     fn from(id: ClassId) -> Self {
         SymbolId::ClassId(id)
     }
+}
+
+#[derive(Debug, Error)]
+pub enum ClassError {
+    #[error("unknown field: {0}")]
+    UnknownField(EcoString),
+    #[error("type of field '{0}' is incompatible: '{1}' and '{2}'")]
+    IncompatibleType(EcoString, Type, Type),
 }
 
 impl Class {
@@ -48,8 +57,29 @@ impl Class {
         self.name_to_template_arg.values().copied()
     }
 
-    pub fn add_field(&mut self, name: EcoString, field_id: FieldId) {
-        self.name_to_field.insert(name, field_id);
+    pub fn add_field(
+        &mut self,
+        symbol_map: &SymbolMap,
+        name: EcoString,
+        new_field_id: FieldId,
+    ) -> Result<(), (TextRange, ClassError)> {
+        if let Some(old_field_id) = self.name_to_field.get(&name) {
+            let old_field = symbol_map.field(*old_field_id);
+            let new_field = symbol_map.field(new_field_id);
+            if old_field.typ != new_field.typ {
+                return Err((
+                    new_field.define_loc.range,
+                    ClassError::IncompatibleType(
+                        new_field.name.clone(),
+                        old_field.typ.clone(),
+                        new_field.typ.clone(),
+                    ),
+                ));
+            }
+        }
+
+        self.name_to_field.insert(name, new_field_id);
+        Ok(())
     }
 
     pub fn iter_field(&self) -> impl Iterator<Item = FieldId> + '_ {
@@ -308,7 +338,7 @@ impl<'a> SymbolMut<'a> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Type {
     Bit,
     Int,

@@ -195,7 +195,9 @@ impl Eval for ast::Class {
             real_class.inherit(&ctx.symbol_map.0, parent_class_id);
         }
         for (name, field_id) in field_list {
-            real_class.add_field(name, field_id);
+            if let Err((range, err)) = real_class.add_field(&ctx.symbol_map.0, name, field_id) {
+                ctx.error(range, err.to_string());
+            }
         }
 
         let class_ref = ctx.symbol_map.0.class_mut(id);
