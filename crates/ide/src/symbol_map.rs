@@ -89,6 +89,25 @@ impl Class {
         Ok(id)
     }
 
+    pub fn modify_field(
+        &mut self,
+        symbol_map: &mut SymbolMap,
+        name: EcoString,
+        value: Expr,
+        define_loc: FileRange,
+    ) -> Result<FieldId, ClassError> {
+        match self.name_to_field.get(&name) {
+            Some(old_field_id) => {
+                let old_field = symbol_map.field(*old_field_id);
+                let new_field = Field::new(name.clone(), old_field.typ.clone(), value, define_loc);
+                let id = symbol_map.add_field(new_field);
+                self.name_to_field.insert(name, id);
+                Ok(id)
+            }
+            None => Err(ClassError::UnknownField(name)),
+        }
+    }
+
     pub fn iter_field(&self) -> impl Iterator<Item = FieldId> + '_ {
         self.name_to_field.values().copied()
     }

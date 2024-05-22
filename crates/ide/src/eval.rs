@@ -120,6 +120,14 @@ impl<'a> EvalCtx<'a> {
         }
     }
 
+    pub fn modify_field(&mut self, name: EcoString, value: Expr, define_loc: FileRange) {
+        let current_class = self.current_class.as_mut().expect("current_class is None");
+        match current_class.modify_field(&mut self.symbol_map, name.clone(), value, define_loc) {
+            Ok(id) => self.scope.add_symbol(name, id),
+            Err(err) => self.error(define_loc.range, err.to_string()),
+        }
+    }
+
     pub fn finish(self) -> Evaluation {
         Evaluation {
             symbol_map: self.symbol_map,
@@ -314,6 +322,7 @@ impl Eval for ast::BodyItem {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         match self {
             ast::BodyItem::FieldDef(field_def) => field_def.eval(ctx),
+            ast::BodyItem::FieldLet(field_let) => field_let.eval(ctx),
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");
                 Some(())
@@ -333,6 +342,19 @@ impl Eval for ast::FieldDef {
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
         let field = Field::new(name.clone(), typ, value, define_loc);
         ctx.add_field(field);
+        Some(())
+    }
+}
+
+impl Eval for ast::FieldLet {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
+        let value = self
+            .value()
+            .and_then(|it| it.eval(ctx))
+            .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
+        ctx.modify_field(name, value, define_loc);
         Some(())
     }
 }
@@ -407,7 +429,12 @@ impl Eval for ast::Value {
 impl Eval for ast::InnerValue {
     type Output = Expr;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        Some(Expr::Simple(self.simple_value()?.eval(ctx)?))
+        let expr = Expr::Simple(self.simple_value()?.eval(ctx)?);
+        if self.suffixes().count() != 0 {
+            ctx.error(self.syntax().text_range(), "not implemented");
+            return None;
+        }
+        Some(expr)
     }
 }
 
