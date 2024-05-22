@@ -481,6 +481,14 @@ impl Eval for ast::SimpleValue {
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
                 Some(SimpleExpr::Identifier((symbol_id, name)))
             }
+            ast::SimpleValue::BangOperator(bang_operator) => {
+                let op = bang_operator.kind()?.into();
+                let args = bang_operator
+                    .values()
+                    .filter_map(|it| it.eval(ctx))
+                    .collect();
+                Some(SimpleExpr::BangOperator(op, args))
+            }
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");
                 None
