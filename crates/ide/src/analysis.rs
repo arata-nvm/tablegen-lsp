@@ -4,6 +4,7 @@ use std::sync::Arc;
 use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
+use crate::eval::{EvalDatabase, Evaluation};
 use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
@@ -44,6 +45,10 @@ pub struct Analysis {
 impl Analysis {
     pub fn line_index(&self, file_id: FileId) -> Arc<LineIndex> {
         self.db.line_index(file_id)
+    }
+
+    pub fn eval(&self) -> Arc<Evaluation> {
+        self.db.eval()
     }
 
     pub fn diagnostics(&self) -> HashMap<FileId, Vec<Diagnostic>> {
