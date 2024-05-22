@@ -21,9 +21,8 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
         };
         let class = symbol_map.class(class_id);
         let template_argument_list = class
-            .template_arg_list
-            .iter()
-            .map(|id| symbol_map.template_arg(*id))
+            .iter_template_arg()
+            .map(|id| symbol_map.template_arg(id))
             .map(|arg| DocumentSymbol {
                 name: arg.name.clone(),
                 typ: arg.typ.to_string().into(),
@@ -33,9 +32,8 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
             });
 
         let field_list = class
-            .field_list
-            .iter()
-            .map(|id| symbol_map.field(*id))
+            .iter_field()
+            .map(|id| symbol_map.field(id))
             .map(|field| DocumentSymbol {
                 name: field.name.clone(),
                 typ: field.typ.to_string().into(),

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::DerefMut;
 use std::{collections::HashMap, ops::Deref};
@@ -14,9 +15,9 @@ pub struct Class {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
-    pub template_arg_list: Vec<TemplateArgumentId>,
+    pub name_to_template_arg: BTreeMap<EcoString, TemplateArgumentId>,
+    pub name_to_field: BTreeMap<EcoString, FieldId>,
     pub parent_class_list: Vec<ClassId>,
-    pub field_list: Vec<FieldId>,
 }
 
 pub type ClassId = Id<Class>;
@@ -28,21 +29,39 @@ impl From<ClassId> for SymbolId {
 }
 
 impl Class {
-    pub fn new(
-        name: EcoString,
-        define_loc: FileRange,
-        template_arg_list: Vec<TemplateArgumentId>,
-        parent_class_list: Vec<ClassId>,
-        field_list: Vec<FieldId>,
-    ) -> Self {
+    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
         Self {
             name,
             define_loc,
             reference_locs: Vec::new(),
-            template_arg_list,
-            parent_class_list,
-            field_list,
+            name_to_template_arg: BTreeMap::new(),
+            name_to_field: BTreeMap::new(),
+            parent_class_list: Vec::new(),
         }
+    }
+
+    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: TemplateArgumentId) {
+        self.name_to_template_arg.insert(name, template_arg_id);
+    }
+
+    pub fn iter_template_arg(&self) -> impl Iterator<Item = TemplateArgumentId> + '_ {
+        self.name_to_template_arg.values().copied()
+    }
+
+    pub fn add_field(&mut self, name: EcoString, field_id: FieldId) {
+        self.name_to_field.insert(name, field_id);
+    }
+
+    pub fn iter_field(&self) -> impl Iterator<Item = FieldId> + '_ {
+        self.name_to_field.values().copied()
+    }
+
+    pub fn inherit(&mut self, symbol_map: &SymbolMap, parent_class_id: ClassId) {
+        self.parent_class_list.push(parent_class_id);
+
+        let parent_class = symbol_map.class(parent_class_id);
+        self.name_to_field
+            .extend(parent_class.name_to_field.clone());
     }
 }
 

@@ -171,9 +171,9 @@ impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
-        let class = Class::new(name.clone(), define_loc, Vec::new(), Vec::new(), Vec::new());
-        let id = ctx.symbol_map.add_class(class);
-        ctx.scope.add_symbol(name, id);
+        let dummy_class = Class::new(name.clone(), define_loc);
+        let id = ctx.symbol_map.add_class(dummy_class);
+        ctx.scope.add_symbol(name.clone(), id);
 
         ctx.scope.push();
         let template_arg_list = self
@@ -187,36 +187,45 @@ impl Eval for ast::Class {
             .unwrap_or_default();
         ctx.scope.pop();
 
-        let class = ctx.symbol_map.0.class_mut(id);
-        let _ = std::mem::replace(&mut class.template_arg_list, template_arg_list);
-        let _ = std::mem::replace(&mut class.parent_class_list, parent_class_list);
-        let _ = std::mem::replace(&mut class.field_list, field_list);
+        let mut real_class = Class::new(name, define_loc);
+        for (name, template_arg_id) in template_arg_list {
+            real_class.add_template_arg(name, template_arg_id);
+        }
+        for parent_class_id in parent_class_list {
+            real_class.inherit(&ctx.symbol_map.0, parent_class_id);
+        }
+        for (name, field_id) in field_list {
+            real_class.add_field(name, field_id);
+        }
+
+        let class_ref = ctx.symbol_map.0.class_mut(id);
+        let _ = std::mem::replace(class_ref, real_class);
 
         Some(())
     }
 }
 
 impl Eval for ast::TemplateArgList {
-    type Output = Vec<TemplateArgumentId>;
+    type Output = Vec<(EcoString, TemplateArgumentId)>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         Some(self.args().filter_map(|it| it.eval(ctx)).collect())
     }
 }
 
 impl Eval for ast::TemplateArgDecl {
-    type Output = TemplateArgumentId;
+    type Output = (EcoString, TemplateArgumentId);
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
         let template_arg = TemplateArgument::new(name.clone(), typ, define_loc);
         let id = ctx.symbol_map.add_template_argument(template_arg);
-        ctx.scope.add_symbol(name, id);
-        Some(id)
+        ctx.scope.add_symbol(name.clone(), id);
+        Some((name, id))
     }
 }
 
 impl Eval for ast::RecordBody {
-    type Output = (Vec<ClassId>, Vec<FieldId>);
+    type Output = (Vec<ClassId>, Vec<(EcoString, FieldId)>);
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let parent_class_list = self.parent_class_list().and_then(|it| it.eval(ctx));
         let field_list = self.body().and_then(|it| it.eval(ctx));
@@ -262,7 +271,7 @@ impl Eval for ast::PositionalArgValueList {
 }
 
 impl Eval for ast::Body {
-    type Output = Vec<FieldId>;
+    type Output = Vec<(EcoString, FieldId)>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let field_list = self.items().filter_map(|it| it.eval(ctx)).collect();
         Some(field_list)
@@ -270,7 +279,7 @@ impl Eval for ast::Body {
 }
 
 impl Eval for ast::BodyItem {
-    type Output = FieldId;
+    type Output = (EcoString, FieldId);
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         match self {
             ast::BodyItem::FieldDef(field_def) => field_def.eval(ctx),
@@ -283,7 +292,7 @@ impl Eval for ast::BodyItem {
 }
 
 impl Eval for ast::FieldDef {
-    type Output = FieldId;
+    type Output = (EcoString, FieldId);
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
@@ -293,8 +302,8 @@ impl Eval for ast::FieldDef {
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
         let field = Field::new(name.clone(), typ, value, define_loc);
         let id = ctx.symbol_map.add_field(field);
-        ctx.scope.add_symbol(name, id);
-        Some(id)
+        ctx.scope.add_symbol(name.clone(), id);
+        Some((name, id))
     }
 }
 

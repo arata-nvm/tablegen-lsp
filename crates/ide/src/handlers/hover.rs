@@ -11,9 +11,8 @@ pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Hover> {
         Symbol::Class(class) => {
             let name = &class.name;
             let template_arg = class
-                .template_arg_list
-                .iter()
-                .map(|id| symbol_map.template_arg(*id))
+                .iter_template_arg()
+                .map(|id| symbol_map.template_arg(id))
                 .map(|arg| format!("{} {}", arg.typ, arg.name))
                 .collect::<Vec<String>>()
                 .join(", ");

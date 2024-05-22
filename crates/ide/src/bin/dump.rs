@@ -33,9 +33,8 @@ pub fn main() {
             SymbolId::ClassId(class_id) => {
                 let class = symbol_map.class(class_id);
                 let template_args = class
-                    .template_arg_list
-                    .iter()
-                    .map(|&id| symbol_map.template_arg(id))
+                    .iter_template_arg()
+                    .map(|id| symbol_map.template_arg(id))
                     .map(|arg| format!("{} {}", arg.typ, arg.name))
                     .collect::<Vec<String>>()
                     .join(", ");
@@ -50,8 +49,8 @@ pub fn main() {
                     "class {}<{}> : {} {{",
                     class.name, template_args, parent_classes
                 );
-                for field_id in &class.field_list {
-                    let field = symbol_map.field(*field_id);
+                for field_id in class.iter_field() {
+                    let field = symbol_map.field(field_id);
                     println!("  {} {};", field.typ, field.name);
                 }
                 println!("}}");
