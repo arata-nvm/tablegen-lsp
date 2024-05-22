@@ -55,6 +55,7 @@ pub struct EvalCtx<'a> {
     diagnostics: Vec<Diagnostic>,
     scope: Scope,
     current_class: Option<Class>,
+    current_class_id: Option<ClassId>,
 }
 
 impl<'a> EvalCtx<'a> {
@@ -66,6 +67,7 @@ impl<'a> EvalCtx<'a> {
             diagnostics: Vec::new(),
             scope: Scope::new(),
             current_class: None,
+            current_class_id: None,
         }
     }
 
@@ -87,8 +89,13 @@ impl<'a> EvalCtx<'a> {
             .push(Diagnostic::new(FileRange::new(file, range), message));
     }
 
-    pub fn set_current_class(&mut self, class: Class) {
+    pub fn set_current_class(&mut self, class_id: ClassId, class: Class) {
         self.current_class.replace(class);
+        self.current_class_id.replace(class_id);
+    }
+
+    pub fn current_class_id(&self) -> ClassId {
+        self.current_class_id.expect("current_class_id is None")
     }
 
     pub fn current_class_mut(&mut self) -> &mut Class {
@@ -96,6 +103,7 @@ impl<'a> EvalCtx<'a> {
     }
 
     pub fn take_current_class(&mut self) -> Class {
+        self.current_class_id.take();
         self.current_class.take().expect("current_class is None")
     }
 
@@ -229,7 +237,7 @@ impl Eval for ast::Class {
         let id = ctx.symbol_map.add_class(dummy_class);
         ctx.scope.add_symbol(name.clone(), id);
 
-        ctx.set_current_class(Class::new(name, define_loc));
+        ctx.set_current_class(id, Class::new(name, define_loc));
 
         ctx.scope.push();
         if let Some(list) = self.template_arg_list() {
@@ -357,7 +365,7 @@ impl Eval for ast::FieldDef {
             .value()
             .and_then(|it| it.eval(ctx))
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
-        let field = Field::new(name.clone(), typ, value, define_loc);
+        let field = Field::new(name.clone(), typ, value, ctx.current_class_id(), define_loc);
         ctx.add_field(field);
         Some(())
     }

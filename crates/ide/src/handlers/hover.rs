@@ -25,7 +25,8 @@ pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Hover> {
             format!("{} {}", template_arg.typ, template_arg.name)
         }
         Symbol::Field(field) => {
-            format!("{} {} = {}", field.typ, field.name, field.value)
+            let parent_class = symbol_map.class(field.parent);
+            format!("{} {}::{}", field.typ, parent_class.name, field.name)
         }
     };
 

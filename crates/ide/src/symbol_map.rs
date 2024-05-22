@@ -99,7 +99,13 @@ impl Class {
         match self.name_to_field.get(&name) {
             Some(old_field_id) => {
                 let old_field = symbol_map.field(*old_field_id);
-                let new_field = Field::new(name.clone(), old_field.typ.clone(), value, define_loc);
+                let new_field = Field::new(
+                    name.clone(),
+                    old_field.typ.clone(),
+                    value,
+                    old_field.parent,
+                    define_loc,
+                );
                 let id = symbol_map.add_field(new_field);
                 self.name_to_field.insert(name, id);
                 Ok(id)
@@ -186,6 +192,7 @@ pub struct Field {
     pub name: EcoString,
     pub typ: Type,
     pub value: Expr,
+    pub parent: ClassId,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
@@ -199,11 +206,18 @@ impl From<FieldId> for SymbolId {
 }
 
 impl Field {
-    pub fn new(name: EcoString, typ: Type, value: Expr, define_loc: FileRange) -> Self {
+    pub fn new(
+        name: EcoString,
+        typ: Type,
+        value: Expr,
+        parent: ClassId,
+        define_loc: FileRange,
+    ) -> Self {
         Self {
             name,
             typ,
             value,
+            parent,
             define_loc,
             reference_locs: Vec::new(),
         }
