@@ -55,7 +55,7 @@ pub fn main() {
                 );
                 for field_id in class.iter_field() {
                     let field = symbol_map.field(field_id);
-                    println!("  {} {};", field.typ, field.name);
+                    println!("  {} {} = {};", field.typ, field.name, field.value);
                 }
                 println!("}}");
                 println!();

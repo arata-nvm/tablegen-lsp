@@ -49,8 +49,15 @@ impl Class {
         }
     }
 
-    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: TemplateArgumentId) {
-        self.name_to_template_arg.insert(name, template_arg_id);
+    pub fn add_template_arg(
+        &mut self,
+        symbol_map: &mut SymbolMap,
+        template_arg: TemplateArgument,
+    ) -> TemplateArgumentId {
+        let name = template_arg.name.clone();
+        let id = symbol_map.add_template_argument(template_arg);
+        self.name_to_template_arg.insert(name, id);
+        id
     }
 
     pub fn iter_template_arg(&self) -> impl Iterator<Item = TemplateArgumentId> + '_ {
@@ -59,13 +66,11 @@ impl Class {
 
     pub fn add_field(
         &mut self,
-        symbol_map: &SymbolMap,
-        name: EcoString,
-        new_field_id: FieldId,
-    ) -> Result<(), (TextRange, ClassError)> {
-        if let Some(old_field_id) = self.name_to_field.get(&name) {
+        symbol_map: &mut SymbolMap,
+        new_field: Field,
+    ) -> Result<FieldId, (TextRange, ClassError)> {
+        if let Some(old_field_id) = self.name_to_field.get(&new_field.name) {
             let old_field = symbol_map.field(*old_field_id);
-            let new_field = symbol_map.field(new_field_id);
             if old_field.typ != new_field.typ {
                 return Err((
                     new_field.define_loc.range,
@@ -78,15 +83,23 @@ impl Class {
             }
         }
 
-        self.name_to_field.insert(name, new_field_id);
-        Ok(())
+        let name = new_field.name.clone();
+        let id = symbol_map.add_field(new_field);
+        self.name_to_field.insert(name, id);
+        Ok(id)
     }
 
     pub fn iter_field(&self) -> impl Iterator<Item = FieldId> + '_ {
         self.name_to_field.values().copied()
     }
 
-    pub fn inherit(&mut self, symbol_map: &SymbolMap, parent_class_id: ClassId) {
+    pub fn inherit(
+        &mut self,
+        symbol_map: &mut SymbolMap,
+        parent_class_id: ClassId,
+        reference_loc: FileRange,
+    ) {
+        symbol_map.add_reference(parent_class_id, reference_loc);
         self.parent_class_list.push(parent_class_id);
 
         let parent_class = symbol_map.class(parent_class_id);
@@ -374,6 +387,7 @@ pub struct SymbolMap {
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
 
+// immutable api
 impl SymbolMap {
     pub fn class(&self, class_id: ClassId) -> &Class {
         self.class_list.get(class_id).expect("invalid class id")
@@ -442,24 +456,16 @@ impl SymbolMap {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct SymbolMapBuilder(pub SymbolMap);
-
-impl SymbolMapBuilder {
-    pub fn build(self) -> SymbolMap {
-        self.0
-    }
-
+// mutable api
+impl SymbolMap {
     pub fn add_class(&mut self, class: Class) -> ClassId {
         let define_loc = class.define_loc;
-        let id = self.0.class_list.alloc(class);
-        self.0
-            .file_to_symbol_list
+        let id = self.class_list.alloc(class);
+        self.file_to_symbol_list
             .entry(define_loc.file)
             .or_default()
             .push(id.into());
-        self.0
-            .pos_to_symbol_map
+        self.pos_to_symbol_map
             .entry(define_loc.file)
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), id.into());
@@ -468,9 +474,8 @@ impl SymbolMapBuilder {
 
     pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
         let define_loc = template_arg.define_loc;
-        let id = self.0.template_arg_list.alloc(template_arg);
-        self.0
-            .pos_to_symbol_map
+        let id = self.template_arg_list.alloc(template_arg);
+        self.pos_to_symbol_map
             .entry(define_loc.file)
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), SymbolId::TemplateArgumentId(id));
@@ -479,9 +484,8 @@ impl SymbolMapBuilder {
 
     pub fn add_field(&mut self, field: Field) -> FieldId {
         let define_loc = field.define_loc;
-        let id = self.0.field_list.alloc(field);
-        self.0
-            .pos_to_symbol_map
+        let id = self.field_list.alloc(field);
+        self.pos_to_symbol_map
             .entry(define_loc.file)
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), SymbolId::FieldId(id));
@@ -490,10 +494,9 @@ impl SymbolMapBuilder {
 
     pub fn add_reference(&mut self, symbol_id: impl Into<SymbolId>, reference_loc: FileRange) {
         let symbol_id = symbol_id.into();
-        let mut symbol = self.0.symbol_mut(symbol_id);
+        let mut symbol = self.symbol_mut(symbol_id);
         symbol.add_reference(reference_loc);
-        self.0
-            .pos_to_symbol_map
+        self.pos_to_symbol_map
             .entry(reference_loc.file)
             .or_insert_with(IntervalMap::new)
             .insert(reference_loc.range.into(), symbol_id);

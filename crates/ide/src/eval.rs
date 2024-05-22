@@ -12,8 +12,7 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    Class, ClassId, Expr, Field, FieldId, SimpleExpr, SymbolId, SymbolMap, SymbolMapBuilder,
-    TemplateArgument, TemplateArgumentId, Type,
+    Class, ClassId, Expr, Field, SimpleExpr, SymbolId, SymbolMap, TemplateArgument, Type,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -52,9 +51,10 @@ fn eval(db: &dyn EvalDatabase) -> Arc<Evaluation> {
 pub struct EvalCtx<'a> {
     db: &'a dyn EvalDatabase,
     file_trace: Vec<FileId>,
-    symbol_map: SymbolMapBuilder,
+    symbol_map: SymbolMap,
     diagnostics: Vec<Diagnostic>,
     scope: Scope,
+    current_class: Option<Class>,
 }
 
 impl<'a> EvalCtx<'a> {
@@ -62,9 +62,10 @@ impl<'a> EvalCtx<'a> {
         Self {
             db,
             file_trace: vec![root_file],
-            symbol_map: SymbolMapBuilder::default(),
+            symbol_map: SymbolMap::default(),
             diagnostics: Vec::new(),
             scope: Scope::new(),
+            current_class: None,
         }
     }
 
@@ -86,9 +87,42 @@ impl<'a> EvalCtx<'a> {
             .push(Diagnostic::new(FileRange::new(file, range), message));
     }
 
+    pub fn set_current_class(&mut self, class: Class) {
+        self.current_class.replace(class);
+    }
+
+    pub fn current_class_mut(&mut self) -> &mut Class {
+        self.current_class.as_mut().expect("current_class is None")
+    }
+
+    pub fn take_current_class(&mut self) -> Class {
+        self.current_class.take().expect("current_class is None")
+    }
+
+    pub fn add_template_arg(&mut self, template_arg: TemplateArgument) {
+        let current_class = self.current_class.as_mut().expect("current_class is None");
+        let name = template_arg.name.clone();
+        let id = current_class.add_template_arg(&mut self.symbol_map, template_arg);
+        self.scope.add_symbol(name, id);
+    }
+
+    pub fn add_parent_class(&mut self, class_id: ClassId, reference_loc: FileRange) {
+        let current_class = self.current_class.as_mut().expect("current_class is None");
+        current_class.inherit(&mut self.symbol_map, class_id, reference_loc);
+    }
+
+    pub fn add_field(&mut self, field: Field) {
+        let current_class = self.current_class.as_mut().expect("current_class is None");
+        let name = field.name.clone();
+        match current_class.add_field(&mut self.symbol_map, field) {
+            Ok(id) => self.scope.add_symbol(name, id),
+            Err((range, err)) => self.error(range, err.to_string()),
+        }
+    }
+
     pub fn finish(self) -> Evaluation {
         Evaluation {
-            symbol_map: self.symbol_map.build(),
+            symbol_map: self.symbol_map,
             diagnostics: self.diagnostics,
         }
     }
@@ -175,32 +209,19 @@ impl Eval for ast::Class {
         let id = ctx.symbol_map.add_class(dummy_class);
         ctx.scope.add_symbol(name.clone(), id);
 
-        ctx.scope.push();
-        let template_arg_list = self
-            .template_arg_list()
-            .and_then(|it| it.eval(ctx))
-            .unwrap_or_default();
+        ctx.set_current_class(Class::new(name, define_loc));
 
-        let (parent_class_list, field_list) = self
-            .record_body()
-            .and_then(|it| it.eval(ctx))
-            .unwrap_or_default();
+        ctx.scope.push();
+        if let Some(list) = self.template_arg_list() {
+            list.eval(ctx);
+        }
+        if let Some(body) = self.record_body() {
+            body.eval(ctx);
+        }
         ctx.scope.pop();
 
-        let mut real_class = Class::new(name, define_loc);
-        for (name, template_arg_id) in template_arg_list {
-            real_class.add_template_arg(name, template_arg_id);
-        }
-        for parent_class_id in parent_class_list {
-            real_class.inherit(&ctx.symbol_map.0, parent_class_id);
-        }
-        for (name, field_id) in field_list {
-            if let Err((range, err)) = real_class.add_field(&ctx.symbol_map.0, name, field_id) {
-                ctx.error(range, err.to_string());
-            }
-        }
-
-        let class_ref = ctx.symbol_map.0.class_mut(id);
+        let real_class = ctx.take_current_class();
+        let class_ref = ctx.symbol_map.class_mut(id);
         let _ = std::mem::replace(class_ref, real_class);
 
         Some(())
@@ -208,51 +229,57 @@ impl Eval for ast::Class {
 }
 
 impl Eval for ast::TemplateArgList {
-    type Output = Vec<(EcoString, TemplateArgumentId)>;
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        Some(self.args().filter_map(|it| it.eval(ctx)).collect())
+        for arg in self.args() {
+            arg.eval(ctx);
+        }
+        Some(())
     }
 }
 
 impl Eval for ast::TemplateArgDecl {
-    type Output = (EcoString, TemplateArgumentId);
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
         let template_arg = TemplateArgument::new(name.clone(), typ, define_loc);
-        let id = ctx.symbol_map.add_template_argument(template_arg);
-        ctx.scope.add_symbol(name.clone(), id);
-        Some((name, id))
+        ctx.add_template_arg(template_arg);
+        Some(())
     }
 }
 
 impl Eval for ast::RecordBody {
-    type Output = (Vec<ClassId>, Vec<(EcoString, FieldId)>);
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let parent_class_list = self.parent_class_list().and_then(|it| it.eval(ctx));
-        let field_list = self.body().and_then(|it| it.eval(ctx));
-        parent_class_list.zip(field_list)
+        self.parent_class_list().and_then(|it| it.eval(ctx));
+        self.body().and_then(|it| it.eval(ctx));
+        Some(())
     }
 }
 
 impl Eval for ast::ParentClassList {
-    type Output = Vec<ClassId>;
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        Some(self.classes().filter_map(|node| node.eval(ctx)).collect())
+        for class in self.classes() {
+            class.eval(ctx);
+        }
+        Some(())
     }
 }
 
 impl Eval for ast::ClassRef {
-    type Output = ClassId;
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, reference_loc) = utils::identifier(self.name()?, ctx)?;
         let Some(class_id) = ctx.scope.find_symbol(&name).and_then(|it| it.as_class_id()) else {
             ctx.error(reference_loc.range, format!("class not found: {name}"));
             return None;
         };
-        ctx.symbol_map.add_reference(class_id, reference_loc);
         self.arg_value_list().and_then(|it| it.eval(ctx));
-        Some(class_id)
+
+        ctx.add_parent_class(class_id, reference_loc);
+        Some(())
     }
 }
 
@@ -273,28 +300,30 @@ impl Eval for ast::PositionalArgValueList {
 }
 
 impl Eval for ast::Body {
-    type Output = Vec<(EcoString, FieldId)>;
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let field_list = self.items().filter_map(|it| it.eval(ctx)).collect();
-        Some(field_list)
+        for item in self.items() {
+            item.eval(ctx);
+        }
+        Some(())
     }
 }
 
 impl Eval for ast::BodyItem {
-    type Output = (EcoString, FieldId);
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         match self {
             ast::BodyItem::FieldDef(field_def) => field_def.eval(ctx),
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");
-                None
+                Some(())
             }
         }
     }
 }
 
 impl Eval for ast::FieldDef {
-    type Output = (EcoString, FieldId);
+    type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
@@ -303,9 +332,8 @@ impl Eval for ast::FieldDef {
             .and_then(|it| it.eval(ctx))
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
         let field = Field::new(name.clone(), typ, value, define_loc);
-        let id = ctx.symbol_map.add_field(field);
-        ctx.scope.add_symbol(name.clone(), id);
-        Some((name, id))
+        ctx.add_field(field);
+        Some(())
     }
 }
 
