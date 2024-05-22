@@ -4,39 +4,10 @@ use std::{collections::HashMap, ops::Deref};
 
 use ecow::EcoString;
 use id_arena::{Arena, Id};
+
 use syntax::parser::TextSize;
 
 use crate::file_system::{FileId, FilePosition, FileRange};
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, PartialOrd, Ord)]
-pub enum SymbolId {
-    ClassId(ClassId),
-    TemplateArgumentId(TemplateArgumentId),
-    FieldId(FieldId),
-}
-
-impl SymbolId {
-    pub fn as_class_id(&self) -> Option<ClassId> {
-        match self {
-            SymbolId::ClassId(id) => Some(*id),
-            _ => None,
-        }
-    }
-
-    pub fn as_template_argument_id(&self) -> Option<TemplateArgumentId> {
-        match self {
-            SymbolId::TemplateArgumentId(id) => Some(*id),
-            _ => None,
-        }
-    }
-
-    pub fn as_field_id(&self) -> Option<FieldId> {
-        match self {
-            SymbolId::FieldId(id) => Some(*id),
-            _ => None,
-        }
-    }
-}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Class {
@@ -217,6 +188,36 @@ pub struct DagArg {
     var_name: EcoString,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, PartialOrd, Ord)]
+pub enum SymbolId {
+    ClassId(ClassId),
+    TemplateArgumentId(TemplateArgumentId),
+    FieldId(FieldId),
+}
+
+impl SymbolId {
+    pub fn as_class_id(&self) -> Option<ClassId> {
+        match self {
+            SymbolId::ClassId(id) => Some(*id),
+            _ => None,
+        }
+    }
+
+    pub fn as_template_argument_id(&self) -> Option<TemplateArgumentId> {
+        match self {
+            SymbolId::TemplateArgumentId(id) => Some(*id),
+            _ => None,
+        }
+    }
+
+    pub fn as_field_id(&self) -> Option<FieldId> {
+        match self {
+            SymbolId::FieldId(id) => Some(*id),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum Symbol<'a> {
     Class(&'a Class),
@@ -320,18 +321,10 @@ pub struct SymbolMap {
     class_list: Arena<Class>,
     template_arg_list: Arena<TemplateArgument>,
     field_list: Arena<Field>,
-    file_to_class_list: HashMap<FileId, Vec<ClassId>>,
+    file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
 
-// immutable api
-impl SymbolMap {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-// mutable api
 impl SymbolMap {
     pub fn class(&self, class_id: ClassId) -> &Class {
         self.class_list.get(class_id).expect("invalid class id")
@@ -384,31 +377,19 @@ impl SymbolMap {
         }
     }
 
-    pub fn iter_class(&self) -> impl Iterator<Item = (ClassId, &Class)> {
-        self.class_list.iter()
-    }
-
-    pub fn iter_class_in(&self, file_id: FileId) -> Option<impl Iterator<Item = ClassId>> {
-        self.file_to_class_list
+    pub fn iter_symbol_in(&self, file_id: FileId) -> Option<impl Iterator<Item = SymbolId>> {
+        self.file_to_symbol_list
             .get(&file_id)
             .cloned()
             .map(|class_list| class_list.into_iter())
     }
 
-    pub fn find_symbol(&self, pos: FilePosition) -> Option<Symbol> {
+    pub fn find_symbol_at(&self, pos: FilePosition) -> Option<Symbol> {
         let id = self
             .pos_to_symbol_map
             .get(&pos.file)
             .and_then(|map| map.values_overlap(pos.position).next().cloned())?;
         Some(self.symbol(id))
-    }
-
-    pub fn find_symbol_mut(&mut self, pos: FilePosition) -> Option<SymbolMut> {
-        let id = self
-            .pos_to_symbol_map
-            .get(&pos.file)
-            .and_then(|map| map.values_overlap(pos.position).next().cloned())?;
-        Some(self.symbol_mut(id))
     }
 }
 
@@ -424,27 +405,16 @@ impl SymbolMapBuilder {
         let define_loc = class.define_loc;
         let id = self.0.class_list.alloc(class);
         self.0
-            .file_to_class_list
+            .file_to_symbol_list
             .entry(define_loc.file)
             .or_default()
-            .push(id);
+            .push(id.into());
         self.0
             .pos_to_symbol_map
             .entry(define_loc.file)
             .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), SymbolId::ClassId(id));
+            .insert(define_loc.range.into(), id.into());
         id
-    }
-
-    pub fn add_reference(&mut self, symbol_id: impl Into<SymbolId>, reference_loc: FileRange) {
-        let symbol_id = symbol_id.into();
-        let mut symbol = self.0.symbol_mut(symbol_id);
-        symbol.add_reference(reference_loc);
-        self.0
-            .pos_to_symbol_map
-            .entry(reference_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(reference_loc.range.into(), symbol_id);
     }
 
     pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
@@ -467,6 +437,17 @@ impl SymbolMapBuilder {
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), SymbolId::FieldId(id));
         id
+    }
+
+    pub fn add_reference(&mut self, symbol_id: impl Into<SymbolId>, reference_loc: FileRange) {
+        let symbol_id = symbol_id.into();
+        let mut symbol = self.0.symbol_mut(symbol_id);
+        symbol.add_reference(reference_loc);
+        self.0
+            .pos_to_symbol_map
+            .entry(reference_loc.file)
+            .or_insert_with(IntervalMap::new)
+            .insert(reference_loc.range.into(), symbol_id);
     }
 }
 

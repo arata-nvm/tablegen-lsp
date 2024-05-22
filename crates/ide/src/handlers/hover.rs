@@ -5,7 +5,7 @@ use crate::symbol_map::Symbol;
 pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Hover> {
     let evaluation = db.eval();
     let symbol_map = evaluation.symbol_map();
-    let symbol = symbol_map.find_symbol(pos)?;
+    let symbol = symbol_map.find_symbol_at(pos)?;
 
     let content = match symbol {
         Symbol::Class(class) => {

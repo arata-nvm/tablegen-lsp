@@ -3,6 +3,7 @@ use std::{fs, sync::Arc};
 use ide::{
     analysis::AnalysisHost,
     file_system::{FileId, FilePath, FileSet, FileSystem},
+    symbol_map::SymbolId,
 };
 
 pub fn main() {
@@ -24,35 +25,40 @@ pub fn main() {
     let evaluation = host.analysis().eval();
     let symbol_map = evaluation.symbol_map();
 
-    for class_id in symbol_map
-        .iter_class_in(file_id)
+    for symbol_id in symbol_map
+        .iter_symbol_in(file_id)
         .expect("failed to iterate classes")
     {
-        let class = symbol_map.class(class_id);
-        let template_args = class
-            .template_arg_list
-            .iter()
-            .map(|&id| symbol_map.template_arg(id))
-            .map(|arg| format!("{} {}", arg.typ, arg.name))
-            .collect::<Vec<String>>()
-            .join(", ");
-        let parent_classes = class
-            .parent_class_list
-            .iter()
-            .map(|&id| symbol_map.class(id))
-            .map(|class| format!("{}", class.name))
-            .collect::<Vec<String>>()
-            .join(", ");
-        println!(
-            "class {}<{}> : {} {{",
-            class.name, template_args, parent_classes
-        );
-        for field_id in &class.field_list {
-            let field = symbol_map.field(*field_id);
-            println!("  {} {};", field.typ, field.name);
+        match symbol_id {
+            SymbolId::ClassId(class_id) => {
+                let class = symbol_map.class(class_id);
+                let template_args = class
+                    .template_arg_list
+                    .iter()
+                    .map(|&id| symbol_map.template_arg(id))
+                    .map(|arg| format!("{} {}", arg.typ, arg.name))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                let parent_classes = class
+                    .parent_class_list
+                    .iter()
+                    .map(|&id| symbol_map.class(id))
+                    .map(|class| format!("{}", class.name))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                println!(
+                    "class {}<{}> : {} {{",
+                    class.name, template_args, parent_classes
+                );
+                for field_id in &class.field_list {
+                    let field = symbol_map.field(*field_id);
+                    println!("  {} {};", field.typ, field.name);
+                }
+                println!("}}");
+                println!();
+            }
+            _ => println!("unimplemented: {symbol_id:?}"),
         }
-        println!("}}");
-        println!();
     }
 }
 

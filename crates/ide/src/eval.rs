@@ -170,9 +170,7 @@ impl Eval for ast::Statement {
 impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let name = self.name()?.eval(ctx)?;
-        let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-
+        let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let class = Class::new(name.clone(), define_loc, Vec::new(), Vec::new(), Vec::new());
         let id = ctx.symbol_map.add_class(class);
         ctx.scope.add_symbol(name, id);
@@ -208,9 +206,8 @@ impl Eval for ast::TemplateArgList {
 impl Eval for ast::TemplateArgDecl {
     type Output = TemplateArgumentId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let name = self.name()?.eval(ctx)?;
+        let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
-        let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
         let template_arg = TemplateArgument::new(name.clone(), typ, define_loc);
         let id = ctx.symbol_map.add_template_argument(template_arg);
         ctx.scope.add_symbol(name, id);
@@ -237,16 +234,12 @@ impl Eval for ast::ParentClassList {
 impl Eval for ast::ClassRef {
     type Output = ClassId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let name = self.name()?.value()?;
+        let (name, reference_loc) = utils::identifier(self.name()?, ctx)?;
         let Some(class_id) = ctx.scope.find_symbol(&name).and_then(|it| it.as_class_id()) else {
-            ctx.error(
-                self.syntax().text_range(),
-                format!("class not found: {name}"),
-            );
+            ctx.error(reference_loc.range, format!("class not found: {name}"));
             return None;
         };
-        let range = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
-        ctx.symbol_map.add_reference(class_id, range);
+        ctx.symbol_map.add_reference(class_id, reference_loc);
         self.arg_value_list().and_then(|it| it.eval(ctx));
         Some(class_id)
     }
@@ -292,9 +285,8 @@ impl Eval for ast::BodyItem {
 impl Eval for ast::FieldDef {
     type Output = FieldId;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let name = self.name()?.eval(ctx)?;
+        let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
-        let define_loc = FileRange::new(ctx.current_file_id(), self.name()?.syntax().text_range());
         let value = self
             .value()
             .and_then(|it| it.eval(ctx))
@@ -345,7 +337,7 @@ impl Eval for ast::Type {
                 Some(Type::List(Box::new(list_typ.inner_type()?.eval(ctx)?)))
             }
             ast::Type::ClassId(class_id) => {
-                let name = class_id.name()?.eval(ctx)?;
+                let (name, reference_loc) = utils::identifier(class_id.name()?, ctx)?;
                 let Some(id) = ctx.scope.find_symbol(&name).and_then(|it| it.as_class_id()) else {
                     ctx.error(
                         class_id.name()?.range()?,
@@ -353,8 +345,6 @@ impl Eval for ast::Type {
                     );
                     return None;
                 };
-                let reference_loc =
-                    FileRange::new(ctx.current_file_id(), class_id.name()?.range()?);
                 ctx.symbol_map.add_reference(id, reference_loc);
                 Some(Type::Class((id, name)))
             }
@@ -385,7 +375,6 @@ impl Eval for ast::InnerValue {
 impl Eval for ast::SimpleValue {
     type Output = SimpleExpr;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let range = self.syntax().text_range();
         match self {
             ast::SimpleValue::Uninitialized(_) => Some(SimpleExpr::Uninitialized),
             ast::SimpleValue::Integer(integer) => integer.value().map(SimpleExpr::Integer),
@@ -401,12 +390,11 @@ impl Eval for ast::SimpleValue {
                 .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
                 .map(SimpleExpr::List),
             ast::SimpleValue::Identifier(identifier) => {
-                let name = identifier.eval(ctx)?;
+                let (name, reference_loc) = utils::identifier(identifier, ctx)?;
                 let Some(symbol_id) = ctx.scope.find_symbol(&name) else {
-                    ctx.error(range, format!("symbol not found: {name}"));
+                    ctx.error(reference_loc.range, format!("symbol not found: {name}"));
                     return None;
                 };
-                let reference_loc = FileRange::new(ctx.current_file_id(), range);
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
                 Some(SimpleExpr::Identifier((symbol_id, name)))
             }
@@ -418,9 +406,20 @@ impl Eval for ast::SimpleValue {
     }
 }
 
-impl Eval for ast::Identifier {
-    type Output = EcoString;
-    fn eval(self, _ctx: &mut EvalCtx) -> Option<Self::Output> {
-        self.value()
+mod utils {
+    use ecow::EcoString;
+    use syntax::ast;
+
+    use crate::file_system::FileRange;
+
+    use super::EvalCtx;
+
+    pub(super) fn identifier(
+        identifier: ast::Identifier,
+        ctx: &mut EvalCtx,
+    ) -> Option<(EcoString, FileRange)> {
+        let name = identifier.value()?;
+        let loc = FileRange::new(ctx.current_file_id(), identifier.range()?);
+        Some((name, loc))
     }
 }

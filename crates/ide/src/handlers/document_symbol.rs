@@ -3,18 +3,22 @@ use syntax::parser::TextRange;
 
 use crate::eval::EvalDatabase;
 use crate::file_system::FileId;
+use crate::symbol_map::SymbolId;
 
 pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
     let evaluation = db.eval();
     let symbol_map = evaluation.symbol_map();
 
-    let Some(iter) = symbol_map.iter_class_in(file_id) else {
+    let Some(iter) = symbol_map.iter_symbol_in(file_id) else {
         tracing::info!("no classes found in file: {file_id:?}");
         return None;
     };
 
     let mut symbols = Vec::new();
-    for class_id in iter {
+    for symbol_id in iter {
+        let SymbolId::ClassId(class_id) = symbol_id else {
+            continue;
+        };
         let class = symbol_map.class(class_id);
         let template_argument_list = class
             .template_arg_list

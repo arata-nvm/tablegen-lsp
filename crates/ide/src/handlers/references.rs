@@ -4,7 +4,7 @@ use crate::file_system::{FilePosition, FileRange};
 pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Vec<FileRange>> {
     let evaluation = db.eval();
     let symbol_map = evaluation.symbol_map();
-    let symbol = symbol_map.find_symbol(pos)?;
+    let symbol = symbol_map.find_symbol_at(pos)?;
     Some(symbol.reference_locs().to_vec())
 }
 
