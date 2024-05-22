@@ -224,6 +224,31 @@ impl Field {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub struct Def {
+    pub name: EcoString,
+    pub define_loc: FileRange,
+    pub reference_locs: Vec<FileRange>,
+}
+
+pub type DefId = Id<Def>;
+
+impl From<DefId> for SymbolId {
+    fn from(id: DefId) -> Self {
+        SymbolId::DefId(id)
+    }
+}
+
+impl Def {
+    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
+        Self {
+            name,
+            define_loc,
+            reference_locs: Vec::new(),
+        }
+    }
+}
+
 pub type Replacement = HashMap<TemplateArgumentId, Expr>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -238,12 +263,13 @@ pub enum Expr {
 impl Expr {
     pub fn replaced(self, replacement: &Replacement) -> Self {
         match self {
-            Self::Simple(SimpleExpr::Identifier(SymbolId::TemplateArgumentId(id), _, _)) => {
-                match replacement.get(&id) {
-                    Some(expr) => expr.clone(),
-                    None => self,
-                }
-            }
+            Self::Simple(SimpleExpr::Identifier(
+                _,
+                Some((SymbolId::TemplateArgumentId(id), _)),
+            )) => match replacement.get(&id) {
+                Some(expr) => expr.clone(),
+                None => self,
+            },
             Self::FieldSuffix(expr, field, typ) => {
                 Self::FieldSuffix(Box::new(expr.replaced(replacement)), field, typ)
             }
@@ -282,15 +308,15 @@ impl std::fmt::Display for Expr {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum SimpleExpr {
-    Integer(i64),
+    Uninitialized,
+    Boolean(bool),
+    Int(i64),
     String(String),
     Code(EcoString),
-    Boolean(bool),
-    Uninitialized,
     Bits(Vec<Expr>),
     List(Vec<Expr>, Type),
     // Dag(DagArg, Vec<DagArg>),
-    Identifier(SymbolId, EcoString, Type),
+    Identifier(EcoString, Option<(SymbolId, Type)>),
     // ClassValue,
     BangOperator(BangOperatorOp, Vec<Expr>),
     // CondOperator,
@@ -299,14 +325,15 @@ pub enum SimpleExpr {
 impl SimpleExpr {
     pub fn typ(&self) -> Type {
         match self {
-            Self::Integer(_) => Type::Int,
+            Self::Uninitialized => Type::Unknown,
+            Self::Boolean(_) => Type::Bit,
+            Self::Int(_) => Type::Int,
             Self::String(_) => Type::String,
             Self::Code(_) => Type::Code,
-            Self::Boolean(_) => Type::Bit,
-            Self::Uninitialized => Type::Unknown,
             Self::Bits(bits) => Type::Bits(bits.len()),
             Self::List(_, typ) => Type::List(Box::new(typ.clone())),
-            Self::Identifier(_, _, typ) => typ.clone(),
+            Self::Identifier(_, Some((_, typ))) => typ.clone(),
+            Self::Identifier(_, None) => Type::Unknown,
             Self::BangOperator(_, _) => Type::Unknown, // TODO
         }
     }
@@ -316,10 +343,10 @@ impl std::fmt::Display for SimpleExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Uninitialized => write!(f, "?"),
-            Self::Integer(value) => write!(f, "{value}"),
+            Self::Boolean(value) => write!(f, "{value}"),
+            Self::Int(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "\"{value}\""),
             Self::Code(value) => write!(f, "[{{ {value} }}]"),
-            Self::Boolean(value) => write!(f, "{value}"),
             Self::Bits(values) => {
                 write!(
                     f,
@@ -342,7 +369,7 @@ impl std::fmt::Display for SimpleExpr {
                         .join(", ")
                 )
             }
-            Self::Identifier(_, name, _) => write!(f, "{name}"),
+            Self::Identifier(name, _) => write!(f, "{name}"),
             Self::BangOperator(op, args) => write!(
                 f,
                 "{}({})",
@@ -528,11 +555,65 @@ impl std::fmt::Display for BangOperatorOp {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Value {
+    Uninitialized,
+    Int(i64),
+    String(String),
+    Bits(Vec<Value>),
+    List(Vec<Value>, Type),
+}
+
+impl Value {
+    pub fn typ(&self) -> Type {
+        match self {
+            Self::Uninitialized => Type::Unknown,
+            Self::Int(_) => Type::Int,
+            Self::String(_) => Type::String,
+            Self::Bits(bits) => Type::Bits(bits.len()),
+            Self::List(_, typ) => Type::List(Box::new(typ.clone())),
+        }
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Uninitialized => write!(f, "?"),
+            Self::Int(value) => write!(f, "{value}"),
+            Self::String(value) => write!(f, "\"{value}\""),
+            Self::Bits(values) => {
+                write!(
+                    f,
+                    "{{ {} }}",
+                    values
+                        .iter()
+                        .map(|it| it.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Self::List(values, _) => {
+                write!(
+                    f,
+                    "[ {} ]",
+                    values
+                        .iter()
+                        .map(|it| it.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub enum SymbolId {
     ClassId(ClassId),
     TemplateArgumentId(TemplateArgumentId),
     FieldId(FieldId),
+    DefId(DefId),
 }
 
 impl SymbolId {
@@ -556,6 +637,13 @@ impl SymbolId {
             _ => None,
         }
     }
+
+    pub fn as_def_id(&self) -> Option<DefId> {
+        match self {
+            SymbolId::DefId(id) => Some(*id),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -563,6 +651,7 @@ pub enum Symbol<'a> {
     Class(&'a Class),
     TemplateArgument(&'a TemplateArgument),
     Field(&'a Field),
+    Def(&'a Def),
 }
 
 impl<'a> Symbol<'a> {
@@ -571,6 +660,7 @@ impl<'a> Symbol<'a> {
             Self::Class(class) => &class.name,
             Self::TemplateArgument(template_arg) => &template_arg.name,
             Self::Field(field) => &field.name,
+            Self::Def(def) => &def.name,
         }
     }
 
@@ -579,6 +669,7 @@ impl<'a> Symbol<'a> {
             Self::Class(class) => &class.define_loc,
             Self::TemplateArgument(template_arg) => &template_arg.define_loc,
             Self::Field(field) => &field.define_loc,
+            Self::Def(def) => &def.define_loc,
         }
     }
 
@@ -587,6 +678,7 @@ impl<'a> Symbol<'a> {
             Self::Class(class) => &class.reference_locs,
             Self::TemplateArgument(template_arg) => &template_arg.reference_locs,
             Self::Field(field) => &field.reference_locs,
+            Self::Def(def) => &def.reference_locs,
         }
     }
 
@@ -610,6 +702,13 @@ impl<'a> Symbol<'a> {
             _ => None,
         }
     }
+
+    pub fn as_def(&self) -> Option<&Def> {
+        match self {
+            Self::Def(def) => Some(def),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -617,6 +716,7 @@ pub enum SymbolMut<'a> {
     Class(&'a mut Class),
     TemplateArgument(&'a mut TemplateArgument),
     Field(&'a mut Field),
+    Def(&'a mut Def),
 }
 
 impl<'a> SymbolMut<'a> {
@@ -625,6 +725,7 @@ impl<'a> SymbolMut<'a> {
             Self::Class(class) => class.reference_locs.push(reference_loc),
             Self::TemplateArgument(template_arg) => template_arg.reference_locs.push(reference_loc),
             Self::Field(field) => field.reference_locs.push(reference_loc),
+            Self::Def(def) => def.reference_locs.push(reference_loc),
         }
     }
 }
@@ -663,6 +764,7 @@ pub struct SymbolMap {
     class_list: Arena<Class>,
     template_arg_list: Arena<TemplateArgument>,
     field_list: Arena<Field>,
+    def_list: Arena<Def>,
     file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
@@ -700,6 +802,14 @@ impl SymbolMap {
         self.field_list.get_mut(field_id).expect("invalid field id")
     }
 
+    pub fn def(&self, def_id: DefId) -> &Def {
+        self.def_list.get(def_id).expect("invalid def id")
+    }
+
+    pub fn def_mut(&mut self, def_id: DefId) -> &mut Def {
+        self.def_list.get_mut(def_id).expect("invalid def id")
+    }
+
     pub fn symbol(&self, id: SymbolId) -> Symbol {
         match id {
             SymbolId::ClassId(class_id) => Symbol::Class(self.class(class_id)),
@@ -707,6 +817,7 @@ impl SymbolMap {
                 Symbol::TemplateArgument(self.template_arg(template_arg_id))
             }
             SymbolId::FieldId(field_id) => Symbol::Field(self.field(field_id)),
+            SymbolId::DefId(def_id) => Symbol::Def(self.def(def_id)),
         }
     }
 
@@ -717,6 +828,7 @@ impl SymbolMap {
                 SymbolMut::TemplateArgument(self.template_arg_mut(template_arg_id))
             }
             SymbolId::FieldId(field_id) => SymbolMut::Field(self.field_mut(field_id)),
+            SymbolId::DefId(def_id) => SymbolMut::Def(self.def_mut(def_id)),
         }
     }
 
@@ -769,6 +881,20 @@ impl SymbolMap {
             .entry(define_loc.file)
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), SymbolId::FieldId(id));
+        id
+    }
+
+    pub fn add_def(&mut self, def: Def) -> DefId {
+        let define_loc = def.define_loc;
+        let id = self.def_list.alloc(def);
+        self.file_to_symbol_list
+            .entry(define_loc.file)
+            .or_default()
+            .push(id.into());
+        self.pos_to_symbol_map
+            .entry(define_loc.file)
+            .or_insert_with(IntervalMap::new)
+            .insert(define_loc.range.into(), id.into());
         id
     }
 

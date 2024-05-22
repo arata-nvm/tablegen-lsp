@@ -60,6 +60,10 @@ pub fn main() {
                 println!("}}");
                 println!();
             }
+            SymbolId::DefId(def_id) => {
+                let def = symbol_map.def(def_id);
+                println!("def {};", def.name);
+            }
             _ => println!("unimplemented: {symbol_id:?}"),
         }
     }

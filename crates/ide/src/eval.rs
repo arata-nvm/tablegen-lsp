@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use ecow::EcoString;
+use ecow::{eco_format, EcoString};
 
 use syntax::ast::AstNode;
 use syntax::ast::{self};
@@ -12,7 +12,8 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    Class, ClassId, Expr, Field, SimpleExpr, SymbolId, SymbolMap, TemplateArgument, Type,
+    Class, ClassId, Def, Expr, Field, SimpleExpr, SymbolId, SymbolMap, TemplateArgument, Type,
+    Value,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -220,6 +221,7 @@ impl Eval for ast::Statement {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         match self {
             ast::Statement::Class(class) => class.eval(ctx),
+            ast::Statement::Def(def) => def.eval(ctx),
             ast::Statement::Include(include) => include.eval(ctx),
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");
@@ -252,6 +254,19 @@ impl Eval for ast::Class {
         let class_ref = ctx.symbol_map.class_mut(id);
         let _ = std::mem::replace(class_ref, real_class);
 
+        Some(())
+    }
+}
+
+impl Eval for ast::Def {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let name_range = self.name()?.syntax().text_range();
+        let define_loc = FileRange::new(ctx.current_file_id(), name_range);
+        let name = self.name()?.eval(ctx)?.eval_identifier(ctx, define_loc)?;
+        let def = Def::new(name.clone(), define_loc);
+        let id = ctx.symbol_map.add_def(def);
+        ctx.scope.add_symbol(name, id);
         Some(())
     }
 }
@@ -513,7 +528,7 @@ impl Eval for ast::SimpleValue {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         match self {
             ast::SimpleValue::Uninitialized(_) => Some(SimpleExpr::Uninitialized),
-            ast::SimpleValue::Integer(integer) => integer.value().map(SimpleExpr::Integer),
+            ast::SimpleValue::Integer(integer) => integer.value().map(SimpleExpr::Int),
             ast::SimpleValue::String(string) => Some(SimpleExpr::String(string.value())),
             ast::SimpleValue::Code(string) => string.value().map(SimpleExpr::Code),
             ast::SimpleValue::Boolean(boolean) => boolean.value().map(SimpleExpr::Boolean),
@@ -535,20 +550,21 @@ impl Eval for ast::SimpleValue {
             }
             ast::SimpleValue::Identifier(identifier) => {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
-                let Some(symbol_id) = ctx.scope.find_symbol(&name) else {
-                    ctx.error(reference_loc.range, format!("symbol not found: {name}"));
-                    return None;
-                };
-                ctx.symbol_map.add_reference(symbol_id, reference_loc);
-                let symbol = ctx.symbol_map.symbol(symbol_id);
-                let typ = match symbol.as_template_argument() {
-                    Some(template_arg) => template_arg.typ.clone(),
-                    None => {
-                        ctx.error(reference_loc.range, "not implemented");
-                        Type::Unknown
+                let symbol_sig = match ctx.scope.find_symbol(&name) {
+                    Some(symbol_id) => {
+                        let symbol = ctx.symbol_map.symbol(symbol_id);
+                        let typ = match symbol.as_template_argument() {
+                            Some(template_arg) => template_arg.typ.clone(),
+                            None => {
+                                ctx.error(reference_loc.range, "not implemented");
+                                Type::Unknown
+                            }
+                        };
+                        Some((symbol_id, typ))
                     }
+                    None => None,
                 };
-                Some(SimpleExpr::Identifier(symbol_id, name, typ))
+                Some(SimpleExpr::Identifier(name, symbol_sig))
             }
             ast::SimpleValue::BangOperator(bang_operator) => {
                 let op = bang_operator.kind()?.into();
@@ -560,6 +576,91 @@ impl Eval for ast::SimpleValue {
             }
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");
+                None
+            }
+        }
+    }
+}
+
+pub trait ValueEval {
+    fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString>;
+    fn eval_value(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value>;
+}
+
+impl ValueEval for Expr {
+    fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString> {
+        match self {
+            Expr::Simple(simple) => simple.eval_identifier(ctx, loc),
+            _ => {
+                ctx.error(loc.range, "not implemented");
+                None
+            }
+        }
+    }
+
+    fn eval_value(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
+        match self {
+            Expr::Simple(simple) => simple.eval_value(ctx, loc),
+            _ => {
+                ctx.error(loc.range, "not implemented");
+                None
+            }
+        }
+    }
+}
+
+impl ValueEval for SimpleExpr {
+    fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString> {
+        match self {
+            SimpleExpr::Uninitialized | SimpleExpr::Bits(_) | SimpleExpr::List(_, _) => {
+                ctx.error(loc.range, "'{self}' cannot be used as an identifier");
+                None
+            }
+            SimpleExpr::Boolean(false) => Some("0".into()),
+            SimpleExpr::Boolean(true) => Some("1".into()),
+            SimpleExpr::Int(int) => Some(eco_format!("{int}")),
+            SimpleExpr::String(string) => Some(string.into()),
+            SimpleExpr::Code(code) => Some(code),
+            SimpleExpr::Identifier(name, _) => Some(name),
+            SimpleExpr::BangOperator(_, _) => {
+                ctx.error(loc.range, "not implemented");
+                None
+            }
+        }
+    }
+
+    fn eval_value(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
+        match self {
+            SimpleExpr::Uninitialized => Some(Value::Uninitialized),
+            SimpleExpr::Boolean(boolean) => Some(Value::Int(boolean as i64)),
+            SimpleExpr::Int(int) => Some(Value::Int(int)),
+            SimpleExpr::String(string) => Some(Value::String(string)),
+            SimpleExpr::Code(code) => Some(Value::String(code.to_string())),
+            SimpleExpr::Bits(bits) => {
+                let bits: Vec<_> = bits
+                    .into_iter()
+                    .filter_map(|it| it.eval_value(ctx, loc))
+                    .collect();
+                Some(Value::Bits(bits))
+            }
+            SimpleExpr::List(values, typ) => {
+                let values: Vec<_> = values
+                    .into_iter()
+                    .filter_map(|it| it.eval_value(ctx, loc))
+                    .collect();
+                Some(Value::List(values, typ))
+            }
+            SimpleExpr::Identifier(_, Some((symbol_id, _))) => {
+                ctx.symbol_map.add_reference(symbol_id, loc);
+                ctx.error(loc.range, "not implemented");
+                None
+            }
+            SimpleExpr::Identifier(name, None) => {
+                ctx.error(loc.range, format!("symbol not found: {name}"));
+                None
+            }
+            SimpleExpr::BangOperator(_, _) => {
+                ctx.error(loc.range, "not implemented");
                 None
             }
         }
