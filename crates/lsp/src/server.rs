@@ -1,23 +1,23 @@
 use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
+use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
 use async_lsp::lsp_types::{
-    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
-    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, Location,
-    OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
+    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams, DocumentSymbolResponse,
+    GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
+    HoverProviderCapability, InitializeParams, InitializeResult, Location, notification, OneOf,
+    PublishDiagnosticsParams, ReferenceParams, request, ServerCapabilities,
     TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
-use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
-use futures::future::{ready, BoxFuture};
+use futures::future::{BoxFuture, ready};
+use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::FileSystem;
-use tokio::task::{self};
 
-use crate::vfs::{UrlExt, Vfs};
 use crate::{from_proto, to_proto};
+use crate::vfs::{UrlExt, Vfs};
 
 pub struct Server {
     host: AnalysisHost,
@@ -80,22 +80,18 @@ impl LanguageServer for Server {
         })))
     }
 
-    fn document_symbol(
+    fn hover(
         &mut self,
-        params: DocumentSymbolParams,
-    ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
-        tracing::info!("document_symbol: {params:?}");
+        params: HoverParams,
+    ) -> BoxFuture<'static, Result<Option<Hover>, Self::Error>> {
+        tracing::info!("hover: {params:?}");
         let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(symbols) = snap.analysis.document_symbol(file_id) else {
+            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
+            let Some(hover) = snap.analysis.hover(pos) else {
                 return Ok(None);
             };
-
-            let lsp_symbols = symbols
-                .into_iter()
-                .map(|it| to_proto::document_symbol(&line_index, it))
-                .collect();
-            Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
+            let lsp_hover = to_proto::hover(hover);
+            Ok(Some(lsp_hover))
         });
         Box::pin(async move { task.await.unwrap() })
     }
@@ -139,18 +135,22 @@ impl LanguageServer for Server {
         Box::pin(async move { task.await.unwrap() })
     }
 
-    fn hover(
+    fn document_symbol(
         &mut self,
-        params: HoverParams,
-    ) -> BoxFuture<'static, Result<Option<Hover>, Self::Error>> {
-        tracing::info!("hover: {params:?}");
+        params: DocumentSymbolParams,
+    ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
+        tracing::info!("document_symbol: {params:?}");
         let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
-            let Some(hover) = snap.analysis.hover(pos) else {
+            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
+            let Some(symbols) = snap.analysis.document_symbol(file_id) else {
                 return Ok(None);
             };
-            let lsp_hover = to_proto::hover(hover);
-            Ok(Some(lsp_hover))
+
+            let lsp_symbols = symbols
+                .into_iter()
+                .map(|it| to_proto::document_symbol(&line_index, it))
+                .collect();
+            Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
         });
         Box::pin(async move { task.await.unwrap() })
     }
