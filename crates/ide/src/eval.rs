@@ -410,7 +410,13 @@ impl Eval for ast::Type {
             ast::Type::IntType(_) => Some(Type::Int),
             ast::Type::StringType(_) => Some(Type::String),
             ast::Type::DagType(_) => Some(Type::Dag),
-            ast::Type::BitsType(bits_typ) => Some(Type::Bits(bits_typ.length()?.value()?)),
+            ast::Type::BitsType(bits_typ) => Some(Type::Bits(
+                bits_typ
+                    .length()?
+                    .value()?
+                    .try_into()
+                    .expect("bit length overflow"),
+            )),
             ast::Type::ListType(list_typ) => {
                 Some(Type::List(Box::new(list_typ.inner_type()?.eval(ctx)?)))
             }
@@ -424,7 +430,7 @@ impl Eval for ast::Type {
                     return None;
                 };
                 ctx.symbol_map.add_reference(id, reference_loc);
-                Some(Type::Class((id, name)))
+                Some(Type::Class(id, name))
             }
             ast::Type::CodeType(_) => Some(Type::Code),
         }
@@ -446,13 +452,52 @@ impl Eval for ast::Value {
 impl Eval for ast::InnerValue {
     type Output = Expr;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let expr = Expr::Simple(self.simple_value()?.eval(ctx)?);
-        if self.suffixes().count() != 0 {
-            ctx.error(self.syntax().text_range(), "not implemented");
-            return None;
+        let mut expr = Expr::Simple(self.simple_value()?.eval(ctx)?);
+        for suffix in self.suffixes() {
+            match suffix {
+                ast::ValueSuffix::FieldSuffix(field_suffix) => {
+                    expr = eval_field_suffix(ctx, expr, field_suffix)?;
+                }
+                _ => {
+                    ctx.error(suffix.syntax().text_range(), "not implemented");
+                    return None;
+                }
+            }
         }
         Some(expr)
     }
+}
+
+fn eval_field_suffix(
+    ctx: &mut EvalCtx,
+    expr: Expr,
+    field_suffix: ast::FieldSuffix,
+) -> Option<Expr> {
+    let (field_name, reference_loc) = utils::identifier(field_suffix.name()?, ctx)?;
+    let Type::Class(class_id, _) = expr.typ() else {
+        ctx.error(
+            field_suffix.syntax().text_range(),
+            format!("cannot access field '{field_name}' of value '{expr}'"),
+        );
+        return None;
+    };
+
+    let class = ctx.symbol_map.class(class_id);
+    let Some(field_id) = class.find_field(&field_name) else {
+        ctx.error(
+            field_suffix.syntax().text_range(),
+            format!("cannot access field '{field_name}' of value '{expr}'"),
+        );
+        return None;
+    };
+    ctx.symbol_map.add_reference(field_id, reference_loc);
+
+    let field = ctx.symbol_map.field(field_id);
+    Some(Expr::FieldSuffix(
+        Box::new(expr),
+        field_name,
+        field.typ.clone(),
+    ))
 }
 
 impl Eval for ast::SimpleValue {
@@ -468,10 +513,18 @@ impl Eval for ast::SimpleValue {
                 .value_list()
                 .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
                 .map(SimpleExpr::Bits),
-            ast::SimpleValue::List(list) => list
-                .value_list()
-                .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
-                .map(SimpleExpr::List),
+            ast::SimpleValue::List(list) => {
+                let values: Vec<_> = list
+                    .value_list()?
+                    .values()
+                    .filter_map(|it| it.eval(ctx))
+                    .collect();
+                let typ = match values.first() {
+                    Some(expr) => expr.typ(),
+                    None => Type::Unknown,
+                };
+                Some(SimpleExpr::List(values, typ))
+            }
             ast::SimpleValue::Identifier(identifier) => {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
                 let Some(symbol_id) = ctx.scope.find_symbol(&name) else {
@@ -479,7 +532,15 @@ impl Eval for ast::SimpleValue {
                     return None;
                 };
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
-                Some(SimpleExpr::Identifier((symbol_id, name)))
+                let symbol = ctx.symbol_map.symbol(symbol_id);
+                let typ = match symbol.as_template_argument() {
+                    Some(template_arg) => template_arg.typ.clone(),
+                    None => {
+                        ctx.error(reference_loc.range, "not implemented");
+                        Type::Unknown
+                    }
+                };
+                Some(SimpleExpr::Identifier(symbol_id, name, typ))
             }
             ast::SimpleValue::BangOperator(bang_operator) => {
                 let op = bang_operator.kind()?.into();

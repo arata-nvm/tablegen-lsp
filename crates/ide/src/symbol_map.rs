@@ -112,6 +112,10 @@ impl Class {
         self.name_to_field.values().copied()
     }
 
+    pub fn find_field(&self, name: &EcoString) -> Option<FieldId> {
+        self.name_to_field.get(name).copied()
+    }
+
     pub fn inherit(
         &mut self,
         symbol_map: &mut SymbolMap,
@@ -213,20 +217,30 @@ pub enum Expr {
     Simple(SimpleExpr),
     // RangeSuffix(Box<Expr>, Vec<Range>),
     // SliceSuffix(Box<Expr>, Vec<Slice>),
-    // FieldSuffix(Box<Expr>, EcoString),
+    FieldSuffix(Box<Expr>, EcoString, Type),
     // Paste(Box<Expr>, SimpleExpr),
 }
 
 impl Expr {
     pub fn replaced(self, replacement: &Replacement) -> Self {
         match self {
-            Self::Simple(SimpleExpr::Identifier((SymbolId::TemplateArgumentId(id), _))) => {
+            Self::Simple(SimpleExpr::Identifier(SymbolId::TemplateArgumentId(id), _, _)) => {
                 match replacement.get(&id) {
                     Some(expr) => expr.clone(),
                     None => self,
                 }
             }
+            Self::FieldSuffix(expr, field, typ) => {
+                Self::FieldSuffix(Box::new(expr.replaced(replacement)), field, typ)
+            }
             _ => self,
+        }
+    }
+
+    pub fn typ(&self) -> Type {
+        match self {
+            Self::Simple(value) => value.typ(),
+            Self::FieldSuffix(_, _, typ) => typ.clone(),
         }
     }
 }
@@ -246,7 +260,8 @@ impl Expr {
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Simple(value) => write!(f, "{}", value),
+            Self::Simple(value) => write!(f, "{value}"),
+            Self::FieldSuffix(expr, field, _) => write!(f, "{expr}.{field}"),
         }
     }
 }
@@ -259,12 +274,28 @@ pub enum SimpleExpr {
     Boolean(bool),
     Uninitialized,
     Bits(Vec<Expr>),
-    List(Vec<Expr>),
+    List(Vec<Expr>, Type),
     // Dag(DagArg, Vec<DagArg>),
-    Identifier((SymbolId, EcoString)),
+    Identifier(SymbolId, EcoString, Type),
     // ClassValue,
     BangOperator(BangOperatorOp, Vec<Expr>),
     // CondOperator,
+}
+
+impl SimpleExpr {
+    pub fn typ(&self) -> Type {
+        match self {
+            Self::Integer(_) => Type::Int,
+            Self::String(_) => Type::String,
+            Self::Code(_) => Type::Code,
+            Self::Boolean(_) => Type::Bit,
+            Self::Uninitialized => Type::Unknown,
+            Self::Bits(bits) => Type::Bits(bits.len()),
+            Self::List(_, typ) => Type::List(Box::new(typ.clone())),
+            Self::Identifier(_, _, typ) => typ.clone(),
+            Self::BangOperator(_, _) => Type::Unknown, // TODO
+        }
+    }
 }
 
 impl std::fmt::Display for SimpleExpr {
@@ -286,7 +317,7 @@ impl std::fmt::Display for SimpleExpr {
                         .join(", ")
                 )
             }
-            Self::List(values) => {
+            Self::List(values, _) => {
                 write!(
                     f,
                     "[ {} ]",
@@ -297,7 +328,7 @@ impl std::fmt::Display for SimpleExpr {
                         .join(", ")
                 )
             }
-            Self::Identifier((_, name)) => write!(f, "{name}"),
+            Self::Identifier(_, name, _) => write!(f, "{name}"),
             Self::BangOperator(op, args) => write!(
                 f,
                 "{}({})",
@@ -590,10 +621,11 @@ pub enum Type {
     Int,
     String,
     Dag,
-    Bits(i64),
+    Bits(usize),
     List(Box<Type>),
-    Class((ClassId, EcoString)),
+    Class(ClassId, EcoString),
     Code,
+    Unknown, // for uninitialized
 }
 
 impl std::fmt::Display for Type {
@@ -605,8 +637,9 @@ impl std::fmt::Display for Type {
             Self::Dag => write!(f, "dag"),
             Self::Bits(width) => write!(f, "bits<{}>", width),
             Self::List(typ) => write!(f, "list<{}>", typ),
-            Self::Class((_, name)) => write!(f, "{}", name),
+            Self::Class(_, name) => write!(f, "{}", name),
             Self::Code => write!(f, "code"),
+            Self::Unknown => write!(f, "unknown"),
         }
     }
 }
