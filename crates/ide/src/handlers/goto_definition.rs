@@ -45,6 +45,11 @@ mod tests {
     }
 
     #[test]
+    fn def() {
+        insta::assert_debug_snapshot!(check("def $foo;"));
+    }
+
+    #[test]
     fn multiple_files() {
         let (db, f) = tests::multiple_files(
             r#"

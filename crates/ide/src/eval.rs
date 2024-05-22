@@ -552,6 +552,7 @@ impl Eval for ast::SimpleValue {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
                 let symbol_sig = match ctx.scope.find_symbol(&name) {
                     Some(symbol_id) => {
+                        ctx.symbol_map.add_reference(symbol_id, reference_loc);
                         let symbol = ctx.symbol_map.symbol(symbol_id);
                         let typ = match symbol.as_template_argument() {
                             Some(template_arg) => template_arg.typ.clone(),
@@ -650,8 +651,7 @@ impl ValueEval for SimpleExpr {
                     .collect();
                 Some(Value::List(values, typ))
             }
-            SimpleExpr::Identifier(_, Some((symbol_id, _))) => {
-                ctx.symbol_map.add_reference(symbol_id, loc);
+            SimpleExpr::Identifier(_, Some(_)) => {
                 ctx.error(loc.range, "not implemented");
                 None
             }

@@ -16,39 +16,51 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
 
     let mut symbols = Vec::new();
     for symbol_id in iter {
-        let SymbolId::ClassId(class_id) = symbol_id else {
-            continue;
-        };
-        let class = symbol_map.class(class_id);
-        let template_argument_list = class
-            .iter_template_arg()
-            .map(|id| symbol_map.template_arg(id))
-            .map(|arg| DocumentSymbol {
-                name: arg.name.clone(),
-                typ: arg.typ.to_string().into(),
-                range: arg.define_loc.range,
-                kind: DocumentSymbolKind::TemplateArgument,
-                children: Vec::new(),
-            });
+        match symbol_id {
+            SymbolId::ClassId(class_id) => {
+                let class = symbol_map.class(class_id);
+                let template_argument_list = class
+                    .iter_template_arg()
+                    .map(|id| symbol_map.template_arg(id))
+                    .map(|arg| DocumentSymbol {
+                        name: arg.name.clone(),
+                        typ: arg.typ.to_string().into(),
+                        range: arg.define_loc.range,
+                        kind: DocumentSymbolKind::TemplateArgument,
+                        children: Vec::new(),
+                    });
 
-        let field_list = class
-            .iter_field()
-            .map(|id| symbol_map.field(id))
-            .map(|field| DocumentSymbol {
-                name: field.name.clone(),
-                typ: field.typ.to_string().into(),
-                range: field.define_loc.range,
-                kind: DocumentSymbolKind::Field,
-                children: Vec::new(),
-            });
+                let field_list = class
+                    .iter_field()
+                    .map(|id| symbol_map.field(id))
+                    .map(|field| DocumentSymbol {
+                        name: field.name.clone(),
+                        typ: field.typ.to_string().into(),
+                        range: field.define_loc.range,
+                        kind: DocumentSymbolKind::Field,
+                        children: Vec::new(),
+                    });
 
-        symbols.push(DocumentSymbol {
-            name: class.name.clone(),
-            typ: "class".into(),
-            range: class.define_loc.range,
-            kind: DocumentSymbolKind::Class,
-            children: template_argument_list.chain(field_list).collect(),
-        });
+                symbols.push(DocumentSymbol {
+                    name: class.name.clone(),
+                    typ: "class".into(),
+                    range: class.define_loc.range,
+                    kind: DocumentSymbolKind::Class,
+                    children: template_argument_list.chain(field_list).collect(),
+                });
+            }
+            SymbolId::DefId(def_id) => {
+                let def = symbol_map.def(def_id);
+                symbols.push(DocumentSymbol {
+                    name: def.name.clone(),
+                    typ: "def".into(),
+                    range: def.define_loc.range,
+                    kind: DocumentSymbolKind::Def,
+                    children: Vec::new(),
+                });
+            }
+            _ => {}
+        }
     }
     Some(symbols)
 }
@@ -67,15 +79,23 @@ pub enum DocumentSymbolKind {
     Class,
     TemplateArgument,
     Field,
+    Def,
 }
 
 #[cfg(test)]
 mod tests {
     use crate::tests;
 
+    use super::DocumentSymbol;
+
+    fn check(s: &str) -> Option<Vec<DocumentSymbol>> {
+        let (db, f) = tests::single_file(s);
+        super::exec(&db, f.root_file())
+    }
+
     #[test]
     fn single_file() {
-        let (db, f) = tests::single_file(
+        insta::assert_debug_snapshot!(check(
             r#"
 class Foo<int size> {
     int field;
@@ -83,9 +103,7 @@ class Foo<int size> {
 
 class Bar;
 "#,
-        );
-        let symbols = super::exec(&db, f.root_file());
-        insta::assert_debug_snapshot!(symbols);
+        ));
     }
 
     #[test]
@@ -106,7 +124,7 @@ class Bar;
 
     #[test]
     fn class() {
-        let (db, f) = tests::single_file(
+        insta::assert_debug_snapshot!(check(
             r#"
 class Bar;
 class Foo {
@@ -120,15 +138,16 @@ class Foo {
     code h;
 }
             "#,
-        );
-        let symbols = super::exec(&db, f.root_file());
-        insta::assert_debug_snapshot!(symbols);
+        ));
     }
 
     #[test]
     fn recursive_class() {
-        let (db, f) = tests::single_file(r#" class Foo { Foo g; } "#);
-        let symbols = super::exec(&db, f.root_file());
-        insta::assert_debug_snapshot!(symbols);
+        insta::assert_debug_snapshot!(check(r#" class Foo { Foo g; } "#));
+    }
+
+    #[test]
+    fn def() {
+        insta::assert_debug_snapshot!(check(r#"def foo;"#));
     }
 }

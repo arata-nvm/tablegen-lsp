@@ -28,6 +28,9 @@ pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Hover> {
             let parent_class = symbol_map.class(field.parent);
             format!("{} {}::{}", field.typ, parent_class.name, field.name)
         }
+        Symbol::Def(def) => {
+            format!("def {}", def.name)
+        }
     };
 
     Some(Hover { content })
