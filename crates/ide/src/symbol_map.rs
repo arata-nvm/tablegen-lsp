@@ -12,12 +12,12 @@ use thiserror::Error;
 
 use crate::file_system::{FileId, FilePosition, FileRange};
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Class {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
-    pub template_arg_list: Vec<TemplateArgumentId>,
+    pub name_to_template_arg: BTreeMap<EcoString, TemplateArgumentId>,
     pub name_to_field: BTreeMap<EcoString, FieldId>,
     pub parent_class_list: Vec<ClassId>,
 }
@@ -44,7 +44,7 @@ impl Class {
             name,
             define_loc,
             reference_locs: Vec::new(),
-            template_arg_list: Vec::new(),
+            name_to_template_arg: BTreeMap::new(),
             name_to_field: BTreeMap::new(),
             parent_class_list: Vec::new(),
         }
@@ -55,13 +55,18 @@ impl Class {
         symbol_map: &mut SymbolMap,
         template_arg: TemplateArgument,
     ) -> TemplateArgumentId {
+        let name = template_arg.name.clone();
         let id = symbol_map.add_template_argument(template_arg);
-        self.template_arg_list.push(id);
+        self.name_to_template_arg.insert(name, id);
         id
     }
 
     pub fn iter_template_arg(&self) -> impl Iterator<Item = TemplateArgumentId> + '_ {
-        self.template_arg_list.iter().copied()
+        self.name_to_template_arg.values().copied()
+    }
+
+    pub fn find_template_arg(&self, name: &EcoString) -> Option<TemplateArgumentId> {
+        self.name_to_template_arg.get(name).copied()
     }
 
     pub fn add_field(
@@ -137,9 +142,9 @@ impl Class {
 
         let mut replacement = HashMap::new();
         let mut iter_arg_value_list = arg_value_list.into_iter();
-        for i in 0..parent_class.template_arg_list.len() {
+        for template_arg_id in parent_class.iter_template_arg() {
             replacement.insert(
-                parent_class.template_arg_list[i],
+                template_arg_id,
                 iter_arg_value_list
                     .next()
                     .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized)),
@@ -765,6 +770,7 @@ pub struct SymbolMap {
     template_arg_list: Arena<TemplateArgument>,
     field_list: Arena<Field>,
     def_list: Arena<Def>,
+    name_to_class: HashMap<EcoString, ClassId>,
     file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
@@ -777,6 +783,10 @@ impl SymbolMap {
 
     pub fn class_mut(&mut self, class_id: ClassId) -> &mut Class {
         self.class_list.get_mut(class_id).expect("invalid class id")
+    }
+
+    pub fn find_class(&self, name: &EcoString) -> Option<ClassId> {
+        self.name_to_class.get(name).copied()
     }
 
     pub fn template_arg(&self, template_arg_id: TemplateArgumentId) -> &TemplateArgument {
@@ -851,8 +861,10 @@ impl SymbolMap {
 // mutable api
 impl SymbolMap {
     pub fn add_class(&mut self, class: Class) -> ClassId {
+        let name = class.name.clone();
         let define_loc = class.define_loc;
         let id = self.class_list.alloc(class);
+        self.name_to_class.insert(name, id);
         self.file_to_symbol_list
             .entry(define_loc.file)
             .or_default()
@@ -862,6 +874,13 @@ impl SymbolMap {
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), id.into());
         id
+    }
+
+    pub fn replace_class(&mut self, old_class_id: ClassId, new_class: Class) {
+        let class_ref = self.class_mut(old_class_id);
+
+        assert!(class_ref.name == new_class.name);
+        let _ = std::mem::replace(class_ref, new_class);
     }
 
     pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
