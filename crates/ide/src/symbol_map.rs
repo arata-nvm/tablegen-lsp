@@ -13,7 +13,7 @@ use thiserror::Error;
 use crate::file_system::{FileId, FilePosition, FileRange};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Class {
+pub struct Record {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
@@ -22,21 +22,13 @@ pub struct Class {
     pub parent_class_list: Vec<ClassId>,
 }
 
-pub type ClassId = Id<Class>;
-
-impl From<ClassId> for SymbolId {
-    fn from(id: ClassId) -> Self {
-        SymbolId::ClassId(id)
-    }
-}
-
 #[derive(Debug, Error)]
-pub enum ClassError {
+pub enum RecordError {
     #[error("type of field '{0}' is incompatible: '{1}' and '{2}'")]
     IncompatibleType(EcoString, Type, Type),
 }
 
-impl Class {
+impl Record {
     pub fn new(name: EcoString, define_loc: FileRange) -> Self {
         Self {
             name,
@@ -71,13 +63,13 @@ impl Class {
         &mut self,
         symbol_map: &mut SymbolMap,
         new_field: Field,
-    ) -> Result<FieldId, (TextRange, ClassError)> {
+    ) -> Result<FieldId, (TextRange, RecordError)> {
         if let Some(old_field_id) = self.name_to_field.get(&new_field.name) {
             let old_field = symbol_map.field(*old_field_id);
             if old_field.typ != new_field.typ {
                 return Err((
                     new_field.define_loc.range,
-                    ClassError::IncompatibleType(
+                    RecordError::IncompatibleType(
                         new_field.name.clone(),
                         old_field.typ.clone(),
                         new_field.typ.clone(),
@@ -106,7 +98,7 @@ impl Class {
         parent_class_id: ClassId,
         arg_value_list: Vec<Expr>,
         reference_loc: FileRange,
-    ) -> Result<(), (TextRange, ClassError)> {
+    ) -> Result<(), (TextRange, RecordError)> {
         symbol_map.add_reference(parent_class_id, reference_loc);
         self.parent_class_list.push(parent_class_id);
 
@@ -135,6 +127,65 @@ impl Class {
         }
 
         Ok(())
+    }
+}
+
+impl From<Record> for Class {
+    fn from(val: Record) -> Self {
+        Class {
+            name: val.name,
+            define_loc: val.define_loc,
+            reference_locs: val.reference_locs,
+            name_to_template_arg: val.name_to_template_arg,
+            name_to_field: val.name_to_field,
+            parent_class_list: val.parent_class_list,
+        }
+    }
+}
+
+impl From<Record> for Def {
+    fn from(val: Record) -> Self {
+        Def {
+            name: val.name,
+            define_loc: val.define_loc,
+            reference_locs: val.reference_locs,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Class {
+    pub name: EcoString,
+    pub define_loc: FileRange,
+    pub reference_locs: Vec<FileRange>,
+    pub name_to_template_arg: BTreeMap<EcoString, TemplateArgumentId>,
+    pub name_to_field: BTreeMap<EcoString, FieldId>,
+    pub parent_class_list: Vec<ClassId>,
+}
+
+pub type ClassId = Id<Class>;
+
+impl From<ClassId> for SymbolId {
+    fn from(id: ClassId) -> Self {
+        SymbolId::ClassId(id)
+    }
+}
+
+impl Class {
+    pub fn iter_template_arg(&self) -> impl Iterator<Item = TemplateArgumentId> + '_ {
+        self.name_to_template_arg.values().copied()
+    }
+
+    pub fn find_template_arg(&self, name: &EcoString) -> Option<TemplateArgumentId> {
+        self.name_to_template_arg.get(name).copied()
+    }
+
+    pub fn iter_field(&self) -> impl Iterator<Item = FieldId> + '_ {
+        self.name_to_field.values().copied()
+    }
+
+    pub fn find_field(&self, name: &EcoString) -> Option<FieldId> {
+        self.name_to_field.get(name).copied()
     }
 }
 
@@ -170,7 +221,7 @@ pub struct Field {
     pub name: EcoString,
     pub typ: Type,
     pub value: Expr,
-    pub parent: ClassId,
+    pub parent: SymbolId,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
@@ -188,7 +239,7 @@ impl Field {
         name: EcoString,
         typ: Type,
         value: Expr,
-        parent: ClassId,
+        parent: SymbolId,
         define_loc: FileRange,
     ) -> Self {
         Self {
@@ -201,7 +252,7 @@ impl Field {
         }
     }
 
-    pub fn modified(&self, value: Expr, parent: ClassId, define_loc: FileRange) -> Self {
+    pub fn modified(&self, value: Expr, parent: SymbolId, define_loc: FileRange) -> Self {
         Field::new(
             self.name.clone(),
             self.typ.clone(),
@@ -212,7 +263,7 @@ impl Field {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Def {
     pub name: EcoString,
     pub define_loc: FileRange,
@@ -843,7 +894,8 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
-    pub fn add_class(&mut self, class: Class) -> ClassId {
+    pub fn add_class(&mut self, record: Record) -> ClassId {
+        let class: Class = record.into();
         let name = class.name.clone();
         let define_loc = class.define_loc;
         let id = self.class_list.alloc(class);
@@ -859,9 +911,10 @@ impl SymbolMap {
         id
     }
 
-    pub fn replace_class(&mut self, old_class_id: ClassId, new_class: Class) {
-        let class_ref = self.class_mut(old_class_id);
+    pub fn replace_class(&mut self, id: ClassId, record: Record) {
+        let class_ref = self.class_mut(id);
 
+        let new_class: Class = record.into();
         assert!(class_ref.name == new_class.name);
         let _ = std::mem::replace(class_ref, new_class);
     }
@@ -886,7 +939,8 @@ impl SymbolMap {
         id
     }
 
-    pub fn add_def(&mut self, def: Def) -> DefId {
+    pub fn add_def(&mut self, record: Record) -> DefId {
+        let def: Def = record.into();
         let define_loc = def.define_loc;
         let id = self.def_list.alloc(def);
         self.file_to_symbol_list
@@ -898,6 +952,14 @@ impl SymbolMap {
             .or_insert_with(IntervalMap::new)
             .insert(define_loc.range.into(), id.into());
         id
+    }
+
+    pub fn replace_def(&mut self, id: DefId, record: Record) {
+        let def_ref = self.def_mut(id);
+
+        let new_def: Def = record.into();
+        assert!(def_ref.name == new_def.name);
+        let _ = std::mem::replace(def_ref, new_def);
     }
 
     pub fn add_reference(&mut self, symbol_id: impl Into<SymbolId>, reference_loc: FileRange) {

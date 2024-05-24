@@ -11,7 +11,7 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    Class, ClassId, Def, Expr, Field, SimpleExpr, Symbol, SymbolId, SymbolMap, TemplateArgument,
+    ClassId, DefId, Expr, Field, Record, SimpleExpr, Symbol, SymbolId, SymbolMap, TemplateArgument,
     Type, Value,
 };
 
@@ -107,36 +107,27 @@ impl Scopes {
         self.scopes.pop().expect("scope is empty")
     }
 
-    fn current_class_id(&self) -> ClassId {
+    fn current_record_id(&self) -> SymbolId {
         self.scopes
             .iter()
             .rev()
-            .find_map(|scope| match scope {
-                Scope::Class(id, _) => Some(*id),
-                _ => None,
-            })
+            .find_map(|scope| scope.id())
             .expect("scope is empty")
     }
 
-    fn current_class(&self) -> &Class {
+    fn current_record(&self) -> &Record {
         self.scopes
             .iter()
             .rev()
-            .find_map(|scope| match scope {
-                Scope::Class(_, class) => Some(class),
-                _ => None,
-            })
+            .find_map(|scope| scope.record())
             .expect("scope is empty")
     }
 
-    fn current_class_mut(&mut self) -> &mut Class {
+    fn current_record_mut(&mut self) -> &mut Record {
         self.scopes
             .iter_mut()
             .rev()
-            .find_map(|scope| match scope {
-                Scope::Class(_, class) => Some(class),
-                _ => None,
-            })
+            .find_map(|record| record.record_mut())
             .expect("scope is empty")
     }
 
@@ -146,13 +137,13 @@ impl Scopes {
             return None;
         }
 
-        let class = self.current_class();
+        let record = self.current_record();
 
-        if let Some(field_id) = class.find_field(name) {
+        if let Some(field_id) = record.find_field(name) {
             return Some(field_id.into());
         }
 
-        if let Some(template_arg_id) = class.find_template_arg(name) {
+        if let Some(template_arg_id) = record.find_template_arg(name) {
             return Some(template_arg_id.into());
         }
 
@@ -162,14 +153,43 @@ impl Scopes {
 
 #[derive(Debug)]
 enum Scope {
-    Class(ClassId, Class),
+    Class(ClassId, Record),
+    Def(DefId, Record),
 }
 
 impl Scope {
-    pub fn into_class(self) -> (ClassId, Class) {
+    pub fn id(&self) -> Option<SymbolId> {
+        match self {
+            Scope::Class(id, _) => Some((*id).into()),
+            Scope::Def(id, _) => Some((*id).into()),
+        }
+    }
+
+    pub fn record(&self) -> Option<&Record> {
+        match self {
+            Scope::Class(_, record) => Some(record),
+            Scope::Def(_, record) => Some(record),
+        }
+    }
+
+    pub fn record_mut(&mut self) -> Option<&mut Record> {
+        match self {
+            Scope::Class(_, record) => Some(record),
+            Scope::Def(_, record) => Some(record),
+        }
+    }
+
+    pub fn into_class(self) -> (ClassId, Record) {
         match self {
             Scope::Class(id, class) => (id, class),
             _ => panic!("not a class"),
+        }
+    }
+
+    pub fn into_def(self) -> (DefId, Record) {
+        match self {
+            Scope::Def(id, def) => (id, def),
+            _ => panic!("not a def"),
         }
     }
 }
@@ -216,18 +236,18 @@ impl Eval for ast::Class {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
-        let class = Class::new(name.clone(), define_loc);
-        let id = ctx.symbol_map.add_class(class.clone());
+        let record = Record::new(name.clone(), define_loc);
+        let id = ctx.symbol_map.add_class(record.clone());
 
-        ctx.scopes.push(Scope::Class(id, class));
+        ctx.scopes.push(Scope::Class(id, record));
         if let Some(list) = self.template_arg_list() {
             list.eval(ctx);
         }
         if let Some(body) = self.record_body() {
             body.eval(ctx);
         }
-        let (_, real_class) = ctx.scopes.pop().into_class();
-        ctx.symbol_map.replace_class(id, real_class);
+        let (_, record) = ctx.scopes.pop().into_class();
+        ctx.symbol_map.replace_class(id, record);
 
         Some(())
     }
@@ -239,8 +259,16 @@ impl Eval for ast::Def {
         let name_range = self.name()?.syntax().text_range();
         let define_loc = FileRange::new(ctx.current_file_id(), name_range);
         let name = self.name()?.eval(ctx)?.eval_identifier(ctx, define_loc)?;
-        let def = Def::new(name.clone(), define_loc);
-        let _ = ctx.symbol_map.add_def(def);
+        let record = Record::new(name.clone(), define_loc);
+        let id = ctx.symbol_map.add_def(record.clone());
+
+        ctx.scopes.push(Scope::Def(id, record));
+        if let Some(body) = self.record_body() {
+            body.eval(ctx);
+        }
+        let (_, record) = ctx.scopes.pop().into_def();
+        ctx.symbol_map.replace_def(id, record);
+
         Some(())
     }
 }
@@ -262,7 +290,7 @@ impl Eval for ast::TemplateArgDecl {
         let typ = self.r#type()?.eval(ctx)?;
         let template_arg = TemplateArgument::new(name.clone(), typ, define_loc);
         ctx.scopes
-            .current_class_mut()
+            .current_record_mut()
             .add_template_arg(&mut ctx.symbol_map, template_arg);
         Some(())
     }
@@ -300,7 +328,7 @@ impl Eval for ast::ClassRef {
             .and_then(|it| it.eval(ctx))
             .unwrap_or_default();
 
-        if let Err((range, err)) = ctx.scopes.current_class_mut().inherit(
+        if let Err((range, err)) = ctx.scopes.current_record_mut().inherit(
             &mut ctx.symbol_map,
             class_id,
             arg_value_list,
@@ -368,13 +396,13 @@ impl Eval for ast::FieldDef {
             name.clone(),
             typ,
             value,
-            ctx.scopes.current_class_id(),
+            ctx.scopes.current_record_id(),
             define_loc,
         );
 
         if let Err((range, err)) = ctx
             .scopes
-            .current_class_mut()
+            .current_record_mut()
             .add_field(&mut ctx.symbol_map, field)
         {
             ctx.error(range, err.to_string());
@@ -393,16 +421,16 @@ impl Eval for ast::FieldLet {
             .and_then(|it| it.eval(ctx))
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
 
-        let Some(old_field_id) = ctx.scopes.current_class().find_field(&name) else {
+        let Some(old_field_id) = ctx.scopes.current_record().find_field(&name) else {
             ctx.error(define_loc.range, format!("unknown field: {name}"));
             return None;
         };
         let old_field = ctx.symbol_map.field(old_field_id);
 
-        let new_field = old_field.modified(value, ctx.scopes.current_class_id(), define_loc);
+        let new_field = old_field.modified(value, ctx.scopes.current_record_id(), define_loc);
         if let Err((range, err)) = ctx
             .scopes
-            .current_class_mut()
+            .current_record_mut()
             .add_field(&mut ctx.symbol_map, new_field)
         {
             ctx.error(range, err.to_string());

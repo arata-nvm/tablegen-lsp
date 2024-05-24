@@ -148,6 +148,11 @@ class Foo {
 
     #[test]
     fn def() {
-        insta::assert_debug_snapshot!(check(r#"def foo;"#));
+        insta::assert_debug_snapshot!(check(
+            r#"
+class Foo;
+def foo : Foo;
+"#
+        ));
     }
 }
