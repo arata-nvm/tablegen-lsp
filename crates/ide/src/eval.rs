@@ -12,8 +12,8 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    Class, ClassId, Def, Expr, Field, SimpleExpr, SymbolId, SymbolMap, TemplateArgument, Type,
-    Value,
+    Class, ClassId, Def, DefId, Expr, Field, SimpleExpr, SymbolId, SymbolMap, TemplateArgument,
+    Type, Value,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -54,7 +54,9 @@ pub struct EvalCtx<'a> {
     file_trace: Vec<FileId>,
     symbol_map: SymbolMap,
     diagnostics: Vec<Diagnostic>,
-    scope: Scope,
+    class_scopes: Scopes<ClassId>,
+    field_scopes: Scopes<SymbolId>, // TODO
+    def_scopes: Scopes<DefId>,
     current_class: Option<Class>,
     current_class_id: Option<ClassId>,
 }
@@ -66,7 +68,9 @@ impl<'a> EvalCtx<'a> {
             file_trace: vec![root_file],
             symbol_map: SymbolMap::default(),
             diagnostics: Vec::new(),
-            scope: Scope::new(),
+            class_scopes: Scopes::new(),
+            field_scopes: Scopes::new(),
+            def_scopes: Scopes::new(),
             current_class: None,
             current_class_id: None,
         }
@@ -112,7 +116,7 @@ impl<'a> EvalCtx<'a> {
         let current_class = self.current_class.as_mut().expect("current_class is None");
         let name = template_arg.name.clone();
         let id = current_class.add_template_arg(&mut self.symbol_map, template_arg);
-        self.scope.add_symbol(name, id);
+        self.field_scopes.add_symbol(name, id.into());
     }
 
     pub fn add_parent_class(
@@ -136,7 +140,7 @@ impl<'a> EvalCtx<'a> {
         let current_class = self.current_class.as_mut().expect("current_class is None");
         let name = field.name.clone();
         match current_class.add_field(&mut self.symbol_map, field) {
-            Ok(id) => self.scope.add_symbol(name, id),
+            Ok(id) => self.field_scopes.add_symbol(name, id.into()),
             Err((range, err)) => self.error(range, err.to_string()),
         }
     }
@@ -144,7 +148,7 @@ impl<'a> EvalCtx<'a> {
     pub fn modify_field(&mut self, name: EcoString, value: Expr, define_loc: FileRange) {
         let current_class = self.current_class.as_mut().expect("current_class is None");
         match current_class.modify_field(&mut self.symbol_map, name.clone(), value, define_loc) {
-            Ok(id) => self.scope.add_symbol(name, id),
+            Ok(id) => self.field_scopes.add_symbol(name, id.into()),
             Err(err) => self.error(define_loc.range, err.to_string()),
         }
     }
@@ -158,38 +162,55 @@ impl<'a> EvalCtx<'a> {
 }
 
 #[derive(Debug)]
-struct Scope {
-    scopes: Vec<HashMap<EcoString, SymbolId>>,
+struct Scopes<ID: Clone> {
+    scopes: Vec<Scope<ID>>,
 }
 
-impl Scope {
+impl<ID: Clone> Scopes<ID> {
     fn new() -> Self {
         Self {
-            scopes: vec![HashMap::new()],
+            scopes: vec![Scope::new()],
         }
     }
 
     fn push(&mut self) {
-        self.scopes.push(HashMap::new());
+        self.scopes.push(Scope::new());
     }
 
     fn pop(&mut self) {
         self.scopes.pop().expect("scope is empty");
     }
 
-    fn add_symbol(&mut self, name: EcoString, symbol_id: impl Into<SymbolId>) {
+    fn add_symbol(&mut self, name: EcoString, symbol_id: ID) {
         self.scopes
             .last_mut()
             .expect("scope is empty")
-            .insert(name, symbol_id.into());
+            .add_symbol(name, symbol_id);
     }
 
-    fn find_symbol(&mut self, name: &EcoString) -> Option<SymbolId> {
-        self.scopes
-            .iter()
-            .rev()
-            .find_map(|it| it.get(name))
-            .cloned()
+    fn find_symbol(&self, name: &EcoString) -> Option<ID> {
+        self.scopes.iter().rev().find_map(|it| it.find_symbol(name))
+    }
+}
+
+#[derive(Debug)]
+struct Scope<ID: Clone> {
+    name_to_symbol: HashMap<EcoString, ID>,
+}
+
+impl<ID: Clone> Scope<ID> {
+    fn new() -> Self {
+        Self {
+            name_to_symbol: HashMap::new(),
+        }
+    }
+
+    fn add_symbol(&mut self, name: EcoString, symbol_id: ID) {
+        self.name_to_symbol.insert(name, symbol_id);
+    }
+
+    fn find_symbol(&self, name: &EcoString) -> Option<ID> {
+        self.name_to_symbol.get(name).cloned()
     }
 }
 
@@ -237,18 +258,18 @@ impl Eval for ast::Class {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let dummy_class = Class::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_class(dummy_class);
-        ctx.scope.add_symbol(name.clone(), id);
+        ctx.class_scopes.add_symbol(name.clone(), id);
 
         ctx.set_current_class(id, Class::new(name, define_loc));
 
-        ctx.scope.push();
+        ctx.class_scopes.push();
         if let Some(list) = self.template_arg_list() {
             list.eval(ctx);
         }
         if let Some(body) = self.record_body() {
             body.eval(ctx);
         }
-        ctx.scope.pop();
+        ctx.class_scopes.pop();
 
         let real_class = ctx.take_current_class();
         let class_ref = ctx.symbol_map.class_mut(id);
@@ -266,7 +287,7 @@ impl Eval for ast::Def {
         let name = self.name()?.eval(ctx)?.eval_identifier(ctx, define_loc)?;
         let def = Def::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_def(def);
-        ctx.scope.add_symbol(name, id);
+        ctx.def_scopes.add_symbol(name, id);
         Some(())
     }
 }
@@ -315,7 +336,7 @@ impl Eval for ast::ClassRef {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, reference_loc) = utils::identifier(self.name()?, ctx)?;
-        let Some(class_id) = ctx.scope.find_symbol(&name).and_then(|it| it.as_class_id()) else {
+        let Some(class_id) = ctx.class_scopes.find_symbol(&name) else {
             ctx.error(reference_loc.range, format!("class not found: {name}"));
             return None;
         };
@@ -445,7 +466,7 @@ impl Eval for ast::Type {
             }
             ast::Type::ClassId(class_id) => {
                 let (name, reference_loc) = utils::identifier(class_id.name()?, ctx)?;
-                let Some(id) = ctx.scope.find_symbol(&name).and_then(|it| it.as_class_id()) else {
+                let Some(id) = ctx.class_scopes.find_symbol(&name) else {
                     ctx.error(
                         class_id.name()?.range()?,
                         format!("class not found: {name}"),
@@ -550,7 +571,7 @@ impl Eval for ast::SimpleValue {
             }
             ast::SimpleValue::Identifier(identifier) => {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
-                let symbol_sig = match ctx.scope.find_symbol(&name) {
+                let symbol_sig = match ctx.field_scopes.find_symbol(&name) {
                     Some(symbol_id) => {
                         ctx.symbol_map.add_reference(symbol_id, reference_loc);
                         let symbol = ctx.symbol_map.symbol(symbol_id);
