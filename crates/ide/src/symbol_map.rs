@@ -32,8 +32,6 @@ impl From<ClassId> for SymbolId {
 
 #[derive(Debug, Error)]
 pub enum ClassError {
-    #[error("unknown field: {0}")]
-    UnknownField(EcoString),
     #[error("type of field '{0}' is incompatible: '{1}' and '{2}'")]
     IncompatibleType(EcoString, Type, Type),
 }
@@ -92,31 +90,6 @@ impl Class {
         let id = symbol_map.add_field(new_field);
         self.name_to_field.insert(name, id);
         Ok(id)
-    }
-
-    pub fn modify_field(
-        &mut self,
-        symbol_map: &mut SymbolMap,
-        name: EcoString,
-        value: Expr,
-        define_loc: FileRange,
-    ) -> Result<FieldId, ClassError> {
-        match self.name_to_field.get(&name) {
-            Some(old_field_id) => {
-                let old_field = symbol_map.field(*old_field_id);
-                let new_field = Field::new(
-                    name.clone(),
-                    old_field.typ.clone(),
-                    value,
-                    old_field.parent,
-                    define_loc,
-                );
-                let id = symbol_map.add_field(new_field);
-                self.name_to_field.insert(name, id);
-                Ok(id)
-            }
-            None => Err(ClassError::UnknownField(name)),
-        }
     }
 
     pub fn iter_field(&self) -> impl Iterator<Item = FieldId> + '_ {
@@ -226,6 +199,16 @@ impl Field {
             define_loc,
             reference_locs: Vec::new(),
         }
+    }
+
+    pub fn modified(&self, value: Expr, parent: ClassId, define_loc: FileRange) -> Self {
+        Field::new(
+            self.name.clone(),
+            self.typ.clone(),
+            value,
+            parent,
+            define_loc,
+        )
     }
 }
 

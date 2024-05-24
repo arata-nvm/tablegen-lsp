@@ -393,13 +393,19 @@ impl Eval for ast::FieldLet {
             .and_then(|it| it.eval(ctx))
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
 
-        if let Err(err) = ctx.scopes.current_class_mut().modify_field(
-            &mut ctx.symbol_map,
-            name,
-            value,
-            define_loc,
-        ) {
-            ctx.error(define_loc.range, err.to_string());
+        let Some(old_field_id) = ctx.scopes.current_class().find_field(&name) else {
+            ctx.error(define_loc.range, format!("unknown field: {name}"));
+            return None;
+        };
+        let old_field = ctx.symbol_map.field(old_field_id);
+
+        let new_field = old_field.modified(value, ctx.scopes.current_class_id(), define_loc);
+        if let Err((range, err)) = ctx
+            .scopes
+            .current_class_mut()
+            .add_field(&mut ctx.symbol_map, new_field)
+        {
+            ctx.error(range, err.to_string());
         }
 
         Some(())
