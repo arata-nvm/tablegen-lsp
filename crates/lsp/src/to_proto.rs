@@ -1,7 +1,11 @@
 use async_lsp::lsp_types;
 use ide::{
     file_system::{FileRange, FileSystem},
-    handlers::{document_symbol::DocumentSymbolKind, hover::Hover},
+    handlers::{
+        document_symbol::DocumentSymbolKind,
+        hover::Hover,
+        inlay_hint::{InlayHint, InlayHintKind},
+    },
 };
 use text_size::{TextRange, TextSize};
 
@@ -82,5 +86,22 @@ pub fn hover(hover: Hover) -> lsp_types::Hover {
             },
         )),
         range: None,
+    }
+}
+
+pub fn inlay_hint(line_index: &LineIndex, inlay_hint: InlayHint) -> lsp_types::InlayHint {
+    lsp_types::InlayHint {
+        position: position(line_index, inlay_hint.position),
+        label: lsp_types::InlayHintLabel::String(inlay_hint.label),
+        kind: None,
+        text_edits: None,
+        tooltip: None,
+        padding_left: match inlay_hint.kind {
+            InlayHintKind::TemplateArg => Some(false),
+        },
+        padding_right: match inlay_hint.kind {
+            InlayHintKind::TemplateArg => Some(true),
+        },
+        data: None,
     }
 }

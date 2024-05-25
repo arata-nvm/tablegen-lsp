@@ -1,9 +1,11 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
+use syntax::parser::TextRange;
+
 use crate::{
     db::{SourceDatabase, SourceDatabaseStorage},
     eval::EvalDatabaseStorage,
-    file_system::{self, FileId, FilePath, FilePosition, FileSet, FileSystem},
+    file_system::{self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem},
 };
 
 const DEFAULT_FILE_PATH: &str = "/main.td";
@@ -132,6 +134,13 @@ impl Fixture {
 
     pub fn marker(&self, index: usize) -> FilePosition {
         self.markers[index]
+    }
+
+    pub fn full_range(&self, file: FileId) -> FileRange {
+        FileRange {
+            file,
+            range: TextRange::new(0.into(), self.file_content(&file).len().try_into().unwrap()),
+        }
     }
 
     pub fn file_content(&self, id: &FileId) -> String {

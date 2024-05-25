@@ -1,0 +1,11 @@
+---
+source: crates/ide/src/handlers/inlay_hint.rs
+expression: "check(r#\"\nclass Foo<int foo>;\nclass Bar: Foo<1>;\"#)"
+---
+[
+    InlayHint {
+        position: 35,
+        label: "foo:",
+        kind: TemplateArg,
+    },
+]

@@ -4,9 +4,9 @@ use std::sync::{Arc, RwLock};
 use async_lsp::lsp_types::{
     notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
     DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
-    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, Location,
-    OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InlayHint,
+    InlayHintParams, Location, OneOf, PublishDiagnosticsParams, ReferenceParams,
+    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -42,7 +42,8 @@ impl Server {
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
             .request::<request::GotoDefinition, _>(Self::definition)
             .request::<request::References, _>(Self::references)
-            .request::<request::HoverRequest, _>(Self::hover);
+            .request::<request::HoverRequest, _>(Self::hover)
+            .request::<request::InlayHintRequest, _>(Self::inlay_hint);
         router
     }
 
@@ -75,6 +76,7 @@ impl LanguageServer for Server {
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                inlay_hint_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
         })))
@@ -151,6 +153,27 @@ impl LanguageServer for Server {
                 .map(|it| to_proto::document_symbol(&line_index, it))
                 .collect();
             Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn inlay_hint(
+        &mut self,
+        params: InlayHintParams,
+    ) -> BoxFuture<'static, Result<Option<Vec<InlayHint>>, Self::Error>> {
+        tracing::info!("inlay_hint: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (range, line_index) =
+                from_proto::file_range(&snap, params.text_document, params.range);
+            let Some(inlay_hints) = snap.analysis.inlay_hint(range) else {
+                return Ok(None);
+            };
+
+            let lsp_inlay_hints = inlay_hints
+                .into_iter()
+                .map(|it| to_proto::inlay_hint(&line_index, it))
+                .collect();
+            Ok(Some(lsp_inlay_hints))
         });
         Box::pin(async move { task.await.unwrap() })
     }

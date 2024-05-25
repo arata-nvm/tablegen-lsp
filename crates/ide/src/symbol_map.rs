@@ -882,11 +882,24 @@ impl SymbolMap {
         }
     }
 
-    pub fn iter_symbol_in(&self, file_id: FileId) -> Option<impl Iterator<Item = SymbolId>> {
+    pub fn iter_symbols_in_file(&self, file_id: FileId) -> Option<impl Iterator<Item = SymbolId>> {
         self.file_to_symbol_list
             .get(&file_id)
             .cloned()
             .map(|class_list| class_list.into_iter())
+    }
+
+    pub fn iter_symbols_in_range(
+        &self,
+        loc: FileRange,
+    ) -> Option<impl Iterator<Item = (FileRange, SymbolId)> + '_> {
+        let map = self.pos_to_symbol_map.get(&loc.file)?;
+        Some(map.iter(loc.range).map(move |(range, id)| {
+            (
+                FileRange::new(loc.file, TextRange::new(range.start, range.end)),
+                *id,
+            )
+        }))
     }
 
     pub fn find_symbol_at(&self, pos: FilePosition) -> Option<Symbol> {

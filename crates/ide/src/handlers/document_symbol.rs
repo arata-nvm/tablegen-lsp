@@ -9,7 +9,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
     let evaluation = db.eval();
     let symbol_map = evaluation.symbol_map();
 
-    let Some(iter) = symbol_map.iter_symbol_in(file_id) else {
+    let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
         tracing::info!("no classes found in file: {file_id:?}");
         return None;
     };

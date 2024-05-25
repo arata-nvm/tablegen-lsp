@@ -30,7 +30,7 @@ pub fn main() {
     let symbol_map = evaluation.symbol_map();
 
     for symbol_id in symbol_map
-        .iter_symbol_in(file_id)
+        .iter_symbols_in_file(file_id)
         .expect("failed to iterate classes")
     {
         match symbol_id {

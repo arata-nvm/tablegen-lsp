@@ -9,7 +9,10 @@ use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
 use crate::handlers::hover::Hover;
-use crate::handlers::{diagnostics, document_symbol, goto_definition, hover, references};
+use crate::handlers::inlay_hint::InlayHint;
+use crate::handlers::{
+    diagnostics, document_symbol, goto_definition, hover, inlay_hint, references,
+};
 use crate::line_index::LineIndex;
 
 #[derive(Default)]
@@ -69,5 +72,9 @@ impl Analysis {
 
     pub fn hover(&self, pos: FilePosition) -> Option<Hover> {
         hover::exec(&*self.db, pos)
+    }
+
+    pub fn inlay_hint(&self, range: FileRange) -> Option<Vec<InlayHint>> {
+        inlay_hint::exec(&*self.db, range)
     }
 }
