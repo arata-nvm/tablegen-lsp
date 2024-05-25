@@ -79,7 +79,10 @@ impl LanguageServer for Server {
                 references_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 inlay_hint_provider: Some(OneOf::Left(true)),
-                completion_provider: Some(CompletionOptions::default()),
+                completion_provider: Some(CompletionOptions {
+                    trigger_characters: Some(vec![String::from("!")]), // for bang operator
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
         })))
@@ -188,7 +191,8 @@ impl LanguageServer for Server {
         tracing::info!("completion: {params:?}");
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
-            let Some(completion_list) = snap.analysis.completion(pos) else {
+            let trigger_char = params.context.and_then(|it| it.trigger_character);
+            let Some(completion_list) = snap.analysis.completion(pos, trigger_char) else {
                 return Ok(None);
             };
 

@@ -1,0 +1,306 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check_trigger(\"!$\", \"!\")"
+---
+[
+    CompletionItem {
+        label: "concat",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "add",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "sub",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "mul",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "div",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "not",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "log2",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "and",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "or",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "xor",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "sra",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "srl",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "shl",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "listconcat",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "listsplat",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "strconcat",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "interleave",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "substr",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "find",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "cast",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "subst",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "foreach",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "filter",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "foldl",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "head",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "tail",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "size",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "empty",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "if",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "eq",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "isa",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "dag",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "ne",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "le",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "lt",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "ge",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "gt",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "setdagop",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "getdagop",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "exists",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "listremove",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "tolower",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "toupper",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "range",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "getdagarg",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "getdagname",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "setdagarg",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "setdagname",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "assert",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "class",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "def",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "dump",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "foreach",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "defm",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "defset",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "defvar",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "if",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "include",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "let",
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "multiclass",
+        detail: "",
+        kind: Keyword,
+    },
+]

@@ -79,7 +79,11 @@ impl Analysis {
         inlay_hint::exec(&*self.db, range)
     }
 
-    pub fn completion(&self, pos: FilePosition) -> Option<Vec<CompletionItem>> {
-        completion::exec(&*self.db, pos)
+    pub fn completion(
+        &self,
+        pos: FilePosition,
+        trigger_char: Option<String>,
+    ) -> Option<Vec<CompletionItem>> {
+        completion::exec(&*self.db, pos, trigger_char)
     }
 }

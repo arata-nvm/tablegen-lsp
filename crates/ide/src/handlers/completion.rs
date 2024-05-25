@@ -28,7 +28,11 @@ pub enum CompletionItemKind {
     Type,
 }
 
-pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Vec<CompletionItem>> {
+pub fn exec(
+    db: &dyn EvalDatabase,
+    pos: FilePosition,
+    trigger_char: Option<String>,
+) -> Option<Vec<CompletionItem>> {
     let parse = db.parse(pos.file);
     let root_node = parse.syntax_node();
     let cur_token = root_node.token_at_offset(pos.position).left_biased()?;
@@ -36,6 +40,11 @@ pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Vec<CompletionIt
     let parent_parent_node = parent_node.parent()?;
 
     let mut ctx = CompletionContext::new();
+
+    if trigger_char == Some("!".into()) {
+        ctx.complete_bang_operators();
+    }
+
     match parent_parent_node.kind() {
         SyntaxKind::StatementList => ctx.complete_toplevel_keywords(),
         SyntaxKind::InnerValue => ctx.complete_primitive_values(),
@@ -104,6 +113,60 @@ impl CompletionContext {
         const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
         self.add_items(&BOOLEAN_VALUES, CompletionItemKind::Keyword);
     }
+
+    fn complete_bang_operators(&mut self) {
+        const BANG_OPERATORS: [&str; 48] = [
+            "concat",
+            "add",
+            "sub",
+            "mul",
+            "div",
+            "not",
+            "log2",
+            "and",
+            "or",
+            "xor",
+            "sra",
+            "srl",
+            "shl",
+            "listconcat",
+            "listsplat",
+            "strconcat",
+            "interleave",
+            "substr",
+            "find",
+            "cast",
+            "subst",
+            "foreach",
+            "filter",
+            "foldl",
+            "head",
+            "tail",
+            "size",
+            "empty",
+            "if",
+            "eq",
+            "isa",
+            "dag",
+            "ne",
+            "le",
+            "lt",
+            "ge",
+            "gt",
+            "setdagop",
+            "getdagop",
+            "exists",
+            "listremove",
+            "tolower",
+            "toupper",
+            "range",
+            "getdagarg",
+            "getdagname",
+            "setdagarg",
+            "setdagname",
+        ];
+        self.add_items(&BANG_OPERATORS, CompletionItemKind::Keyword);
+    }
 }
 
 #[cfg(test)]
@@ -114,7 +177,12 @@ mod tests {
 
     fn check(s: &str) -> Vec<CompletionItem> {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.marker(0)).expect("completion failed")
+        super::exec(&db, f.marker(0), None).expect("completion failed")
+    }
+
+    fn check_trigger(s: &str, trigger_char: impl Into<String>) -> Vec<CompletionItem> {
+        let (db, f) = tests::single_file(s);
+        super::exec(&db, f.marker(0), Some(trigger_char.into())).expect("completion failed")
     }
 
     #[test]
@@ -130,5 +198,10 @@ mod tests {
     #[test]
     fn value() {
         insta::assert_debug_snapshot!(check("class Foo<int a = t$"));
+    }
+
+    #[test]
+    fn bang_operator() {
+        insta::assert_debug_snapshot!(check_trigger("!$", "!"));
     }
 }
