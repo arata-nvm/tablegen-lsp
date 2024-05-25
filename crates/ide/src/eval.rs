@@ -11,8 +11,8 @@ use crate::db::SourceDatabase;
 use crate::file_system::{FileId, FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::{
-    ClassId, DefId, Expr, Field, Record, SimpleExpr, Symbol, SymbolId, SymbolMap, TemplateArgument,
-    Type, Value,
+    ClassId, DagArg, DagArgValue, DefId, Expr, Field, Record, SimpleExpr, Symbol, SymbolId,
+    SymbolMap, TemplateArgument, Type, Value,
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -505,10 +505,15 @@ impl Eval for ast::Value {
     type Output = Expr;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let inner_values: Vec<_> = self.inner_values().filter_map(|it| it.eval(ctx)).collect();
+        if inner_values.is_empty() {
+            return Some(Expr::Simple(SimpleExpr::Uninitialized));
+        }
+
         if inner_values.len() != 1 {
             ctx.error(self.syntax().text_range(), "not implemented");
             return None;
         }
+
         Some(inner_values.into_iter().next().unwrap())
     }
 }
@@ -589,6 +594,14 @@ impl Eval for ast::SimpleValue {
                 };
                 Some(SimpleExpr::List(values, typ))
             }
+            ast::SimpleValue::Dag(dag) => {
+                let op = dag.operator()?.eval(ctx)?;
+                let args = dag
+                    .arg_list()
+                    .and_then(|it| it.eval(ctx))
+                    .unwrap_or_default();
+                Some(SimpleExpr::Dag(Box::new(op), args))
+            }
             ast::SimpleValue::Identifier(identifier) => {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
                 let symbol_sig = match ctx.scopes.find_var(&name) {
@@ -625,6 +638,23 @@ impl Eval for ast::SimpleValue {
     }
 }
 
+impl Eval for ast::DagArg {
+    type Output = DagArg;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        Some(DagArg {
+            value: self.value()?.eval(ctx)?,
+            var_name: self.var_name().and_then(|it| it.value()),
+        })
+    }
+}
+
+impl Eval for ast::DagArgList {
+    type Output = Vec<DagArg>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        Some(self.args().filter_map(|arg| arg.eval(ctx)).collect())
+    }
+}
+
 pub trait ValueEval {
     fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString>;
     fn eval_value(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value>;
@@ -655,7 +685,10 @@ impl ValueEval for Expr {
 impl ValueEval for SimpleExpr {
     fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString> {
         match self {
-            SimpleExpr::Uninitialized | SimpleExpr::Bits(_) | SimpleExpr::List(_, _) => {
+            SimpleExpr::Uninitialized
+            | SimpleExpr::Bits(_)
+            | SimpleExpr::List(_, _)
+            | SimpleExpr::Dag(_, _) => {
                 ctx.error(loc.range, "'{self}' cannot be used as an identifier");
                 None
             }
@@ -692,6 +725,22 @@ impl ValueEval for SimpleExpr {
                     .filter_map(|it| it.eval_value(ctx, loc))
                     .collect();
                 Some(Value::List(values, typ))
+            }
+            SimpleExpr::Dag(op, args) => {
+                let op = DagArgValue {
+                    value: op.value.eval_value(ctx, loc)?,
+                    var_name: op.var_name,
+                };
+                let args = args
+                    .into_iter()
+                    .filter_map(|it| {
+                        Some(DagArgValue {
+                            value: it.value.eval_value(ctx, loc)?,
+                            var_name: it.var_name,
+                        })
+                    })
+                    .collect();
+                Some(Value::Dag(Box::new(op), args))
             }
             SimpleExpr::Identifier(_, Some(_)) => {
                 ctx.error(loc.range, "not implemented");

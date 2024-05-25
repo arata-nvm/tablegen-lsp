@@ -360,7 +360,7 @@ pub enum SimpleExpr {
     Code(EcoString),
     Bits(Vec<Expr>),
     List(Vec<Expr>, Type),
-    // Dag(DagArg, Vec<DagArg>),
+    Dag(Box<DagArg>, Vec<DagArg>),
     Identifier(EcoString, Option<(SymbolId, Type)>),
     // ClassValue,
     BangOperator(BangOperatorOp, Vec<Expr>),
@@ -377,6 +377,7 @@ impl SimpleExpr {
             Self::Code(_) => Type::Code,
             Self::Bits(bits) => Type::Bits(bits.len()),
             Self::List(_, typ) => Type::List(Box::new(typ.clone())),
+            Self::Dag(_, _) => Type::Dag,
             Self::Identifier(_, Some((_, typ))) => typ.clone(),
             Self::Identifier(_, None) => Type::Unknown,
             Self::BangOperator(_, _) => Type::Unknown, // TODO
@@ -414,6 +415,15 @@ impl std::fmt::Display for SimpleExpr {
                         .join(", ")
                 )
             }
+            Self::Dag(op, args) => write!(
+                f,
+                "({} {})",
+                op,
+                args.iter()
+                    .map(|it| it.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             Self::Identifier(name, _) => write!(f, "{name}"),
             Self::BangOperator(op, args) => write!(
                 f,
@@ -428,10 +438,19 @@ impl std::fmt::Display for SimpleExpr {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct DagArg {
-    value: Expr,
-    var_name: EcoString,
+    pub value: Expr,
+    pub var_name: Option<EcoString>,
+}
+
+impl std::fmt::Display for DagArg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.var_name {
+            Some(ref var_name) => write!(f, "{}:${}", self.value, var_name),
+            None => write!(f, "{}", self.value),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -607,6 +626,22 @@ pub enum Value {
     String(String),
     Bits(Vec<Value>),
     List(Vec<Value>, Type),
+    Dag(Box<DagArgValue>, Vec<DagArgValue>),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct DagArgValue {
+    pub value: Value,
+    pub var_name: Option<EcoString>,
+}
+
+impl std::fmt::Display for DagArgValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.var_name {
+            Some(ref var_name) => write!(f, "{}:${}", self.value, var_name),
+            None => write!(f, "{}", self.value),
+        }
+    }
 }
 
 impl Value {
@@ -617,6 +652,7 @@ impl Value {
             Self::String(_) => Type::String,
             Self::Bits(bits) => Type::Bits(bits.len()),
             Self::List(_, typ) => Type::List(Box::new(typ.clone())),
+            Self::Dag(_, _) => Type::Dag,
         }
     }
 }
@@ -649,6 +685,15 @@ impl std::fmt::Display for Value {
                         .join(", ")
                 )
             }
+            Self::Dag(op, args) => write!(
+                f,
+                "({} {})",
+                op,
+                args.iter()
+                    .map(|it| it.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
         }
     }
 }
