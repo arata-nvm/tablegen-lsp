@@ -920,7 +920,11 @@ impl SymbolMap {
     pub fn replace_class(&mut self, id: ClassId, record: Record) {
         let class_ref = self.class_mut(id);
 
-        let new_class: Class = record.into();
+        let mut new_class: Class = record.into();
+        new_class
+            .reference_locs
+            .clone_from(&class_ref.reference_locs);
+
         assert!(class_ref.name == new_class.name);
         let _ = std::mem::replace(class_ref, new_class);
     }
@@ -963,7 +967,9 @@ impl SymbolMap {
     pub fn replace_def(&mut self, id: DefId, record: Record) {
         let def_ref = self.def_mut(id);
 
-        let new_def: Def = record.into();
+        let mut new_def: Def = record.into();
+        new_def.reference_locs.clone_from(&def_ref.reference_locs);
+
         assert!(def_ref.name == new_def.name);
         let _ = std::mem::replace(def_ref, new_def);
     }

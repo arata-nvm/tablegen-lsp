@@ -25,6 +25,7 @@ mod tests {
     #[test]
     fn class() {
         insta::assert_debug_snapshot!(check("class $Foo; class Bar: Foo;"));
+        insta::assert_debug_snapshot!(check("class $Foo { Foo foo; }"));
     }
 
     #[test]
