@@ -1,0 +1,26 @@
+---
+source: crates/ide/src/handlers/diagnostics.rs
+expression: "(diags1, diags2)"
+---
+(
+    {
+        FileId(
+            0,
+        ): [
+            Diagnostic {
+                location: FileRange {
+                    file: FileId(
+                        0,
+                    ),
+                    range: 9..9,
+                },
+                message: "expected ';' or '{' to start body",
+            },
+        ],
+    },
+    {
+        FileId(
+            0,
+        ): [],
+    },
+)

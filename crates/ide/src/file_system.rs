@@ -89,6 +89,10 @@ impl FileSet {
     pub fn path_for_file(&self, file_id: &FileId) -> &FilePath {
         &self.id_to_path[file_id]
     }
+
+    pub fn iter_files(&self) -> impl Iterator<Item = FileId> + '_ {
+        self.id_to_path.keys().copied()
+    }
 }
 
 #[derive(Debug)]
@@ -112,6 +116,10 @@ impl SourceRoot {
 
     pub fn path_for_file(&self, file_id: &FileId) -> &FilePath {
         self.file_set.path_for_file(file_id)
+    }
+
+    pub fn iter_files(&self) -> impl Iterator<Item = FileId> + '_ {
+        self.file_set.iter_files()
     }
 }
 
