@@ -1,4 +1,7 @@
-use syntax::syntax_kind::SyntaxKind;
+use syntax::{
+    ast::{self, AstNode},
+    syntax_kind::SyntaxKind,
+};
 
 use crate::{eval::EvalDatabase, file_system::FilePosition};
 
@@ -22,6 +25,7 @@ impl CompletionItem {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CompletionItemKind {
     Keyword,
+    Type,
 }
 
 pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Vec<CompletionItem>> {
@@ -34,6 +38,9 @@ pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Vec<CompletionIt
     let mut ctx = CompletionContext::new();
     match parent_parent_node.kind() {
         SyntaxKind::StatementList => ctx.complete_toplevel_keywords(),
+        _ if ast::Type::can_cast(parent_parent_node.kind()) => {
+            ctx.complete_primitive_types();
+        }
         _ => {}
     }
 
@@ -86,6 +93,11 @@ impl CompletionContext {
 
         self.add_items(&TOPLEVEL_KEYWORDS, CompletionItemKind::Keyword);
     }
+
+    fn complete_primitive_types(&mut self) {
+        const PRIMITIVE_TYPES: [&str; 7] = ["bit", "bits", "code", "dag", "int", "list", "string"];
+        self.add_items(&PRIMITIVE_TYPES, CompletionItemKind::Type);
+    }
 }
 
 #[cfg(test)]
@@ -102,5 +114,10 @@ mod tests {
     #[test]
     fn keyword() {
         insta::assert_debug_snapshot!(check("c$"));
+    }
+
+    #[test]
+    fn r#type() {
+        insta::assert_debug_snapshot!(check("class Foo<i$"));
     }
 }

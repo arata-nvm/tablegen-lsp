@@ -117,6 +117,7 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
     let mut lsp_item = lsp_types::CompletionItem::new_simple(item.label, item.detail);
     lsp_item.kind = Some(match item.kind {
         CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
+        CompletionItemKind::Type => lsp_types::CompletionItemKind::CLASS,
     });
     lsp_item
 }
