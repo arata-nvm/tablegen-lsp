@@ -62,7 +62,19 @@ pub fn main() {
             }
             SymbolId::DefId(def_id) => {
                 let def = symbol_map.def(def_id);
-                println!("def {};", def.name);
+                let parent_classes = def
+                    .parent_class_list
+                    .iter()
+                    .map(|&id| symbol_map.class(id))
+                    .map(|class| format!("{}", class.name))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                println!("def {} : {} {{", def.name, parent_classes);
+                for field_id in def.iter_field() {
+                    let field = symbol_map.field(field_id);
+                    println!("  {} {} = {};", field.typ, field.name, field.value);
+                }
+                println!("}}");
             }
             _ => println!("unimplemented: {symbol_id:?}"),
         }
