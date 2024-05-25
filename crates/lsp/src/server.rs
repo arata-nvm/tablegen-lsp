@@ -2,11 +2,12 @@ use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
-    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InlayHint,
-    InlayHintParams, Location, OneOf, PublishDiagnosticsParams, ReferenceParams,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    notification, request, CompletionOptions, CompletionParams, CompletionResponse,
+    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
+    DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
+    HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams,
+    Location, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -43,7 +44,8 @@ impl Server {
             .request::<request::GotoDefinition, _>(Self::definition)
             .request::<request::References, _>(Self::references)
             .request::<request::HoverRequest, _>(Self::hover)
-            .request::<request::InlayHintRequest, _>(Self::inlay_hint);
+            .request::<request::InlayHintRequest, _>(Self::inlay_hint)
+            .request::<request::Completion, _>(Self::completion);
         router
     }
 
@@ -77,6 +79,7 @@ impl LanguageServer for Server {
                 references_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 inlay_hint_provider: Some(OneOf::Left(true)),
+                completion_provider: Some(CompletionOptions::default()),
                 ..Default::default()
             },
         })))
@@ -174,6 +177,26 @@ impl LanguageServer for Server {
                 .map(|it| to_proto::inlay_hint(&line_index, it))
                 .collect();
             Ok(Some(lsp_inlay_hints))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn completion(
+        &mut self,
+        params: CompletionParams,
+    ) -> BoxFuture<'static, Result<Option<CompletionResponse>, Self::Error>> {
+        tracing::info!("completion: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
+            let Some(completion_list) = snap.analysis.completion(pos) else {
+                return Ok(None);
+            };
+
+            let lsp_completion_list = completion_list
+                .into_iter()
+                .map(to_proto::completion_item)
+                .collect();
+            Ok(Some(CompletionResponse::Array(lsp_completion_list)))
         });
         Box::pin(async move { task.await.unwrap() })
     }

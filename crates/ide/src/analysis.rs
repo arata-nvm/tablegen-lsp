@@ -6,6 +6,7 @@ use salsa::ParallelDatabase;
 use crate::db::{RootDatabase, SourceDatabase};
 use crate::eval::{EvalDatabase, Evaluation};
 use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
+use crate::handlers::completion::{self, CompletionItem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_symbol::DocumentSymbol;
 use crate::handlers::hover::Hover;
@@ -76,5 +77,9 @@ impl Analysis {
 
     pub fn inlay_hint(&self, range: FileRange) -> Option<Vec<InlayHint>> {
         inlay_hint::exec(&*self.db, range)
+    }
+
+    pub fn completion(&self, pos: FilePosition) -> Option<Vec<CompletionItem>> {
+        completion::exec(&*self.db, pos)
     }
 }

@@ -2,6 +2,7 @@ use async_lsp::lsp_types;
 use ide::{
     file_system::{FileRange, FileSystem},
     handlers::{
+        completion::{CompletionItem, CompletionItemKind},
         document_symbol::DocumentSymbolKind,
         hover::Hover,
         inlay_hint::{InlayHint, InlayHintKind},
@@ -110,4 +111,12 @@ pub fn inlay_hint(line_index: &LineIndex, inlay_hint: InlayHint) -> lsp_types::I
         },
         data: None,
     }
+}
+
+pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
+    let mut lsp_item = lsp_types::CompletionItem::new_simple(item.label, item.detail);
+    lsp_item.kind = Some(match item.kind {
+        CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
+    });
+    lsp_item
 }
