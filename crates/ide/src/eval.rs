@@ -622,6 +622,18 @@ impl Eval for ast::SimpleValue {
                 };
                 Some(SimpleExpr::Identifier(name, symbol_sig))
             }
+            ast::SimpleValue::ClassValue(class_value) => {
+                let (name, reference_loc) = utils::identifier(class_value.name()?, ctx)?;
+                let Some(class_id) = ctx.symbol_map.find_class(&name) else {
+                    ctx.error(reference_loc.range, format!("class not found: {name}"));
+                    return None;
+                };
+                let arg_value_list = class_value
+                    .arg_value_list()
+                    .and_then(|it| it.eval(ctx))
+                    .unwrap_or_default();
+                Some(SimpleExpr::ClassValue(name, class_id, arg_value_list))
+            }
             ast::SimpleValue::BangOperator(bang_operator) => {
                 let op = bang_operator.kind()?.into();
                 let args = bang_operator
@@ -688,7 +700,8 @@ impl ValueEval for SimpleExpr {
             SimpleExpr::Uninitialized
             | SimpleExpr::Bits(_)
             | SimpleExpr::List(_, _)
-            | SimpleExpr::Dag(_, _) => {
+            | SimpleExpr::Dag(_, _)
+            | SimpleExpr::ClassValue(_, _, _) => {
                 ctx.error(loc.range, "'{self}' cannot be used as an identifier");
                 None
             }
@@ -698,6 +711,7 @@ impl ValueEval for SimpleExpr {
             SimpleExpr::String(string) => Some(string.into()),
             SimpleExpr::Code(code) => Some(code),
             SimpleExpr::Identifier(name, _) => Some(name),
+
             SimpleExpr::BangOperator(_, _) => {
                 ctx.error(loc.range, "not implemented");
                 None
@@ -752,6 +766,10 @@ impl ValueEval for SimpleExpr {
             }
             SimpleExpr::Identifier(name, None) => {
                 ctx.error(loc.range, format!("symbol not found: {name}"));
+                None
+            }
+            SimpleExpr::ClassValue(_, _, _) => {
+                ctx.error(loc.range, "not implemented");
                 None
             }
             SimpleExpr::BangOperator(_, _) => {

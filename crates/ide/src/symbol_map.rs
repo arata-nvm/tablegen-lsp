@@ -362,7 +362,7 @@ pub enum SimpleExpr {
     List(Vec<Expr>, Type),
     Dag(Box<DagArg>, Vec<DagArg>),
     Identifier(EcoString, Option<(SymbolId, Type)>),
-    // ClassValue,
+    ClassValue(EcoString, ClassId, Vec<Expr>),
     BangOperator(BangOperatorOp, Vec<Expr>),
     CondOperator(Vec<CondClause>),
 }
@@ -380,6 +380,7 @@ impl SimpleExpr {
             Self::Dag(_, _) => Type::Dag,
             Self::Identifier(_, Some((_, typ))) => typ.clone(),
             Self::Identifier(_, None) => Type::Unknown,
+            Self::ClassValue(class_name, class_id, _) => Type::Class(*class_id, class_name.clone()),
             Self::BangOperator(_, _) => Type::Unknown, // TODO
             Self::CondOperator(_) => Type::Unknown,    // TODO
         }
@@ -426,6 +427,15 @@ impl std::fmt::Display for SimpleExpr {
                     .join(", ")
             ),
             Self::Identifier(name, _) => write!(f, "{name}"),
+            Self::ClassValue(name, _, args) => write!(
+                f,
+                "{}<{}>",
+                name,
+                args.iter()
+                    .map(|it| it.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             Self::BangOperator(op, args) => write!(
                 f,
                 "{}({})",
