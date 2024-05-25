@@ -38,6 +38,7 @@ pub fn exec(db: &dyn EvalDatabase, pos: FilePosition) -> Option<Vec<CompletionIt
     let mut ctx = CompletionContext::new();
     match parent_parent_node.kind() {
         SyntaxKind::StatementList => ctx.complete_toplevel_keywords(),
+        SyntaxKind::InnerValue => ctx.complete_primitive_values(),
         _ if ast::Type::can_cast(parent_parent_node.kind()) => {
             ctx.complete_primitive_types();
         }
@@ -98,6 +99,11 @@ impl CompletionContext {
         const PRIMITIVE_TYPES: [&str; 7] = ["bit", "bits", "code", "dag", "int", "list", "string"];
         self.add_items(&PRIMITIVE_TYPES, CompletionItemKind::Type);
     }
+
+    fn complete_primitive_values(&mut self) {
+        const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
+        self.add_items(&BOOLEAN_VALUES, CompletionItemKind::Keyword);
+    }
 }
 
 #[cfg(test)]
@@ -119,5 +125,10 @@ mod tests {
     #[test]
     fn r#type() {
         insta::assert_debug_snapshot!(check("class Foo<i$"));
+    }
+
+    #[test]
+    fn value() {
+        insta::assert_debug_snapshot!(check("class Foo<int a = t$"));
     }
 }
