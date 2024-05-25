@@ -7,7 +7,7 @@ use syntax::{
 use crate::{
     eval::EvalDatabase,
     file_system::FileRange,
-    symbol_map::{Class, Field, Symbol, SymbolMap},
+    symbol_map::{class::Class, field::Field, symbol::Symbol, SymbolMap},
 };
 
 #[derive(Debug)]

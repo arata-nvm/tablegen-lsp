@@ -3,7 +3,7 @@ use syntax::parser::TextRange;
 
 use crate::eval::EvalDatabase;
 use crate::file_system::FileId;
-use crate::symbol_map::SymbolId;
+use crate::symbol_map::symbol::SymbolId;
 
 pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
     let evaluation = db.eval();

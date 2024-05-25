@@ -4,16 +4,25 @@ use ecow::{eco_format, EcoString};
 
 use syntax::ast::AstNode;
 use syntax::ast::{self};
-use syntax::parser::TextRange;
 use syntax::SyntaxNodePtr;
 
 use crate::db::SourceDatabase;
-use crate::file_system::{FileId, FileRange, IncludeId};
+use crate::file_system::{FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
-use crate::symbol_map::{
-    ClassId, DagArg, DagArgValue, DefId, Expr, Field, Record, SimpleExpr, Symbol, SymbolId,
-    SymbolMap, TemplateArgument, Type, Value,
-};
+use crate::symbol_map::expr::{DagArg, Expr, SimpleExpr};
+use crate::symbol_map::field::Field;
+use crate::symbol_map::record::Record;
+use crate::symbol_map::symbol::Symbol;
+use crate::symbol_map::template_arg::TemplateArgument;
+use crate::symbol_map::typ::Type;
+use crate::symbol_map::value::{DagArgValue, Value};
+use crate::symbol_map::SymbolMap;
+
+use self::context::EvalCtx;
+use self::scope::Scope;
+
+pub mod context;
+pub mod scope;
 
 #[salsa::query_group(EvalDatabaseStorage)]
 pub trait EvalDatabase: SourceDatabase {
@@ -46,162 +55,6 @@ fn eval(db: &dyn EvalDatabase) -> Arc<Evaluation> {
     let mut ctx = EvalCtx::new(db, source_root.root());
     source_file.eval(&mut ctx);
     Arc::new(ctx.finish())
-}
-
-pub struct EvalCtx<'a> {
-    db: &'a dyn EvalDatabase,
-    file_trace: Vec<FileId>,
-    symbol_map: SymbolMap,
-    diagnostics: Vec<Diagnostic>,
-    scopes: Scopes,
-}
-
-impl<'a> EvalCtx<'a> {
-    pub fn new(db: &'a dyn EvalDatabase, root_file: FileId) -> Self {
-        Self {
-            db,
-            file_trace: vec![root_file],
-            symbol_map: SymbolMap::default(),
-            diagnostics: Vec::new(),
-            scopes: Scopes::default(),
-        }
-    }
-
-    pub fn current_file_id(&self) -> FileId {
-        *self.file_trace.last().expect("file_trace is empty")
-    }
-
-    pub fn push_file(&mut self, file_id: FileId) {
-        self.file_trace.push(file_id);
-    }
-
-    pub fn pop_file(&mut self) {
-        self.file_trace.pop().expect("file_trace is empty");
-    }
-
-    pub fn resolve_id(&self, name: &EcoString) -> Option<SymbolId> {
-        if let Some(def_id) = self.symbol_map.find_def(name) {
-            return Some(def_id.into());
-        }
-        if let Some(symbol_id) = self.scopes.find_local_var(name) {
-            return Some(symbol_id);
-        }
-        None
-    }
-
-    pub fn error(&mut self, range: TextRange, message: impl Into<String>) {
-        let file = self.current_file_id();
-        self.diagnostics
-            .push(Diagnostic::new(FileRange::new(file, range), message));
-    }
-
-    pub fn finish(self) -> Evaluation {
-        Evaluation {
-            symbol_map: self.symbol_map,
-            diagnostics: self.diagnostics,
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-struct Scopes {
-    scopes: Vec<Scope>,
-}
-
-impl Scopes {
-    fn push(&mut self, scope: Scope) {
-        self.scopes.push(scope);
-    }
-
-    fn pop(&mut self) -> Scope {
-        self.scopes.pop().expect("scope is empty")
-    }
-
-    fn current_record_id(&self) -> SymbolId {
-        self.scopes
-            .iter()
-            .rev()
-            .find_map(|scope| scope.id())
-            .expect("scope is empty")
-    }
-
-    fn current_record(&self) -> &Record {
-        self.scopes
-            .iter()
-            .rev()
-            .find_map(|scope| scope.record())
-            .expect("scope is empty")
-    }
-
-    fn current_record_mut(&mut self) -> &mut Record {
-        self.scopes
-            .iter_mut()
-            .rev()
-            .find_map(|record| record.record_mut())
-            .expect("scope is empty")
-    }
-
-    fn find_local_var(&self, name: &EcoString) -> Option<SymbolId> {
-        // TODO
-        if self.scopes.is_empty() {
-            return None;
-        }
-
-        let record = self.current_record();
-
-        if let Some(field_id) = record.find_field(name) {
-            return Some(field_id.into());
-        }
-
-        if let Some(template_arg_id) = record.find_template_arg(name) {
-            return Some(template_arg_id.into());
-        }
-
-        None
-    }
-}
-
-#[derive(Debug)]
-enum Scope {
-    Class(ClassId, Record),
-    Def(DefId, Record),
-}
-
-impl Scope {
-    pub fn id(&self) -> Option<SymbolId> {
-        match self {
-            Scope::Class(id, _) => Some((*id).into()),
-            Scope::Def(id, _) => Some((*id).into()),
-        }
-    }
-
-    pub fn record(&self) -> Option<&Record> {
-        match self {
-            Scope::Class(_, record) => Some(record),
-            Scope::Def(_, record) => Some(record),
-        }
-    }
-
-    pub fn record_mut(&mut self) -> Option<&mut Record> {
-        match self {
-            Scope::Class(_, record) => Some(record),
-            Scope::Def(_, record) => Some(record),
-        }
-    }
-
-    pub fn into_class(self) -> (ClassId, Record) {
-        match self {
-            Scope::Class(id, class) => (id, class),
-            _ => panic!("not a class"),
-        }
-    }
-
-    pub fn into_def(self) -> (DefId, Record) {
-        match self {
-            Scope::Def(id, def) => (id, def),
-            _ => panic!("not a def"),
-        }
-    }
 }
 
 pub trait Eval {

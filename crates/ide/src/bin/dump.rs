@@ -3,7 +3,7 @@ use std::{fs, sync::Arc};
 use ide::{
     analysis::AnalysisHost,
     file_system::{FileId, FilePath, FileSet, FileSystem},
-    symbol_map::SymbolId,
+    symbol_map::symbol::SymbolId,
 };
 
 pub fn main() {

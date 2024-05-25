@@ -4,7 +4,8 @@ use syntax::SyntaxNode;
 
 use crate::eval::EvalDatabase;
 use crate::file_system::{FilePosition, FileRange};
-use crate::symbol_map::{Symbol, SymbolMap};
+use crate::symbol_map::symbol::Symbol;
+use crate::symbol_map::SymbolMap;
 
 #[derive(Debug)]
 pub struct Hover {
