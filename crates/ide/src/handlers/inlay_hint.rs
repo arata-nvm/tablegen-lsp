@@ -1,4 +1,3 @@
-use ecow::EcoString;
 use syntax::{
     ast::{self, AstNode},
     parser::TextSize,
@@ -8,7 +7,7 @@ use syntax::{
 use crate::{
     eval::EvalDatabase,
     file_system::FileRange,
-    symbol_map::{Class, Symbol, SymbolMap},
+    symbol_map::{Class, Field, Symbol, SymbolMap},
 };
 
 #[derive(Debug)]
@@ -21,6 +20,7 @@ pub struct InlayHint {
 #[derive(Debug)]
 pub enum InlayHintKind {
     TemplateArg,
+    FieldLet,
 }
 
 impl InlayHint {
@@ -52,6 +52,11 @@ pub fn exec(db: &dyn EvalDatabase, range: FileRange) -> Option<Vec<InlayHint>> {
                     hints.extend(new_hints);
                 }
             }
+            Symbol::Field(field) => {
+                if let Some(new_hints) = inlay_hint_field(db, field, symbol_loc) {
+                    hints.extend(new_hints);
+                }
+            }
             _ => {}
         }
     }
@@ -64,13 +69,6 @@ fn inlay_hint_class(
     class: &Class,
     symbol_loc: FileRange,
 ) -> Option<Vec<InlayHint>> {
-    let mut hints = vec![];
-    let template_arg_names: Vec<EcoString> = class
-        .iter_template_arg()
-        .map(|arg_id| symbol_map.template_arg(arg_id))
-        .map(|arg| arg.name.clone())
-        .collect();
-
     let parse = db.parse(symbol_loc.file);
     let root_node = parse.syntax_node();
     let id_node = root_node.covering_element(symbol_loc.range);
@@ -115,6 +113,31 @@ fn inlay_hint_class(
     Some(hints)
 }
 
+fn inlay_hint_field(
+    db: &dyn EvalDatabase,
+    field: &Field,
+    symbol_loc: FileRange,
+) -> Option<Vec<InlayHint>> {
+    let parse = db.parse(symbol_loc.file);
+    let root_node = parse.syntax_node();
+    let id_node = root_node.covering_element(symbol_loc.range);
+    let identifier_node = match id_node.kind() {
+        SyntaxKind::Id => id_node.parent()?,
+        _ => return None,
+    };
+
+    let maybe_field_let_node = identifier_node.parent()?;
+    if maybe_field_let_node.kind() != SyntaxKind::FieldLet {
+        return None;
+    }
+
+    Some(vec![InlayHint::new(
+        symbol_loc.range.end(),
+        format!(":{}", field.typ),
+        InlayHintKind::FieldLet,
+    )])
+}
+
 #[cfg(test)]
 mod tests {
     use crate::tests;
@@ -132,6 +155,20 @@ mod tests {
             r#"
 class Foo<int foo>;
 class Bar: Foo<1>;"#
+        ));
+    }
+
+    #[test]
+    fn field_let() {
+        insta::assert_debug_snapshot!(check(
+            r#"
+class Foo {
+  int foo;
+}
+class Bar : Foo {
+  let foo = 1;
+}
+"#
         ));
     }
 }

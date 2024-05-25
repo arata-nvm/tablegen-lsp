@@ -98,9 +98,11 @@ pub fn inlay_hint(line_index: &LineIndex, inlay_hint: InlayHint) -> lsp_types::I
         tooltip: None,
         padding_left: match inlay_hint.kind {
             InlayHintKind::TemplateArg => Some(false),
+            InlayHintKind::FieldLet => Some(true),
         },
         padding_right: match inlay_hint.kind {
             InlayHintKind::TemplateArg => Some(true),
+            InlayHintKind::FieldLet => Some(false),
         },
         data: None,
     }
