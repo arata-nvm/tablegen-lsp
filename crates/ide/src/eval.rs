@@ -702,6 +702,10 @@ impl ValueEval for SimpleExpr {
                 ctx.error(loc.range, "not implemented");
                 None
             }
+            SimpleExpr::CondOperator(_) => {
+                ctx.error(loc.range, "not implemented");
+                None
+            }
         }
     }
 
@@ -751,6 +755,10 @@ impl ValueEval for SimpleExpr {
                 None
             }
             SimpleExpr::BangOperator(_, _) => {
+                ctx.error(loc.range, "not implemented");
+                None
+            }
+            SimpleExpr::CondOperator(_) => {
                 ctx.error(loc.range, "not implemented");
                 None
             }

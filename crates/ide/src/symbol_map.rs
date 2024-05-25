@@ -364,7 +364,7 @@ pub enum SimpleExpr {
     Identifier(EcoString, Option<(SymbolId, Type)>),
     // ClassValue,
     BangOperator(BangOperatorOp, Vec<Expr>),
-    // CondOperator,
+    CondOperator(Vec<CondClause>),
 }
 
 impl SimpleExpr {
@@ -381,6 +381,7 @@ impl SimpleExpr {
             Self::Identifier(_, Some((_, typ))) => typ.clone(),
             Self::Identifier(_, None) => Type::Unknown,
             Self::BangOperator(_, _) => Type::Unknown, // TODO
+            Self::CondOperator(_) => Type::Unknown,    // TODO
         }
     }
 }
@@ -430,6 +431,15 @@ impl std::fmt::Display for SimpleExpr {
                 "{}({})",
                 op,
                 args.iter()
+                    .map(|it| it.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Self::CondOperator(clause_list) => write!(
+                f,
+                "!cond({})",
+                clause_list
+                    .iter()
                     .map(|it| it.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
@@ -616,6 +626,18 @@ impl std::fmt::Display for BangOperatorOp {
             Self::XSetDagArg => write!(f, "!setdagarg"),
             Self::XSetDagName => write!(f, "!setdagname"),
         }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct CondClause {
+    pub condition: Expr,
+    pub value: Expr,
+}
+
+impl std::fmt::Display for CondClause {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.condition, self.value)
     }
 }
 
