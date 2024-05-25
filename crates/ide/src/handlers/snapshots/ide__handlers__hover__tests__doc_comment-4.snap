@@ -1,6 +1,6 @@
 ---
 source: crates/ide/src/handlers/hover.rs
-expression: "check(\"class $Foo;\")"
+expression: "check(r#\"\n// doc comment\n\nclass $Foo;\n            \"#)"
 ---
 Hover {
     signature: "class Foo",

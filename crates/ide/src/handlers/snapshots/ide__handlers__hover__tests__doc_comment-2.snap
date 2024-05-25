@@ -1,0 +1,10 @@
+---
+source: crates/ide/src/handlers/hover.rs
+expression: "check(r#\"\nclass Foo {\n    // doc comment\n    int $foo;\n}\n            \"#)"
+---
+Hover {
+    signature: "int Foo::foo",
+    document: Some(
+        "doc comment",
+    ),
+}

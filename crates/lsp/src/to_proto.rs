@@ -78,13 +78,17 @@ pub fn document_symbol(
 }
 
 pub fn hover(hover: Hover) -> lsp_types::Hover {
+    let mut contents = vec![lsp_types::MarkedString::from_language_code(
+        String::from("tablegen"),
+        hover.signature,
+    )];
+    if let Some(document) = hover.document {
+        contents.push(lsp_types::MarkedString::from_markdown(String::from("***")));
+        contents.push(lsp_types::MarkedString::from_markdown(document));
+    }
+
     lsp_types::Hover {
-        contents: lsp_types::HoverContents::Scalar(lsp_types::MarkedString::LanguageString(
-            lsp_types::LanguageString {
-                language: String::from("tablegen"),
-                value: hover.content,
-            },
-        )),
+        contents: lsp_types::HoverContents::Array(contents),
         range: None,
     }
 }

@@ -2,4 +2,7 @@
 source: crates/ide/src/handlers/hover.rs
 expression: "check(\"class Foo<int $arg1>;\")"
 ---
-"int arg1"
+Hover {
+    signature: "int arg1",
+    document: None,
+}
