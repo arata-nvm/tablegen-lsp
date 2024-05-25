@@ -16,10 +16,11 @@ use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::template_arg::TemplateArgument;
 use crate::symbol_map::typ::Type;
 use crate::symbol_map::value::{DagArgValue, Value};
+use crate::symbol_map::variable::Variable;
 use crate::symbol_map::SymbolMap;
 
 use self::context::EvalCtx;
-use self::scope::Scope;
+use self::scope::ScopeKind;
 
 pub mod context;
 pub mod scope;
@@ -87,6 +88,7 @@ impl Eval for ast::Statement {
             ast::Statement::Class(class) => class.eval(ctx),
             ast::Statement::Def(def) => def.eval(ctx),
             ast::Statement::Include(include) => include.eval(ctx),
+            ast::Statement::Defvar(defvar) => defvar.eval(ctx),
             _ => {
                 ctx.error(self.syntax().text_range(), "not implemented");
                 Some(())
@@ -102,7 +104,7 @@ impl Eval for ast::Class {
         let record = Record::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_class(record.clone());
 
-        ctx.scopes.push(Scope::Class(id, record));
+        ctx.scopes.push(ScopeKind::Class(id, record));
         if let Some(list) = self.template_arg_list() {
             list.eval(ctx);
         }
@@ -125,13 +127,24 @@ impl Eval for ast::Def {
         let record = Record::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_def(record.clone());
 
-        ctx.scopes.push(Scope::Def(id, record));
+        ctx.scopes.push(ScopeKind::Def(id, record));
         if let Some(body) = self.record_body() {
             body.eval(ctx);
         }
         let (_, record) = ctx.scopes.pop().into_def();
         ctx.symbol_map.replace_def(id, record);
 
+        Some(())
+    }
+}
+
+impl Eval for ast::Defvar {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
+        let value = self.value()?.eval(ctx)?;
+        let variable = Variable::new(name.clone(), value, define_loc);
+        ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
         Some(())
     }
 }
@@ -477,6 +490,7 @@ impl Eval for ast::SimpleValue {
                             Symbol::Def(def) => {
                                 Type::Def(symbol_id.as_def_id().unwrap(), def.name.clone())
                             }
+                            Symbol::Variable(variable) => variable.value.typ().clone(),
                             _ => {
                                 ctx.error(reference_loc.range, "not implemented");
                                 Type::Unknown

@@ -7,6 +7,7 @@ use super::{
     def::{Def, DefId},
     field::{Field, FieldId},
     template_arg::{TemplateArgument, TemplateArgumentId},
+    variable::{Variable, VariableId},
 };
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, PartialOrd, Ord)]
@@ -15,6 +16,7 @@ pub enum SymbolId {
     TemplateArgumentId(TemplateArgumentId),
     FieldId(FieldId),
     DefId(DefId),
+    VariableId(VariableId),
 }
 
 impl From<ClassId> for SymbolId {
@@ -38,6 +40,12 @@ impl From<FieldId> for SymbolId {
 impl From<DefId> for SymbolId {
     fn from(id: DefId) -> Self {
         SymbolId::DefId(id)
+    }
+}
+
+impl From<VariableId> for SymbolId {
+    fn from(id: VariableId) -> Self {
+        SymbolId::VariableId(id)
     }
 }
 
@@ -69,6 +77,13 @@ impl SymbolId {
             _ => None,
         }
     }
+
+    pub fn as_variable_id(&self) -> Option<VariableId> {
+        match self {
+            SymbolId::VariableId(id) => Some(*id),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -77,6 +92,7 @@ pub enum Symbol<'a> {
     TemplateArgument(&'a TemplateArgument),
     Field(&'a Field),
     Def(&'a Def),
+    Variable(&'a Variable),
 }
 
 impl<'a> Symbol<'a> {
@@ -86,6 +102,7 @@ impl<'a> Symbol<'a> {
             Self::TemplateArgument(template_arg) => &template_arg.name,
             Self::Field(field) => &field.name,
             Self::Def(def) => &def.name,
+            Self::Variable(variable) => &variable.name,
         }
     }
 
@@ -95,6 +112,7 @@ impl<'a> Symbol<'a> {
             Self::TemplateArgument(template_arg) => &template_arg.define_loc,
             Self::Field(field) => &field.define_loc,
             Self::Def(def) => &def.define_loc,
+            Self::Variable(variable) => &variable.define_loc,
         }
     }
 
@@ -104,6 +122,7 @@ impl<'a> Symbol<'a> {
             Self::TemplateArgument(template_arg) => &template_arg.reference_locs,
             Self::Field(field) => &field.reference_locs,
             Self::Def(def) => &def.reference_locs,
+            Self::Variable(variable) => &variable.reference_locs,
         }
     }
 
@@ -134,6 +153,13 @@ impl<'a> Symbol<'a> {
             _ => None,
         }
     }
+
+    pub fn as_variable(&self) -> Option<&Variable> {
+        match self {
+            Self::Variable(variable) => Some(variable),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -142,6 +168,7 @@ pub enum SymbolMut<'a> {
     TemplateArgument(&'a mut TemplateArgument),
     Field(&'a mut Field),
     Def(&'a mut Def),
+    Variable(&'a mut Variable),
 }
 
 impl<'a> SymbolMut<'a> {
@@ -151,6 +178,7 @@ impl<'a> SymbolMut<'a> {
             Self::TemplateArgument(template_arg) => template_arg.reference_locs.push(reference_loc),
             Self::Field(field) => field.reference_locs.push(reference_loc),
             Self::Def(def) => def.reference_locs.push(reference_loc),
+            Self::Variable(variable) => variable.reference_locs.push(reference_loc),
         }
     }
 }

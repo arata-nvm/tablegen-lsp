@@ -3,7 +3,7 @@ use syntax::parser::TextRange;
 
 use crate::eval::EvalDatabase;
 use crate::file_system::FileId;
-use crate::symbol_map::symbol::SymbolId;
+use crate::symbol_map::symbol::Symbol;
 
 pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
     let evaluation = db.eval();
@@ -16,9 +16,9 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
 
     let mut symbols = Vec::new();
     for symbol_id in iter {
-        match symbol_id {
-            SymbolId::ClassId(class_id) => {
-                let class = symbol_map.class(class_id);
+        let symbol = symbol_map.symbol(symbol_id);
+        match symbol {
+            Symbol::Class(class) => {
                 let template_argument_list = class
                     .iter_template_arg()
                     .map(|id| symbol_map.template_arg(id))
@@ -49,8 +49,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
                     children: template_argument_list.chain(field_list).collect(),
                 });
             }
-            SymbolId::DefId(def_id) => {
-                let def = symbol_map.def(def_id);
+            Symbol::Def(def) => {
                 let field_list = def
                     .iter_field()
                     .map(|id| symbol_map.field(id))
@@ -68,6 +67,15 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
                     range: def.define_loc.range,
                     kind: DocumentSymbolKind::Def,
                     children: field_list.collect(),
+                });
+            }
+            Symbol::Variable(variable) => {
+                symbols.push(DocumentSymbol {
+                    name: variable.name.clone(),
+                    typ: "defvar".into(),
+                    range: variable.define_loc.range,
+                    kind: DocumentSymbolKind::Variable,
+                    children: Vec::new(),
                 });
             }
             _ => {}
@@ -91,6 +99,7 @@ pub enum DocumentSymbolKind {
     TemplateArgument,
     Field,
     Def,
+    Variable,
 }
 
 #[cfg(test)]

@@ -3,7 +3,7 @@ use std::{fs, sync::Arc};
 use ide::{
     analysis::AnalysisHost,
     file_system::{FileId, FilePath, FileSet, FileSystem},
-    symbol_map::symbol::SymbolId,
+    symbol_map::symbol::Symbol,
 };
 
 pub fn main() {
@@ -29,13 +29,13 @@ pub fn main() {
 
     let symbol_map = evaluation.symbol_map();
 
-    for symbol_id in symbol_map
-        .iter_symbols_in_file(file_id)
-        .expect("failed to iterate classes")
-    {
-        match symbol_id {
-            SymbolId::ClassId(class_id) => {
-                let class = symbol_map.class(class_id);
+    let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
+        return;
+    };
+    for symbol_id in iter {
+        let symbol = symbol_map.symbol(symbol_id);
+        match symbol {
+            Symbol::Class(class) => {
                 let template_args = class
                     .iter_template_arg()
                     .map(|id| symbol_map.template_arg(id))
@@ -60,8 +60,7 @@ pub fn main() {
                 println!("}}");
                 println!();
             }
-            SymbolId::DefId(def_id) => {
-                let def = symbol_map.def(def_id);
+            Symbol::Def(def) => {
                 let parent_classes = def
                     .parent_class_list
                     .iter()
@@ -75,6 +74,9 @@ pub fn main() {
                     println!("  {} {} = {};", field.typ, field.name, field.value);
                 }
                 println!("}}");
+            }
+            Symbol::Variable(variable) => {
+                println!("defvar {} = {};", variable.name, variable.value);
             }
             _ => println!("unimplemented: {symbol_id:?}"),
         }

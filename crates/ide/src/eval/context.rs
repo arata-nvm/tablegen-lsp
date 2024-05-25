@@ -44,7 +44,7 @@ impl<'a> EvalCtx<'a> {
         if let Some(def_id) = self.symbol_map.find_def(name) {
             return Some(def_id.into());
         }
-        if let Some(symbol_id) = self.scopes.find_local_var(name) {
+        if let Some(symbol_id) = self.scopes.find_local(name) {
             return Some(symbol_id);
         }
         None

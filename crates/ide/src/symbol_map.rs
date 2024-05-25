@@ -9,6 +9,7 @@ use syntax::parser::{TextRange, TextSize};
 
 use crate::file_system::{FileId, FilePosition, FileRange};
 
+use self::variable::{Variable, VariableId};
 use self::{
     class::{Class, ClassId},
     def::{Def, DefId},
@@ -27,6 +28,7 @@ pub mod symbol;
 pub mod template_arg;
 pub mod typ;
 pub mod value;
+pub mod variable;
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct SymbolMap {
@@ -34,8 +36,11 @@ pub struct SymbolMap {
     template_arg_list: Arena<TemplateArgument>,
     field_list: Arena<Field>,
     def_list: Arena<Def>,
+    variable_list: Arena<Variable>,
+
     name_to_class: HashMap<EcoString, ClassId>,
     name_to_def: HashMap<EcoString, DefId>,
+
     file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
@@ -89,6 +94,18 @@ impl SymbolMap {
         self.name_to_def.get(name).copied()
     }
 
+    pub fn variable(&self, variable_id: VariableId) -> &Variable {
+        self.variable_list
+            .get(variable_id)
+            .expect("invalid variable id")
+    }
+
+    pub fn variable_mut(&mut self, variable_id: VariableId) -> &mut Variable {
+        self.variable_list
+            .get_mut(variable_id)
+            .expect("invalid variable id")
+    }
+
     pub fn symbol(&self, id: SymbolId) -> Symbol {
         match id {
             SymbolId::ClassId(class_id) => Symbol::Class(self.class(class_id)),
@@ -97,6 +114,7 @@ impl SymbolMap {
             }
             SymbolId::FieldId(field_id) => Symbol::Field(self.field(field_id)),
             SymbolId::DefId(def_id) => Symbol::Def(self.def(def_id)),
+            SymbolId::VariableId(variable_id) => Symbol::Variable(self.variable(variable_id)),
         }
     }
 
@@ -108,6 +126,9 @@ impl SymbolMap {
             }
             SymbolId::FieldId(field_id) => SymbolMut::Field(self.field_mut(field_id)),
             SymbolId::DefId(def_id) => SymbolMut::Def(self.def_mut(def_id)),
+            SymbolId::VariableId(variable_id) => {
+                SymbolMut::Variable(self.variable_mut(variable_id))
+            }
         }
     }
 
@@ -226,6 +247,20 @@ impl SymbolMap {
             .entry(reference_loc.file)
             .or_insert_with(IntervalMap::new)
             .insert(reference_loc.range.into(), symbol_id);
+    }
+
+    pub fn add_variable(&mut self, variable: Variable) -> VariableId {
+        let define_loc = variable.define_loc;
+        let id = self.variable_list.alloc(variable);
+        self.file_to_symbol_list
+            .entry(define_loc.file)
+            .or_default()
+            .push(id.into());
+        self.pos_to_symbol_map
+            .entry(define_loc.file)
+            .or_insert_with(IntervalMap::new)
+            .insert(define_loc.range.into(), id.into());
+        id
     }
 }
 

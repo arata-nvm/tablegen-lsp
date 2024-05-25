@@ -69,6 +69,7 @@ pub fn document_symbol(
             DocumentSymbolKind::TemplateArgument => lsp_types::SymbolKind::PROPERTY,
             DocumentSymbolKind::Field => lsp_types::SymbolKind::FIELD,
             DocumentSymbolKind::Def => lsp_types::SymbolKind::VARIABLE,
+            DocumentSymbolKind::Variable => lsp_types::SymbolKind::VARIABLE,
         },
         tags: None,
         deprecated: None,

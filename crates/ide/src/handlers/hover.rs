@@ -58,6 +58,9 @@ fn extract_symbol_signature(
         Symbol::Def(def) => {
             format!("def {}", def.name)
         }
+        Symbol::Variable(variable) => {
+            format!("defvar {} = {}", variable.name, variable.value)
+        }
     };
 
     let define_loc = symbol.define_loc();
