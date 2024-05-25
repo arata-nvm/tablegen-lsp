@@ -79,6 +79,16 @@ impl<'a> EvalCtx<'a> {
         self.file_trace.pop().expect("file_trace is empty");
     }
 
+    pub fn resolve_id(&self, name: &EcoString) -> Option<SymbolId> {
+        if let Some(def_id) = self.symbol_map.find_def(name) {
+            return Some(def_id.into());
+        }
+        if let Some(symbol_id) = self.scopes.find_local_var(name) {
+            return Some(symbol_id);
+        }
+        None
+    }
+
     pub fn error(&mut self, range: TextRange, message: impl Into<String>) {
         let file = self.current_file_id();
         self.diagnostics
@@ -131,7 +141,7 @@ impl Scopes {
             .expect("scope is empty")
     }
 
-    fn find_var(&self, name: &EcoString) -> Option<SymbolId> {
+    fn find_local_var(&self, name: &EcoString) -> Option<SymbolId> {
         // TODO
         if self.scopes.is_empty() {
             return None;
@@ -604,13 +614,16 @@ impl Eval for ast::SimpleValue {
             }
             ast::SimpleValue::Identifier(identifier) => {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
-                let symbol_sig = match ctx.scopes.find_var(&name) {
+                let symbol_sig = match ctx.resolve_id(&name) {
                     Some(symbol_id) => {
                         ctx.symbol_map.add_reference(symbol_id, reference_loc);
                         let symbol = ctx.symbol_map.symbol(symbol_id);
                         let typ = match symbol {
                             Symbol::TemplateArgument(template_arg) => template_arg.typ.clone(),
                             Symbol::Field(field) => field.typ.clone(),
+                            Symbol::Def(def) => {
+                                Type::Def(symbol_id.as_def_id().unwrap(), def.name.clone())
+                            }
                             _ => {
                                 ctx.error(reference_loc.range, "not implemented");
                                 Type::Unknown

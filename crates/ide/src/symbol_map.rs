@@ -861,6 +861,7 @@ pub enum Type {
     Bits(usize),
     List(Box<Type>),
     Class(ClassId, EcoString),
+    Def(DefId, EcoString), // TODO
     Code,
     Unknown, // for uninitialized
 }
@@ -875,6 +876,7 @@ impl std::fmt::Display for Type {
             Self::Bits(width) => write!(f, "bits<{}>", width),
             Self::List(typ) => write!(f, "list<{}>", typ),
             Self::Class(_, name) => write!(f, "{}", name),
+            Self::Def(_, name) => write!(f, "{}(def)", name),
             Self::Code => write!(f, "code"),
             Self::Unknown => write!(f, "unknown"),
         }
@@ -888,6 +890,7 @@ pub struct SymbolMap {
     field_list: Arena<Field>,
     def_list: Arena<Def>,
     name_to_class: HashMap<EcoString, ClassId>,
+    name_to_def: HashMap<EcoString, DefId>,
     file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
@@ -935,6 +938,10 @@ impl SymbolMap {
 
     pub fn def_mut(&mut self, def_id: DefId) -> &mut Def {
         self.def_list.get_mut(def_id).expect("invalid def id")
+    }
+
+    pub fn find_def(&self, name: &EcoString) -> Option<DefId> {
+        self.name_to_def.get(name).copied()
     }
 
     pub fn symbol(&self, id: SymbolId) -> Symbol {
@@ -1041,8 +1048,10 @@ impl SymbolMap {
 
     pub fn add_def(&mut self, record: Record) -> DefId {
         let def: Def = record.into();
+        let name = def.name.clone();
         let define_loc = def.define_loc;
         let id = self.def_list.alloc(def);
+        self.name_to_def.insert(name, id);
         self.file_to_symbol_list
             .entry(define_loc.file)
             .or_default()
