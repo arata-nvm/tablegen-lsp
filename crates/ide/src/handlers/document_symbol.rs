@@ -51,12 +51,23 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
             }
             SymbolId::DefId(def_id) => {
                 let def = symbol_map.def(def_id);
+                let field_list = def
+                    .iter_field()
+                    .map(|id| symbol_map.field(id))
+                    .map(|field| DocumentSymbol {
+                        name: field.name.clone(),
+                        typ: field.typ.to_string().into(),
+                        range: field.define_loc.range,
+                        kind: DocumentSymbolKind::Field,
+                        children: Vec::new(),
+                    });
+
                 symbols.push(DocumentSymbol {
                     name: def.name.clone(),
                     typ: "def".into(),
                     range: def.define_loc.range,
                     kind: DocumentSymbolKind::Def,
-                    children: Vec::new(),
+                    children: field_list.collect(),
                 });
             }
             _ => {}
@@ -151,7 +162,9 @@ class Foo {
         insta::assert_debug_snapshot!(check(
             r#"
 class Foo;
-def foo : Foo;
+def foo : Foo {
+  int a
+};
 "#
         ));
     }

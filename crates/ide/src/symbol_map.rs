@@ -145,10 +145,14 @@ impl From<Record> for Class {
 
 impl From<Record> for Def {
     fn from(val: Record) -> Self {
+        assert!(val.name_to_template_arg.is_empty());
+
         Def {
             name: val.name,
             define_loc: val.define_loc,
             reference_locs: val.reference_locs,
+            name_to_field: val.name_to_field,
+            parent_class_list: val.parent_class_list,
         }
     }
 }
@@ -268,6 +272,8 @@ pub struct Def {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
+    pub name_to_field: BTreeMap<EcoString, FieldId>,
+    pub parent_class_list: Vec<ClassId>,
 }
 
 pub type DefId = Id<Def>;
@@ -279,12 +285,12 @@ impl From<DefId> for SymbolId {
 }
 
 impl Def {
-    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
-        Self {
-            name,
-            define_loc,
-            reference_locs: Vec::new(),
-        }
+    pub fn iter_field(&self) -> impl Iterator<Item = FieldId> + '_ {
+        self.name_to_field.values().copied()
+    }
+
+    pub fn find_field(&self, name: &EcoString) -> Option<FieldId> {
+        self.name_to_field.get(name).copied()
     }
 }
 

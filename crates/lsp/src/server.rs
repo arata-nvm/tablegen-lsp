@@ -1,23 +1,23 @@
 use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
-use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
 use async_lsp::lsp_types::{
-    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams, DocumentSymbolResponse,
-    GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
-    HoverProviderCapability, InitializeParams, InitializeResult, Location, notification, OneOf,
-    PublishDiagnosticsParams, ReferenceParams, request, ServerCapabilities,
+    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse,
+    Hover, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, Location,
+    OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
     TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
-use futures::future::{BoxFuture, ready};
+use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
+use futures::future::{ready, BoxFuture};
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::FileSystem;
 
-use crate::{from_proto, to_proto};
 use crate::vfs::{UrlExt, Vfs};
+use crate::{from_proto, to_proto};
 
 pub struct Server {
     host: AnalysisHost,
