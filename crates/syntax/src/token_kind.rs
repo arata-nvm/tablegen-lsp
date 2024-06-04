@@ -6,6 +6,7 @@ pub enum TokenKind {
     LineComment,
     BlockComment,
     Error,
+    PreProcessor,
 
     // Symbols
     Minus,
@@ -127,7 +128,7 @@ impl TokenKind {
     pub fn is_trivia(&self) -> bool {
         matches!(
             self,
-            Self::Whitespace | Self::LineComment | Self::BlockComment
+            Self::Whitespace | Self::LineComment | Self::BlockComment | Self::PreProcessor
         )
     }
 

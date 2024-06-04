@@ -187,11 +187,7 @@ pub enum SyntaxKind {
     CodeFragment,
 
     // Preprocessor tokens
-    Ifdef,
-    Ifndef,
-    Else,
-    Endif,
-    Define,
+    PreProcessor,
 
     __LAST,
 }
@@ -210,6 +206,7 @@ impl From<TokenKind> for rowan::SyntaxKind {
             TokenKind::LineComment => SyntaxKind::LineComment,
             TokenKind::BlockComment => SyntaxKind::BlockComment,
             TokenKind::Error => SyntaxKind::Error,
+            TokenKind::PreProcessor => SyntaxKind::PreProcessor,
 
             TokenKind::Minus => SyntaxKind::Minus,
             TokenKind::Plus => SyntaxKind::Plus,
@@ -313,11 +310,11 @@ impl From<TokenKind> for rowan::SyntaxKind {
             TokenKind::VarName => SyntaxKind::VarNameKw,
             TokenKind::CodeFragment => SyntaxKind::CodeFragment,
 
-            TokenKind::Ifdef => SyntaxKind::Ifdef,
-            TokenKind::Ifndef => SyntaxKind::Ifndef,
-            TokenKind::Else => SyntaxKind::Else,
-            TokenKind::Endif => SyntaxKind::Endif,
-            TokenKind::Define => SyntaxKind::Define,
+            TokenKind::Ifdef => SyntaxKind::PreProcessor,
+            TokenKind::Ifndef => SyntaxKind::PreProcessor,
+            TokenKind::Else => SyntaxKind::PreProcessor,
+            TokenKind::Endif => SyntaxKind::PreProcessor,
+            TokenKind::Define => SyntaxKind::PreProcessor,
         };
         kind.into()
     }
