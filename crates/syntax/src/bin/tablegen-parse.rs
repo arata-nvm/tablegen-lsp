@@ -21,8 +21,10 @@ fn main() {
 fn token(text: &str) {
     let mut lexer = Lexer::new(text);
     loop {
-        let range = lexer.peek_range();
+        let start = lexer.cursor();
         let token = lexer.eat();
+        let end = lexer.cursor();
+        let range = start..end;
         if let Some(err) = lexer.take_error() {
             println!("{range:?}: Error({err})");
         } else {

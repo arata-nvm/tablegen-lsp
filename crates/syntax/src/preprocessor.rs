@@ -1,8 +1,8 @@
 use std::collections::HashSet;
+use std::ops::Range;
 
 use ecow::EcoString;
 
-use crate::parser::TextRange;
 use crate::token_kind::TokenKind;
 use crate::token_stream::TokenStream;
 use crate::T;
@@ -19,16 +19,12 @@ impl<T: TokenStream> TokenStream for PreProcessor<T> {
         self.next_token()
     }
 
-    fn peek(&self) -> TokenKind {
-        self.token_stream.peek()
+    fn cursor(&self) -> usize {
+        self.token_stream.cursor()
     }
 
-    fn peek_range(&self) -> TextRange {
-        self.token_stream.peek_range()
-    }
-
-    fn peek_text(&self) -> &str {
-        self.token_stream.peek_text()
+    fn text(&self, range: Range<usize>) -> &str {
+        self.token_stream.text(range)
     }
 
     fn take_error(&mut self) -> Option<EcoString> {
@@ -45,8 +41,8 @@ impl<T: TokenStream> PreProcessor<T> {
         }
     }
 
-    pub fn define_macro(&mut self, macro_name: impl Into<EcoString>) {
-        self.macros.insert(macro_name.into());
+    pub fn define_macro(&mut self, macro_name: EcoString) {
+        self.macros.insert(macro_name);
     }
 
     pub fn macros(&self) -> &HashSet<EcoString> {
@@ -70,14 +66,11 @@ impl<T: TokenStream> PreProcessor<T> {
     }
 
     fn process_if(&mut self, if_kind: IfKind) -> TokenKind {
-        self.eat_trivia();
-        match self.token_stream.peek() {
-            TokenKind::Id => {
-                let macro_name = self.token_stream.peek_text();
+        match self.next_not_trivia() {
+            (start, TokenKind::Id) => {
+                let end = self.token_stream.cursor();
+                let macro_name = self.token_stream.text(start..end);
                 let macro_defined = self.macros.contains(macro_name);
-
-                self.token_stream.eat(); // eat Id
-                self.eat_trivia();
 
                 if let (IfKind::Defined, false) | (IfKind::NotDefined, true) =
                     (if_kind, macro_defined)
@@ -99,36 +92,29 @@ impl<T: TokenStream> PreProcessor<T> {
     }
 
     fn process_endif(&mut self) -> TokenKind {
-        self.eat_trivia_once();
         TokenKind::PreProcessor
     }
 
     fn process_define(&mut self) -> TokenKind {
-        self.eat_trivia();
-        match self.token_stream.peek() {
-            TokenKind::Id => {
-                let macro_name = self.token_stream.peek_text().to_owned();
-                self.define_macro(macro_name);
-
-                self.token_stream.eat(); // eat Id
-                self.eat_trivia();
+        match self.next_not_trivia() {
+            (start, TokenKind::Id) => {
+                let end = self.token_stream.cursor();
+                let macro_name = self.token_stream.text(start..end);
+                self.define_macro(macro_name.into());
                 TokenKind::PreProcessor
             }
             _ => self.error("expected macro name after #define"),
         }
     }
 
-    fn eat_trivia_once(&mut self) -> bool {
-        if self.token_stream.peek().is_trivia() {
-            self.token_stream.eat();
-            true
-        } else {
-            false
+    fn next_not_trivia(&mut self) -> (usize, TokenKind) {
+        loop {
+            let start = self.token_stream.cursor();
+            let kind = self.token_stream.eat();
+            if !kind.is_trivia() {
+                return (start, kind);
+            }
         }
-    }
-
-    fn eat_trivia(&mut self) {
-        while self.eat_trivia_once() {}
     }
 
     fn eat_until_else_or_endif(&mut self) {
@@ -142,7 +128,6 @@ impl<T: TokenStream> PreProcessor<T> {
                     depth -= 1;
                 }
                 T![#else] | T![#endif] if depth == 1 => {
-                    self.eat_trivia_once();
                     break;
                 }
                 TokenKind::Eof => {
@@ -162,6 +147,8 @@ enum IfKind {
 
 #[cfg(test)]
 mod tests {
+    use ecow::EcoString;
+
     use crate::lexer::Lexer;
     use crate::preprocessor::PreProcessor;
     use crate::token_kind::TokenKind;
@@ -175,7 +162,8 @@ mod tests {
         assert!(!prep.macros().contains("FOO"));
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat define
         assert!(prep.macros().contains("FOO"));
-        assert_eq!(prep.eat(), TokenKind::Eof); // eat define
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Eof);
     }
 
     #[test]
@@ -187,6 +175,7 @@ mod tests {
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat define
         assert!(prep.macros().contains("FOO"));
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
@@ -195,13 +184,15 @@ mod tests {
     fn ifdef_defined() {
         let lexer = Lexer::new("text1\n#ifdef HOGE\ntext2\n#endif\ntext3");
         let mut prep = PreProcessor::new(lexer);
-        prep.define_macro("HOGE");
+        prep.define_macro(EcoString::from("HOGE"));
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
@@ -213,6 +204,7 @@ mod tests {
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef - endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
@@ -221,10 +213,11 @@ mod tests {
     fn ifndef_defined() {
         let lexer = Lexer::new("text1\n#ifndef HOGE\ntext2\n#endif\ntext3");
         let mut prep = PreProcessor::new(lexer);
-        prep.define_macro("HOGE");
+        prep.define_macro(EcoString::from("HOGE"));
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef - endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
@@ -236,9 +229,11 @@ mod tests {
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
@@ -260,6 +255,7 @@ mod tests {
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef - endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
@@ -278,9 +274,11 @@ mod tests {
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef - else
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), T![']']);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
@@ -296,13 +294,15 @@ mod tests {
         text2";
 
         let mut prep = PreProcessor::new(Lexer::new(text));
-        prep.define_macro("HOGE");
+        prep.define_macro(EcoString::from("HOGE"));
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), T!['[']);
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat else - endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }

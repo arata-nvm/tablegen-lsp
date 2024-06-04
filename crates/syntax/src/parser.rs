@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use ecow::eco_format;
 use rowan::{GreenNode, GreenNodeBuilder};
 pub use rowan::{TextRange, TextSize};
@@ -31,6 +33,8 @@ pub(crate) type Parser<'a> = ParserBase<PreProcessor<Lexer<'a>>>;
 #[derive(Debug)]
 pub(crate) struct ParserBase<T: TokenStream> {
     token_stream: T,
+    current: TokenKind,
+    current_range: Range<usize>,
     builder: GreenNodeBuilder<'static>,
 
     errors: Vec<SyntaxError>,
@@ -38,9 +42,15 @@ pub(crate) struct ParserBase<T: TokenStream> {
 }
 
 impl<T: TokenStream> ParserBase<T> {
-    pub(crate) fn new(token_stream: T) -> Self {
+    pub(crate) fn new(mut token_stream: T) -> Self {
+        let start = token_stream.cursor();
+        let current = token_stream.eat();
+        let end = token_stream.cursor();
+
         Self {
             token_stream,
+            current,
+            current_range: start..end,
             builder: GreenNodeBuilder::new(),
 
             errors: Vec::new(),
@@ -70,7 +80,7 @@ impl<T: TokenStream> ParserBase<T> {
 
     #[inline]
     pub(crate) fn peek(&self) -> TokenKind {
-        self.token_stream.peek()
+        self.current
     }
 
     #[inline]
@@ -89,8 +99,14 @@ impl<T: TokenStream> ParserBase<T> {
     }
 
     pub(crate) fn error(&mut self, message: impl Into<String>) {
-        self.errors
-            .push(SyntaxError::new(self.token_stream.peek_range(), message));
+        let range = TextRange::new(
+            self.current_range
+                .start
+                .try_into()
+                .expect("start is to large"),
+            self.current_range.end.try_into().expect("end is to large"),
+        );
+        self.errors.push(SyntaxError::new(range, message));
         self.is_after_error = true;
     }
 
@@ -129,8 +145,9 @@ impl<T: TokenStream> ParserBase<T> {
     }
 
     pub(crate) fn eat(&mut self) {
-        self.consume_token();
-        self.eat_trivia();
+        self.save();
+        self.lex();
+        self.skip();
     }
 
     pub(crate) fn eat_if(&mut self, kind: TokenKind) -> bool {
@@ -142,15 +159,10 @@ impl<T: TokenStream> ParserBase<T> {
         }
     }
 
-    pub(crate) fn eat_trivia(&mut self) {
-        while self.peek().is_trivia() {
-            self.consume_token();
-        }
-    }
+    pub fn save(&mut self) {
+        let text = self.token_stream.text(self.current_range.clone());
+        self.builder.token(self.peek().into(), text);
 
-    fn consume_token(&mut self) {
-        self.builder
-            .token(self.peek().into(), self.token_stream.peek_text());
         if self.at(TokenKind::Error) {
             let message = self
                 .token_stream
@@ -160,7 +172,19 @@ impl<T: TokenStream> ParserBase<T> {
         } else {
             self.is_after_error = false;
         }
+    }
 
-        self.token_stream.eat();
+    pub fn lex(&mut self) {
+        let start = self.token_stream.cursor();
+        self.current = self.token_stream.eat();
+        let end = self.token_stream.cursor();
+        self.current_range = start..end;
+    }
+
+    pub fn skip(&mut self) {
+        while self.current.is_trivia() {
+            self.save();
+            self.lex();
+        }
     }
 }
