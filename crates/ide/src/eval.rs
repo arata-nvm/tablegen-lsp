@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use ecow::{eco_format, EcoString};
-
 use syntax::ast::AstNode;
 use syntax::ast::{self};
 use syntax::SyntaxNodePtr;
@@ -61,6 +59,21 @@ fn eval(db: &dyn EvalDatabase) -> Arc<Evaluation> {
 pub trait Eval {
     type Output;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output>;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum EvalValueMode {
+    AsIdentifier,
+    AsValue,
+}
+
+pub trait EvalValue {
+    type Output;
+    fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output>;
+}
+
+pub trait EvalExpr {
+    fn eval_expr(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value>;
 }
 
 impl Eval for ast::SourceFile {
@@ -126,7 +139,17 @@ impl Eval for ast::Def {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let name_range = self.name()?.syntax().text_range();
         let define_loc = FileRange::new(ctx.current_file_id(), name_range);
-        let name = self.name()?.eval(ctx)?.eval_identifier(ctx, define_loc)?;
+        let name = self
+            .name()?
+            .eval_value(ctx, EvalValueMode::AsIdentifier)?
+            .eval_expr(ctx, define_loc)?;
+        let Value::String(name) = name else {
+            ctx.error(
+                define_loc.range,
+                format!("'{name}' cannot be used as an identifier"),
+            );
+            return None;
+        };
         let record = Record::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_def(record.clone());
 
@@ -145,8 +168,15 @@ impl Eval for ast::Defvar {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
-        let value = self.value()?.eval(ctx)?;
+        let value = self.value()?.eval_value(ctx, EvalValueMode::AsValue)?;
         let variable = Variable::new(name.clone(), value, define_loc);
+        if ctx.resolve_id(&name).is_some() {
+            ctx.error(
+                define_loc.range,
+                "def or global variable of this name already exists",
+            );
+            return None;
+        }
         ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
         Some(())
     }
@@ -237,7 +267,11 @@ impl Eval for ast::ArgValueList {
 impl Eval for ast::PositionalArgValueList {
     type Output = Vec<Expr>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        Some(self.values().filter_map(|it| it.eval(ctx)).collect())
+        Some(
+            self.values()
+                .filter_map(|it| it.eval_value(ctx, EvalValueMode::AsValue))
+                .collect(),
+        )
     }
 }
 
@@ -275,7 +309,7 @@ impl Eval for ast::FieldDef {
         let typ = self.r#type()?.eval(ctx)?;
         let value = self
             .value()
-            .and_then(|it| it.eval(ctx))
+            .and_then(|it| it.eval_value(ctx, EvalValueMode::AsValue))
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
         let field = Field::new(
             name.clone(),
@@ -303,7 +337,7 @@ impl Eval for ast::FieldLet {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let value = self
             .value()
-            .and_then(|it| it.eval(ctx))
+            .and_then(|it| it.eval_value(ctx, EvalValueMode::AsValue))
             .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
 
         let Some(old_field_id) = ctx.scopes.current_record().find_field(&name) else {
@@ -386,10 +420,13 @@ impl Eval for ast::Type {
     }
 }
 
-impl Eval for ast::Value {
+impl EvalValue for ast::Value {
     type Output = Expr;
-    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let inner_values: Vec<_> = self.inner_values().filter_map(|it| it.eval(ctx)).collect();
+    fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output> {
+        let inner_values: Vec<_> = self
+            .inner_values()
+            .filter_map(|it| it.eval_value(ctx, mode))
+            .collect();
         if inner_values.is_empty() {
             return Some(Expr::Simple(SimpleExpr::Uninitialized));
         }
@@ -406,10 +443,10 @@ impl Eval for ast::Value {
     }
 }
 
-impl Eval for ast::InnerValue {
+impl EvalValue for ast::InnerValue {
     type Output = Expr;
-    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let mut expr = Expr::Simple(self.simple_value()?.eval(ctx)?);
+    fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output> {
+        let mut expr = Expr::Simple(self.simple_value()?.eval_value(ctx, mode)?);
         for suffix in self.suffixes() {
             match suffix {
                 ast::ValueSuffix::FieldSuffix(field_suffix) => {
@@ -460,9 +497,9 @@ fn eval_field_suffix(
     ))
 }
 
-impl Eval for ast::SimpleValue {
+impl EvalValue for ast::SimpleValue {
     type Output = SimpleExpr;
-    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+    fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output> {
         match self {
             ast::SimpleValue::Uninitialized(_) => Some(SimpleExpr::Uninitialized),
             ast::SimpleValue::Integer(integer) => integer.value().map(SimpleExpr::Int),
@@ -471,13 +508,17 @@ impl Eval for ast::SimpleValue {
             ast::SimpleValue::Boolean(boolean) => boolean.value().map(SimpleExpr::Boolean),
             ast::SimpleValue::Bits(bits) => bits
                 .value_list()
-                .map(|list| list.values().filter_map(|it| it.eval(ctx)).collect())
+                .map(|list| {
+                    list.values()
+                        .filter_map(|it| it.eval_value(ctx, mode))
+                        .collect()
+                })
                 .map(SimpleExpr::Bits),
             ast::SimpleValue::List(list) => {
                 let values: Vec<_> = list
                     .value_list()?
                     .values()
-                    .filter_map(|it| it.eval(ctx))
+                    .filter_map(|it| it.eval_value(ctx, mode))
                     .collect();
                 let typ = match values.first() {
                     Some(expr) => expr.typ(),
@@ -486,37 +527,55 @@ impl Eval for ast::SimpleValue {
                 Some(SimpleExpr::List(values, typ))
             }
             ast::SimpleValue::Dag(dag) => {
-                let op = dag.operator()?.eval(ctx)?;
+                let op = dag.operator()?.eval_value(ctx, mode)?;
                 let args = dag
                     .arg_list()
-                    .and_then(|it| it.eval(ctx))
+                    .and_then(|it| it.eval_value(ctx, mode))
                     .unwrap_or_default();
                 Some(SimpleExpr::Dag(Box::new(op), args))
             }
-            ast::SimpleValue::Identifier(identifier) => {
-                let (name, reference_loc) = utils::identifier(identifier, ctx)?;
-                let symbol_sig = match ctx.resolve_id(&name) {
-                    Some(symbol_id) => {
-                        ctx.symbol_map.add_reference(symbol_id, reference_loc);
-                        let symbol = ctx.symbol_map.symbol(symbol_id);
-                        let typ = match symbol {
-                            Symbol::TemplateArgument(template_arg) => template_arg.typ.clone(),
-                            Symbol::Field(field) => field.typ.clone(),
-                            Symbol::Def(def) => {
-                                Type::Def(symbol_id.as_def_id().unwrap(), def.name.clone())
-                            }
-                            Symbol::Variable(variable) => variable.value.typ().clone(),
-                            _ => {
-                                ctx.error(reference_loc.range, "not implemented");
-                                Type::Unknown
-                            }
-                        };
-                        Some((symbol_id, typ))
+            ast::SimpleValue::Identifier(identifier) => match mode {
+                EvalValueMode::AsValue => {
+                    let (name, reference_loc) = utils::identifier(identifier, ctx)?;
+                    let Some(symbol_id) = ctx.resolve_id(&name) else {
+                        ctx.error(
+                            reference_loc.range,
+                            format!("Variable not defined: '{name}'"),
+                        );
+                        return None;
+                    };
+                    ctx.symbol_map.add_reference(symbol_id, reference_loc);
+                    let symbol = ctx.symbol_map.symbol(symbol_id);
+                    let typ = match symbol {
+                        Symbol::TemplateArgument(template_arg) => template_arg.typ.clone(),
+                        Symbol::Field(field) => field.typ.clone(),
+                        Symbol::Def(def) => {
+                            Type::Def(symbol_id.as_def_id().unwrap(), def.name.clone())
+                        }
+                        Symbol::Variable(variable) => variable.value.typ().clone(),
+                        _ => {
+                            ctx.error(
+                                reference_loc.range,
+                                format!("{}:{} not implemented", file!(), line!()),
+                            );
+                            Type::Unknown
+                        }
+                    };
+                    Some(SimpleExpr::Identifier(name, symbol_id, typ))
+                }
+                EvalValueMode::AsIdentifier => {
+                    let (name, reference_loc) = utils::identifier(identifier, ctx)?;
+                    match ctx.resolve_id_in_current_scope(&name) {
+                        None => Some(SimpleExpr::String(name)),
+                        Some(variable_id) => {
+                            ctx.symbol_map.add_reference(variable_id, reference_loc);
+                            let variable = ctx.symbol_map.variable(variable_id);
+                            let typ = variable.value.typ().clone();
+                            Some(SimpleExpr::Identifier(name, variable_id.into(), typ))
+                        }
                     }
-                    None => None,
-                };
-                Some(SimpleExpr::Identifier(name, symbol_sig))
-            }
+                }
+            },
             ast::SimpleValue::ClassValue(class_value) => {
                 let (name, reference_loc) = utils::identifier(class_value.name()?, ctx)?;
                 let Some(class_id) = ctx.symbol_map.find_class(&name) else {
@@ -533,7 +592,7 @@ impl Eval for ast::SimpleValue {
                 let op = bang_operator.kind()?.into();
                 let args = bang_operator
                     .values()
-                    .filter_map(|it| it.eval(ctx))
+                    .filter_map(|it| it.eval_value(ctx, mode))
                     .collect();
                 Some(SimpleExpr::BangOperator(op, args))
             }
@@ -548,80 +607,44 @@ impl Eval for ast::SimpleValue {
     }
 }
 
-impl Eval for ast::DagArg {
+impl EvalValue for ast::DagArg {
     type Output = DagArg;
-    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+    fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output> {
         Some(DagArg {
-            value: self.value()?.eval(ctx)?,
+            value: self.value()?.eval_value(ctx, mode)?,
             var_name: self.var_name().and_then(|it| it.value()),
         })
     }
 }
 
-impl Eval for ast::DagArgList {
+impl EvalValue for ast::DagArgList {
     type Output = Vec<DagArg>;
-    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        Some(self.args().filter_map(|arg| arg.eval(ctx)).collect())
+    fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output> {
+        Some(
+            self.args()
+                .filter_map(|arg| arg.eval_value(ctx, mode))
+                .collect(),
+        )
     }
 }
 
-pub trait ValueEval {
-    fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString>;
-    fn eval_value(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value>;
-}
-
-impl ValueEval for Expr {
-    fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString> {
+impl EvalExpr for Expr {
+    fn eval_expr(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
         match self {
-            Expr::Simple(simple) => simple.eval_identifier(ctx, loc),
+            Expr::Simple(simple) => simple.eval_expr(ctx, loc),
             _ => {
-                ctx.error(loc.range, "not implemented");
-                None
-            }
-        }
-    }
-
-    fn eval_value(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
-        match self {
-            Expr::Simple(simple) => simple.eval_value(ctx, loc),
-            _ => {
-                ctx.error(loc.range, "not implemented");
+                ctx.error(
+                    loc.range,
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 None
             }
         }
     }
 }
 
-impl ValueEval for SimpleExpr {
-    fn eval_identifier(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<EcoString> {
-        match self {
-            SimpleExpr::Uninitialized
-            | SimpleExpr::Bits(_)
-            | SimpleExpr::List(_, _)
-            | SimpleExpr::Dag(_, _)
-            | SimpleExpr::ClassValue(_, _, _) => {
-                ctx.error(loc.range, "'{self}' cannot be used as an identifier");
-                None
-            }
-            SimpleExpr::Boolean(false) => Some("0".into()),
-            SimpleExpr::Boolean(true) => Some("1".into()),
-            SimpleExpr::Int(int) => Some(eco_format!("{int}")),
-            SimpleExpr::String(string) => Some(string.into()),
-            SimpleExpr::Code(code) => Some(code),
-            SimpleExpr::Identifier(name, _) => Some(name),
-
-            SimpleExpr::BangOperator(_, _) => {
-                ctx.error(loc.range, "not implemented");
-                None
-            }
-            SimpleExpr::CondOperator(_) => {
-                ctx.error(loc.range, "not implemented");
-                None
-            }
-        }
-    }
-
-    fn eval_value(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
+impl EvalExpr for SimpleExpr {
+    fn eval_expr(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
         match self {
             SimpleExpr::Uninitialized => Some(Value::Uninitialized),
             SimpleExpr::Boolean(boolean) => Some(Value::Int(boolean as i64)),
@@ -631,39 +654,38 @@ impl ValueEval for SimpleExpr {
             SimpleExpr::Bits(bits) => {
                 let bits: Vec<_> = bits
                     .into_iter()
-                    .filter_map(|it| it.eval_value(ctx, loc))
+                    .filter_map(|it| it.eval_expr(ctx, loc))
                     .collect();
                 Some(Value::Bits(bits))
             }
             SimpleExpr::List(values, typ) => {
                 let values: Vec<_> = values
                     .into_iter()
-                    .filter_map(|it| it.eval_value(ctx, loc))
+                    .filter_map(|it| it.eval_expr(ctx, loc))
                     .collect();
                 Some(Value::List(values, typ))
             }
             SimpleExpr::Dag(op, args) => {
                 let op = DagArgValue {
-                    value: op.value.eval_value(ctx, loc)?,
+                    value: op.value.eval_expr(ctx, loc)?,
                     var_name: op.var_name,
                 };
                 let args = args
                     .into_iter()
                     .filter_map(|it| {
                         Some(DagArgValue {
-                            value: it.value.eval_value(ctx, loc)?,
+                            value: it.value.eval_expr(ctx, loc)?,
                             var_name: it.var_name,
                         })
                     })
                     .collect();
                 Some(Value::Dag(Box::new(op), args))
             }
-            SimpleExpr::Identifier(_, Some(_)) => {
-                ctx.error(loc.range, "not implemented");
-                None
-            }
-            SimpleExpr::Identifier(name, None) => {
-                ctx.error(loc.range, format!("symbol not found: {name}"));
+            SimpleExpr::Identifier(_, _, _) => {
+                ctx.error(
+                    loc.range,
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 None
             }
             SimpleExpr::ClassValue(_, _, _) => {

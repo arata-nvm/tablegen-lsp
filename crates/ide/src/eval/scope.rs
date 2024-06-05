@@ -80,6 +80,11 @@ impl Scopes {
         }
         None
     }
+
+    pub fn find_variable_in_current_scope(&self, name: &EcoString) -> Option<VariableId> {
+        let scope = self.scopes.last().expect("scope is empty");
+        scope.find_variable(name)
+    }
 }
 
 #[derive(Debug)]

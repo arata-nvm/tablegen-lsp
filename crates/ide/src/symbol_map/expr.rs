@@ -19,13 +19,12 @@ pub type Replacement = HashMap<TemplateArgumentId, Expr>;
 impl Expr {
     pub fn replaced(self, replacement: &Replacement) -> Self {
         match self {
-            Self::Simple(SimpleExpr::Identifier(
-                _,
-                Some((SymbolId::TemplateArgumentId(id), _)),
-            )) => match replacement.get(&id) {
-                Some(expr) => expr.clone(),
-                None => self,
-            },
+            Self::Simple(SimpleExpr::Identifier(_, SymbolId::TemplateArgumentId(id), _)) => {
+                match replacement.get(&id) {
+                    Some(expr) => expr.clone(),
+                    None => self,
+                }
+            }
             Self::FieldSuffix(expr, field, typ) => {
                 Self::FieldSuffix(Box::new(expr.replaced(replacement)), field, typ)
             }
@@ -72,7 +71,7 @@ pub enum SimpleExpr {
     Bits(Vec<Expr>),
     List(Vec<Expr>, Type),
     Dag(Box<DagArg>, Vec<DagArg>),
-    Identifier(EcoString, Option<(SymbolId, Type)>),
+    Identifier(EcoString, SymbolId, Type),
     ClassValue(EcoString, ClassId, Vec<Expr>),
     BangOperator(BangOperatorOp, Vec<Expr>),
     CondOperator(Vec<CondClause>),
@@ -89,8 +88,7 @@ impl SimpleExpr {
             Self::Bits(bits) => Type::Bits(bits.len()),
             Self::List(_, typ) => Type::List(Box::new(typ.clone())),
             Self::Dag(_, _) => Type::Dag,
-            Self::Identifier(_, Some((_, typ))) => typ.clone(),
-            Self::Identifier(_, None) => Type::Unknown,
+            Self::Identifier(_, _, typ) => typ.clone(),
             Self::ClassValue(class_name, class_id, _) => Type::Class(*class_id, class_name.clone()),
             Self::BangOperator(_, _) => Type::Unknown, // TODO
             Self::CondOperator(_) => Type::Unknown,    // TODO
@@ -137,7 +135,7 @@ impl std::fmt::Display for SimpleExpr {
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            Self::Identifier(name, _) => write!(f, "{name}"),
+            Self::Identifier(name, _, _) => write!(f, "{name}"),
             Self::ClassValue(name, _, args) => write!(
                 f,
                 "{}<{}>",

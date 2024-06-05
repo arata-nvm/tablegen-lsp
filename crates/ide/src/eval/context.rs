@@ -4,7 +4,7 @@ use syntax::parser::TextRange;
 use crate::{
     file_system::{FileId, FileRange},
     handlers::diagnostics::Diagnostic,
-    symbol_map::{symbol::SymbolId, SymbolMap},
+    symbol_map::{symbol::SymbolId, variable::VariableId, SymbolMap},
 };
 
 use super::{scope::Scopes, EvalDatabase, Evaluation};
@@ -48,6 +48,10 @@ impl<'a> EvalCtx<'a> {
             return Some(symbol_id);
         }
         None
+    }
+
+    pub fn resolve_id_in_current_scope(&self, name: &EcoString) -> Option<VariableId> {
+        self.scopes.find_variable_in_current_scope(name)
     }
 
     pub fn error(&mut self, range: TextRange, message: impl Into<String>) {
