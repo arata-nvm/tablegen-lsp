@@ -25,6 +25,49 @@ impl Expr {
                     None => self,
                 }
             }
+            Self::Simple(SimpleExpr::Bits(bits)) => Self::Simple(SimpleExpr::Bits(
+                bits.into_iter()
+                    .map(|bit| bit.replaced(replacement))
+                    .collect(),
+            )),
+            Self::Simple(SimpleExpr::List(values, typ)) => Self::Simple(SimpleExpr::List(
+                values
+                    .into_iter()
+                    .map(|value| value.replaced(replacement))
+                    .collect(),
+                typ.clone(),
+            )),
+            Self::Simple(SimpleExpr::Dag(op, args)) => Self::Simple(SimpleExpr::Dag(
+                Box::new(op.replaced(replacement)),
+                args.into_iter()
+                    .map(|arg| arg.replaced(replacement))
+                    .collect(),
+            )),
+            Self::Simple(SimpleExpr::ClassValue(name, class_id, args)) => {
+                Self::Simple(SimpleExpr::ClassValue(
+                    name,
+                    class_id,
+                    args.into_iter()
+                        .map(|arg| arg.replaced(replacement))
+                        .collect(),
+                ))
+            }
+            Self::Simple(SimpleExpr::BangOperator(op, args)) => {
+                Self::Simple(SimpleExpr::BangOperator(
+                    op,
+                    args.into_iter()
+                        .map(|arg| arg.replaced(replacement))
+                        .collect(),
+                ))
+            }
+            Self::Simple(SimpleExpr::CondOperator(clauses)) => {
+                Self::Simple(SimpleExpr::CondOperator(
+                    clauses
+                        .into_iter()
+                        .map(|clause| clause.replaced(replacement))
+                        .collect(),
+                ))
+            }
             Self::FieldSuffix(expr, field, typ) => {
                 Self::FieldSuffix(Box::new(expr.replaced(replacement)), field, typ)
             }
@@ -171,6 +214,15 @@ impl std::fmt::Display for SimpleExpr {
 pub struct DagArg {
     pub value: Expr,
     pub var_name: Option<EcoString>,
+}
+
+impl DagArg {
+    pub fn replaced(self, replacement: &Replacement) -> Self {
+        Self {
+            value: self.value.replaced(replacement),
+            var_name: self.var_name.clone(),
+        }
+    }
 }
 
 impl std::fmt::Display for DagArg {
@@ -352,6 +404,15 @@ impl std::fmt::Display for BangOperatorOp {
 pub struct CondClause {
     pub condition: Expr,
     pub value: Expr,
+}
+
+impl CondClause {
+    pub fn replaced(self, replacement: &Replacement) -> Self {
+        Self {
+            condition: self.condition.replaced(replacement),
+            value: self.value.replaced(replacement),
+        }
+    }
 }
 
 impl std::fmt::Display for CondClause {
