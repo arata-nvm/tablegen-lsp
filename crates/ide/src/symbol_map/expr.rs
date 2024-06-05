@@ -67,7 +67,7 @@ pub enum SimpleExpr {
     Uninitialized,
     Boolean(bool),
     Int(i64),
-    String(String),
+    String(EcoString),
     Code(EcoString),
     Bits(Vec<Expr>),
     List(Vec<Expr>, Type),

@@ -327,7 +327,7 @@ asts! {
         }
     };
     String {
-        pub fn value(&self) -> std::string::String {
+        pub fn value(&self) -> EcoString {
             self.0
                 .children_with_tokens()
                 .filter(|node| node.kind() == SyntaxKind::StrVal)
@@ -342,6 +342,7 @@ asts! {
                 })
                 .collect::<Vec<_>>()
                 .join("")
+                .into()
         }
     };
     Code {

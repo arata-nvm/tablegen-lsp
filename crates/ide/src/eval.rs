@@ -609,7 +609,7 @@ impl ValueEval for SimpleExpr {
             SimpleExpr::Boolean(boolean) => Some(Value::Int(boolean as i64)),
             SimpleExpr::Int(int) => Some(Value::Int(int)),
             SimpleExpr::String(string) => Some(Value::String(string)),
-            SimpleExpr::Code(code) => Some(Value::String(code.to_string())),
+            SimpleExpr::Code(code) => Some(Value::String(code)),
             SimpleExpr::Bits(bits) => {
                 let bits: Vec<_> = bits
                     .into_iter()

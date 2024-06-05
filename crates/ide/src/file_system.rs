@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
+use ecow::EcoString;
 use syntax::ast::AstNode;
 use syntax::parser::{TextRange, TextSize};
 use syntax::{ast, SyntaxNode, SyntaxNodePtr};
@@ -170,7 +171,7 @@ pub fn collect_sources<FS: FileSystem>(
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct IncludeId(pub SyntaxNodePtr);
 
-fn list_includes(root_node: SyntaxNode) -> Vec<(IncludeId, String)> {
+fn list_includes(root_node: SyntaxNode) -> Vec<(IncludeId, EcoString)> {
     (|| -> Option<_> {
         let source_file = ast::SourceFile::cast(root_node)?;
         let stmt_list = source_file.statement_list()?;
@@ -193,11 +194,11 @@ fn list_includes(root_node: SyntaxNode) -> Vec<(IncludeId, String)> {
 fn resolve_include_file<FS: FileSystem>(
     db: &mut dyn SourceDatabase,
     fs: &mut FS,
-    include_path: String,
+    include_path: EcoString,
     include_dir_list: &[FilePath],
 ) -> Option<FileId> {
     for include_dir in include_dir_list {
-        let candidate_file_path = include_dir.join(&include_path);
+        let candidate_file_path = include_dir.join(include_path.as_str());
         if let Some(file_content) = fs.read_content(&candidate_file_path) {
             let file_id = fs.assign_or_get_file_id(candidate_file_path.clone());
             db.set_file_content(file_id, Arc::from(file_content.as_str()));

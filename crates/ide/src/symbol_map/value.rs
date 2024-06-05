@@ -6,7 +6,7 @@ use super::typ::Type;
 pub enum Value {
     Uninitialized,
     Int(i64),
-    String(String),
+    String(EcoString),
     Bits(Vec<Value>),
     List(Vec<Value>, Type),
     Dag(Box<DagArgValue>, Vec<DagArgValue>),
