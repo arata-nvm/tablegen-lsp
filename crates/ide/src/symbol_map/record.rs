@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
 use ecow::EcoString;
 
+use indexmap::IndexMap;
 use syntax::parser::TextRange;
 use thiserror::Error;
 
@@ -26,8 +26,8 @@ pub struct Record {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
-    pub name_to_template_arg: BTreeMap<EcoString, TemplateArgumentId>,
-    pub name_to_field: BTreeMap<EcoString, FieldId>,
+    pub name_to_template_arg: IndexMap<EcoString, TemplateArgumentId>,
+    pub name_to_field: IndexMap<EcoString, FieldId>,
     pub parent_class_list: Vec<ClassId>,
 }
 
@@ -43,8 +43,8 @@ impl Record {
             name,
             define_loc,
             reference_locs: Vec::new(),
-            name_to_template_arg: BTreeMap::new(),
-            name_to_field: BTreeMap::new(),
+            name_to_template_arg: IndexMap::new(),
+            name_to_field: IndexMap::new(),
             parent_class_list: Vec::new(),
         }
     }

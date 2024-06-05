@@ -7,6 +7,7 @@ edition.workspace = true
 syntax = { path = "../syntax" }
 ecow.workspace = true
 id-arena.workspace = true
+indexmap.workspace = true
 ropey.workspace = true
 salsa.workspace = true
 thiserror.workspace = true

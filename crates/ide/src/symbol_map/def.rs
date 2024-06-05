@@ -1,7 +1,6 @@
-use std::collections::BTreeMap;
-
 use ecow::EcoString;
 use id_arena::Id;
+use indexmap::IndexMap;
 
 use crate::file_system::FileRange;
 
@@ -14,7 +13,7 @@ pub struct Def {
     pub name: EcoString,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
-    pub name_to_field: BTreeMap<EcoString, FieldId>,
+    pub name_to_field: IndexMap<EcoString, FieldId>,
     pub parent_class_list: Vec<ClassId>,
 }
 
