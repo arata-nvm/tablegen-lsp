@@ -58,7 +58,6 @@ pub fn main() {
                     println!("  {} {} = {};", field.typ, field.name, field.value);
                 }
                 println!("}}");
-                println!();
             }
             Symbol::Def(def) => {
                 let parent_classes = def
