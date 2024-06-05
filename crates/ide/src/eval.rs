@@ -90,7 +90,10 @@ impl Eval for ast::Statement {
             ast::Statement::Include(include) => include.eval(ctx),
             ast::Statement::Defvar(defvar) => defvar.eval(ctx),
             _ => {
-                ctx.error(self.syntax().text_range(), "not implemented");
+                ctx.error(
+                    self.syntax().text_range(),
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 Some(())
             }
         }
@@ -222,7 +225,10 @@ impl Eval for ast::ArgValueList {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let positional_arg_value_list = self.positional().and_then(|it| it.eval(ctx));
         if self.named().is_some() {
-            ctx.error(self.syntax().text_range(), "not implemented");
+            ctx.error(
+                self.syntax().text_range(),
+                format!("{}:{} not implemented", file!(), line!()),
+            );
         }
         positional_arg_value_list
     }
@@ -252,7 +258,10 @@ impl Eval for ast::BodyItem {
             ast::BodyItem::FieldDef(field_def) => field_def.eval(ctx),
             ast::BodyItem::FieldLet(field_let) => field_let.eval(ctx),
             _ => {
-                ctx.error(self.syntax().text_range(), "not implemented");
+                ctx.error(
+                    self.syntax().text_range(),
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 Some(())
             }
         }
@@ -386,7 +395,10 @@ impl Eval for ast::Value {
         }
 
         if inner_values.len() != 1 {
-            ctx.error(self.syntax().text_range(), "not implemented");
+            ctx.error(
+                self.syntax().text_range(),
+                format!("{}:{} not implemented", file!(), line!()),
+            );
             return None;
         }
 
@@ -404,7 +416,10 @@ impl Eval for ast::InnerValue {
                     expr = eval_field_suffix(ctx, expr, field_suffix)?;
                 }
                 _ => {
-                    ctx.error(suffix.syntax().text_range(), "not implemented");
+                    ctx.error(
+                        suffix.syntax().text_range(),
+                        format!("{}:{} not implemented", file!(), line!()),
+                    );
                     return None;
                 }
             }
@@ -523,7 +538,10 @@ impl Eval for ast::SimpleValue {
                 Some(SimpleExpr::BangOperator(op, args))
             }
             _ => {
-                ctx.error(self.syntax().text_range(), "not implemented");
+                ctx.error(
+                    self.syntax().text_range(),
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 None
             }
         }
@@ -649,15 +667,24 @@ impl ValueEval for SimpleExpr {
                 None
             }
             SimpleExpr::ClassValue(_, _, _) => {
-                ctx.error(loc.range, "not implemented");
+                ctx.error(
+                    loc.range,
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 None
             }
             SimpleExpr::BangOperator(_, _) => {
-                ctx.error(loc.range, "not implemented");
+                ctx.error(
+                    loc.range,
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 None
             }
             SimpleExpr::CondOperator(_) => {
-                ctx.error(loc.range, "not implemented");
+                ctx.error(
+                    loc.range,
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
                 None
             }
         }
