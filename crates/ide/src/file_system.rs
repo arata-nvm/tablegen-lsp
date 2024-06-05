@@ -149,17 +149,10 @@ pub fn collect_sources<FS: FileSystem>(
 
         let mut include_map = HashMap::new();
         // FIXME
-        let include_dir_list = [
-            file_dir,
-            FilePath(
-                PathBuf::from_str(
-                    env::var("INCLUDE_DIR")
-                        .expect("env `INCLUDE_DIR` is not set")
-                        .as_str(),
-                )
-                .unwrap(),
-            ),
-        ];
+        let mut include_dir_list = vec![file_dir];
+        if let Ok(include_dir) = env::var("INCLUDE_DIR") {
+            include_dir_list.push(FilePath(PathBuf::from_str(&include_dir).unwrap()));
+        }
         for (include_id, include_path) in list_includes(parse.syntax_node()) {
             if let Some(resolved_file_id) =
                 resolve_include_file(db, fs, include_path, &include_dir_list)
