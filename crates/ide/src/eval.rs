@@ -137,19 +137,33 @@ impl Eval for ast::Class {
 impl Eval for ast::Def {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
-        let name_range = self.name()?.syntax().text_range();
-        let define_loc = FileRange::new(ctx.current_file_id(), name_range);
-        let name = self
-            .name()?
-            .eval_value(ctx, EvalValueMode::AsIdentifier)?
-            .eval_expr(ctx, define_loc)?;
-        let Value::String(name) = name else {
-            ctx.error(
-                define_loc.range,
-                format!("'{name}' cannot be used as an identifier"),
-            );
-            return None;
+        let (name, define_loc) = match self.name() {
+            Some(name_node) => {
+                let name_range = name_node.syntax().text_range();
+                let define_loc = FileRange::new(ctx.current_file_id(), name_range);
+
+                let name = self
+                    .name()?
+                    .eval_value(ctx, EvalValueMode::AsIdentifier)?
+                    .eval_expr(ctx, define_loc)?;
+                let Value::String(name) = name else {
+                    ctx.error(
+                        define_loc.range,
+                        format!("'{name}' cannot be used as an identifier"),
+                    );
+                    return None;
+                };
+
+                (name, define_loc)
+            }
+            None => {
+                let name = ctx.next_anonymous_def_name();
+                let name_range = self.syntax().text_range();
+                let define_loc = FileRange::new(ctx.current_file_id(), name_range);
+                (name, define_loc)
+            }
         };
+
         let record = Record::new(name.clone(), define_loc);
         let id = ctx.symbol_map.add_def(record.clone());
 

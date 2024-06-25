@@ -1,4 +1,4 @@
-use ecow::EcoString;
+use ecow::{eco_format, EcoString};
 use syntax::parser::TextRange;
 
 use crate::{
@@ -15,6 +15,7 @@ pub struct EvalCtx<'a> {
     pub symbol_map: SymbolMap,
     pub diagnostics: Vec<Diagnostic>,
     pub scopes: Scopes,
+    pub anonymous_def_index: u32,
 }
 
 impl<'a> EvalCtx<'a> {
@@ -25,6 +26,7 @@ impl<'a> EvalCtx<'a> {
             symbol_map: SymbolMap::default(),
             diagnostics: Vec::new(),
             scopes: Scopes::default(),
+            anonymous_def_index: 0,
         }
     }
 
@@ -69,5 +71,11 @@ impl<'a> EvalCtx<'a> {
 
     pub fn scopes(&self) -> &Scopes {
         &self.scopes
+    }
+
+    pub fn next_anonymous_def_name(&mut self) -> EcoString {
+        let index = self.anonymous_def_index;
+        self.anonymous_def_index += 1;
+        eco_format!("anonymous_{index}")
     }
 }
