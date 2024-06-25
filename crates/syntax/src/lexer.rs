@@ -104,7 +104,7 @@ impl<'a> Lexer<'a> {
         TokenKind::BlockComment
     }
 
-    fn number(&mut self, mut start: usize, c: char) -> TokenKind {
+    fn number(&mut self, start: usize, c: char) -> TokenKind {
         match self.s.peek() {
             Some(c2) if !c2.is_ascii_digit() => match c {
                 '+' => return TokenKind::Plus,
@@ -121,10 +121,6 @@ impl<'a> Lexer<'a> {
             } else if self.s.eat_if('x') {
                 base = 16;
             }
-
-            if base != 10 {
-                start = self.s.cursor();
-            }
         }
 
         match base {
@@ -135,7 +131,7 @@ impl<'a> Lexer<'a> {
         };
 
         let number = self.s.get(start..self.s.cursor());
-        if i64::from_str_radix(number, base).is_err() {
+        if interpret_number(number).is_none() {
             match base {
                 2 => return self.error("Invalid binary number"),
                 10 => return self.error("Invalid number"),
@@ -305,6 +301,18 @@ fn is_identifier_continue(c: char) -> bool {
 
 fn is_newline(c: char) -> bool {
     matches!(c, '\r' | '\n')
+}
+
+pub fn interpret_number(text: &str) -> Option<i64> {
+    if let Some(rest) = text.strip_prefix("0x") {
+        u64::from_str_radix(rest, 16).ok().map(|i| i as i64)
+    } else if let Some(rest) = text.strip_prefix("0b") {
+        u64::from_str_radix(rest, 2).ok().map(|i| i as i64)
+    } else if text.starts_with('-') {
+        text.parse::<i64>().ok()
+    } else {
+        text.parse::<u64>().ok().map(|i| i as i64)
+    }
 }
 
 #[cfg(test)]

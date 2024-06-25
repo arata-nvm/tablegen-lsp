@@ -3,7 +3,7 @@ pub use rowan::ast::AstNode;
 
 use crate::parser::TextRange;
 use crate::syntax_kind::SyntaxKind;
-use crate::{Language, SyntaxNode};
+use crate::{lexer, Language, SyntaxNode};
 
 macro_rules! asts {
     () => {};
@@ -319,11 +319,7 @@ asts! {
         pub fn value(&self) -> Option<i64> {
             let token = self.0.first_token()?;
             let text = token.text();
-            if let Some(rest) = text.strip_prefix("0x") {
-                i64::from_str_radix(rest, 16).ok()
-            } else {
-                text.parse::<i64>().ok()
-            }
+            lexer::interpret_number(text)
         }
     };
     String {
