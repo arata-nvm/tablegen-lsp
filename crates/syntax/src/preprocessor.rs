@@ -28,7 +28,11 @@ impl<T: TokenStream> TokenStream for PreProcessor<T> {
     }
 
     fn take_error(&mut self) -> Option<EcoString> {
-        self.token_stream.take_error()
+        if self.error.is_some() {
+            self.error.take()
+        } else {
+            self.token_stream.take_error()
+        }
     }
 }
 
