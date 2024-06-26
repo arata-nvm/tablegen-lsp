@@ -1,6 +1,6 @@
 use ecow::EcoString;
 
-use super::typ::Type;
+use super::{def::DefId, typ::Type};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Value {
@@ -10,6 +10,7 @@ pub enum Value {
     Bits(Vec<Value>),
     List(Vec<Value>, Type),
     Dag(Box<DagArgValue>, Vec<DagArgValue>),
+    DefIdentifier(EcoString, DefId, Type),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -36,6 +37,7 @@ impl Value {
             Self::Bits(bits) => Type::Bits(bits.len()),
             Self::List(_, typ) => Type::List(Box::new(typ.clone())),
             Self::Dag(_, _) => Type::Dag,
+            Self::DefIdentifier(_, _, typ) => typ.clone(),
         }
     }
 }
@@ -77,6 +79,7 @@ impl std::fmt::Display for Value {
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
+            Self::DefIdentifier(name, _, _) => write!(f, "{}", name),
         }
     }
 }

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use syntax::ast::AstNode;
 use syntax::ast::{self};
+use syntax::parser::TextRange;
 use syntax::SyntaxNodePtr;
 
 use crate::db::SourceDatabase;
@@ -706,12 +707,22 @@ impl EvalExpr for SimpleExpr {
                 );
                 None
             }
-            SimpleExpr::ClassValue(_, _, _) => {
-                ctx.error(
-                    loc.range,
-                    format!("{}:{} not implemented", file!(), line!()),
-                );
-                None
+            SimpleExpr::ClassValue(_, class_id, arg_value_list) => {
+                let name = ctx.next_anonymous_def_name();
+                let define_loc =
+                    FileRange::new(ctx.current_file_id(), TextRange::empty(loc.range.start()));
+                let mut record = Record::new(name.clone(), define_loc);
+
+                if let Err((range, err)) =
+                    record.inherit(&mut ctx.symbol_map, class_id, arg_value_list, define_loc)
+                {
+                    ctx.error(range, err.to_string());
+                    return None;
+                }
+
+                let id = ctx.symbol_map.add_def(record);
+                let typ = Type::Def(id, name.clone());
+                Some(Value::DefIdentifier(name, id, typ))
             }
             SimpleExpr::BangOperator(_, _) => {
                 ctx.error(
