@@ -3,82 +3,108 @@ use std::collections::HashMap;
 use ecow::EcoString;
 use syntax::syntax_kind::SyntaxKind;
 
+use crate::file_system::FileRange;
+
 use super::{class::ClassId, symbol::SymbolId, template_arg::TemplateArgumentId, typ::Type};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
-    Simple(SimpleExpr),
+    Simple(FileRange, SimpleExpr),
     // RangeSuffix(Box<Expr>, Vec<Range>),
     // SliceSuffix(Box<Expr>, Vec<Slice>),
-    FieldSuffix(Box<Expr>, EcoString, Type),
+    FieldSuffix(FileRange, Box<Expr>, EcoString, Type),
     // Paste(Box<Expr>, SimpleExpr),
 }
 
 pub type Replacement = HashMap<TemplateArgumentId, Expr>;
 
 impl Expr {
+    pub fn uninitialized(range: FileRange) -> Self {
+        Self::Simple(range, SimpleExpr::Uninitialized(range))
+    }
+
     pub fn replaced(self, replacement: &Replacement) -> Self {
         match self {
-            Self::Simple(SimpleExpr::Identifier(_, SymbolId::TemplateArgumentId(id), _)) => {
-                match replacement.get(&id) {
-                    Some(expr) => expr.clone(),
-                    None => self,
+            Self::Simple(loc1, simple_expr) => match simple_expr {
+                SimpleExpr::Identifier(_, _, SymbolId::TemplateArgumentId(id), _) => {
+                    match replacement.get(&id) {
+                        Some(expr) => expr.clone(),
+                        None => Self::Simple(loc1, simple_expr),
+                    }
                 }
+                SimpleExpr::Bits(loc2, bits) => Self::Simple(
+                    loc1,
+                    SimpleExpr::Bits(
+                        loc2,
+                        bits.into_iter()
+                            .map(|bit| bit.replaced(replacement))
+                            .collect(),
+                    ),
+                ),
+                SimpleExpr::List(loc2, values, typ) => Self::Simple(
+                    loc1,
+                    SimpleExpr::List(
+                        loc2,
+                        values
+                            .into_iter()
+                            .map(|value| value.replaced(replacement))
+                            .collect(),
+                        typ.clone(),
+                    ),
+                ),
+                SimpleExpr::Dag(loc2, op, args) => Self::Simple(
+                    loc1,
+                    SimpleExpr::Dag(
+                        loc2,
+                        Box::new(op.replaced(replacement)),
+                        args.into_iter()
+                            .map(|arg| arg.replaced(replacement))
+                            .collect(),
+                    ),
+                ),
+                SimpleExpr::ClassValue(loc2, name, class_id, args) => Self::Simple(
+                    loc1,
+                    SimpleExpr::ClassValue(
+                        loc2,
+                        name,
+                        class_id,
+                        args.into_iter()
+                            .map(|arg| arg.replaced(replacement))
+                            .collect(),
+                    ),
+                ),
+                SimpleExpr::BangOperator(loc2, op, args) => Self::Simple(
+                    loc1,
+                    SimpleExpr::BangOperator(
+                        loc2,
+                        op,
+                        args.into_iter()
+                            .map(|arg| arg.replaced(replacement))
+                            .collect(),
+                    ),
+                ),
+                SimpleExpr::CondOperator(loc2, clauses) => Self::Simple(
+                    loc1,
+                    SimpleExpr::CondOperator(
+                        loc2,
+                        clauses
+                            .into_iter()
+                            .map(|clause| clause.replaced(replacement))
+                            .collect(),
+                    ),
+                ),
+                x => Self::Simple(loc1, x),
+            },
+            Self::FieldSuffix(range, expr, field, typ) => {
+                Self::FieldSuffix(range, Box::new(expr.replaced(replacement)), field, typ)
             }
-            Self::Simple(SimpleExpr::Bits(bits)) => Self::Simple(SimpleExpr::Bits(
-                bits.into_iter()
-                    .map(|bit| bit.replaced(replacement))
-                    .collect(),
-            )),
-            Self::Simple(SimpleExpr::List(values, typ)) => Self::Simple(SimpleExpr::List(
-                values
-                    .into_iter()
-                    .map(|value| value.replaced(replacement))
-                    .collect(),
-                typ.clone(),
-            )),
-            Self::Simple(SimpleExpr::Dag(op, args)) => Self::Simple(SimpleExpr::Dag(
-                Box::new(op.replaced(replacement)),
-                args.into_iter()
-                    .map(|arg| arg.replaced(replacement))
-                    .collect(),
-            )),
-            Self::Simple(SimpleExpr::ClassValue(name, class_id, args)) => {
-                Self::Simple(SimpleExpr::ClassValue(
-                    name,
-                    class_id,
-                    args.into_iter()
-                        .map(|arg| arg.replaced(replacement))
-                        .collect(),
-                ))
-            }
-            Self::Simple(SimpleExpr::BangOperator(op, args)) => {
-                Self::Simple(SimpleExpr::BangOperator(
-                    op,
-                    args.into_iter()
-                        .map(|arg| arg.replaced(replacement))
-                        .collect(),
-                ))
-            }
-            Self::Simple(SimpleExpr::CondOperator(clauses)) => {
-                Self::Simple(SimpleExpr::CondOperator(
-                    clauses
-                        .into_iter()
-                        .map(|clause| clause.replaced(replacement))
-                        .collect(),
-                ))
-            }
-            Self::FieldSuffix(expr, field, typ) => {
-                Self::FieldSuffix(Box::new(expr.replaced(replacement)), field, typ)
-            }
-            _ => self,
         }
     }
 
     pub fn typ(&self) -> Type {
         match self {
-            Self::Simple(value) => value.typ(),
-            Self::FieldSuffix(_, _, typ) => typ.clone(),
+            Self::Simple(_, value) => value.typ(),
+            Self::FieldSuffix(_, _, _, typ) => typ.clone(),
         }
     }
 }
@@ -98,43 +124,45 @@ impl Expr {
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Simple(value) => write!(f, "{value}"),
-            Self::FieldSuffix(expr, field, _) => write!(f, "{expr}.{field}"),
+            Self::Simple(_, value) => write!(f, "{value}"),
+            Self::FieldSuffix(_, expr, field, _) => write!(f, "{expr}.{field}"),
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum SimpleExpr {
-    Uninitialized,
-    Boolean(bool),
-    Int(i64),
-    String(EcoString),
-    Code(EcoString),
-    Bits(Vec<Expr>),
-    List(Vec<Expr>, Type),
-    Dag(Box<DagArg>, Vec<DagArg>),
-    Identifier(EcoString, SymbolId, Type),
-    ClassValue(EcoString, ClassId, Vec<Expr>),
-    BangOperator(BangOperatorOp, Vec<Expr>),
-    CondOperator(Vec<CondClause>),
+    Uninitialized(FileRange),
+    Boolean(FileRange, bool),
+    Int(FileRange, i64),
+    String(FileRange, EcoString),
+    Code(FileRange, EcoString),
+    Bits(FileRange, Vec<Expr>),
+    List(FileRange, Vec<Expr>, Type),
+    Dag(FileRange, Box<DagArg>, Vec<DagArg>),
+    Identifier(FileRange, EcoString, SymbolId, Type),
+    ClassValue(FileRange, EcoString, ClassId, Vec<Expr>),
+    BangOperator(FileRange, BangOperatorOp, Vec<Expr>),
+    CondOperator(FileRange, Vec<CondClause>),
 }
 
 impl SimpleExpr {
     pub fn typ(&self) -> Type {
         match self {
-            Self::Uninitialized => Type::Unknown,
-            Self::Boolean(_) => Type::Bit,
-            Self::Int(_) => Type::Int,
-            Self::String(_) => Type::String,
-            Self::Code(_) => Type::Code,
-            Self::Bits(bits) => Type::Bits(bits.len()),
-            Self::List(_, typ) => Type::List(Box::new(typ.clone())),
-            Self::Dag(_, _) => Type::Dag,
-            Self::Identifier(_, _, typ) => typ.clone(),
-            Self::ClassValue(class_name, class_id, _) => Type::Class(*class_id, class_name.clone()),
-            Self::BangOperator(_, _) => Type::Unknown, // TODO
-            Self::CondOperator(_) => Type::Unknown,    // TODO
+            Self::Uninitialized(_) => Type::Unknown,
+            Self::Boolean(_, _) => Type::Bit,
+            Self::Int(_, _) => Type::Int,
+            Self::String(_, _) => Type::String,
+            Self::Code(_, _) => Type::Code,
+            Self::Bits(_, bits) => Type::Bits(bits.len()),
+            Self::List(_, _, typ) => Type::List(Box::new(typ.clone())),
+            Self::Dag(_, _, _) => Type::Dag,
+            Self::Identifier(_, _, _, typ) => typ.clone(),
+            Self::ClassValue(_, class_name, class_id, _) => {
+                Type::Class(*class_id, class_name.clone())
+            }
+            Self::BangOperator(_, _, _) => Type::Unknown, // TODO
+            Self::CondOperator(_, _) => Type::Unknown,    // TODO
         }
     }
 }
@@ -142,12 +170,12 @@ impl SimpleExpr {
 impl std::fmt::Display for SimpleExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Uninitialized => write!(f, "?"),
-            Self::Boolean(value) => write!(f, "{value}"),
-            Self::Int(value) => write!(f, "{value}"),
-            Self::String(value) => write!(f, "\"{value}\""),
-            Self::Code(value) => write!(f, "[{{ {value} }}]"),
-            Self::Bits(values) => {
+            Self::Uninitialized(_) => write!(f, "?"),
+            Self::Boolean(_, value) => write!(f, "{value}"),
+            Self::Int(_, value) => write!(f, "{value}"),
+            Self::String(_, value) => write!(f, "\"{value}\""),
+            Self::Code(_, value) => write!(f, "[{{ {value} }}]"),
+            Self::Bits(_, values) => {
                 write!(
                     f,
                     "{{ {} }}",
@@ -158,7 +186,7 @@ impl std::fmt::Display for SimpleExpr {
                         .join(", ")
                 )
             }
-            Self::List(values, _) => {
+            Self::List(_, values, _) => {
                 write!(
                     f,
                     "[ {} ]",
@@ -169,7 +197,7 @@ impl std::fmt::Display for SimpleExpr {
                         .join(", ")
                 )
             }
-            Self::Dag(op, args) => write!(
+            Self::Dag(_, op, args) => write!(
                 f,
                 "({} {})",
                 op,
@@ -178,8 +206,8 @@ impl std::fmt::Display for SimpleExpr {
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            Self::Identifier(name, _, _) => write!(f, "{name}"),
-            Self::ClassValue(name, _, args) => write!(
+            Self::Identifier(_, name, _, _) => write!(f, "{name}"),
+            Self::ClassValue(_, name, _, args) => write!(
                 f,
                 "{}<{}>",
                 name,
@@ -188,7 +216,7 @@ impl std::fmt::Display for SimpleExpr {
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            Self::BangOperator(op, args) => write!(
+            Self::BangOperator(_, op, args) => write!(
                 f,
                 "{}({})",
                 op,
@@ -197,7 +225,7 @@ impl std::fmt::Display for SimpleExpr {
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            Self::CondOperator(clause_list) => write!(
+            Self::CondOperator(_, clause_list) => write!(
                 f,
                 "!cond({})",
                 clause_list

@@ -13,7 +13,6 @@ use super::class::Class;
 use super::class::ClassId;
 use super::def::Def;
 use super::expr::Expr;
-use super::expr::SimpleExpr;
 use super::field::Field;
 use super::field::FieldId;
 use super::template_arg::TemplateArgument;
@@ -124,7 +123,7 @@ impl Record {
                     template_arg
                         .default_value
                         .clone()
-                        .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized))
+                        .unwrap_or(Expr::uninitialized(reference_loc))
                 }
             };
             replacement.insert(template_arg_id, template_arg_value);

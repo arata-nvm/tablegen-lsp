@@ -74,7 +74,7 @@ pub trait EvalValue {
 }
 
 pub trait EvalExpr {
-    fn eval_expr(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value>;
+    fn eval_expr(self, ctx: &mut EvalCtx) -> Option<Value>;
 }
 
 impl Eval for ast::SourceFile {
@@ -146,7 +146,7 @@ impl Eval for ast::Def {
                 let name = self
                     .name()?
                     .eval_value(ctx, EvalValueMode::AsIdentifier)?
-                    .eval_expr(ctx, define_loc)?;
+                    .eval_expr(ctx)?;
                 let Value::String(name) = name else {
                     ctx.error(
                         define_loc.range,
@@ -328,7 +328,7 @@ impl Eval for ast::FieldDef {
         let value = self
             .value()
             .and_then(|it| it.eval_value(ctx, EvalValueMode::AsValue))
-            .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
+            .unwrap_or(Expr::uninitialized(define_loc));
         let field = Field::new(
             name.clone(),
             typ,
@@ -356,7 +356,7 @@ impl Eval for ast::FieldLet {
         let value = self
             .value()
             .and_then(|it| it.eval_value(ctx, EvalValueMode::AsValue))
-            .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized));
+            .unwrap_or(Expr::uninitialized(define_loc));
 
         let Some(old_field_id) = ctx.scopes.current_record().find_field(&name) else {
             ctx.error(define_loc.range, format!("unknown field: {name}"));
@@ -446,7 +446,8 @@ impl EvalValue for ast::Value {
             .filter_map(|it| it.eval_value(ctx, mode))
             .collect();
         if inner_values.is_empty() {
-            return Some(Expr::Simple(SimpleExpr::Uninitialized));
+            let loc = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
+            return Some(Expr::uninitialized(loc));
         }
 
         if inner_values.len() != 1 {
@@ -464,7 +465,9 @@ impl EvalValue for ast::Value {
 impl EvalValue for ast::InnerValue {
     type Output = Expr;
     fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output> {
-        let mut expr = Expr::Simple(self.simple_value()?.eval_value(ctx, mode)?);
+        let loc = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
+        let inner_value = self.simple_value()?.eval_value(ctx, mode)?;
+        let mut expr = Expr::Simple(loc, inner_value);
         for suffix in self.suffixes() {
             match suffix {
                 ast::ValueSuffix::FieldSuffix(field_suffix) => {
@@ -509,6 +512,7 @@ fn eval_field_suffix(
 
     let field = ctx.symbol_map.field(field_id);
     Some(Expr::FieldSuffix(
+        reference_loc,
         Box::new(expr),
         field_name,
         field.typ.clone(),
@@ -518,20 +522,21 @@ fn eval_field_suffix(
 impl EvalValue for ast::SimpleValue {
     type Output = SimpleExpr;
     fn eval_value(self, ctx: &mut EvalCtx, mode: EvalValueMode) -> Option<Self::Output> {
+        let loc = FileRange::new(ctx.current_file_id(), self.syntax().text_range());
         match self {
-            ast::SimpleValue::Uninitialized(_) => Some(SimpleExpr::Uninitialized),
-            ast::SimpleValue::Integer(integer) => integer.value().map(SimpleExpr::Int),
-            ast::SimpleValue::String(string) => Some(SimpleExpr::String(string.value())),
-            ast::SimpleValue::Code(string) => string.value().map(SimpleExpr::Code),
-            ast::SimpleValue::Boolean(boolean) => boolean.value().map(SimpleExpr::Boolean),
-            ast::SimpleValue::Bits(bits) => bits
-                .value_list()
-                .map(|list| {
-                    list.values()
-                        .filter_map(|it| it.eval_value(ctx, mode))
-                        .collect()
-                })
-                .map(SimpleExpr::Bits),
+            ast::SimpleValue::Uninitialized(_) => Some(SimpleExpr::Uninitialized(loc)),
+            ast::SimpleValue::Integer(integer) => Some(SimpleExpr::Int(loc, integer.value()?)),
+            ast::SimpleValue::String(string) => Some(SimpleExpr::String(loc, string.value())),
+            ast::SimpleValue::Code(string) => Some(SimpleExpr::Code(loc, string.value()?)),
+            ast::SimpleValue::Boolean(boolean) => Some(SimpleExpr::Boolean(loc, boolean.value()?)),
+            ast::SimpleValue::Bits(bits) => {
+                let values = bits
+                    .value_list()?
+                    .values()
+                    .filter_map(|it| it.eval_value(ctx, mode))
+                    .collect();
+                Some(SimpleExpr::Bits(loc, values))
+            }
             ast::SimpleValue::List(list) => {
                 let values: Vec<_> = list
                     .value_list()?
@@ -542,7 +547,7 @@ impl EvalValue for ast::SimpleValue {
                     Some(expr) => expr.typ(),
                     None => Type::Unknown,
                 };
-                Some(SimpleExpr::List(values, typ))
+                Some(SimpleExpr::List(loc, values, typ))
             }
             ast::SimpleValue::Dag(dag) => {
                 let op = dag.operator()?.eval_value(ctx, mode)?;
@@ -550,7 +555,7 @@ impl EvalValue for ast::SimpleValue {
                     .arg_list()
                     .and_then(|it| it.eval_value(ctx, mode))
                     .unwrap_or_default();
-                Some(SimpleExpr::Dag(Box::new(op), args))
+                Some(SimpleExpr::Dag(loc, Box::new(op), args))
             }
             ast::SimpleValue::Identifier(identifier) => match mode {
                 EvalValueMode::AsValue => {
@@ -579,17 +584,17 @@ impl EvalValue for ast::SimpleValue {
                             Type::Unknown
                         }
                     };
-                    Some(SimpleExpr::Identifier(name, symbol_id, typ))
+                    Some(SimpleExpr::Identifier(loc, name, symbol_id, typ))
                 }
                 EvalValueMode::AsIdentifier => {
                     let (name, reference_loc) = utils::identifier(identifier, ctx)?;
                     match ctx.resolve_id_in_current_scope(&name) {
-                        None => Some(SimpleExpr::String(name)),
+                        None => Some(SimpleExpr::String(loc, name)),
                         Some(variable_id) => {
                             ctx.symbol_map.add_reference(variable_id, reference_loc);
                             let variable = ctx.symbol_map.variable(variable_id);
                             let typ = variable.value.typ().clone();
-                            Some(SimpleExpr::Identifier(name, variable_id.into(), typ))
+                            Some(SimpleExpr::Identifier(loc, name, variable_id.into(), typ))
                         }
                     }
                 }
@@ -605,7 +610,7 @@ impl EvalValue for ast::SimpleValue {
                     .arg_value_list()
                     .and_then(|it| it.eval(ctx))
                     .unwrap_or_default();
-                Some(SimpleExpr::ClassValue(name, class_id, arg_value_list))
+                Some(SimpleExpr::ClassValue(loc, name, class_id, arg_value_list))
             }
             ast::SimpleValue::BangOperator(bang_operator) => {
                 let op = bang_operator.kind()?.into();
@@ -613,7 +618,7 @@ impl EvalValue for ast::SimpleValue {
                     .values()
                     .filter_map(|it| it.eval_value(ctx, mode))
                     .collect();
-                Some(SimpleExpr::BangOperator(op, args))
+                Some(SimpleExpr::BangOperator(loc, op, args))
             }
             _ => {
                 ctx.error(
@@ -648,10 +653,10 @@ impl EvalValue for ast::DagArgList {
 }
 
 impl EvalExpr for Expr {
-    fn eval_expr(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
+    fn eval_expr(self, ctx: &mut EvalCtx) -> Option<Value> {
         match self {
-            Expr::Simple(simple) => simple.eval_expr(ctx, loc),
-            _ => {
+            Expr::Simple(_, simple) => simple.eval_expr(ctx),
+            Expr::FieldSuffix(loc, _, _, _) => {
                 ctx.error(
                     loc.range,
                     format!("{}:{} not implemented", file!(), line!()),
@@ -663,51 +668,51 @@ impl EvalExpr for Expr {
 }
 
 impl EvalExpr for SimpleExpr {
-    fn eval_expr(self, ctx: &mut EvalCtx, loc: FileRange) -> Option<Value> {
+    fn eval_expr(self, ctx: &mut EvalCtx) -> Option<Value> {
         match self {
-            SimpleExpr::Uninitialized => Some(Value::Uninitialized),
-            SimpleExpr::Boolean(boolean) => Some(Value::Int(boolean as i64)),
-            SimpleExpr::Int(int) => Some(Value::Int(int)),
-            SimpleExpr::String(string) => Some(Value::String(string)),
-            SimpleExpr::Code(code) => Some(Value::String(code)),
-            SimpleExpr::Bits(bits) => {
+            SimpleExpr::Uninitialized(_) => Some(Value::Uninitialized),
+            SimpleExpr::Boolean(_, boolean) => Some(Value::Int(boolean as i64)),
+            SimpleExpr::Int(_, int) => Some(Value::Int(int)),
+            SimpleExpr::String(_, string) => Some(Value::String(string)),
+            SimpleExpr::Code(_, code) => Some(Value::String(code)),
+            SimpleExpr::Bits(_, bits) => {
                 let bits: Vec<_> = bits
                     .into_iter()
-                    .filter_map(|it| it.eval_expr(ctx, loc))
+                    .filter_map(|it| it.eval_expr(ctx))
                     .collect();
                 Some(Value::Bits(bits))
             }
-            SimpleExpr::List(values, typ) => {
+            SimpleExpr::List(_, values, typ) => {
                 let values: Vec<_> = values
                     .into_iter()
-                    .filter_map(|it| it.eval_expr(ctx, loc))
+                    .filter_map(|it| it.eval_expr(ctx))
                     .collect();
                 Some(Value::List(values, typ))
             }
-            SimpleExpr::Dag(op, args) => {
+            SimpleExpr::Dag(_, op, args) => {
                 let op = DagArgValue {
-                    value: op.value.eval_expr(ctx, loc)?,
+                    value: op.value.eval_expr(ctx)?,
                     var_name: op.var_name,
                 };
                 let args = args
                     .into_iter()
                     .filter_map(|it| {
                         Some(DagArgValue {
-                            value: it.value.eval_expr(ctx, loc)?,
+                            value: it.value.eval_expr(ctx)?,
                             var_name: it.var_name,
                         })
                     })
                     .collect();
                 Some(Value::Dag(Box::new(op), args))
             }
-            SimpleExpr::Identifier(_, _, _) => {
+            SimpleExpr::Identifier(loc, _, _, _) => {
                 ctx.error(
                     loc.range,
                     format!("{}:{} not implemented", file!(), line!()),
                 );
                 None
             }
-            SimpleExpr::ClassValue(_, class_id, arg_value_list) => {
+            SimpleExpr::ClassValue(loc, _, class_id, arg_value_list) => {
                 let name = ctx.next_anonymous_def_name();
                 let define_loc =
                     FileRange::new(ctx.current_file_id(), TextRange::empty(loc.range.start()));
@@ -724,14 +729,14 @@ impl EvalExpr for SimpleExpr {
                 let typ = Type::Def(id, name.clone());
                 Some(Value::DefIdentifier(name, id, typ))
             }
-            SimpleExpr::BangOperator(_, _) => {
+            SimpleExpr::BangOperator(loc, _, _) => {
                 ctx.error(
                     loc.range,
                     format!("{}:{} not implemented", file!(), line!()),
                 );
                 None
             }
-            SimpleExpr::CondOperator(_) => {
+            SimpleExpr::CondOperator(loc, _) => {
                 ctx.error(
                     loc.range,
                     format!("{}:{} not implemented", file!(), line!()),
