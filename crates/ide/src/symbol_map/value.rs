@@ -2,8 +2,9 @@ use ecow::EcoString;
 
 use super::{def::DefId, typ::Type};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub enum Value {
+    #[default]
     Uninitialized,
     Int(i64),
     String(EcoString),

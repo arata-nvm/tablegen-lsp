@@ -164,7 +164,7 @@ impl SymbolMap {
 // mutable api
 impl SymbolMap {
     pub fn add_class(&mut self, record: Record) -> ClassId {
-        let class: Class = record.into();
+        let class = record.into_class();
         let name = class.name.clone();
         let define_loc = class.define_loc;
         let id = self.class_list.alloc(class);
@@ -180,7 +180,7 @@ impl SymbolMap {
     pub fn replace_class(&mut self, id: ClassId, record: Record) {
         let class_ref = self.class_mut(id);
 
-        let mut new_class: Class = record.into();
+        let mut new_class = record.into_class();
         new_class
             .reference_locs
             .clone_from(&class_ref.reference_locs);
@@ -203,8 +203,7 @@ impl SymbolMap {
         id
     }
 
-    pub fn add_def(&mut self, record: Record) -> DefId {
-        let def: Def = record.into();
+    pub fn add_def(&mut self, def: Def) -> DefId {
         let name = def.name.clone();
         let define_loc = def.define_loc;
         let id = self.def_list.alloc(def);
@@ -217,10 +216,9 @@ impl SymbolMap {
         id
     }
 
-    pub fn replace_def(&mut self, id: DefId, record: Record) {
+    pub fn replace_def(&mut self, id: DefId, mut new_def: Def) {
         let def_ref = self.def_mut(id);
 
-        let mut new_def: Def = record.into();
         new_def.reference_locs.clone_from(&def_ref.reference_locs);
 
         assert!(def_ref.name == new_def.name);

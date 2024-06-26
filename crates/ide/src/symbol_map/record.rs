@@ -7,6 +7,8 @@ use indexmap::IndexMap;
 use syntax::parser::TextRange;
 use thiserror::Error;
 
+use crate::eval::context::EvalCtx;
+use crate::eval::EvalExpr;
 use crate::file_system::FileRange;
 
 use super::class::Class;
@@ -141,31 +143,35 @@ impl Record {
 
         Ok(())
     }
-}
 
-impl From<Record> for Class {
-    fn from(val: Record) -> Self {
+    pub fn into_class(self) -> Class {
         Class {
-            name: val.name,
-            define_loc: val.define_loc,
-            reference_locs: val.reference_locs,
-            name_to_template_arg: val.name_to_template_arg,
-            name_to_field: val.name_to_field,
-            parent_class_list: val.parent_class_list,
+            name: self.name,
+            define_loc: self.define_loc,
+            reference_locs: self.reference_locs,
+            name_to_template_arg: self.name_to_template_arg,
+            name_to_field: self.name_to_field,
+            parent_class_list: self.parent_class_list,
         }
     }
-}
 
-impl From<Record> for Def {
-    fn from(val: Record) -> Self {
-        assert!(val.name_to_template_arg.is_empty());
+    pub fn into_def(self, ctx: &mut EvalCtx) -> Def {
+        assert!(self.name_to_template_arg.is_empty());
+
+        let mut field_to_value = HashMap::new();
+        for field_id in self.name_to_field.values() {
+            let field = ctx.symbol_map.field(*field_id);
+            let value = field.value.clone().eval_expr(ctx).unwrap_or_default();
+            field_to_value.insert(*field_id, value);
+        }
 
         Def {
-            name: val.name,
-            define_loc: val.define_loc,
-            reference_locs: val.reference_locs,
-            name_to_field: val.name_to_field,
-            parent_class_list: val.parent_class_list,
+            name: self.name,
+            define_loc: self.define_loc,
+            reference_locs: self.reference_locs,
+            name_to_field: self.name_to_field,
+            field_to_value,
+            parent_class_list: self.parent_class_list,
         }
     }
 }

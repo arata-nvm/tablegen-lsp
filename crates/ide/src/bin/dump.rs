@@ -70,7 +70,11 @@ pub fn main() {
                 println!("def {} : {} {{", def.name, parent_classes);
                 for field_id in def.iter_field() {
                     let field = symbol_map.field(field_id);
-                    println!("  {} {} = {};", field.typ, field.name, field.value);
+                    let value = def.field_value(&field_id);
+                    println!(
+                        "  {} {} = {} ({});",
+                        field.typ, field.name, field.value, value
+                    );
                 }
                 println!("}}");
             }

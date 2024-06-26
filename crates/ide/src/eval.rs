@@ -166,14 +166,16 @@ impl Eval for ast::Def {
         };
 
         let record = Record::new(name.clone(), define_loc);
-        let id = ctx.symbol_map.add_def(record.clone());
+        let def = record.clone().into_def(ctx);
+        let id = ctx.symbol_map.add_def(def);
 
         ctx.scopes.push(ScopeKind::Def(id, record));
         if let Some(body) = self.record_body() {
             body.eval(ctx);
         }
         let (_, record) = ctx.scopes.pop().into_def();
-        ctx.symbol_map.replace_def(id, record);
+        let def = record.clone().into_def(ctx);
+        ctx.symbol_map.replace_def(id, def);
 
         Some(())
     }
@@ -725,7 +727,8 @@ impl EvalExpr for SimpleExpr {
                     return None;
                 }
 
-                let id = ctx.symbol_map.add_def(record);
+                let def = record.into_def(ctx);
+                let id = ctx.symbol_map.add_def(def);
                 let typ = Type::Def(id, name.clone());
                 Some(Value::DefIdentifier(name, id, typ))
             }
