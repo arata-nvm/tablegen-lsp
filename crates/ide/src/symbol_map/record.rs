@@ -117,12 +117,17 @@ impl Record {
         let mut replacement = HashMap::new();
         let mut iter_arg_value_list = arg_value_list.into_iter();
         for template_arg_id in parent_class.iter_template_arg() {
-            replacement.insert(
-                template_arg_id,
-                iter_arg_value_list
-                    .next()
-                    .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized)),
-            );
+            let template_arg_value = match iter_arg_value_list.next() {
+                Some(arg_value) => arg_value,
+                None => {
+                    let template_arg = symbol_map.template_arg(template_arg_id);
+                    template_arg
+                        .default_value
+                        .clone()
+                        .unwrap_or(Expr::Simple(SimpleExpr::Uninitialized))
+                }
+            };
+            replacement.insert(template_arg_id, template_arg_value);
         }
 
         for field_id in parent_class.name_to_field.values() {

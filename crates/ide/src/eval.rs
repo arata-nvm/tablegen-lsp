@@ -211,7 +211,10 @@ impl Eval for ast::TemplateArgDecl {
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
         let typ = self.r#type()?.eval(ctx)?;
-        let template_arg = TemplateArgument::new(name.clone(), typ, define_loc);
+        let default_value = self
+            .value()
+            .and_then(|it| it.eval_value(ctx, EvalValueMode::AsValue));
+        let template_arg = TemplateArgument::new(name.clone(), typ, default_value, define_loc);
         ctx.scopes
             .current_record_mut()
             .add_template_arg(&mut ctx.symbol_map, template_arg);
