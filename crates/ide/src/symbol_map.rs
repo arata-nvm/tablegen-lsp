@@ -173,10 +173,7 @@ impl SymbolMap {
             .entry(define_loc.file)
             .or_default()
             .push(id.into());
-        self.pos_to_symbol_map
-            .entry(define_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), id.into());
+        self.add_to_pos_to_symbol_map(define_loc, id);
         id
     }
 
@@ -195,20 +192,14 @@ impl SymbolMap {
     pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
         let define_loc = template_arg.define_loc;
         let id = self.template_arg_list.alloc(template_arg);
-        self.pos_to_symbol_map
-            .entry(define_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), SymbolId::TemplateArgumentId(id));
+        self.add_to_pos_to_symbol_map(define_loc, id);
         id
     }
 
     pub fn add_field(&mut self, field: Field) -> FieldId {
         let define_loc = field.define_loc;
         let id = self.field_list.alloc(field);
-        self.pos_to_symbol_map
-            .entry(define_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), SymbolId::FieldId(id));
+        self.add_to_pos_to_symbol_map(define_loc, id);
         id
     }
 
@@ -222,10 +213,7 @@ impl SymbolMap {
             .entry(define_loc.file)
             .or_default()
             .push(id.into());
-        self.pos_to_symbol_map
-            .entry(define_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), id.into());
+        self.add_to_pos_to_symbol_map(define_loc, id);
         id
     }
 
@@ -243,10 +231,7 @@ impl SymbolMap {
         let symbol_id = symbol_id.into();
         let mut symbol = self.symbol_mut(symbol_id);
         symbol.add_reference(reference_loc);
-        self.pos_to_symbol_map
-            .entry(reference_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(reference_loc.range.into(), symbol_id);
+        self.add_to_pos_to_symbol_map(reference_loc, symbol_id);
     }
 
     pub fn add_variable(&mut self, variable: Variable) -> VariableId {
@@ -256,11 +241,20 @@ impl SymbolMap {
             .entry(define_loc.file)
             .or_default()
             .push(id.into());
-        self.pos_to_symbol_map
-            .entry(define_loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(define_loc.range.into(), id.into());
+        self.add_to_pos_to_symbol_map(define_loc, id);
         id
+    }
+
+    fn add_to_pos_to_symbol_map(&mut self, loc: FileRange, symbol_id: impl Into<SymbolId>) {
+        // ignore the symbol if its range is empty
+        if loc.range.is_empty() {
+            return;
+        }
+
+        self.pos_to_symbol_map
+            .entry(loc.file)
+            .or_insert_with(IntervalMap::new)
+            .insert(loc.range.into(), symbol_id.into());
     }
 }
 
