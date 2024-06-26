@@ -599,6 +599,7 @@ impl EvalValue for ast::SimpleValue {
                     ctx.error(reference_loc.range, format!("class not found: {name}"));
                     return None;
                 };
+                ctx.symbol_map.add_reference(class_id, reference_loc);
                 let arg_value_list = class_value
                     .arg_value_list()
                     .and_then(|it| it.eval(ctx))
