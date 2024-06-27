@@ -8,7 +8,7 @@ use syntax::SyntaxNodePtr;
 use crate::db::SourceDatabase;
 use crate::file_system::{FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
-use crate::symbol_map::expr::{DagArg, Expr, SimpleExpr};
+use crate::symbol_map::expr::{BangOperatorOp, DagArg, Expr, SimpleExpr};
 use crate::symbol_map::field::Field;
 use crate::symbol_map::record::Record;
 use crate::symbol_map::symbol::Symbol;
@@ -732,13 +732,66 @@ impl EvalExpr for SimpleExpr {
                 let typ = Type::Def(id, name.clone());
                 Some(Value::DefIdentifier(name, id, typ))
             }
-            SimpleExpr::BangOperator(loc, _, _) => {
-                ctx.error(
-                    loc.range,
-                    format!("{}:{} not implemented", file!(), line!()),
-                );
-                None
-            }
+            SimpleExpr::BangOperator(loc, op, args) => match op {
+                BangOperatorOp::XAdd
+                | BangOperatorOp::XSub
+                | BangOperatorOp::XMul
+                | BangOperatorOp::XDiv
+                | BangOperatorOp::XAnd
+                | BangOperatorOp::XOr
+                | BangOperatorOp::XXor
+                | BangOperatorOp::XShl
+                | BangOperatorOp::XSra
+                | BangOperatorOp::XSrl => {
+                    if args.len() < 2 {
+                        ctx.error(loc.range, "expected two operands to operator");
+                        return None;
+                    }
+
+                    let mut acc: i64 = 0;
+                    for (i, arg) in args.into_iter().enumerate() {
+                        let value = match arg.eval_expr(ctx)? {
+                            Value::Int(v) => v,
+                            v => {
+                                ctx.error(
+                                    loc.range,
+                                    format!("expected value of type 'int', got '{}'", v.typ()),
+                                );
+                                return None;
+                            }
+                        };
+                        if i == 0 {
+                            acc = value;
+                            continue;
+                        }
+
+                        acc = match op {
+                            BangOperatorOp::XAdd => acc.wrapping_add(value),
+                            BangOperatorOp::XSub => acc.wrapping_sub(value),
+                            BangOperatorOp::XMul => acc.wrapping_mul(value),
+                            BangOperatorOp::XDiv => acc.wrapping_div(value),
+                            BangOperatorOp::XAnd => acc & value,
+                            BangOperatorOp::XOr => acc | value,
+                            BangOperatorOp::XXor => acc ^ value,
+                            BangOperatorOp::XShl => acc.wrapping_shl(value as u32),
+                            BangOperatorOp::XSra => acc.wrapping_shr(value as u32),
+                            BangOperatorOp::XSrl => {
+                                ((acc as u64).wrapping_shr(value as u32)) as i64
+                            }
+                            _ => unreachable!(),
+                        };
+                    }
+
+                    Some(Value::Int(acc))
+                }
+                _ => {
+                    ctx.error(
+                        loc.range,
+                        format!("{}:{} not implemented", file!(), line!()),
+                    );
+                    None
+                }
+            },
             SimpleExpr::CondOperator(loc, _) => {
                 ctx.error(
                     loc.range,
