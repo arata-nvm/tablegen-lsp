@@ -69,10 +69,6 @@ impl<'a> EvalCtx<'a> {
         }
     }
 
-    pub fn scopes(&self) -> &Scopes {
-        &self.scopes
-    }
-
     pub fn next_anonymous_def_name(&mut self) -> EcoString {
         let index = self.anonymous_def_index;
         self.anonymous_def_index += 1;
