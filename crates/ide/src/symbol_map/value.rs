@@ -6,6 +6,7 @@ use super::{def::DefId, typ::Type};
 pub enum Value {
     #[default]
     Uninitialized,
+    Bit(bool),
     Int(i64),
     String(EcoString),
     Bits(Vec<Value>),
@@ -33,6 +34,7 @@ impl Value {
     pub fn typ(&self) -> Type {
         match self {
             Self::Uninitialized => Type::Unknown,
+            Self::Bit(_) => Type::Bit,
             Self::Int(_) => Type::Int,
             Self::String(_) => Type::String,
             Self::Bits(bits) => Type::Bits(bits.len()),
@@ -47,6 +49,7 @@ impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Uninitialized => write!(f, "?"),
+            Self::Bit(value) => write!(f, "{value}"),
             Self::Int(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "\"{value}\""),
             Self::Bits(values) => {

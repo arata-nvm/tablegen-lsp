@@ -673,7 +673,7 @@ impl EvalExpr for SimpleExpr {
     fn eval_expr(self, ctx: &mut EvalCtx) -> Option<Value> {
         match self {
             SimpleExpr::Uninitialized(_) => Some(Value::Uninitialized),
-            SimpleExpr::Boolean(_, boolean) => Some(Value::Int(boolean as i64)),
+            SimpleExpr::Boolean(_, boolean) => Some(Value::Bit(boolean)),
             SimpleExpr::Int(_, int) => Some(Value::Int(int)),
             SimpleExpr::String(_, string) => Some(Value::String(string)),
             SimpleExpr::Code(_, code) => Some(Value::String(code)),
