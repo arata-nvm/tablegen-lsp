@@ -74,6 +74,6 @@
     "@vscode/test-electron": "^2.3.4"
   },
   "dependencies": {
-    "vscode-languageclient": "^8.1.0"
+    "vscode-languageclient": "^9.0.0"
   }
 }
