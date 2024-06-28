@@ -176,8 +176,8 @@ asts! {
         statement_list: StatementList,
     };
     Assert {
-        condition: Value,
-        message: Value,
+        condition[0]: Value,
+        message[1]: Value,
     };
     TemplateArgList {
         args: [TemplateArgDecl],
