@@ -19,8 +19,8 @@ pub enum Expr {
 pub type Replacement = HashMap<TemplateArgumentId, Expr>;
 
 impl Expr {
-    pub fn uninitialized(range: FileRange) -> Self {
-        Self::Simple(range, SimpleExpr::Uninitialized(range))
+    pub fn uninitialized(loc: FileRange) -> Self {
+        Self::Simple(loc, SimpleExpr::Uninitialized(loc))
     }
 
     pub fn replaced(self, replacement: &Replacement) -> Self {
@@ -95,8 +95,8 @@ impl Expr {
                 ),
                 x => Self::Simple(loc1, x),
             },
-            Self::FieldSuffix(range, expr, field, typ) => {
-                Self::FieldSuffix(range, Box::new(expr.replaced(replacement)), field, typ)
+            Self::FieldSuffix(loc, expr, field, typ) => {
+                Self::FieldSuffix(loc, Box::new(expr.replaced(replacement)), field, typ)
             }
         }
     }
@@ -105,6 +105,13 @@ impl Expr {
         match self {
             Self::Simple(_, value) => value.typ(),
             Self::FieldSuffix(_, _, _, typ) => typ.clone(),
+        }
+    }
+
+    pub fn loc(&self) -> FileRange {
+        match self {
+            Self::Simple(loc, _) => *loc,
+            Self::FieldSuffix(loc, _, _, _) => *loc,
         }
     }
 }
@@ -163,6 +170,23 @@ impl SimpleExpr {
             }
             Self::BangOperator(_, _, _) => Type::Unknown, // TODO
             Self::CondOperator(_, _) => Type::Unknown,    // TODO
+        }
+    }
+
+    pub fn loc(&self) -> FileRange {
+        match self {
+            Self::Uninitialized(loc) => *loc,
+            Self::Boolean(loc, _) => *loc,
+            Self::Int(loc, _) => *loc,
+            Self::String(loc, _) => *loc,
+            Self::Code(loc, _) => *loc,
+            Self::Bits(loc, _) => *loc,
+            Self::List(loc, _, _) => *loc,
+            Self::Dag(loc, _, _) => *loc,
+            Self::Identifier(loc, _, _, _) => *loc,
+            Self::ClassValue(loc, _, _, _) => *loc,
+            Self::BangOperator(loc, _, _) => *loc,
+            Self::CondOperator(loc, _) => *loc,
         }
     }
 }
