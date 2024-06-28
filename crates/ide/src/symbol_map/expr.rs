@@ -13,7 +13,7 @@ pub enum Expr {
     // RangeSuffix(Box<Expr>, Vec<Range>),
     // SliceSuffix(Box<Expr>, Vec<Slice>),
     FieldSuffix(FileRange, Box<Expr>, EcoString, Type),
-    // Paste(Box<Expr>, SimpleExpr),
+    Paste(FileRange, Box<Expr>, Box<Expr>),
 }
 
 pub type Replacement = HashMap<TemplateArgumentId, Expr>;
@@ -98,6 +98,11 @@ impl Expr {
             Self::FieldSuffix(loc, expr, field, typ) => {
                 Self::FieldSuffix(loc, Box::new(expr.replaced(replacement)), field, typ)
             }
+            Self::Paste(loc, lhs, rhs) => Self::Paste(
+                loc,
+                Box::new(lhs.replaced(replacement)),
+                Box::new(rhs.replaced(replacement)),
+            ),
         }
     }
 
@@ -105,6 +110,7 @@ impl Expr {
         match self {
             Self::Simple(_, value) => value.typ(),
             Self::FieldSuffix(_, _, _, typ) => typ.clone(),
+            Self::Paste(_, _, _) => Type::String,
         }
     }
 
@@ -112,6 +118,7 @@ impl Expr {
         match self {
             Self::Simple(loc, _) => *loc,
             Self::FieldSuffix(loc, _, _, _) => *loc,
+            Self::Paste(loc, _, _) => *loc,
         }
     }
 }
@@ -133,6 +140,7 @@ impl std::fmt::Display for Expr {
         match self {
             Self::Simple(_, value) => write!(f, "{value}"),
             Self::FieldSuffix(_, expr, field, _) => write!(f, "{expr}.{field}"),
+            Self::Paste(_, lhs, rhs) => write!(f, "{lhs} # {rhs}"),
         }
     }
 }

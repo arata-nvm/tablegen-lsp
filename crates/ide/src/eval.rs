@@ -491,15 +491,9 @@ impl EvalValue for ast::Value {
             return Some(Expr::uninitialized(loc));
         }
 
-        if inner_values.len() != 1 {
-            ctx.error(
-                self.syntax().text_range(),
-                format!("{}:{} not implemented", file!(), line!()),
-            );
-            return None;
-        }
-
-        Some(inner_values.into_iter().next().unwrap())
+        inner_values
+            .into_iter()
+            .reduce(|lhs, rhs| Expr::Paste(lhs.loc(), Box::new(lhs), Box::new(rhs)))
     }
 }
 
@@ -695,6 +689,7 @@ impl EvalValue for ast::DagArgList {
 
 impl EvalExpr for Expr {
     fn eval_expr(self, ctx: &mut EvalCtx) -> Option<Value> {
+        let loc = self.loc();
         match self {
             Expr::Simple(_, simple) => simple.eval_expr(ctx),
             Expr::FieldSuffix(loc, _, _, _) => {
@@ -703,6 +698,22 @@ impl EvalExpr for Expr {
                     format!("{}:{} not implemented", file!(), line!()),
                 );
                 None
+            }
+            Expr::Paste(_, lhs, rhs) => {
+                let lhs = lhs.eval_expr(ctx)?;
+                let rhs = rhs.eval_expr(ctx)?;
+
+                // TODO: support conversion from other types
+                match (lhs, rhs) {
+                    (Value::String(lhs), Value::String(rhs)) => Some(Value::String(lhs + rhs)),
+                    _ => {
+                        ctx.error(
+                            loc.range,
+                            format!("{}:{} not implemented", file!(), line!()),
+                        );
+                        None
+                    }
+                }
             }
         }
     }
