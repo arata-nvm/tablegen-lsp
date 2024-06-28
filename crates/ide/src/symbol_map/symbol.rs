@@ -4,7 +4,7 @@ use crate::file_system::FileRange;
 
 use super::{
     class::{Class, ClassId},
-    def::{Def, DefId},
+    def::{Def, DefField, DefFieldId, DefId},
     field::{Field, FieldId},
     template_arg::{TemplateArgument, TemplateArgumentId},
     variable::{Variable, VariableId},
@@ -17,6 +17,7 @@ pub enum SymbolId {
     FieldId(FieldId),
     DefId(DefId),
     VariableId(VariableId),
+    DefFieldId(DefFieldId),
 }
 
 impl From<ClassId> for SymbolId {
@@ -46,6 +47,12 @@ impl From<DefId> for SymbolId {
 impl From<VariableId> for SymbolId {
     fn from(id: VariableId) -> Self {
         SymbolId::VariableId(id)
+    }
+}
+
+impl From<DefFieldId> for SymbolId {
+    fn from(id: DefFieldId) -> Self {
+        SymbolId::DefFieldId(id)
     }
 }
 
@@ -84,6 +91,13 @@ impl SymbolId {
             _ => None,
         }
     }
+
+    pub fn as_def_field_id(&self) -> Option<DefFieldId> {
+        match self {
+            SymbolId::DefFieldId(id) => Some(*id),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -93,6 +107,7 @@ pub enum Symbol<'a> {
     Field(&'a Field),
     Def(&'a Def),
     Variable(&'a Variable),
+    DefField(&'a DefField),
 }
 
 impl<'a> Symbol<'a> {
@@ -103,6 +118,7 @@ impl<'a> Symbol<'a> {
             Self::Field(field) => &field.name,
             Self::Def(def) => &def.name,
             Self::Variable(variable) => &variable.name,
+            Self::DefField(def_field) => &def_field.name,
         }
     }
 
@@ -113,6 +129,7 @@ impl<'a> Symbol<'a> {
             Self::Field(field) => &field.define_loc,
             Self::Def(def) => &def.define_loc,
             Self::Variable(variable) => &variable.define_loc,
+            Self::DefField(def_field) => &def_field.define_loc,
         }
     }
 
@@ -123,6 +140,7 @@ impl<'a> Symbol<'a> {
             Self::Field(field) => &field.reference_locs,
             Self::Def(def) => &def.reference_locs,
             Self::Variable(variable) => &variable.reference_locs,
+            Self::DefField(def_field) => &def_field.reference_locs,
         }
     }
 
@@ -160,6 +178,13 @@ impl<'a> Symbol<'a> {
             _ => None,
         }
     }
+
+    pub fn as_def_field(&self) -> Option<&DefField> {
+        match self {
+            Self::DefField(def_field) => Some(def_field),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -169,6 +194,7 @@ pub enum SymbolMut<'a> {
     Field(&'a mut Field),
     Def(&'a mut Def),
     Variable(&'a mut Variable),
+    DefField(&'a mut DefField),
 }
 
 impl<'a> SymbolMut<'a> {
@@ -179,6 +205,7 @@ impl<'a> SymbolMut<'a> {
             Self::Field(field) => field.reference_locs.push(reference_loc),
             Self::Def(def) => def.reference_locs.push(reference_loc),
             Self::Variable(variable) => variable.reference_locs.push(reference_loc),
+            Self::DefField(def_field) => def_field.reference_locs.push(reference_loc),
         }
     }
 }

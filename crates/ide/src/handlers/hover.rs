@@ -55,6 +55,10 @@ fn extract_symbol_signature(
             let parent = symbol_map.symbol(field.parent);
             format!("{} {}::{}", field.typ, parent.name(), field.name)
         }
+        Symbol::DefField(field) => {
+            let parent = symbol_map.symbol(field.parent);
+            format!("{} {}::{}", field.typ, parent.name(), field.name)
+        }
         Symbol::Def(def) => {
             format!("def {}", def.name)
         }

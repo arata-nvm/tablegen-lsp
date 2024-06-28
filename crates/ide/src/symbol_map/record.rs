@@ -8,8 +8,8 @@ use syntax::parser::TextRange;
 use thiserror::Error;
 
 use crate::eval::context::EvalCtx;
-use crate::eval::EvalExpr;
 use crate::file_system::FileRange;
+use crate::symbol_map::def::DefField;
 
 use super::class::Class;
 use super::class::ClassId;
@@ -153,7 +153,7 @@ impl Record {
 
         for field_id in parent_class.name_to_field.values() {
             let mut new_field = symbol_map.field(*field_id).clone();
-            new_field.value = new_field.value.replaced(&replacement);
+            new_field.expr = new_field.expr.replaced(&replacement);
             new_field_list.push(new_field)
         }
 
@@ -178,19 +178,19 @@ impl Record {
     pub fn into_def(self, ctx: &mut EvalCtx) -> Def {
         assert!(self.name_to_template_arg.is_empty());
 
-        let mut field_to_value = HashMap::new();
-        for field_id in self.name_to_field.values() {
-            let field = ctx.symbol_map.field(*field_id);
-            let value = field.value.clone().eval_expr(ctx).unwrap_or_default();
-            field_to_value.insert(*field_id, value);
+        let mut name_to_def_field = IndexMap::new();
+        for (name, field_id) in self.name_to_field.into_iter() {
+            let field = ctx.symbol_map.field(field_id).clone();
+            let def_field = DefField::from_field(field, ctx);
+            let def_field_id = ctx.symbol_map.add_def_field(def_field);
+            name_to_def_field.insert(name, def_field_id);
         }
 
         Def {
             name: self.name,
             define_loc: self.define_loc,
             reference_locs: self.reference_locs,
-            name_to_field: self.name_to_field,
-            field_to_value,
+            name_to_def_field,
             parent_class_list: self.parent_class_list,
         }
     }

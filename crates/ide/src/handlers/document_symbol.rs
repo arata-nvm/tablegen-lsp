@@ -52,7 +52,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
             Symbol::Def(def) => {
                 let field_list = def
                     .iter_field()
-                    .map(|id| symbol_map.field(id))
+                    .map(|id| symbol_map.def_field(id))
                     .map(|field| DocumentSymbol {
                         name: field.name.clone(),
                         typ: field.typ.to_string().into(),

@@ -13,7 +13,7 @@ use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::expr::{BangOperatorOp, DagArg, Expr, SimpleExpr};
 use crate::symbol_map::field::Field;
 use crate::symbol_map::record::{Record, RecordId};
-use crate::symbol_map::symbol::Symbol;
+use crate::symbol_map::symbol::{Symbol, SymbolId};
 use crate::symbol_map::template_arg::TemplateArgument;
 use crate::symbol_map::typ::Type;
 use crate::symbol_map::value::{DagArgValue, Value};
@@ -538,32 +538,39 @@ fn eval_field_suffix(
     };
 
     // TODO: extract this logic to a function
-    let field_id = match record_id {
+    let (field_id, field_typ): (SymbolId, _) = match record_id {
         RecordId::ClassId(class_id) => {
             let class = ctx.symbol_map.class(class_id);
-            class.find_field(&field_name)
+            let Some(field_id) = class.find_field(&field_name) else {
+                ctx.error(
+                    field_suffix.syntax().text_range(),
+                    format!("cannot access field '{field_name}' of value '{expr}'"),
+                );
+                return None;
+            };
+            let field = ctx.symbol_map.field(field_id);
+            (field_id.into(), field.typ.clone())
         }
         RecordId::DefId(def_id) => {
             let def = ctx.symbol_map.def(def_id);
-            def.find_field(&field_name)
+            let Some(field_id) = def.find_field(&field_name) else {
+                ctx.error(
+                    field_suffix.syntax().text_range(),
+                    format!("cannot access field '{field_name}' of value '{expr}'"),
+                );
+                return None;
+            };
+            let field = ctx.symbol_map.def_field(field_id);
+            (field_id.into(), field.typ.clone())
         }
     };
 
-    let Some(field_id) = field_id else {
-        ctx.error(
-            field_suffix.syntax().text_range(),
-            format!("cannot access field '{field_name}' of value '{expr}'"),
-        );
-        return None;
-    };
     ctx.symbol_map.add_reference(field_id, reference_loc);
-
-    let field = ctx.symbol_map.field(field_id);
     Some(Expr::FieldSuffix(
         reference_loc,
         Box::new(expr),
         field_name,
-        field.typ.clone(),
+        field_typ,
     ))
 }
 
@@ -710,8 +717,8 @@ impl EvalExpr for Expr {
                 Value::DefIdentifier(_, def_id, _) => {
                     let def = ctx.symbol_map.def(def_id);
                     let field_id = def.find_field(&field_name).expect("field should exist");
-                    let field = ctx.symbol_map.field(field_id);
-                    field.value.clone().eval_expr(ctx)
+                    let field = ctx.symbol_map.def_field(field_id);
+                    Some(field.value.clone())
                 }
                 value => {
                     ctx.error(
@@ -813,13 +820,13 @@ impl EvalExpr for SimpleExpr {
                             .and_then(|expr| expr.eval_expr(ctx))
                             .unwrap_or_default(),
                     ),
-                    Symbol::Field(field) => field.value.clone().eval_expr(ctx),
                     Symbol::Variable(variable) => variable.value.clone().eval_expr(ctx),
                     Symbol::Def(_) => Some(Value::DefIdentifier(
                         symbol_name,
                         symbol_id.as_def_id().unwrap(),
                         typ,
                     )),
+                    Symbol::DefField(field) => Some(field.value.clone()),
                     _ => {
                         ctx.error(
                             loc.range,
