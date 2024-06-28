@@ -809,6 +809,43 @@ impl EvalExpr for SimpleExpr {
 
                     Some(Value::Int(acc))
                 }
+                BangOperatorOp::XEq
+                | BangOperatorOp::XNe
+                | BangOperatorOp::XLe
+                | BangOperatorOp::XLt
+                | BangOperatorOp::XGe
+                | BangOperatorOp::XGt => {
+                    if args.len() != 2 {
+                        ctx.error(loc.range, "expected two operands to operator");
+                        return None;
+                    }
+
+                    let mut iter_args = args.into_iter();
+                    let lhs = iter_args.next().unwrap().eval_expr(ctx)?;
+                    let rhs = iter_args.next().unwrap().eval_expr(ctx)?;
+
+                    match (lhs, rhs) {
+                        (Value::Int(lhs), Value::Int(rhs)) => match op {
+                            BangOperatorOp::XEq => Some(Value::Bit(lhs == rhs)),
+                            BangOperatorOp::XNe => Some(Value::Bit(lhs != rhs)),
+                            BangOperatorOp::XLe => Some(Value::Bit(lhs < rhs)),
+                            BangOperatorOp::XLt => Some(Value::Bit(lhs < rhs)),
+                            BangOperatorOp::XGe => Some(Value::Bit(lhs >= rhs)),
+                            BangOperatorOp::XGt => Some(Value::Bit(lhs > rhs)),
+                            _ => unreachable!(),
+                        },
+                        (Value::String(lhs), Value::String(rhs)) => match op {
+                            BangOperatorOp::XEq => Some(Value::Bit(lhs == rhs)),
+                            BangOperatorOp::XNe => Some(Value::Bit(lhs != rhs)),
+                            BangOperatorOp::XLe => Some(Value::Bit(lhs < rhs)),
+                            BangOperatorOp::XLt => Some(Value::Bit(lhs < rhs)),
+                            BangOperatorOp::XGe => Some(Value::Bit(lhs >= rhs)),
+                            BangOperatorOp::XGt => Some(Value::Bit(lhs > rhs)),
+                            _ => unreachable!(),
+                        },
+                        _ => None,
+                    }
+                }
                 _ => {
                     ctx.error(
                         loc.range,
