@@ -846,6 +846,27 @@ impl EvalExpr for SimpleExpr {
                         _ => None,
                     }
                 }
+                BangOperatorOp::XSize => {
+                    if args.len() != 1 {
+                        ctx.error(loc.range, "expected one operand in unary operator");
+                        return None;
+                    }
+
+                    let arg = args.into_iter().next().unwrap();
+                    let arg_loc = arg.loc();
+                    match arg.eval_expr(ctx)? {
+                        Value::String(value) => Some(Value::Int(value.len() as i64)),
+                        Value::List(values, _) => Some(Value::Int(values.len() as i64)),
+                        Value::Dag(_, args) => Some(Value::Int(args.len() as i64)),
+                        _ => {
+                            ctx.error(
+                                arg_loc.range,
+                                "expected string, list, or dag type argument in unary operator",
+                            );
+                            None
+                        }
+                    }
+                }
                 _ => {
                     ctx.error(
                         loc.range,
