@@ -9,7 +9,7 @@ pub enum Value {
     Bit(bool),
     Int(i64),
     String(EcoString),
-    Bits(Vec<Value>),
+    Bits(i64, usize),
     List(Vec<Value>, Type),
     Dag(Box<DagArgValue>, Vec<DagArgValue>),
     DefIdentifier(EcoString, DefId, Type),
@@ -37,7 +37,7 @@ impl Value {
             Self::Bit(_) => Type::Bit,
             Self::Int(_) => Type::Int,
             Self::String(_) => Type::String,
-            Self::Bits(bits) => Type::Bits(bits.len()),
+            Self::Bits(_, len) => Type::Bits(*len),
             Self::List(_, typ) => Type::List(Box::new(typ.clone())),
             Self::Dag(_, _) => Type::Dag,
             Self::DefIdentifier(_, _, typ) => typ.clone(),
@@ -52,16 +52,15 @@ impl std::fmt::Display for Value {
             Self::Bit(value) => write!(f, "{value}"),
             Self::Int(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "\"{value}\""),
-            Self::Bits(values) => {
-                write!(
-                    f,
-                    "{{ {} }}",
-                    values
-                        .iter()
-                        .map(|it| it.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
+            Self::Bits(value, len) => {
+                write!(f, "{{ ")?;
+                let bits = (0..*len)
+                    .map(|i| (value >> (len - i - 1)) & 1)
+                    .map(|i| i.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "{bits}")?;
+                write!(f, " }}")
             }
             Self::List(values, _) => {
                 write!(

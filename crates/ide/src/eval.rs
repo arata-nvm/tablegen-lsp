@@ -678,11 +678,36 @@ impl EvalExpr for SimpleExpr {
             SimpleExpr::String(_, string) => Some(Value::String(string)),
             SimpleExpr::Code(_, code) => Some(Value::String(code)),
             SimpleExpr::Bits(_, bits) => {
-                let bits: Vec<_> = bits
-                    .into_iter()
-                    .filter_map(|it| it.eval_expr(ctx))
-                    .collect();
-                Some(Value::Bits(bits))
+                let bits_len = bits.len();
+                let mut bit_values = Vec::new();
+                for (i, bit) in bits.into_iter().enumerate() {
+                    let loc = bit.loc();
+                    let Some(bit_value) = bit.eval_expr(ctx) else {
+                        continue;
+                    };
+
+                    // TODO: support conversion from other types
+                    match bit_value {
+                        Value::Bit(value) => bit_values.push(value),
+                        _ => {
+                            ctx.error(
+                                loc.range,
+                                format!("Element #{i} ({bit_value}) is not convertable to a bit"),
+                            );
+                        }
+                    }
+                }
+                if bit_values.len() == bits_len {
+                    let value = bit_values
+                        .into_iter()
+                        .rev()
+                        .enumerate()
+                        .map(|(i, bit)| (bit as i64) << i)
+                        .sum();
+                    Some(Value::Bits(value, bits_len))
+                } else {
+                    None
+                }
             }
             SimpleExpr::List(_, values, typ) => {
                 let values: Vec<_> = values
