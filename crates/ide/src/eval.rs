@@ -1006,6 +1006,22 @@ impl EvalExpr for SimpleExpr {
                         .get(start as usize..end as usize)
                         .map(|s| Value::String(s.into()))
                 }
+                BangOperatorOp::XStrConcat => {
+                    let mut result = String::new();
+                    for arg in args {
+                        let arg_loc = arg.loc();
+                        let arg_value = arg.eval_expr(ctx)?;
+                        let Value::String(value) = arg_value else {
+                            ctx.error(
+                                arg_loc.range,
+                                format!("expected string, got type '{}'", arg_value.typ()),
+                            );
+                            return None;
+                        };
+                        result.push_str(&value);
+                    }
+                    Some(Value::String(result.into()))
+                }
                 _ => {
                     ctx.error(
                         loc.range,
