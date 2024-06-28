@@ -1,6 +1,6 @@
 use ecow::EcoString;
 
-use super::{class::ClassId, def::DefId};
+use super::record::RecordId;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Type {
@@ -10,8 +10,7 @@ pub enum Type {
     Dag,
     Bits(usize),
     List(Box<Type>),
-    Class(ClassId, EcoString),
-    Def(DefId, EcoString), // TODO
+    Record(RecordId, EcoString),
     Code,
     Unknown, // for uninitialized
 }
@@ -25,8 +24,7 @@ impl std::fmt::Display for Type {
             Self::Dag => write!(f, "dag"),
             Self::Bits(width) => write!(f, "bits<{}>", width),
             Self::List(typ) => write!(f, "list<{}>", typ),
-            Self::Class(_, name) => write!(f, "{}", name),
-            Self::Def(_, name) => write!(f, "{}(def)", name),
+            Self::Record(_, name) => write!(f, "{}", name),
             Self::Code => write!(f, "code"),
             Self::Unknown => write!(f, "unknown"),
         }

@@ -14,6 +14,7 @@ use crate::file_system::FileRange;
 use super::class::Class;
 use super::class::ClassId;
 use super::def::Def;
+use super::def::DefId;
 use super::expr::Expr;
 use super::field::Field;
 use super::field::FieldId;
@@ -36,6 +37,25 @@ pub struct Record {
 pub enum RecordError {
     #[error("type of field '{0}' is incompatible: '{1}' and '{2}'")]
     IncompatibleType(EcoString, Type, Type),
+}
+
+// TODO: should be here?
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum RecordId {
+    ClassId(ClassId),
+    DefId(DefId),
+}
+
+impl From<ClassId> for RecordId {
+    fn from(id: ClassId) -> Self {
+        Self::ClassId(id)
+    }
+}
+
+impl From<DefId> for RecordId {
+    fn from(id: DefId) -> Self {
+        Self::DefId(id)
+    }
 }
 
 impl Record {

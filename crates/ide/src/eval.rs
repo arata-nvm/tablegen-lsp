@@ -12,7 +12,7 @@ use crate::file_system::{FileRange, IncludeId};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::symbol_map::expr::{BangOperatorOp, DagArg, Expr, SimpleExpr};
 use crate::symbol_map::field::Field;
-use crate::symbol_map::record::Record;
+use crate::symbol_map::record::{Record, RecordId};
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::template_arg::TemplateArgument;
 use crate::symbol_map::typ::Type;
@@ -474,7 +474,7 @@ impl Eval for ast::Type {
                     return None;
                 };
                 ctx.symbol_map.add_reference(id, reference_loc);
-                Some(Type::Class(id, name))
+                Some(Type::Record(id.into(), name))
             }
             ast::Type::CodeType(_) => Some(Type::Code),
         }
@@ -529,7 +529,7 @@ fn eval_field_suffix(
     field_suffix: ast::FieldSuffix,
 ) -> Option<Expr> {
     let (field_name, reference_loc) = utils::identifier(field_suffix.name()?, ctx)?;
-    let Type::Class(class_id, _) = expr.typ() else {
+    let Type::Record(record_id, _) = expr.typ() else {
         ctx.error(
             field_suffix.syntax().text_range(),
             format!("cannot access field '{field_name}' of value '{expr}'"),
@@ -537,8 +537,19 @@ fn eval_field_suffix(
         return None;
     };
 
-    let class = ctx.symbol_map.class(class_id);
-    let Some(field_id) = class.find_field(&field_name) else {
+    // TODO: extract this logic to a function
+    let field_id = match record_id {
+        RecordId::ClassId(class_id) => {
+            let class = ctx.symbol_map.class(class_id);
+            class.find_field(&field_name)
+        }
+        RecordId::DefId(def_id) => {
+            let def = ctx.symbol_map.def(def_id);
+            def.find_field(&field_name)
+        }
+    };
+
+    let Some(field_id) = field_id else {
         ctx.error(
             field_suffix.syntax().text_range(),
             format!("cannot access field '{field_name}' of value '{expr}'"),
@@ -610,7 +621,8 @@ impl EvalValue for ast::SimpleValue {
                         Symbol::TemplateArgument(template_arg) => template_arg.typ.clone(),
                         Symbol::Field(field) => field.typ.clone(),
                         Symbol::Def(def) => {
-                            Type::Def(symbol_id.as_def_id().unwrap(), def.name.clone())
+                            let def_id = symbol_id.as_def_id().unwrap();
+                            Type::Record(def_id.into(), def.name.clone())
                         }
                         Symbol::Variable(variable) => variable.value.typ().clone(),
                         _ => {
@@ -824,7 +836,7 @@ impl EvalExpr for SimpleExpr {
 
                 let def = record.into_def(ctx);
                 let id = ctx.symbol_map.add_def(def);
-                let typ = Type::Def(id, name.clone());
+                let typ = Type::Record(id.into(), name.clone());
                 Some(Value::DefIdentifier(name, id, typ))
             }
             SimpleExpr::BangOperator(loc, op, args) => match op {
