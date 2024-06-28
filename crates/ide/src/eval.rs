@@ -706,13 +706,21 @@ impl EvalExpr for Expr {
         let loc = self.loc();
         match self {
             Expr::Simple(_, simple) => simple.eval_expr(ctx),
-            Expr::FieldSuffix(loc, _, _, _) => {
-                ctx.error(
-                    loc.range,
-                    format!("{}:{} not implemented", file!(), line!()),
-                );
-                None
-            }
+            Expr::FieldSuffix(loc, expr, field_name, _) => match expr.eval_expr(ctx)? {
+                Value::DefIdentifier(_, def_id, _) => {
+                    let def = ctx.symbol_map.def(def_id);
+                    let field_id = def.find_field(&field_name).expect("field should exist");
+                    let field = ctx.symbol_map.field(field_id);
+                    field.value.clone().eval_expr(ctx)
+                }
+                value => {
+                    ctx.error(
+                        loc.range,
+                        format!("Cannot access field '{field_name}' of value '{value}'"),
+                    );
+                    None
+                }
+            },
             Expr::Paste(_, lhs, rhs) => {
                 let lhs = lhs.eval_expr(ctx)?;
                 let rhs = rhs.eval_expr(ctx)?;
