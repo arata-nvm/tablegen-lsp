@@ -1022,6 +1022,18 @@ impl EvalExpr for SimpleExpr {
                     }
                     Some(Value::String(result.into()))
                 }
+                BangOperatorOp::XNot => {
+                    if args.len() != 1 {
+                        ctx.error(loc.range, "expected one operand in unary operator");
+                        return None;
+                    }
+
+                    let arg = args.into_iter().next().unwrap();
+                    match arg.eval_expr(ctx)? {
+                        Value::Bit(value) => Some(Value::Bit(!value)),
+                        _ => Some(Value::Bit(false)),
+                    }
+                }
                 _ => {
                     ctx.error(
                         loc.range,
