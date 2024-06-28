@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use ecow::EcoString;
+
 use syntax::ast::AstNode;
 use syntax::ast::{self};
 use syntax::parser::TextRange;
@@ -956,6 +958,7 @@ impl EvalExpr for SimpleExpr {
 
 mod utils {
     use ecow::EcoString;
+
     use syntax::ast;
 
     use crate::file_system::FileRange;
