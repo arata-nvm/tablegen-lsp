@@ -103,6 +103,7 @@ impl Eval for ast::Statement {
             ast::Statement::Def(def) => def.eval(ctx),
             ast::Statement::Include(include) => include.eval(ctx),
             ast::Statement::Defvar(defvar) => defvar.eval(ctx),
+            ast::Statement::Assert(assert) => assert.eval(ctx),
             _ => {
                 ctx.error(
                     self.syntax().text_range(),
@@ -195,6 +196,44 @@ impl Eval for ast::Defvar {
             return None;
         }
         ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
+        Some(())
+    }
+}
+
+impl Eval for ast::Assert {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let condition_node = self.condition()?;
+        let condition_range = condition_node.syntax().text_range();
+        let condition = condition_node
+            .eval_value(ctx, EvalValueMode::AsValue)?
+            .eval_expr(ctx)?;
+
+        let message_value = self
+            .message()?
+            .eval_value(ctx, EvalValueMode::AsValue)?
+            .eval_expr(ctx)?;
+        let message = match message_value {
+            Value::String(value) => value,
+            _ => EcoString::from("(assert message is not a string)"),
+        };
+
+        match condition {
+            Value::Bit(false) | Value::Bits(0, _) | Value::Int(0) => {
+                ctx.error(
+                    condition_range,
+                    format!("assertion failed\nnote: {message}"),
+                );
+            }
+            Value::Bit(true) | Value::Bits(_, _) | Value::Int(_) => {}
+            _ => {
+                ctx.error(
+                    condition_range,
+                    "assert condition must of type bit, bits, or int.",
+                );
+            }
+        }
+
         Some(())
     }
 }
