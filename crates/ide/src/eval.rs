@@ -782,12 +782,30 @@ impl EvalExpr for SimpleExpr {
                     .collect();
                 Some(Value::Dag(Box::new(op), args))
             }
-            SimpleExpr::Identifier(loc, _, _, _) => {
-                ctx.error(
-                    loc.range,
-                    format!("{}:{} not implemented", file!(), line!()),
-                );
-                None
+            SimpleExpr::Identifier(loc, symbol_name, symbol_id, typ) => {
+                match ctx.symbol_map.symbol(symbol_id) {
+                    Symbol::TemplateArgument(template_arg) => Some(
+                        template_arg
+                            .default_value
+                            .clone()
+                            .and_then(|expr| expr.eval_expr(ctx))
+                            .unwrap_or_default(),
+                    ),
+                    Symbol::Field(field) => field.value.clone().eval_expr(ctx),
+                    Symbol::Variable(variable) => variable.value.clone().eval_expr(ctx),
+                    Symbol::Def(_) => Some(Value::DefIdentifier(
+                        symbol_name,
+                        symbol_id.as_def_id().unwrap(),
+                        typ,
+                    )),
+                    _ => {
+                        ctx.error(
+                            loc.range,
+                            format!("{}:{} not implemented", file!(), line!()),
+                        );
+                        None
+                    }
+                }
             }
             SimpleExpr::ClassValue(loc, _, class_id, arg_value_list) => {
                 let name = ctx.next_anonymous_def_name();
