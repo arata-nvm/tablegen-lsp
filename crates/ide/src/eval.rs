@@ -957,6 +957,55 @@ impl EvalExpr for SimpleExpr {
                         }
                     }
                 }
+                BangOperatorOp::XSubstr => {
+                    if !matches!(args.len(), 2 | 3) {
+                        ctx.error(loc.range, "expected two or three operand to operator");
+                        return None;
+                    }
+                    let mut iter_args = args.into_iter();
+
+                    let arg1 = iter_args.next().unwrap();
+                    let arg1_loc = arg1.loc();
+                    let arg1_value = arg1.eval_expr(ctx)?;
+                    let Value::String(string) = arg1_value else {
+                        ctx.error(
+                            arg1_loc.range,
+                            format!("expected string, got type '{}'", arg1_value.typ()),
+                        );
+                        return None;
+                    };
+
+                    let arg2 = iter_args.next().unwrap();
+                    let arg2_loc = arg2.loc();
+                    let arg2_value = arg2.eval_expr(ctx)?;
+                    let Value::Int(start) = arg2_value else {
+                        ctx.error(
+                            arg2_loc.range,
+                            format!("expected int, got type '{}'", arg2_value.typ()),
+                        );
+                        return None;
+                    };
+
+                    let end = match iter_args.next() {
+                        Some(arg3) => {
+                            let arg3_loc = arg3.loc();
+                            let arg3_value = arg3.eval_expr(ctx)?;
+                            let Value::Int(end) = arg3_value else {
+                                ctx.error(
+                                    arg3_loc.range,
+                                    format!("expected int, got type '{}'", arg3_value.typ()),
+                                );
+                                return None;
+                            };
+                            end
+                        }
+                        None => string.len() as i64,
+                    };
+
+                    string
+                        .get(start as usize..end as usize)
+                        .map(|s| Value::String(s.into()))
+                }
                 _ => {
                     ctx.error(
                         loc.range,
