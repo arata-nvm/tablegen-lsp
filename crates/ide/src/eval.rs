@@ -819,6 +819,9 @@ impl EvalExpr for SimpleExpr {
                             .and_then(|expr| expr.eval_expr(ctx))
                             .unwrap_or_default(),
                     ),
+                    Symbol::Field(field) => {
+                        Some(field.expr.clone().eval_expr(ctx).unwrap_or_default())
+                    }
                     Symbol::Variable(variable) => variable.value.clone().eval_expr(ctx),
                     Symbol::Def(_) => Some(Value::DefIdentifier(
                         symbol_name,
