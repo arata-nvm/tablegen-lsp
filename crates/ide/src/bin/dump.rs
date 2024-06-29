@@ -29,60 +29,61 @@ pub fn main() {
 
     let symbol_map = evaluation.symbol_map();
 
-    let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
-        return;
-    };
+    let iter = symbol_map
+        .iter_symbols_in_file(file_id)
+        .expect("failed to get symbols");
+
+    println!("------------- Classes -----------------");
     for symbol_id in iter {
-        let symbol = symbol_map.symbol(symbol_id);
-        match symbol {
-            Symbol::Class(class) => {
-                let template_args = class
-                    .iter_template_arg()
-                    .map(|id| symbol_map.template_arg(id))
-                    .map(|arg| format!("{} {}", arg.typ, arg.name))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-                let parent_classes = class
-                    .parent_class_list
-                    .iter()
-                    .map(|&id| symbol_map.class(id))
-                    .map(|class| format!("{}", class.name))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-                println!(
-                    "class {}<{}> : {} {{",
-                    class.name, template_args, parent_classes
-                );
-                for field_id in class.iter_field() {
-                    let field = symbol_map.field(field_id);
-                    println!("  {} {} = {};", field.typ, field.name, field.value);
-                }
-                println!("}}");
-            }
-            Symbol::Def(def) => {
-                let parent_classes = def
-                    .parent_class_list
-                    .iter()
-                    .map(|&id| symbol_map.class(id))
-                    .map(|class| format!("{}", class.name))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-                println!("def {} : {} {{", def.name, parent_classes);
-                for field_id in def.iter_field() {
-                    let field = symbol_map.field(field_id);
-                    let value = def.field_value(&field_id);
-                    println!(
-                        "  {} {} = {} ({});",
-                        field.typ, field.name, field.value, value
-                    );
-                }
-                println!("}}");
-            }
-            Symbol::Variable(variable) => {
-                println!("defvar {} = {};", variable.name, variable.value);
-            }
-            _ => println!("unimplemented: {symbol_id:?}"),
+        let Symbol::Class(class) = symbol_map.symbol(symbol_id) else {
+            continue;
+        };
+        let template_args = class
+            .iter_template_arg()
+            .map(|id| symbol_map.template_arg(id))
+            .map(|arg| format!("{} {}", arg.typ, arg.name))
+            .collect::<Vec<String>>()
+            .join(", ");
+        let parent_classes = class
+            .parent_class_list
+            .iter()
+            .map(|&id| symbol_map.class(id))
+            .map(|class| format!("{}", class.name))
+            .collect::<Vec<String>>()
+            .join(", ");
+        println!(
+            "class {}<{}> : {} {{",
+            class.name, template_args, parent_classes
+        );
+        for field_id in class.iter_field() {
+            let field = symbol_map.field(field_id);
+            println!("  {} {} = {};", field.typ, field.name, field.expr);
         }
+        println!("}}");
+    }
+
+    let iter = symbol_map
+        .iter_symbols_in_file(file_id)
+        .expect("failed to get symbols");
+
+    println!("------------- Defs -----------------");
+    for symbol_id in iter {
+        let Symbol::Def(def) = symbol_map.symbol(symbol_id) else {
+            continue;
+        };
+        let parent_classes = def
+            .parent_class_list
+            .iter()
+            .map(|&id| symbol_map.class(id))
+            .map(|class| format!("{}", class.name))
+            .collect::<Vec<String>>()
+            .join(", ");
+        println!("def {} {{ // {}", def.name, parent_classes);
+        for field_id in def.iter_field() {
+            let field = symbol_map.def_field(field_id);
+            println!("  {} {} = {};", field.typ, field.name, field.value,);
+        }
+        println!("}}");
     }
 }
 
