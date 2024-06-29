@@ -10,7 +10,8 @@ pub enum Type {
     Dag,
     Bits(usize),
     List(Box<Type>),
-    Record(RecordId, EcoString),
+    Class(ClassId, EcoString),
+    Def(DefId, EcoString),
     Code,
     Unknown, // for uninitialized
 }
@@ -24,7 +25,8 @@ impl std::fmt::Display for Type {
             Self::Dag => write!(f, "dag"),
             Self::Bits(width) => write!(f, "bits<{}>", width),
             Self::List(typ) => write!(f, "list<{}>", typ),
-            Self::Record(_, name) => write!(f, "{}", name),
+            Self::Class(_, name) => write!(f, "{}", name),
+            Self::Def(_, name) => write!(f, "{}", name),
             Self::Code => write!(f, "code"),
             Self::Unknown => write!(f, "unknown"),
         }

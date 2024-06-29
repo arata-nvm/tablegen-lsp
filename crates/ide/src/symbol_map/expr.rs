@@ -174,7 +174,7 @@ impl SimpleExpr {
             Self::Dag(_, _, _) => Type::Dag,
             Self::Identifier(_, _, _, typ) => typ.clone(),
             Self::ClassValue(_, class_name, class_id, _) => {
-                Type::Record((*class_id).into(), class_name.clone())
+                Type::Class(*class_id, class_name.clone())
             }
             Self::BangOperator(_, _, _) => Type::Unknown, // TODO
             Self::CondOperator(_, _) => Type::Unknown,    // TODO
