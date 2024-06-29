@@ -765,9 +765,8 @@ impl EvalExpr for SimpleExpr {
                         continue;
                     };
 
-                    // TODO: support conversion from other types
-                    match bit_value {
-                        Value::Bit(value) => bit_values.push(value),
+                    match bit_value.cast_to(&ctx.symbol_map, &Type::Bit) {
+                        Some(Value::Bit(value)) => bit_values.push(value),
                         _ => {
                             ctx.error(
                                 loc.range,

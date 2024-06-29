@@ -1,6 +1,6 @@
 use ecow::EcoString;
 
-use super::{def::DefId, typ::Type};
+use super::{def::DefId, typ::Type, SymbolMap};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub enum Value {
@@ -41,6 +41,21 @@ impl Value {
             Self::List(_, typ) => Type::List(Box::new(typ.clone())),
             Self::Dag(_, _) => Type::Dag,
             Self::DefIdentifier(_, _, typ) => typ.clone(),
+        }
+    }
+
+    pub fn cast_to(&self, symbol_map: &SymbolMap, typ: &Type) -> Option<Value> {
+        if self.typ().isa(symbol_map, typ) {
+            return Some(self.clone());
+        }
+
+        match (self, typ) {
+            (Value::Bit(false), Type::Int) => Some(Value::Int(0)),
+            (Value::Bit(true), Type::Int) => Some(Value::Int(1)),
+            (Value::Int(0), Type::Bit) => Some(Value::Bit(false)),
+            (Value::Int(1), Type::Bit) => Some(Value::Bit(true)),
+            (Value::Int(int), Type::Bits(len)) => Some(Value::Bits(*int, *len)),
+            _ => None,
         }
     }
 }
