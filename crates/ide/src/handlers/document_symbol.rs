@@ -69,15 +69,6 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
                     children: field_list.collect(),
                 });
             }
-            Symbol::Variable(variable) => {
-                symbols.push(DocumentSymbol {
-                    name: variable.name.clone(),
-                    typ: "defvar".into(),
-                    range: variable.define_loc.range,
-                    kind: DocumentSymbolKind::Variable,
-                    children: Vec::new(),
-                });
-            }
             _ => {}
         }
     }

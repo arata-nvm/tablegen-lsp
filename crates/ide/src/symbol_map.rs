@@ -257,7 +257,6 @@ impl SymbolMap {
             .entry(define_loc.file)
             .or_default()
             .push(id.into());
-        self.add_to_pos_to_symbol_map(define_loc, id);
         id
     }
 
