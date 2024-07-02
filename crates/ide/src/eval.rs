@@ -106,6 +106,7 @@ impl Eval for ast::Statement {
             ast::Statement::Include(include) => include.eval(ctx),
             ast::Statement::Defvar(defvar) => defvar.eval(ctx),
             ast::Statement::Assert(assert) => assert.eval(ctx),
+            ast::Statement::If(r#if) => r#if.eval(ctx),
             _ => {
                 ctx.error(
                     self.syntax().text_range(),
@@ -236,6 +237,31 @@ impl Eval for ast::Assert {
             }
         }
 
+        Some(())
+    }
+}
+
+impl Eval for ast::If {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let cond_value = self
+            .condition()?
+            .eval_value(ctx, EvalValueMode::AsValue)?
+            .eval_expr(ctx)?;
+        match cond_value.cast_to(&ctx.symbol_map, &Type::Bit) {
+            Some(Value::Bit(true)) => {
+                self.then_body()?.eval(ctx);
+            }
+            Some(Value::Bit(false)) => {
+                self.else_body()?.eval(ctx);
+            }
+            _ => {
+                ctx.error(
+                    self.condition()?.syntax().text_range(),
+                    "if condition must of type bit, bits, or int.",
+                );
+            }
+        }
         Some(())
     }
 }
