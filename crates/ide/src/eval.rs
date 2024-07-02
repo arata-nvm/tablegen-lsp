@@ -189,7 +189,10 @@ impl Eval for ast::Defvar {
     type Output = ();
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
-        let value = self.value()?.eval_value(ctx, EvalValueMode::AsValue)?;
+        let value = self
+            .value()?
+            .eval_value(ctx, EvalValueMode::AsValue)?
+            .eval_expr(ctx)?;
         let variable = Variable::new(name.clone(), value, define_loc);
         if ctx.resolve_id(&name).is_some() {
             ctx.error(
