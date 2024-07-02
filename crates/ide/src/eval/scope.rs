@@ -37,7 +37,7 @@ impl Scopes {
         self.scopes
             .iter()
             .rev()
-            .find_map(|scope| scope.id())
+            .find_map(|scope| scope.record_id())
             .expect("scope is empty")
     }
 
@@ -98,6 +98,7 @@ pub enum ScopeKind {
     Root,
     Class(ClassId, Record),
     Def(DefId, Record),
+    Foreach(EcoString, VariableId),
 }
 
 impl Scope {
@@ -108,11 +109,12 @@ impl Scope {
         }
     }
 
-    pub fn id(&self) -> Option<SymbolId> {
+    pub fn record_id(&self) -> Option<SymbolId> {
         match self.kind {
             ScopeKind::Root => None,
             ScopeKind::Class(id, _) => Some(id.into()),
             ScopeKind::Def(id, _) => Some(id.into()),
+            ScopeKind::Foreach(_, _) => None,
         }
     }
 
@@ -121,6 +123,7 @@ impl Scope {
             ScopeKind::Root => None,
             ScopeKind::Class(_, record) => Some(record),
             ScopeKind::Def(_, record) => Some(record),
+            ScopeKind::Foreach(_, _) => None,
         }
     }
 
@@ -129,6 +132,7 @@ impl Scope {
             ScopeKind::Root => None,
             ScopeKind::Class(_, record) => Some(record),
             ScopeKind::Def(_, record) => Some(record),
+            ScopeKind::Foreach(_, _) => None,
         }
     }
 
@@ -151,6 +155,16 @@ impl Scope {
     }
 
     pub fn find_variable(&self, name: &EcoString) -> Option<VariableId> {
-        self.name_to_variable.get(name).copied()
+        if let Some(var_id) = self.name_to_variable.get(name) {
+            return Some(*var_id);
+        }
+
+        if let ScopeKind::Foreach(var_name, var_id) = &self.kind {
+            if name == var_name {
+                return Some(*var_id);
+            }
+        }
+
+        None
     }
 }

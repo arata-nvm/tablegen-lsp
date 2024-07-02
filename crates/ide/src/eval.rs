@@ -107,6 +107,7 @@ impl Eval for ast::Statement {
             ast::Statement::Defvar(defvar) => defvar.eval(ctx),
             ast::Statement::Assert(assert) => assert.eval(ctx),
             ast::Statement::If(r#if) => r#if.eval(ctx),
+            ast::Statement::Foreach(foreach) => foreach.eval(ctx),
             _ => {
                 ctx.error(
                     self.syntax().text_range(),
@@ -266,6 +267,61 @@ impl Eval for ast::If {
             }
         }
         Some(())
+    }
+}
+
+impl Eval for ast::Foreach {
+    type Output = ();
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let (name, define_loc, init) = self.iterator()?.eval(ctx)?;
+        if ctx.resolve_id(&name).is_some() {
+            ctx.error(
+                define_loc.range,
+                "def or global variable of this name already exists",
+            );
+            return None;
+        }
+
+        for value in init {
+            let variable = Variable::new(name.clone(), value, define_loc);
+            let id = ctx.symbol_map.add_variable(variable);
+            ctx.scopes.push(ScopeKind::Foreach(name.clone(), id));
+            self.body()?.eval(ctx)?;
+            ctx.scopes.pop();
+        }
+        Some(())
+    }
+}
+
+impl Eval for ast::ForeachIterator {
+    type Output = (EcoString, FileRange, Vec<Value>);
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let (name, define_loc) = utils::identifier(self.name()?, ctx)?;
+        let init = self.init()?.eval(ctx)?;
+        Some((name, define_loc, init))
+    }
+}
+
+impl Eval for ast::ForeachIteratorInit {
+    type Output = Vec<Value>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        match self {
+            ast::ForeachIteratorInit::RangePiece(range_piece) => {
+                let start = range_piece.start()?.eval(ctx)?;
+                let end = range_piece
+                    .end()
+                    .and_then(|it| it.eval(ctx))
+                    .unwrap_or(start + 1);
+                Some((start..=end).map(Value::Int).collect())
+            }
+            _ => {
+                ctx.error(
+                    self.syntax().text_range(),
+                    format!("{}:{} not implemented", file!(), line!()),
+                );
+                None
+            }
+        }
     }
 }
 
@@ -1074,6 +1130,13 @@ impl EvalExpr for SimpleExpr {
                 None
             }
         }
+    }
+}
+
+impl Eval for ast::Integer {
+    type Output = i64;
+    fn eval(self, _: &mut EvalCtx) -> Option<Self::Output> {
+        self.value()
     }
 }
 
