@@ -1,4 +1,4 @@
-use ecow::EcoString;
+use ecow::{eco_format, EcoString};
 
 use super::{def::DefId, typ::Type, SymbolMap};
 
@@ -57,6 +57,7 @@ impl Value {
             (Value::Int(0), Type::Bit) => Some(Value::Bit(false)),
             (Value::Int(_), Type::Bit) => Some(Value::Bit(true)),
             (Value::Int(int), Type::Bits(len)) => Some(Value::Bits(*int, *len)),
+            (Value::Int(int), Type::String) => Some(Value::String(eco_format!("{int}"))),
             _ => None,
         }
     }
