@@ -25,7 +25,7 @@ Foreach ::= "foreach" ForeachIterator "in" ( "{" Statement* "}" | Statement )
 ForeachIterator ::= Identifier "=" ForeachIteratorInit
 ForeachIteratorInit ::= RangeSuffix | RangePiece | Value
 
-If ::= "if" Value "then" ( "{" Statement* "}" | Statement )
+If ::= "if" Value "then" ( "{" Statement* "}" | Statement ) ( "else" ( "{" Statement* "}" | Statement ) )?
 
 Assert ::= "assert" Value "," Value ";"
 
@@ -66,7 +66,7 @@ SliceElements ::= ( SliceElement "," )* SliceElement ","?
 SliceElement ::= Value | Value "..." Value | Value "-" Value | Value Integer
 FieldSuffix ::= "." Identifier
 
-SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator 
+SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator
 Integer ::= INT
 String ::= STRING
 Code ::= CODE
