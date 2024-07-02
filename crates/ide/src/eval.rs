@@ -163,7 +163,7 @@ impl Eval for ast::Def {
             }
             None => {
                 let name = ctx.next_anonymous_def_name();
-                let name_range = self.syntax().text_range();
+                let name_range = TextRange::empty(self.syntax().text_range().start());
                 let define_loc = FileRange::new(ctx.current_file_id(), name_range);
                 (name, define_loc)
             }
