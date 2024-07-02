@@ -24,6 +24,7 @@ impl Type {
 
         match (self, other) {
             (Type::Unknown, _) | (_, Type::Unknown) => true,
+            (Type::String, Type::Code) | (Type::Code, Type::String) => true,
             (Type::Class(class_id1, _), Type::Class(class_id2, _)) => {
                 let class1 = symbol_map.class(*class_id1);
                 class1.parent_class_list.contains(class_id2)
