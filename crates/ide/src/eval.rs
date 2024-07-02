@@ -739,7 +739,6 @@ impl EvalValue for ast::DagArgList {
 
 impl EvalExpr for Expr {
     fn eval_expr(self, ctx: &mut EvalCtx) -> Option<Value> {
-        let loc = self.loc();
         match self {
             Expr::Simple(_, simple) => simple.eval_expr(ctx),
             Expr::FieldSuffix(loc, expr, field_name, _) => match expr.eval_expr(ctx)? {
@@ -758,19 +757,17 @@ impl EvalExpr for Expr {
                 }
             },
             Expr::Paste(_, lhs, rhs) => {
-                let lhs = lhs.eval_expr(ctx)?;
-                let rhs = rhs.eval_expr(ctx)?;
+                let lhs = lhs
+                    .eval_expr(ctx)?
+                    .cast_to(&ctx.symbol_map, &Type::String)?;
+                let rhs = rhs
+                    .eval_expr(ctx)?
+                    .cast_to(&ctx.symbol_map, &Type::String)?;
 
-                // TODO: support conversion from other types
+                // TODO: more precise error handling
                 match (lhs, rhs) {
                     (Value::String(lhs), Value::String(rhs)) => Some(Value::String(lhs + rhs)),
-                    _ => {
-                        ctx.error(
-                            loc.range,
-                            format!("{}:{} not implemented", file!(), line!()),
-                        );
-                        None
-                    }
+                    _ => None,
                 }
             }
         }
