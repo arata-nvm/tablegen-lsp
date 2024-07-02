@@ -173,7 +173,8 @@ asts! {
     ];
     If {
         condition: Value,
-        statement_list: StatementList,
+        then_body[0]: StatementList,
+        else_body[1]: StatementList,
     };
     Assert {
         condition[0]: Value,
@@ -586,9 +587,15 @@ mod tests {
 
     #[test]
     fn r#if() {
+        let node = parse::<If>("if 1 then {}");
+        assert!(node.condition().is_some());
+        assert!(node.then_body().is_some());
+        assert!(node.else_body().is_none());
+
         let node = parse::<If>("if 1 then {} else {}");
         assert!(node.condition().is_some());
-        assert!(node.statement_list().is_some());
+        assert!(node.then_body().is_some());
+        assert!(node.else_body().is_some());
     }
 
     #[test]

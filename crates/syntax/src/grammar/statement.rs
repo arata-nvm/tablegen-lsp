@@ -223,13 +223,16 @@ pub(super) fn foreach_iterator_init(p: &mut Parser) {
     };
 }
 
-// If ::= "if" Value "then" ( "{" Statement* "}" | Statement )
+// If ::= "if" Value "then" ( "{" Statement* "}" | Statement ) ( "else" ( "{" Statement* "}" | Statement ) )?
 fn r#if(p: &mut Parser) {
     p.start_node(SyntaxKind::If);
     p.assert(T![if]);
     value::value(p);
     p.expect(T![then]);
     statement_list(p, StatementListType::SingleOrBlock);
+    if p.eat_if(T![else]) {
+        statement_list(p, StatementListType::SingleOrBlock);
+    }
     p.finish_node();
 }
 
