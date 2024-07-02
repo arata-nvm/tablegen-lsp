@@ -52,8 +52,10 @@ impl Value {
         match (self, typ) {
             (Value::Bit(false), Type::Int) => Some(Value::Int(0)),
             (Value::Bit(true), Type::Int) => Some(Value::Int(1)),
+            (Value::Bits(0, _), Type::Bit) => Some(Value::Bit(false)),
+            (Value::Bits(_, _), Type::Bit) => Some(Value::Bit(true)),
             (Value::Int(0), Type::Bit) => Some(Value::Bit(false)),
-            (Value::Int(1), Type::Bit) => Some(Value::Bit(true)),
+            (Value::Int(_), Type::Bit) => Some(Value::Bit(true)),
             (Value::Int(int), Type::Bits(len)) => Some(Value::Bits(*int, *len)),
             _ => None,
         }

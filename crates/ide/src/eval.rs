@@ -220,14 +220,14 @@ impl Eval for ast::Assert {
             _ => EcoString::from("(assert message is not a string)"),
         };
 
-        match condition {
-            Value::Bit(false) | Value::Bits(0, _) | Value::Int(0) => {
+        match condition.cast_to(&ctx.symbol_map, &Type::Bit) {
+            Some(Value::Bit(false)) => {
                 ctx.error(
                     condition_range,
                     format!("assertion failed\nnote: {message}"),
                 );
             }
-            Value::Bit(true) | Value::Bits(_, _) | Value::Int(_) => {}
+            Some(Value::Bit(true)) => {}
             _ => {
                 ctx.error(
                     condition_range,
