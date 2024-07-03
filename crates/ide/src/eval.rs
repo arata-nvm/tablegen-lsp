@@ -1172,6 +1172,45 @@ impl EvalExpr for SimpleExpr {
 
                     Some(Value::List(concatenated_list, *arg_item_typ))
                 }
+                BangOperatorOp::XIf => {
+                    if args.len() != 3 {
+                        ctx.error(loc.range, "expected three operand in tenary operator");
+                        return None;
+                    }
+
+                    let mut iter_args = args.into_iter();
+                    let test = iter_args.next().unwrap();
+                    let then = iter_args.next().unwrap();
+                    let else_ = iter_args.next().unwrap();
+                    if !then.typ().isa(&ctx.symbol_map, &else_.typ()) {
+                        ctx.error(
+                            else_.loc().range,
+                            format!(
+                                "inconsistent types '{}' and '{}' for !if",
+                                then.typ(),
+                                else_.typ(),
+                            ),
+                        );
+                        return None;
+                    }
+
+                    let test_loc = test.loc();
+                    let test_value = test.eval_expr(ctx)?;
+                    let Some(Value::Bit(test)) = test_value.cast_to(&ctx.symbol_map, &Type::Bit)
+                    else {
+                        ctx.error(
+                            test_loc.range,
+                            "if condition must of type bit, bits, or int.",
+                        );
+                        return None;
+                    };
+
+                    if test {
+                        then.eval_expr(ctx)
+                    } else {
+                        else_.eval_expr(ctx)
+                    }
+                }
                 _ => {
                     ctx.error(
                         loc.range,
