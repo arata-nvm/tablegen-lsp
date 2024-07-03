@@ -2,6 +2,7 @@ use ecow::EcoString;
 
 use super::{class::ClassId, def::DefId, SymbolMap};
 
+// TODO: Eq and isa may cause confusion
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Type {
     Bit,
@@ -33,6 +34,7 @@ impl Type {
                 let def = symbol_map.def(*def_id);
                 def.parent_class_list.contains(class_id)
             }
+            (Type::List(item_typ1), Type::List(item_typ2)) => item_typ1.isa(symbol_map, item_typ2),
             _ => false,
         }
     }
