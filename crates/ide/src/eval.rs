@@ -1134,6 +1134,44 @@ impl EvalExpr for SimpleExpr {
                         _ => Some(Value::Bit(false)),
                     }
                 }
+                BangOperatorOp::XListConcat => {
+                    if args.len() < 2 {
+                        ctx.error(loc.range, "expected two operands to operator");
+                        return None;
+                    }
+                    let args: Vec<Value> = args
+                        .into_iter()
+                        .map(|arg| arg.eval_expr(ctx))
+                        .collect::<Option<_>>()?;
+
+                    let args_typ = args[0].typ();
+                    let Type::List(arg_item_typ) = args_typ.clone() else {
+                        ctx.error(
+                            loc.range,
+                            format!("expected a list, got value of type '{}'", args[0].typ()),
+                        );
+                        return None;
+                    };
+
+                    let mut concatenated_list = vec![];
+                    for arg in args {
+                        let Some(Value::List(list, _)) = arg.cast_to(&ctx.symbol_map, &args_typ)
+                        else {
+                            ctx.error(
+                                loc.range,
+                                format!(
+                                    "expected value of type '{}', got value of type '{}'",
+                                    arg.typ(),
+                                    args_typ,
+                                ),
+                            );
+                            return None;
+                        };
+                        concatenated_list.extend(list);
+                    }
+
+                    Some(Value::List(concatenated_list, *arg_item_typ))
+                }
                 _ => {
                     ctx.error(
                         loc.range,
