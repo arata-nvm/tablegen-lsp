@@ -214,10 +214,15 @@ pub(super) fn foreach_iterator(p: &mut Parser) {
     p.finish_node()
 }
 
-// ForeachIteratorInit ::= RangeSuffix | RangePiece | Value
+// ForeachIteratorInit ::= "{" RangeList "}" | RangePiece | Value
 pub(super) fn foreach_iterator_init(p: &mut Parser) {
     match p.peek() {
-        T!['{'] => value::range_suffix(p), // TODO
+        T!['{'] => {
+            p.assert(T!['{']);
+            let m = value::range_list(p);
+            p.expect_with_msg(T!['}'], "expected '}' at end of bit range list");
+            m
+        }
         TokenKind::IntVal => value::range_piece(p),
         _ => value::value(p),
     };

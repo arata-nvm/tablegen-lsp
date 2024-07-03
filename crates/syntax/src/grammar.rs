@@ -126,6 +126,11 @@ mod tests {
                 def Foo # i : Base<i>;
             }"
         ));
+        insta::assert_debug_snapshot!(parse(
+            "foreach i = {0, 1} in {
+                def Foo # i : Base<i>;
+            }"
+        ));
     }
 
     #[test]

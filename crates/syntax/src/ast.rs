@@ -167,7 +167,7 @@ asts! {
         init: ForeachIteratorInit,
     };
     ForeachIteratorInit [
-        RangeSuffix,
+        RangeList,
         RangePiece,
         Value,
     ];

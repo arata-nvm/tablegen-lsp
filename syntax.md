@@ -23,7 +23,7 @@ Defvar ::= "defvar" Identifier "=" Value ";"
 
 Foreach ::= "foreach" ForeachIterator "in" ( "{" Statement* "}" | Statement )
 ForeachIterator ::= Identifier "=" ForeachIteratorInit
-ForeachIteratorInit ::= RangeSuffix | RangePiece | Value
+ForeachIteratorInit ::= "{" RangeList "}" | RangePiece | Value
 
 If ::= "if" Value "then" ( "{" Statement* "}" | Statement ) ( "else" ( "{" Statement* "}" | Statement ) )?
 
