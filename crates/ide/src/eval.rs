@@ -306,22 +306,42 @@ impl Eval for ast::ForeachIteratorInit {
     type Output = Vec<Value>;
     fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
         match self {
-            ast::ForeachIteratorInit::RangePiece(range_piece) => {
-                let start = range_piece.start()?.eval(ctx)?;
-                let end = range_piece
-                    .end()
-                    .and_then(|it| it.eval(ctx))
-                    .unwrap_or(start + 1);
-                Some((start..=end).map(Value::Int).collect())
+            ast::ForeachIteratorInit::Value(value) => {
+                match value
+                    .eval_value(ctx, EvalValueMode::AsValue)?
+                    .eval_expr(ctx)?
+                {
+                    Value::List(list, _) => Some(list),
+                    value => Some(vec![value]),
+                }
             }
-            _ => {
-                ctx.error(
-                    self.syntax().text_range(),
-                    format!("{}:{} not implemented", file!(), line!()),
-                );
-                None
-            }
+            ast::ForeachIteratorInit::RangePiece(range_piece) => range_piece.eval(ctx),
+            ast::ForeachIteratorInit::RangeList(range_list) => range_list.eval(ctx),
         }
+    }
+}
+
+impl Eval for ast::RangePiece {
+    type Output = Vec<Value>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let start = self.start()?.eval(ctx)?;
+        let end = self.end().and_then(|it| it.eval(ctx));
+        match (start, end) {
+            (start, Some(end)) if start <= end => Some((start..=end).map(Value::Int).collect()),
+            (start, Some(end)) if start > end => {
+                Some((end..=start).rev().map(Value::Int).collect())
+            }
+            (_, Some(_)) => unreachable!(),
+            (start, None) => Some(vec![Value::Int(start)]),
+        }
+    }
+}
+
+impl Eval for ast::RangeList {
+    type Output = Vec<Value>;
+    fn eval(self, ctx: &mut EvalCtx) -> Option<Self::Output> {
+        let pieces: Option<Vec<Vec<Value>>> = self.pieces().map(|piece| piece.eval(ctx)).collect();
+        Some(pieces?.concat())
     }
 }
 
