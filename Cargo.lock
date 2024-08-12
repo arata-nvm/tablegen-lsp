@@ -364,9 +364,9 @@ dependencies = [
 
 [[package]]
 name = "iset"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0716a0d7080cb7b20b9426276315e6ff5ed537bd920af47417b16de07f9ac76"
+checksum = "e0a096b38f6994f43c7d21a2e9ef90eb188d2f9fbba13202a3c9d23f7b550738"
 
 [[package]]
 name = "itoa"
