@@ -1,17 +1,11 @@
 use async_lsp::lsp_types;
 use ide::{
     file_system::{FileRange, FileSystem},
-    handlers::{
-        completion::{CompletionItem, CompletionItemKind},
-        document_symbol::DocumentSymbolKind,
-        hover::Hover,
-        inlay_hint::{InlayHint, InlayHintKind},
-    },
+    handlers::completion::{CompletionItem, CompletionItemKind},
 };
 use text_size::{TextRange, TextSize};
 
 use ide::handlers::diagnostics::Diagnostic;
-use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
 
 use crate::vfs::{UrlExt, Vfs};
@@ -43,75 +37,6 @@ pub fn location(vfs: &Vfs, line_index: &LineIndex, file_range: FileRange) -> lsp
 
 pub fn diagnostic(line_index: &LineIndex, diag: Diagnostic) -> lsp_types::Diagnostic {
     lsp_types::Diagnostic::new_simple(range(line_index, diag.location.range), diag.message)
-}
-
-#[allow(deprecated)]
-pub fn document_symbol(
-    line_index: &LineIndex,
-    symbol: DocumentSymbol,
-) -> lsp_types::DocumentSymbol {
-    let range = range(line_index, symbol.range);
-    let children = match symbol.children.is_empty() {
-        true => None,
-        false => Some(
-            symbol
-                .children
-                .into_iter()
-                .map(|it| document_symbol(line_index, it))
-                .collect(),
-        ),
-    };
-    lsp_types::DocumentSymbol {
-        name: symbol.name.to_string(),
-        detail: Some(symbol.typ.to_string()),
-        kind: match symbol.kind {
-            DocumentSymbolKind::Class => lsp_types::SymbolKind::CLASS,
-            DocumentSymbolKind::TemplateArgument => lsp_types::SymbolKind::PROPERTY,
-            DocumentSymbolKind::Field => lsp_types::SymbolKind::FIELD,
-            DocumentSymbolKind::Def => lsp_types::SymbolKind::VARIABLE,
-            DocumentSymbolKind::Variable => lsp_types::SymbolKind::VARIABLE,
-        },
-        tags: None,
-        deprecated: None,
-        range,
-        selection_range: range,
-        children,
-    }
-}
-
-pub fn hover(hover: Hover) -> lsp_types::Hover {
-    let mut contents = vec![lsp_types::MarkedString::from_language_code(
-        String::from("tablegen"),
-        hover.signature,
-    )];
-    if let Some(document) = hover.document {
-        contents.push(lsp_types::MarkedString::from_markdown(String::from("***")));
-        contents.push(lsp_types::MarkedString::from_markdown(document));
-    }
-
-    lsp_types::Hover {
-        contents: lsp_types::HoverContents::Array(contents),
-        range: None,
-    }
-}
-
-pub fn inlay_hint(line_index: &LineIndex, inlay_hint: InlayHint) -> lsp_types::InlayHint {
-    lsp_types::InlayHint {
-        position: position(line_index, inlay_hint.position),
-        label: lsp_types::InlayHintLabel::String(inlay_hint.label),
-        kind: None,
-        text_edits: None,
-        tooltip: None,
-        padding_left: match inlay_hint.kind {
-            InlayHintKind::TemplateArg => Some(false),
-            InlayHintKind::FieldLet => Some(true),
-        },
-        padding_right: match inlay_hint.kind {
-            InlayHintKind::TemplateArg => Some(true),
-            InlayHintKind::FieldLet => Some(false),
-        },
-        data: None,
-    }
 }
 
 pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {

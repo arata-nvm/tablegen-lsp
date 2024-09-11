@@ -2,12 +2,9 @@ use ecow::EcoString;
 use id_arena::Id;
 use indexmap::IndexMap;
 
-use crate::{
-    eval::{context::EvalCtx, EvalExpr},
-    file_system::FileRange,
-};
+use crate::file_system::FileRange;
 
-use super::{class::ClassId, field::Field, symbol::SymbolId, typ::Type, value::Value};
+use super::{class::ClassId, symbol::SymbolId, typ::Type, value::Value};
 
 pub type DefId = Id<Def>;
 
@@ -57,41 +54,6 @@ impl DefField {
             parent,
             define_loc,
             reference_locs: Vec::new(),
-        }
-    }
-
-    pub fn from_field(field: Field, ctx: &mut EvalCtx) -> Self {
-        let value = field.expr.eval_expr(ctx).unwrap_or_default();
-        let value = match value.cast_to(&ctx.symbol_map, &field.typ) {
-            Some(value) => value,
-            None => {
-                let message = match value {
-                    Value::Bits(_, len) => {
-                        format!("Field '{}' of type '{}' is incompatible with value '{}' of type bit initializer with length {}",
-                            field.name, field.typ, value, len)
-                    }
-                    _ => {
-                        format!(
-                            "Field '{}' of type '{}' is incompatible with value '{}' of type '{}'",
-                            field.name,
-                            field.typ,
-                            value,
-                            value.typ()
-                        )
-                    }
-                };
-                ctx.error(field.define_loc.range, message);
-                Value::Uninitialized
-            }
-        };
-
-        Self {
-            name: field.name,
-            typ: field.typ,
-            value,
-            parent: field.parent,
-            define_loc: field.define_loc,
-            reference_locs: field.reference_locs,
         }
     }
 }

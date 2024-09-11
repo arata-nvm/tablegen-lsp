@@ -7,13 +7,10 @@ use indexmap::IndexMap;
 use syntax::parser::TextRange;
 use thiserror::Error;
 
-use crate::eval::context::EvalCtx;
 use crate::file_system::FileRange;
-use crate::symbol_map::def::DefField;
 
 use super::class::Class;
 use super::class::ClassId;
-use super::def::Def;
 use super::expr::Expr;
 use super::field::Field;
 use super::field::FieldId;
@@ -151,26 +148,6 @@ impl Record {
             reference_locs: self.reference_locs,
             name_to_template_arg: self.name_to_template_arg,
             name_to_field: self.name_to_field,
-            parent_class_list: self.parent_class_list,
-        }
-    }
-
-    pub fn into_def(self, ctx: &mut EvalCtx) -> Def {
-        assert!(self.name_to_template_arg.is_empty());
-
-        let mut name_to_def_field = IndexMap::new();
-        for (name, field_id) in self.name_to_field.into_iter() {
-            let field = ctx.symbol_map.field(field_id).clone();
-            let def_field = DefField::from_field(field, ctx);
-            let def_field_id = ctx.symbol_map.add_def_field(def_field);
-            name_to_def_field.insert(name, def_field_id);
-        }
-
-        Def {
-            name: self.name,
-            define_loc: self.define_loc,
-            reference_locs: self.reference_locs,
-            name_to_def_field,
             parent_class_list: self.parent_class_list,
         }
     }

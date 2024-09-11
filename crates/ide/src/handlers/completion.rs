@@ -3,7 +3,7 @@ use syntax::{
     syntax_kind::SyntaxKind,
 };
 
-use crate::{eval::EvalDatabase, file_system::FilePosition};
+use crate::{db::SourceDatabase, file_system::FilePosition};
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct CompletionItem {
@@ -29,7 +29,7 @@ pub enum CompletionItemKind {
 }
 
 pub fn exec(
-    db: &dyn EvalDatabase,
+    db: &dyn SourceDatabase,
     pos: FilePosition,
     trigger_char: Option<String>,
 ) -> Option<Vec<CompletionItem>> {

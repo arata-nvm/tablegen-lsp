@@ -2,12 +2,10 @@ use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    notification, request, CompletionOptions, CompletionParams, CompletionResponse,
-    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
-    DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
-    HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams,
-    Location, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    notification, request, CompletionOptions, DidChangeTextDocumentParams,
+    DidOpenTextDocumentParams, HoverProviderCapability, InitializeParams, InitializeResult, OneOf,
+    PublishDiagnosticsParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+    Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -17,8 +15,8 @@ use tokio::task::{self};
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::FileSystem;
 
+use crate::to_proto;
 use crate::vfs::{UrlExt, Vfs};
-use crate::{from_proto, to_proto};
 
 pub struct Server {
     host: AnalysisHost,
@@ -86,123 +84,6 @@ impl LanguageServer for Server {
                 ..Default::default()
             },
         })))
-    }
-
-    fn hover(
-        &mut self,
-        params: HoverParams,
-    ) -> BoxFuture<'static, Result<Option<Hover>, Self::Error>> {
-        tracing::info!("hover: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
-            let Some(hover) = snap.analysis.hover(pos) else {
-                return Ok(None);
-            };
-            let lsp_hover = to_proto::hover(hover);
-            Ok(Some(lsp_hover))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn definition(
-        &mut self,
-        params: GotoDefinitionParams,
-    ) -> BoxFuture<'static, Result<Option<GotoDefinitionResponse>, Self::Error>> {
-        tracing::info!("goto_definition: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, line_index) =
-                from_proto::file_pos(&snap, params.text_document_position_params);
-            let Some(location) = snap.analysis.goto_definition(pos) else {
-                return Ok(None);
-            };
-
-            let vfs = snap.vfs.read().unwrap();
-            let lsp_location = to_proto::location(&vfs, &line_index, location);
-            Ok(Some(GotoDefinitionResponse::Scalar(lsp_location)))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn references(
-        &mut self,
-        params: ReferenceParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<Location>>, Self::Error>> {
-        tracing::info!("references: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, line_index) = from_proto::file_pos(&snap, params.text_document_position);
-            let Some(location_list) = snap.analysis.references(pos) else {
-                return Ok(None);
-            };
-            let vfs = snap.vfs.read().unwrap();
-            let lsp_location_list = location_list
-                .into_iter()
-                .map(|it| to_proto::location(&vfs, &line_index, it))
-                .collect();
-            Ok(Some(lsp_location_list))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn document_symbol(
-        &mut self,
-        params: DocumentSymbolParams,
-    ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
-        tracing::info!("document_symbol: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(symbols) = snap.analysis.document_symbol(file_id) else {
-                return Ok(None);
-            };
-
-            let lsp_symbols = symbols
-                .into_iter()
-                .map(|it| to_proto::document_symbol(&line_index, it))
-                .collect();
-            Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn inlay_hint(
-        &mut self,
-        params: InlayHintParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<InlayHint>>, Self::Error>> {
-        tracing::info!("inlay_hint: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (range, line_index) =
-                from_proto::file_range(&snap, params.text_document, params.range);
-            let Some(inlay_hints) = snap.analysis.inlay_hint(range) else {
-                return Ok(None);
-            };
-
-            let lsp_inlay_hints = inlay_hints
-                .into_iter()
-                .map(|it| to_proto::inlay_hint(&line_index, it))
-                .collect();
-            Ok(Some(lsp_inlay_hints))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn completion(
-        &mut self,
-        params: CompletionParams,
-    ) -> BoxFuture<'static, Result<Option<CompletionResponse>, Self::Error>> {
-        tracing::info!("completion: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
-            let trigger_char = params.context.and_then(|it| it.trigger_character);
-            let Some(completion_list) = snap.analysis.completion(pos, trigger_char) else {
-                return Ok(None);
-            };
-
-            let lsp_completion_list = completion_list
-                .into_iter()
-                .map(to_proto::completion_item)
-                .collect();
-            Ok(Some(CompletionResponse::Array(lsp_completion_list)))
-        });
-        Box::pin(async move { task.await.unwrap() })
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
