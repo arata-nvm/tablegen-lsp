@@ -2,10 +2,9 @@ use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    notification, request, CompletionOptions, DidChangeTextDocumentParams,
-    DidOpenTextDocumentParams, HoverProviderCapability, InitializeParams, InitializeResult, OneOf,
-    PublishDiagnosticsParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-    Url,
+    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    InitializeParams, InitializeResult, PublishDiagnosticsParams, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -37,13 +36,7 @@ impl Server {
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
             .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
-            .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
-            .request::<request::GotoDefinition, _>(Self::definition)
-            .request::<request::References, _>(Self::references)
-            .request::<request::HoverRequest, _>(Self::hover)
-            .request::<request::InlayHintRequest, _>(Self::inlay_hint)
-            .request::<request::Completion, _>(Self::completion);
+            .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()));
         router
     }
 
@@ -72,15 +65,6 @@ impl LanguageServer for Server {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
-                document_symbol_provider: Some(OneOf::Left(true)),
-                definition_provider: Some(OneOf::Left(true)),
-                references_provider: Some(OneOf::Left(true)),
-                hover_provider: Some(HoverProviderCapability::Simple(true)),
-                inlay_hint_provider: Some(OneOf::Left(true)),
-                completion_provider: Some(CompletionOptions {
-                    trigger_characters: Some(vec![String::from("!")]), // for bang operator
-                    ..Default::default()
-                }),
                 ..Default::default()
             },
         })))

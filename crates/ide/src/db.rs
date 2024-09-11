@@ -3,10 +3,11 @@ use std::sync::Arc;
 
 use syntax::Parse;
 
+use crate::eval::EvalDatabaseStorage;
 use crate::file_system::{FileId, IncludeId, SourceRoot};
 use crate::line_index::LineIndex;
 
-#[salsa::database(SourceDatabaseStorage)]
+#[salsa::database(SourceDatabaseStorage, EvalDatabaseStorage)]
 #[derive(Default)]
 pub struct RootDatabase {
     storage: salsa::Storage<Self>,

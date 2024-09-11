@@ -4,6 +4,7 @@ use syntax::parser::TextRange;
 
 use crate::{
     db::{SourceDatabase, SourceDatabaseStorage},
+    eval::EvalDatabaseStorage,
     file_system::{self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem},
 };
 
@@ -22,7 +23,7 @@ pub fn multiple_files(fixture: &str) -> (TestDatabase, Fixture) {
     (db, f)
 }
 
-#[salsa::database(SourceDatabaseStorage)]
+#[salsa::database(SourceDatabaseStorage, EvalDatabaseStorage)]
 #[derive(Default)]
 pub struct TestDatabase {
     storage: salsa::Storage<Self>,
