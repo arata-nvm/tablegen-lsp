@@ -19,6 +19,17 @@ pub struct Class {
 }
 
 impl Class {
+    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
+        Self {
+            name,
+            define_loc,
+            reference_locs: Vec::new(),
+            name_to_template_arg: IndexMap::new(),
+            name_to_field: IndexMap::new(),
+            parent_class_list: Vec::new(),
+        }
+    }
+
     pub fn iter_template_arg(&self) -> impl Iterator<Item = TemplateArgumentId> + '_ {
         self.name_to_template_arg.values().copied()
     }

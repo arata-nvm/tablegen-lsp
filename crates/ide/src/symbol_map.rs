@@ -181,8 +181,7 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
-    pub fn add_class(&mut self, record: Record) -> ClassId {
-        let class = record.into_class();
+    pub fn add_class(&mut self, class: Class) -> ClassId {
         let name = class.name.clone();
         let define_loc = class.define_loc;
         let id = self.class_list.alloc(class);
