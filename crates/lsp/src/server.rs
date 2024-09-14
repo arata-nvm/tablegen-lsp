@@ -3,8 +3,9 @@ use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
     notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    InitializeParams, InitializeResult, PublishDiagnosticsParams, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    DocumentSymbolParams, DocumentSymbolResponse, InitializeParams, InitializeResult, OneOf,
+    PublishDiagnosticsParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+    Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -14,8 +15,8 @@ use tokio::task::{self};
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::FileSystem;
 
-use crate::to_proto;
 use crate::vfs::{UrlExt, Vfs};
+use crate::{from_proto, to_proto};
 
 pub struct Server {
     host: AnalysisHost,
@@ -36,7 +37,8 @@ impl Server {
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
             .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()));
+            .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
+            .request::<request::DocumentSymbolRequest, _>(Self::document_symbol);
         router
     }
 
@@ -65,14 +67,17 @@ impl LanguageServer for Server {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
         })))
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
-        self.set_file_content(&params.text_document.uri, &params.text_document.text);
+        let uri = params.text_document.uri;
+        self.set_file_content(&uri, &params.text_document.text);
         self.update_diagnostics();
+        self.eval_files(&uri);
         ControlFlow::Continue(())
     }
 
@@ -82,6 +87,26 @@ impl LanguageServer for Server {
             self.update_diagnostics();
         }
         ControlFlow::Continue(())
+    }
+
+    fn document_symbol(
+        &mut self,
+        params: DocumentSymbolParams,
+    ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
+        tracing::info!("document_symbol: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
+            let Some(symbols) = snap.analysis.document_symbol(file_id) else {
+                return Ok(None);
+            };
+
+            let lsp_symbols = symbols
+                .into_iter()
+                .map(|it| to_proto::document_symbol(&line_index, it))
+                .collect();
+            Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
+        });
+        Box::pin(async move { task.await.unwrap() })
     }
 }
 
@@ -116,6 +141,13 @@ impl Server {
                     .expect("failed to publish diagnostics");
             }
         });
+    }
+
+    fn eval_files(&mut self, uri: &Url) {
+        let mut vfs = self.vfs.write().unwrap();
+        let path = UrlExt::to_file_path(uri);
+        let file_id = vfs.assign_or_get_file_id(path);
+        self.host.eval(&mut *vfs, file_id);
     }
 
     fn bump_diagnostic_version(&mut self) -> i32 {

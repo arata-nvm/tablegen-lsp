@@ -1,7 +1,10 @@
 use async_lsp::lsp_types;
 use ide::{
     file_system::{FileRange, FileSystem},
-    handlers::completion::{CompletionItem, CompletionItemKind},
+    handlers::{
+        completion::{CompletionItem, CompletionItemKind},
+        document_symbol::{DocumentSymbol, DocumentSymbolKind},
+    },
 };
 use text_size::{TextRange, TextSize};
 
@@ -37,6 +40,42 @@ pub fn location(vfs: &Vfs, line_index: &LineIndex, file_range: FileRange) -> lsp
 
 pub fn diagnostic(line_index: &LineIndex, diag: Diagnostic) -> lsp_types::Diagnostic {
     lsp_types::Diagnostic::new_simple(range(line_index, diag.location.range), diag.message)
+}
+
+#[allow(deprecated)]
+pub fn document_symbol(
+    line_index: &LineIndex,
+    symbol: DocumentSymbol,
+) -> lsp_types::DocumentSymbol {
+    let range = range(line_index, symbol.range);
+    let children = match symbol.children.is_empty() {
+        true => None,
+        false => Some(
+            symbol
+                .children
+                .into_iter()
+                .map(|it| document_symbol(line_index, it))
+                .collect(),
+        ),
+    };
+    lsp_types::DocumentSymbol {
+        name: symbol.name.to_string(),
+        detail: Some(symbol.typ.to_string()),
+        kind: match symbol.kind {
+            DocumentSymbolKind::Class => lsp_types::SymbolKind::CLASS,
+            DocumentSymbolKind::TemplateArgument => lsp_types::SymbolKind::PROPERTY,
+            DocumentSymbolKind::Field => lsp_types::SymbolKind::FIELD,
+            DocumentSymbolKind::Def => lsp_types::SymbolKind::VARIABLE,
+            DocumentSymbolKind::Variable => lsp_types::SymbolKind::VARIABLE,
+            DocumentSymbolKind::Defset => lsp_types::SymbolKind::VARIABLE,
+            DocumentSymbolKind::Multiclass => lsp_types::SymbolKind::CLASS,
+        },
+        tags: None,
+        deprecated: None,
+        range,
+        selection_range: range,
+        children,
+    }
 }
 
 pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {

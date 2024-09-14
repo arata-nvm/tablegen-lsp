@@ -61,4 +61,8 @@ impl Analysis {
     pub fn diagnostics(&self) -> HashMap<FileId, Vec<Diagnostic>> {
         diagnostics::exec(&*self.db)
     }
+
+    pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
+        document_symbol::exec(&*self.db, file_id)
+    }
 }
