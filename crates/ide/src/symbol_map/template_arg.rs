@@ -3,15 +3,12 @@ use id_arena::Id;
 
 use crate::file_system::FileRange;
 
-use super::{expr::Expr, typ::Type};
-
 pub type TemplateArgumentId = Id<TemplateArgument>;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct TemplateArgument {
     pub name: EcoString,
-    pub typ: Type,
-    pub default_value: Option<Expr>,
+    // pub typ: Type,
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
@@ -19,14 +16,12 @@ pub struct TemplateArgument {
 impl TemplateArgument {
     pub fn new(
         name: EcoString,
-        typ: Type,
-        default_value: Option<Expr>,
+        // typ: Type,
         define_loc: FileRange,
     ) -> Self {
         Self {
             name,
-            typ,
-            default_value,
+            // typ,
             define_loc,
             reference_locs: Vec::new(),
         }

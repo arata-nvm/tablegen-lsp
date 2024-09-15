@@ -4,6 +4,7 @@ use syntax::parser::TextRange;
 use crate::eval::EvalDatabase;
 use crate::file_system::FileId;
 use crate::symbol_map::symbol::Symbol;
+use crate::symbol_map::SymbolMap;
 
 pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
     let symbol_map = db.symbol_map(file_id);
@@ -16,22 +17,48 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
     let mut symbols = Vec::new();
     for symbol_id in iter {
         let symbol = symbol_map.symbol(symbol_id);
-        if let Some(document_symbol) = symbol_to_document_symbol(symbol) {
+        if let Some(document_symbol) = symbol_to_document_symbol(&symbol_map, symbol) {
             symbols.push(document_symbol);
         }
     }
     Some(symbols)
 }
 
-fn symbol_to_document_symbol(symbol: Symbol) -> Option<DocumentSymbol> {
+fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<DocumentSymbol> {
     match symbol {
-        Symbol::Class(class) => Some(DocumentSymbol {
-            name: class.name.clone(),
-            typ: "class".into(),
-            range: class.define_loc.range,
-            kind: DocumentSymbolKind::Class,
-            children: vec![],
-        }),
+        Symbol::Class(class) => {
+            let template_args = class
+                .iter_template_arg()
+                .map(|arg_id| symbol_map.template_arg(arg_id))
+                .map(|arg| DocumentSymbol {
+                    name: arg.name.clone(),
+                    typ: "".into(), // TODO
+                    range: arg.define_loc.range,
+                    kind: DocumentSymbolKind::TemplateArgument,
+                    children: vec![],
+                });
+
+            let fields = class
+                .iter_field()
+                .map(|field_id| symbol_map.field(field_id))
+                .map(|field| DocumentSymbol {
+                    name: field.name.clone(),
+                    typ: "".into(), // TODO
+                    range: field.define_loc.range,
+                    kind: DocumentSymbolKind::Field,
+                    children: vec![],
+                });
+
+            let children = template_args.chain(fields).collect();
+
+            Some(DocumentSymbol {
+                name: class.name.clone(),
+                typ: "class".into(),
+                range: class.define_loc.range,
+                kind: DocumentSymbolKind::Class,
+                children,
+            })
+        }
         _ => None,
     }
 }

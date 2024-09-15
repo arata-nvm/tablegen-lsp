@@ -15,7 +15,6 @@ use self::{
     class::{Class, ClassId},
     def::{Def, DefId},
     field::{Field, FieldId},
-    record::Record,
     symbol::{Symbol, SymbolId, SymbolMut},
     template_arg::{TemplateArgument, TemplateArgumentId},
 };
@@ -24,7 +23,7 @@ pub mod class;
 pub mod def;
 pub mod expr;
 pub mod field;
-pub mod record;
+// pub mod record;
 pub mod symbol;
 pub mod template_arg;
 pub mod typ;
@@ -192,18 +191,6 @@ impl SymbolMap {
             .push(id.into());
         self.add_to_pos_to_symbol_map(define_loc, id);
         id
-    }
-
-    pub fn replace_class(&mut self, id: ClassId, record: Record) {
-        let class_ref = self.class_mut(id);
-
-        let mut new_class = record.into_class();
-        new_class
-            .reference_locs
-            .clone_from(&class_ref.reference_locs);
-
-        assert!(class_ref.name == new_class.name);
-        let _ = std::mem::replace(class_ref, new_class);
     }
 
     pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {

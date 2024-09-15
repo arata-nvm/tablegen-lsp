@@ -2,13 +2,16 @@ use std::{path::PathBuf, str::Utf8Error, sync::Arc};
 
 use ecow::EcoString;
 use syntax::parser::{TextRange, TextSize};
-use tblgen_alt::{error::SourceLoc, Record, RecordKeeper, SourceInfo, TableGenParser};
+use tblgen_alt::{
+    error::{SourceLoc, SourceLocation},
+    Record, RecordKeeper, SourceInfo, TableGenParser,
+};
 
 use crate::{
     db::SourceDatabase,
     file_system::{FileId, FilePath, FileRange, FileSystem},
     handlers::diagnostics::Diagnostic,
-    symbol_map::{class::Class, SymbolMap},
+    symbol_map::{class::Class, field::Field, template_arg::TemplateArgument, SymbolMap},
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -44,7 +47,7 @@ fn convert_record_keeper<FS: FileSystem>(record_keeper: RecordKeeper, fs: &mut F
 
     let source_info = record_keeper.source_info();
     for (name, class) in record_keeper.classes() {
-        match convert_class(source_info, fs, name, class) {
+        match convert_class(&mut symbol_map, fs, source_info, name, class) {
             Some(class) => {
                 symbol_map.add_class(class);
             }
@@ -56,14 +59,44 @@ fn convert_record_keeper<FS: FileSystem>(record_keeper: RecordKeeper, fs: &mut F
 }
 
 fn convert_class<FS: FileSystem>(
-    source_info: SourceInfo,
+    symbol_map: &mut SymbolMap,
     fs: &mut FS,
+    source_info: SourceInfo,
     name: Result<&str, Utf8Error>,
     class: Record,
 ) -> Option<Class> {
     let name = EcoString::from(name.ok()?);
 
     let source_loc = class.source_location();
+    let define_loc = convert_source_location(fs, source_info, source_loc)?;
+
+    let mut new_class = Class::new(name, define_loc);
+    for value in class.values() {
+        let Ok(value_name) = value.name.to_str() else {
+            continue;
+        };
+        let name = EcoString::from(value_name);
+
+        let source_loc = value.source_location();
+        let define_loc = convert_source_location(fs, source_info, source_loc)?;
+
+        if value.is_template_arg() {
+            let template_arg = TemplateArgument::new(name, define_loc);
+            new_class.add_template_arg(symbol_map, template_arg);
+        } else {
+            let field = Field::new(name, define_loc);
+            new_class.add_field(symbol_map, field);
+        }
+    }
+
+    Some(new_class)
+}
+
+fn convert_source_location<FS: FileSystem>(
+    fs: &mut FS,
+    source_info: SourceInfo,
+    source_loc: SourceLocation,
+) -> Option<FileRange> {
     let file_pos = tblgen_alt::util::convert_loc(source_info, &source_loc)?;
 
     let filepath_ref = file_pos.filepath();
@@ -71,9 +104,7 @@ fn convert_class<FS: FileSystem>(
     let file_id = fs.assign_or_get_file_id(filepath);
 
     let pos: TextSize = file_pos.pos().into();
-    let define_loc = FileRange::new(file_id, TextRange::new(pos, pos));
-
-    Some(Class::new(name, define_loc))
+    Some(FileRange::new(file_id, TextRange::new(pos, pos)))
 }
 
 fn handle_tablegen_err(err: tblgen_alt::Error) -> Vec<Diagnostic> {
