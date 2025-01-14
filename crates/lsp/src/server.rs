@@ -76,8 +76,8 @@ impl LanguageServer for Server {
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         let uri = params.text_document.uri;
         self.set_file_content(&uri, &params.text_document.text);
-        self.update_diagnostics();
         self.eval_files(&uri);
+        self.update_diagnostics();
         ControlFlow::Continue(())
     }
 
