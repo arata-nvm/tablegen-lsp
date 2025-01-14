@@ -4,4 +4,7 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 [target.aarch64-apple-darwin]
 linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[env]
+TABLEGEN_190_PREFIX = "/opt/homebrew/opt/llvm"
