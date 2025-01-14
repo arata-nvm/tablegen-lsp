@@ -19,7 +19,7 @@ jobs:
           submodules: recursive
       - uses: KyleMayes/install-llvm-action@v2
         with:
-          version: "19"
+          version: "19.1"
       - name: Set env
         run: echo "TABLEGEN_190_PREFIX=${{ env.LLVM_PATH }}" >> $GITHUB_ENV
       - name: Build
