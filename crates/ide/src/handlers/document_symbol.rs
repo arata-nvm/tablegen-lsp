@@ -41,6 +41,7 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
             let fields = class
                 .iter_field()
                 .map(|field_id| symbol_map.field(field_id))
+                .filter(|field| class.define_loc.range.start() <= field.define_loc.range.start())
                 .map(|field| DocumentSymbol {
                     name: field.name.clone(),
                     typ: "".into(), // TODO
@@ -63,6 +64,7 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
             let fields = def
                 .iter_field()
                 .map(|field_id| symbol_map.field(field_id))
+                .filter(|field| def.define_loc.range.start() <= field.define_loc.range.start())
                 .map(|field| DocumentSymbol {
                     name: field.name.clone(),
                     typ: "".into(), // TODO
