@@ -1,79 +1,79 @@
 {
-  "name": "tablegen-lsp",
-  "displayName": "tablegen-lsp",
-  "description": "",
-  "publisher": "arata-nvm",
-  "repository": {
-    "url": "https://github.com/arata-nvm/tablegen-lsp"
-  },
-  "version": "0.0.3",
-  "engines": {
-    "vscode": "^1.82.0"
-  },
-  "categories": [
-    "Programming Languages"
-  ],
-  "activationEvents": [],
-  "main": "./out/extension.js",
-  "contributes": {
-    "languages": [
-      {
-        "id": "tablegen",
-        "extensions": [
-          ".td"
-        ],
-        "configuration": "./language-configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "tablegen",
-        "scopeName": "source.tablegen",
-        "path": "./language-grammar.json"
-      }
-    ],
-    "commands": [
-      {
-        "command": "tablegen-lsp.restartServer",
-        "title": "Restart server",
-        "category": "tablegen-lsp"
-      }
-    ],
-    "configuration": {
-      "title": "tablegen-lsp",
-      "properties": {
-        "tablegen-lsp.includePath": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "description": "An array of paths to workspace folders containing tablegen files."
-        }
-      }
-    }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.82.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
-    "eslint": "^9.0.0",
-    "glob": "^11.0.0",
-    "mocha": "^10.2.0",
-    "typescript": "^5.1.6",
-    "@vscode/test-electron": "^2.3.4"
-  },
-  "dependencies": {
-    "vscode-languageclient": "^9.0.0"
-  }
+	"name": "tablegen-lsp",
+	"displayName": "tablegen-lsp",
+	"description": "",
+	"publisher": "arata-nvm",
+	"repository": {
+		"url": "https://github.com/arata-nvm/tablegen-lsp"
+	},
+	"version": "0.0.3",
+	"engines": {
+		"vscode": "^1.82.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"activationEvents": [],
+	"main": "./out/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "tablegen",
+				"extensions": [
+					".td"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "tablegen",
+				"scopeName": "source.tablegen",
+				"path": "./language-grammar.json"
+			}
+		],
+		"commands": [
+			{
+				"command": "tablegen-lsp.restartServer",
+				"title": "Restart server",
+				"category": "tablegen-lsp"
+			}
+		],
+		"configuration": {
+			"title": "tablegen-lsp",
+			"properties": {
+				"tablegen-lsp.includePath": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "An array of paths to workspace folders containing tablegen files."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "eslint src --ext ts",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.82.0",
+		"@types/mocha": "^10.0.1",
+		"@types/node": "20.x",
+		"@typescript-eslint/eslint-plugin": "^8.0.0",
+		"@typescript-eslint/parser": "^8.0.0",
+		"eslint": "^9.0.0",
+		"glob": "^11.0.0",
+		"mocha": "^10.2.0",
+		"typescript": "^5.1.6",
+		"@vscode/test-electron": "^2.3.4"
+	},
+	"dependencies": {
+		"vscode-languageclient": "^9.0.0"
+	}
 }
