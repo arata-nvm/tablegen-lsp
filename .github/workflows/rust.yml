@@ -12,7 +12,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,5 +21,15 @@ jobs:
       - run: crates/tblgen-rs-alt/tools/setup.sh
       - name: Build
         run: cargo build --verbose
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: swatinem/rust-cache@v2
+      - uses: homebrew/actions/setup-homebrew@master
+      - run: crates/tblgen-rs-alt/tools/setup.sh
       - name: Run tests
         run: cargo test --verbose
