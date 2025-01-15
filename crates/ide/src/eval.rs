@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::Utf8Error, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use ecow::EcoString;
 use syntax::parser::{TextRange, TextSize};
@@ -11,7 +11,7 @@ use crate::{
     db::SourceDatabase,
     file_system::{FileId, FilePath, FileRange, FileSystem},
     handlers::diagnostics::Diagnostic,
-    symbol_map::{class::Class, field::Field, template_arg::TemplateArgument, SymbolMap},
+    symbol_map::{class::Class, def::Def, field::Field, template_arg::TemplateArgument, SymbolMap},
 };
 
 #[salsa::query_group(EvalDatabaseStorage)]
@@ -44,12 +44,27 @@ pub fn eval<FS: FileSystem>(
 
 fn convert_record_keeper<FS: FileSystem>(record_keeper: RecordKeeper, fs: &mut FS) -> SymbolMap {
     let mut symbol_map = SymbolMap::default();
-
     let source_info = record_keeper.source_info();
+
     for (name, class) in record_keeper.classes() {
+        let Ok(name) = name else {
+            continue;
+        };
         match convert_class(&mut symbol_map, fs, source_info, name, class) {
             Some(class) => {
                 symbol_map.add_class(class);
+            }
+            None => continue,
+        }
+    }
+
+    for (name, def) in record_keeper.defs() {
+        let Ok(name) = name else {
+            continue;
+        };
+        match convert_def(&mut symbol_map, fs, source_info, name, def) {
+            Some(def) => {
+                symbol_map.add_def(def);
             }
             None => continue,
         }
@@ -62,10 +77,10 @@ fn convert_class<FS: FileSystem>(
     symbol_map: &mut SymbolMap,
     fs: &mut FS,
     source_info: SourceInfo,
-    name: Result<&str, Utf8Error>,
+    name: &str,
     class: Record,
 ) -> Option<Class> {
-    let name = EcoString::from(name.ok()?);
+    let name = EcoString::from(name);
 
     let source_loc = class.source_location();
     let define_loc = convert_source_location(fs, source_info, source_loc)?;
@@ -90,6 +105,35 @@ fn convert_class<FS: FileSystem>(
     }
 
     Some(new_class)
+}
+
+fn convert_def<FS: FileSystem>(
+    symbol_map: &mut SymbolMap,
+    fs: &mut FS,
+    source_info: SourceInfo,
+    name: &str,
+    class: Record,
+) -> Option<Def> {
+    let name = EcoString::from(name);
+
+    let source_loc = class.source_location();
+    let define_loc = convert_source_location(fs, source_info, source_loc)?;
+
+    let mut new_def = Def::new(name, define_loc);
+    for value in class.values() {
+        let Ok(value_name) = value.name.to_str() else {
+            continue;
+        };
+        let name = EcoString::from(value_name);
+
+        let source_loc = value.source_location();
+        let define_loc = convert_source_location(fs, source_info, source_loc)?;
+
+        let field = Field::new(name, define_loc);
+        new_def.add_field(symbol_map, field);
+    }
+
+    Some(new_def)
 }
 
 fn convert_source_location<FS: FileSystem>(

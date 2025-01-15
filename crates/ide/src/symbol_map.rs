@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::ops::DerefMut;
 use std::{collections::HashMap, ops::Deref};
 
-use def::{DefField, DefFieldId};
 use ecow::EcoString;
 use id_arena::Arena;
 
@@ -37,7 +36,6 @@ pub struct SymbolMap {
     field_list: Arena<Field>,
     def_list: Arena<Def>,
     variable_list: Arena<Variable>,
-    def_field_list: Arena<DefField>,
 
     name_to_class: HashMap<EcoString, ClassId>,
     name_to_def: HashMap<EcoString, DefId>,
@@ -107,18 +105,6 @@ impl SymbolMap {
             .expect("invalid variable id")
     }
 
-    pub fn def_field(&self, def_field_id: DefFieldId) -> &DefField {
-        self.def_field_list
-            .get(def_field_id)
-            .expect("invalid def field id")
-    }
-
-    pub fn def_field_mut(&mut self, def_field_id: DefFieldId) -> &mut DefField {
-        self.def_field_list
-            .get_mut(def_field_id)
-            .expect("invalid def field id")
-    }
-
     pub fn symbol(&self, id: SymbolId) -> Symbol {
         match id {
             SymbolId::ClassId(class_id) => Symbol::Class(self.class(class_id)),
@@ -128,7 +114,6 @@ impl SymbolMap {
             SymbolId::FieldId(field_id) => Symbol::Field(self.field(field_id)),
             SymbolId::DefId(def_id) => Symbol::Def(self.def(def_id)),
             SymbolId::VariableId(variable_id) => Symbol::Variable(self.variable(variable_id)),
-            SymbolId::DefFieldId(def_field_id) => Symbol::DefField(self.def_field(def_field_id)),
         }
     }
 
@@ -142,9 +127,6 @@ impl SymbolMap {
             SymbolId::DefId(def_id) => SymbolMut::Def(self.def_mut(def_id)),
             SymbolId::VariableId(variable_id) => {
                 SymbolMut::Variable(self.variable_mut(variable_id))
-            }
-            SymbolId::DefFieldId(def_field_id) => {
-                SymbolMut::DefField(self.def_field_mut(def_field_id))
             }
         }
     }
@@ -243,13 +225,6 @@ impl SymbolMap {
             .entry(define_loc.file)
             .or_default()
             .push(id.into());
-        id
-    }
-
-    pub fn add_def_field(&mut self, def_field: DefField) -> DefFieldId {
-        let define_loc = def_field.define_loc;
-        let id = self.def_field_list.alloc(def_field);
-        self.add_to_pos_to_symbol_map(define_loc, id);
         id
     }
 

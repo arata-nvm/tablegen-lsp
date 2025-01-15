@@ -59,6 +59,27 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
                 children,
             })
         }
+        Symbol::Def(def) => {
+            let fields = def
+                .iter_field()
+                .map(|field_id| symbol_map.field(field_id))
+                .map(|field| DocumentSymbol {
+                    name: field.name.clone(),
+                    typ: "".into(), // TODO
+                    range: field.define_loc.range,
+                    kind: DocumentSymbolKind::Field,
+                    children: vec![],
+                })
+                .collect();
+
+            Some(DocumentSymbol {
+                name: def.name.clone(),
+                typ: "def".into(),
+                range: def.define_loc.range,
+                kind: DocumentSymbolKind::Def,
+                children: fields,
+            })
+        }
         _ => None,
     }
 }
