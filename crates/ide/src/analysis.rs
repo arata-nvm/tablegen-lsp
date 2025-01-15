@@ -58,6 +58,10 @@ impl Analysis {
         self.db.line_index(file_id)
     }
 
+    pub fn symbol_map(&self, file_id: FileId) -> Arc<SymbolMap> {
+        self.db.symbol_map(file_id)
+    }
+
     pub fn diagnostics(&self) -> HashMap<FileId, Vec<Diagnostic>> {
         diagnostics::exec(&*self.db)
     }
