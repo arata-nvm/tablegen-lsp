@@ -3,6 +3,7 @@ use ide::{
     file_system::{FileRange, FileSystem},
     handlers::{
         completion::{CompletionItem, CompletionItemKind},
+        document_link::DocumentLink,
         document_symbol::DocumentSymbolKind,
         hover::Hover,
         inlay_hint::{InlayHint, InlayHintKind},
@@ -128,4 +129,17 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
         lsp_item.insert_text = Some(insert_text_snippet);
     }
     lsp_item
+}
+
+pub fn document_link(
+    vfs: &Vfs,
+    line_index: &LineIndex,
+    link: DocumentLink,
+) -> lsp_types::DocumentLink {
+    lsp_types::DocumentLink {
+        range: range(line_index, link.range),
+        target: Some(UrlExt::from_file_path(vfs.path_for_file(&link.target))),
+        tooltip: None,
+        data: None,
+    }
 }

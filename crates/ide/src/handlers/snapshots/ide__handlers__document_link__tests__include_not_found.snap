@@ -1,0 +1,5 @@
+---
+source: crates/ide/src/handlers/document_link.rs
+expression: "check(\"include \\\"hoge.td\\\";\")"
+---
+[]

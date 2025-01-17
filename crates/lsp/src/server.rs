@@ -3,11 +3,11 @@ use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
     notification, request, CompletionOptions, CompletionParams, CompletionResponse,
-    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
-    DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
-    HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams,
-    Location, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions,
+    DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams,
+    GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
+    InitializeResult, InlayHint, InlayHintParams, Location, OneOf, PublishDiagnosticsParams,
+    ReferenceParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -45,7 +45,8 @@ impl Server {
             .request::<request::References, _>(Self::references)
             .request::<request::HoverRequest, _>(Self::hover)
             .request::<request::InlayHintRequest, _>(Self::inlay_hint)
-            .request::<request::Completion, _>(Self::completion);
+            .request::<request::Completion, _>(Self::completion)
+            .request::<request::DocumentLinkRequest, _>(Self::document_link);
         router
     }
 
@@ -82,6 +83,10 @@ impl LanguageServer for Server {
                 completion_provider: Some(CompletionOptions {
                     trigger_characters: Some(vec![String::from("!")]), // for bang operator
                     ..Default::default()
+                }),
+                document_link_provider: Some(DocumentLinkOptions {
+                    resolve_provider: Some(true),
+                    work_done_progress_options: Default::default(),
                 }),
                 ..Default::default()
             },
@@ -201,6 +206,27 @@ impl LanguageServer for Server {
                 .map(to_proto::completion_item)
                 .collect();
             Ok(Some(CompletionResponse::Array(lsp_completion_list)))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn document_link(
+        &mut self,
+        params: DocumentLinkParams,
+    ) -> BoxFuture<'static, Result<Option<Vec<DocumentLink>>, Self::Error>> {
+        tracing::info!("document link: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
+            let Some(links) = snap.analysis.document_link(file_id) else {
+                return Ok(None);
+            };
+
+            let vfs = snap.vfs.read().unwrap();
+            let lsp_links = links
+                .into_iter()
+                .map(|it| to_proto::document_link(&vfs, &line_index, it))
+                .collect();
+            Ok(Some(lsp_links))
         });
         Box::pin(async move { task.await.unwrap() })
     }

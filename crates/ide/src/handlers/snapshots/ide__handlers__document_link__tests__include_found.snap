@@ -1,0 +1,12 @@
+---
+source: crates/ide/src/handlers/document_link.rs
+expression: "check(r#\"\n; file1.td\ninclude \"file2.td\";\n\n; file2.td\nclass Foo;\n    \"#)"
+---
+[
+    DocumentLink {
+        range: 8..18,
+        target: FileId(
+            1,
+        ),
+    },
+]

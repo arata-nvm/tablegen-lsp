@@ -7,11 +7,12 @@ use crate::db::{RootDatabase, SourceDatabase};
 use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
 use crate::handlers::completion::{self, CompletionItem};
 use crate::handlers::diagnostics::Diagnostic;
+use crate::handlers::document_link::DocumentLink;
 use crate::handlers::document_symbol::DocumentSymbol;
 use crate::handlers::hover::Hover;
 use crate::handlers::inlay_hint::InlayHint;
 use crate::handlers::{
-    diagnostics, document_symbol, goto_definition, hover, inlay_hint, references,
+    diagnostics, document_link, document_symbol, goto_definition, hover, inlay_hint, references,
 };
 use crate::index::{Index, IndexDatabase};
 use crate::line_index::LineIndex;
@@ -85,5 +86,9 @@ impl Analysis {
         trigger_char: Option<String>,
     ) -> Option<Vec<CompletionItem>> {
         completion::exec(&*self.db, pos, trigger_char)
+    }
+
+    pub fn document_link(&self, file_id: FileId) -> Option<Vec<DocumentLink>> {
+        document_link::exec(&*self.db, file_id)
     }
 }
