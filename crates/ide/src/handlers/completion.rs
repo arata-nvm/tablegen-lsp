@@ -8,14 +8,34 @@ use crate::{file_system::FilePosition, index::IndexDatabase, symbol_map::SymbolM
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct CompletionItem {
     pub label: String,
+    pub insert_text_snippet: Option<String>,
     pub detail: String,
     pub kind: CompletionItemKind,
 }
 
 impl CompletionItem {
-    fn new(label: impl Into<String>, detail: impl Into<String>, kind: CompletionItemKind) -> Self {
+    fn new_simple(
+        label: impl Into<String>,
+        detail: impl Into<String>,
+        kind: CompletionItemKind,
+    ) -> Self {
         Self {
             label: label.into(),
+            insert_text_snippet: None,
+            detail: detail.into(),
+            kind,
+        }
+    }
+
+    fn new_snippet(
+        label: impl Into<String>,
+        insert_text_snippet: impl Into<String>,
+        detail: impl Into<String>,
+        kind: CompletionItemKind,
+    ) -> Self {
+        Self {
+            label: label.into(),
+            insert_text_snippet: Some(insert_text_snippet.into()),
             detail: detail.into(),
             kind,
         }
@@ -103,11 +123,25 @@ impl CompletionContext {
     }
 
     fn complete_primitive_types(&mut self) {
-        const PRIMITIVE_TYPES: [&str; 7] = ["bit", "bits", "code", "dag", "int", "list", "string"];
+        const PRIMITIVE_TYPES: [&str; 5] = ["bit", "code", "dag", "int", "string"];
         for &ty in &PRIMITIVE_TYPES {
             self.items
                 .push(CompletionItem::new_simple(ty, "", CompletionItemKind::Type));
         }
+
+        self.items.push(CompletionItem::new_snippet(
+            "bits",
+            "bits<$1> $0",
+            "",
+            CompletionItemKind::Type,
+        ));
+
+        self.items.push(CompletionItem::new_snippet(
+            "list",
+            "list<$1> $0",
+            "",
+            CompletionItemKind::Type,
+        ));
     }
 
     fn complete_primitive_values(&mut self) {

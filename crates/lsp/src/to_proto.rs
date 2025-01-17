@@ -123,5 +123,9 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
         CompletionItemKind::Type => lsp_types::CompletionItemKind::CLASS,
         CompletionItemKind::Class => lsp_types::CompletionItemKind::CLASS,
     });
+    if let Some(insert_text_snippet) = item.insert_text_snippet {
+        lsp_item.insert_text_format = Some(lsp_types::InsertTextFormat::SNIPPET);
+        lsp_item.insert_text = Some(insert_text_snippet);
+    }
     lsp_item
 }
