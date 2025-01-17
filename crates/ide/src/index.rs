@@ -98,6 +98,7 @@ impl Indexable for ast::Statement {
             ast::Statement::Defm(defm) => defm.index(ctx),
             ast::Statement::Defset(defset) => defset.index(ctx),
             ast::Statement::Defvar(defvar) => defvar.index(ctx),
+            ast::Statement::Dump(dump) => dump.index(ctx),
             ast::Statement::Foreach(foreach) => foreach.index(ctx),
             ast::Statement::If(r#if) => r#if.index(ctx),
             ast::Statement::Let(r#let) => r#let.index(ctx),
@@ -259,6 +260,14 @@ impl Indexable for ast::Defvar {
         let typ = self.value()?.index(ctx)?;
         let variable = Variable::new(name, typ, VariableKind::Defvar, define_loc);
         ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
+        None
+    }
+}
+
+impl Indexable for ast::Dump {
+    type Output = ();
+    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+        self.value()?.index(ctx);
         None
     }
 }
@@ -506,6 +515,7 @@ impl Indexable for ast::BodyItem {
             ast::BodyItem::FieldLet(field_let) => field_let.index(ctx),
             ast::BodyItem::Assert(assert) => assert.index(ctx),
             ast::BodyItem::Defvar(defvar) => defvar.index(ctx),
+            ast::BodyItem::Dump(dump) => dump.index(ctx),
         }
     }
 }

@@ -11,7 +11,7 @@ expression: "parse(\"a\")"
     [
         SyntaxError {
             range: 0..1,
-            message: "expected class, def, defm, defset, multiclass, let or foreach",
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
         },
     ],
 )

@@ -19,7 +19,7 @@ expression: "parse(\"let\")"
         },
         SyntaxError {
             range: 3..3,
-            message: "expected class, def, defm, defset, multiclass, let or foreach",
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
         },
     ],
 )

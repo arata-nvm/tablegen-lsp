@@ -120,6 +120,11 @@ mod tests {
     }
 
     #[test]
+    fn dump() {
+        insta::assert_debug_snapshot!(parse("dump \"foo\";"));
+    }
+
+    #[test]
     fn foreach() {
         insta::assert_debug_snapshot!(parse(
             "foreach i = [0, 1] in {

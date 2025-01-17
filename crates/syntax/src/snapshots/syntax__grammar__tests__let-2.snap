@@ -30,7 +30,7 @@ expression: "parse(\"let A = 1\")"
         },
         SyntaxError {
             range: 9..9,
-            message: "expected class, def, defm, defset, multiclass, let or foreach",
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
         },
     ],
 )

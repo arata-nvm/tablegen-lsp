@@ -43,7 +43,7 @@ pub(super) fn statement_list(p: &mut Parser, typ: StatementListType) {
     p.finish_node();
 }
 
-// Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Foreach | If | Let | MultiClass
+// Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Dump | Foreach | If | Let | MultiClass
 pub(super) fn statement(p: &mut Parser) {
     match p.peek() {
         T![include] => include(p),
@@ -53,11 +53,12 @@ pub(super) fn statement(p: &mut Parser) {
         T![defm] => defm(p),
         T![defset] => defset(p),
         T![defvar] => defvar(p),
+        T![dump] => dump(p),
         T![foreach] => foreach(p),
         T![if] => r#if(p),
         T![let] => r#let(p),
         T![multiclass] => multi_class(p),
-        _ => p.error_and_eat("expected class, def, defm, defset, multiclass, let or foreach"),
+        _ => p.error_and_eat("expected class, def, defm, defset, dump, multiclass, let or foreach"),
     }
 }
 
@@ -152,16 +153,17 @@ pub(super) fn multi_class_statements(p: &mut Parser) {
     p.finish_node();
 }
 
-// MultiClassStatement ::= Def | Defm | Foreach | Let | If
+// MultiClassStatement ::= Assert | Def | Defm | Dump | Foreach | Let | If
 pub(super) fn multi_class_statement(p: &mut Parser) {
     match p.peek() {
+        T![assert] => r#assert(p),
         T![def] => def(p),
         T![defm] => defm(p),
+        T![dump] => dump(p),
         T![foreach] => foreach(p),
         T![let] => r#let(p),
-        T![assert] => r#assert(p),
         T![if] => r#if(p),
-        _ => p.error_and_eat("expected 'let', 'def', 'defm' or 'foreach' in multiclass body"),
+        _ => p.error_and_eat("expected 'assert', 'def', 'defm', 'dump', 'foreach', 'let', or 'if' in multiclass body"),
     }
 }
 
@@ -192,6 +194,15 @@ pub(super) fn defvar(p: &mut Parser) {
     p.assert(T![defvar]);
     value::identifier(p);
     p.expect(T![=]);
+    value::value(p);
+    p.expect(T![;]);
+    p.finish_node();
+}
+
+// Dump := "dump" Value ";"
+pub(super) fn dump(p: &mut Parser) {
+    p.start_node(SyntaxKind::Dump);
+    p.assert(T![dump]);
     value::value(p);
     p.expect(T![;]);
     p.finish_node();
@@ -381,7 +392,7 @@ pub(super) fn body(p: &mut Parser) {
     p.finish_node();
 }
 
-// BodyItem ::= FieldDef | FieldLet | Defvar | Assert
+// BodyItem ::= FieldDef | FieldLet | Defvar | Assert | Dump
 pub(super) fn body_item(p: &mut Parser) -> bool {
     if p.at_set(&r#type::TYPE_FIRST_TOKENS) || p.at(T![field]) {
         field_def(p);
@@ -392,6 +403,7 @@ pub(super) fn body_item(p: &mut Parser) -> bool {
         T![let] => field_let(p),
         T![defvar] => defvar(p),
         T![assert] => r#assert(p),
+        T![dump] => dump(p),
         _ => return false,
     }
 

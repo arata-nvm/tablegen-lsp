@@ -110,6 +110,7 @@ asts! {
         Defm,
         Defset,
         Defvar,
+        Dump,
         Foreach,
         If,
         Let,
@@ -156,6 +157,9 @@ asts! {
     };
     Defvar {
         name: Identifier,
+        value: Value,
+    };
+    Dump {
         value: Value,
     };
     Foreach {
@@ -221,6 +225,7 @@ asts! {
         FieldLet,
         Defvar,
         Assert,
+        Dump,
     ];
     FieldDef {
         r#type: Type,

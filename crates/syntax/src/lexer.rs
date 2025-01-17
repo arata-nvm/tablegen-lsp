@@ -162,6 +162,7 @@ impl<'a> Lexer<'a> {
             "defm" => T![defm],
             "defset" => T![defset],
             "defvar" => T![defvar],
+            "dump" => T![dump],
             "else" => T![else],
             "field" => T![field],
             "foreach" => T![foreach],
@@ -361,7 +362,7 @@ mod tests {
     #[test]
     fn keyword() {
         insta::assert_debug_snapshot!(tokenize(
-            "assert bit bits class code dag def defm defset defvar else field foreach if in include int let list multiclass string then"
+            "assert bit bits class code dag def defm defset defvar dump else field foreach if in include int let list multiclass string then"
         ));
     }
 

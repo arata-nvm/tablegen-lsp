@@ -1,6 +1,6 @@
 SourceFile ::= StatementList
 StatementList ::= Statement*
-Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Foreach | If | Let | MultiClass
+Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Dump | Foreach | If | Let | MultiClass
 
 Include ::= "include" String
 
@@ -13,13 +13,15 @@ LetList ::= LetItem ( "," LetItem )*
 LetItem ::= Identifier ( "<" RangeList ">" )? "=" Value
 
 MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList "{" MultiClassStatement+ "}"
-MultiClassStatement ::= Def | Defm | Foreach | Let | If
+MultiClassStatement ::= Assert | Def | Defm | Dump | Foreach | Let | If
 
 Defm ::= "defm" Value? ParentClassList ";"
 
 Defset ::= "defset" Type Identifier "=" "{" Statement* "}"
 
 Defvar ::= "defvar" Identifier "=" Value ";"
+
+Dump ::= "dump" Value ";"
 
 Foreach ::= "foreach" ForeachIterator "in" ( "{" Statement* "}" | Statement )
 ForeachIterator ::= Identifier "=" ForeachIteratorInit

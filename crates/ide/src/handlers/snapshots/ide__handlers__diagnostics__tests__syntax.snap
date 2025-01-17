@@ -13,7 +13,7 @@ expression: diags
                 ),
                 range: 0..4,
             },
-            message: "expected class, def, defm, defset, multiclass, let or foreach",
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
         },
     ],
 }
