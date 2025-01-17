@@ -5,11 +5,13 @@ expression: "check(\"class Foo<int a = t$\")"
 [
     CompletionItem {
         label: "false",
+        insert_text_snippet: None,
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "true",
+        insert_text_snippet: None,
         detail: "",
         kind: Keyword,
     },

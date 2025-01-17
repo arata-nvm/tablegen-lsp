@@ -150,7 +150,7 @@ impl CompletionContext {
             self.items.push(CompletionItem::new_simple(
                 value,
                 "",
-                CompletionItemKind::Class,
+                CompletionItemKind::Keyword,
             ));
         }
     }

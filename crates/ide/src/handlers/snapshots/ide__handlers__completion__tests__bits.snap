@@ -1,6 +1,6 @@
 ---
 source: crates/ide/src/handlers/completion.rs
-expression: "check(\"c$\")"
+expression: "check(\"bits$\")"
 ---
 [
     CompletionItem {

@@ -5,36 +5,47 @@ expression: "check(\"class Foo<i$\")"
 [
     CompletionItem {
         label: "bit",
-        detail: "",
-        kind: Type,
-    },
-    CompletionItem {
-        label: "bits",
+        insert_text_snippet: None,
         detail: "",
         kind: Type,
     },
     CompletionItem {
         label: "code",
+        insert_text_snippet: None,
         detail: "",
         kind: Type,
     },
     CompletionItem {
         label: "dag",
+        insert_text_snippet: None,
         detail: "",
         kind: Type,
     },
     CompletionItem {
         label: "int",
-        detail: "",
-        kind: Type,
-    },
-    CompletionItem {
-        label: "list",
+        insert_text_snippet: None,
         detail: "",
         kind: Type,
     },
     CompletionItem {
         label: "string",
+        insert_text_snippet: None,
+        detail: "",
+        kind: Type,
+    },
+    CompletionItem {
+        label: "bits",
+        insert_text_snippet: Some(
+            "bits<$1> $0",
+        ),
+        detail: "",
+        kind: Type,
+    },
+    CompletionItem {
+        label: "list",
+        insert_text_snippet: Some(
+            "list<$1> $0",
+        ),
         detail: "",
         kind: Type,
     },
