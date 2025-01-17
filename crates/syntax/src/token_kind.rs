@@ -103,6 +103,7 @@ pub enum TokenKind {
     XGetDagName,
     XSetDagArg,
     XSetDagName,
+    XRepr,
 
     // Literals
     TrueVal,
@@ -184,6 +185,7 @@ impl TokenKind {
                 | Self::XGetDagName
                 | Self::XSetDagArg
                 | Self::XSetDagName
+                | Self::XRepr
         )
     }
 
@@ -287,6 +289,7 @@ macro_rules! T {
     [!getdagname] => {$crate::token_kind::TokenKind::XGetDagName};
     [!setdagarg] => {$crate::token_kind::TokenKind::XSetDagArg};
     [!setdagname] => {$crate::token_kind::TokenKind::XSetDagName};
+    [!repr] => {$crate::token_kind::TokenKind::XRepr};
 
     [true] => {$crate::token_kind::TokenKind::TrueVal};
     [false] => {$crate::token_kind::TokenKind::FalseVal};

@@ -173,6 +173,7 @@ pub enum SyntaxKind {
     XGetDagName,
     XSetDagArg,
     XSetDagName,
+    XRepr,
 
     // Literals
     TrueVal,
@@ -301,6 +302,7 @@ impl From<TokenKind> for rowan::SyntaxKind {
             TokenKind::XGetDagName => SyntaxKind::XGetDagName,
             TokenKind::XSetDagArg => SyntaxKind::XSetDagArg,
             TokenKind::XSetDagName => SyntaxKind::XSetDagName,
+            TokenKind::XRepr => SyntaxKind::XRepr,
 
             TokenKind::TrueVal => SyntaxKind::TrueVal,
             TokenKind::FalseVal => SyntaxKind::FalseVal,

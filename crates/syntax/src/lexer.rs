@@ -268,6 +268,7 @@ impl<'a> Lexer<'a> {
             "getdagname" => T![!getdagname],
             "setdagarg" => T![!setdagarg],
             "setdagname" => T![!setdagname],
+            "repr" => T![!repr],
             _ => self.error("Unknown operator"),
         }
     }
@@ -369,7 +370,7 @@ mod tests {
     #[test]
     fn bangoperator() {
         insta::assert_debug_snapshot!(tokenize(
-          "!concat !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listsplat !strconcat !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname"
+          "!concat !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listsplat !strconcat !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !repr"
         ));
     }
 
