@@ -159,6 +159,7 @@ pub(super) fn multi_class_statement(p: &mut Parser) {
         T![defm] => defm(p),
         T![foreach] => foreach(p),
         T![let] => r#let(p),
+        T![assert] => r#assert(p),
         _ => p.error_and_eat("expected 'let', 'def', 'defm' or 'foreach' in multiclass body"),
     }
 }
