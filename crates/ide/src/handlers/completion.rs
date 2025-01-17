@@ -242,12 +242,17 @@ mod tests {
 
     fn check(s: &str) -> Vec<CompletionItem> {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.marker(0), None).expect("completion failed")
+        let mut result = super::exec(&db, f.marker(0), None).expect("completion failed");
+        result.sort_by(|a, b| a.label.cmp(&b.label));
+        result
     }
 
     fn check_trigger(s: &str, trigger_char: impl Into<String>) -> Vec<CompletionItem> {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.marker(0), Some(trigger_char.into())).expect("completion failed")
+        let mut result =
+            super::exec(&db, f.marker(0), Some(trigger_char.into())).expect("completion failed");
+        result.sort_by(|a, b| a.label.cmp(&b.label));
+        result
     }
 
     #[test]

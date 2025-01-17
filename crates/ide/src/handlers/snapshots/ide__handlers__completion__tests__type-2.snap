@@ -4,17 +4,17 @@ expression: "check(\"class Foo<int a>; class Bar : Foo$;\")"
 ---
 [
     CompletionItem {
-        label: "Foo",
+        label: "Bar",
         insert_text_snippet: Some(
-            "Foo<${1}>$0",
+            "Bar<>$0",
         ),
         detail: "",
         kind: Class,
     },
     CompletionItem {
-        label: "Bar",
+        label: "Foo",
         insert_text_snippet: Some(
-            "Bar<>$0",
+            "Foo<${1}>$0",
         ),
         detail: "",
         kind: Class,

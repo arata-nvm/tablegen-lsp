@@ -10,6 +10,14 @@ expression: "check(\"class Foo<i$\")"
         kind: Type,
     },
     CompletionItem {
+        label: "bits",
+        insert_text_snippet: Some(
+            "bits<$1> $0",
+        ),
+        detail: "",
+        kind: Type,
+    },
+    CompletionItem {
         label: "code",
         insert_text_snippet: None,
         detail: "",
@@ -28,24 +36,16 @@ expression: "check(\"class Foo<i$\")"
         kind: Type,
     },
     CompletionItem {
-        label: "string",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Type,
-    },
-    CompletionItem {
-        label: "bits",
-        insert_text_snippet: Some(
-            "bits<$1> $0",
-        ),
-        detail: "",
-        kind: Type,
-    },
-    CompletionItem {
         label: "list",
         insert_text_snippet: Some(
             "list<$1> $0",
         ),
+        detail: "",
+        kind: Type,
+    },
+    CompletionItem {
+        label: "string",
+        insert_text_snippet: None,
         detail: "",
         kind: Type,
     },
