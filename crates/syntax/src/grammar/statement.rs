@@ -152,7 +152,7 @@ pub(super) fn multi_class_statements(p: &mut Parser) {
     p.finish_node();
 }
 
-// MultiClassStatement ::= Def | Defm | Foreach | Let
+// MultiClassStatement ::= Def | Defm | Foreach | Let | If
 pub(super) fn multi_class_statement(p: &mut Parser) {
     match p.peek() {
         T![def] => def(p),
@@ -160,6 +160,7 @@ pub(super) fn multi_class_statement(p: &mut Parser) {
         T![foreach] => foreach(p),
         T![let] => r#let(p),
         T![assert] => r#assert(p),
+        T![if] => r#if(p),
         _ => p.error_and_eat("expected 'let', 'def', 'defm' or 'foreach' in multiclass body"),
     }
 }

@@ -13,7 +13,7 @@ LetList ::= LetItem ( "," LetItem )*
 LetItem ::= Identifier ( "<" RangeList ">" )? "=" Value
 
 MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList "{" MultiClassStatement+ "}"
-MultiClassStatement ::= Def | Defm | Foreach | Let
+MultiClassStatement ::= Def | Defm | Foreach | Let | If
 
 Defm ::= "defm" Value? ParentClassList ";"
 
