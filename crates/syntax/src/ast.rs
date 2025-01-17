@@ -407,7 +407,7 @@ asts! {
         r#type: Type,
         values: [Value],
         pub fn kind(&self) -> Option<SyntaxKind> {
-            Some(self.0.first_token()?.kind())
+            Some(self.0.first_token()?.kind()) // TODO: add BangOperatorKind enum and use it
         }
     };
     CondOperator {
