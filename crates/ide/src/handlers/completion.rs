@@ -77,21 +77,6 @@ impl CompletionContext {
         self.items
     }
 
-    fn add_item(
-        &mut self,
-        label: impl Into<String>,
-        detail: impl Into<String>,
-        kind: CompletionItemKind,
-    ) {
-        self.items.push(CompletionItem::new(label, detail, kind));
-    }
-
-    fn add_items(&mut self, labels: &[&str], kind: CompletionItemKind) {
-        for &label in labels {
-            self.items.push(CompletionItem::new(label, "", kind));
-        }
-    }
-
     fn complete_toplevel_keywords(&mut self) {
         const TOPLEVEL_KEYWORDS: [&str; 12] = [
             "assert",
@@ -108,17 +93,32 @@ impl CompletionContext {
             "multiclass",
         ];
 
-        self.add_items(&TOPLEVEL_KEYWORDS, CompletionItemKind::Keyword);
+        for &keyword in &TOPLEVEL_KEYWORDS {
+            self.items.push(CompletionItem::new_simple(
+                keyword,
+                "",
+                CompletionItemKind::Keyword,
+            ));
+        }
     }
 
     fn complete_primitive_types(&mut self) {
         const PRIMITIVE_TYPES: [&str; 7] = ["bit", "bits", "code", "dag", "int", "list", "string"];
-        self.add_items(&PRIMITIVE_TYPES, CompletionItemKind::Type);
+        for &ty in &PRIMITIVE_TYPES {
+            self.items
+                .push(CompletionItem::new_simple(ty, "", CompletionItemKind::Type));
+        }
     }
 
     fn complete_primitive_values(&mut self) {
         const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
-        self.add_items(&BOOLEAN_VALUES, CompletionItemKind::Keyword);
+        for &value in &BOOLEAN_VALUES {
+            self.items.push(CompletionItem::new_simple(
+                value,
+                "",
+                CompletionItemKind::Class,
+            ));
+        }
     }
 
     fn complete_bang_operators(&mut self) {
@@ -172,13 +172,23 @@ impl CompletionContext {
             "setdagarg",
             "setdagname",
         ];
-        self.add_items(&BANG_OPERATORS, CompletionItemKind::Keyword);
+        for &op in &BANG_OPERATORS {
+            self.items.push(CompletionItem::new_simple(
+                op,
+                "",
+                CompletionItemKind::Keyword,
+            ));
+        }
     }
 
     fn complete_classes(&mut self, symbol_map: &SymbolMap) {
         for record_id in symbol_map.iter_class() {
             let record = symbol_map.record(record_id);
-            self.add_item(record.name.clone(), "class", CompletionItemKind::Class)
+            self.items.push(CompletionItem::new_simple(
+                record.name.clone(),
+                "class",
+                CompletionItemKind::Class,
+            ));
         }
     }
 }
