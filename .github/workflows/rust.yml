@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - uses: actions/cache@v4
         with:
           path: |
@@ -26,8 +24,6 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - uses: dtolnay/rust-toolchain@stable
-      - uses: homebrew/actions/setup-homebrew@master
-      - run: crates/tblgen-rs-alt/tools/setup.sh
       - name: Build
         run: cargo build --verbose
 
@@ -35,8 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - uses: actions/cache@v4
         with:
           path: |
@@ -47,7 +41,5 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - uses: dtolnay/rust-toolchain@stable
-      - uses: homebrew/actions/setup-homebrew@master
-      - run: crates/tblgen-rs-alt/tools/setup.sh
       - name: Run tests
         run: cargo test --verbose
