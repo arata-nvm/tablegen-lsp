@@ -1,13 +1,15 @@
 use ecow::EcoString;
 use syntax::parser::TextRange;
 
-use crate::eval::EvalDatabase;
 use crate::file_system::FileId;
+use crate::index::IndexDatabase;
+use crate::symbol_map::record::RecordKind;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::SymbolMap;
 
-pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
-    let symbol_map = db.symbol_map(file_id);
+pub fn exec(db: &dyn IndexDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
+    let index = db.index();
+    let symbol_map = index.symbol_map();
 
     let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
         tracing::info!("no symbols found in file: {file_id:?}");
@@ -17,7 +19,7 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
     let mut symbols = Vec::new();
     for symbol_id in iter {
         let symbol = symbol_map.symbol(symbol_id);
-        if let Some(document_symbol) = symbol_to_document_symbol(&symbol_map, symbol) {
+        if let Some(document_symbol) = symbol_to_document_symbol(symbol_map, symbol) {
             symbols.push(document_symbol);
         }
     }
@@ -26,62 +28,79 @@ pub fn exec(db: &dyn EvalDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol
 
 fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<DocumentSymbol> {
     match symbol {
-        Symbol::Class(class) => {
-            let template_args = class
+        Symbol::Record(record) if record.kind == RecordKind::Class => {
+            let template_argument_list = record
                 .iter_template_arg()
-                .map(|arg_id| symbol_map.template_arg(arg_id))
+                .map(|id| symbol_map.template_arg(id))
                 .map(|arg| DocumentSymbol {
                     name: arg.name.clone(),
-                    typ: "".into(), // TODO
+                    typ: arg.typ.to_string().into(),
                     range: arg.define_loc.range,
                     kind: DocumentSymbolKind::TemplateArgument,
-                    children: vec![],
+                    children: Vec::new(),
                 });
 
-            let fields = class
+            let field_list = record
                 .iter_field()
-                .map(|field_id| symbol_map.field(field_id))
-                .filter(|field| class.define_loc.range.start() <= field.define_loc.range.start())
+                .map(|id| symbol_map.record_field(id))
                 .map(|field| DocumentSymbol {
                     name: field.name.clone(),
-                    typ: "".into(), // TODO
+                    typ: field.typ.to_string().into(),
                     range: field.define_loc.range,
                     kind: DocumentSymbolKind::Field,
-                    children: vec![],
+                    children: Vec::new(),
                 });
 
-            let children = template_args.chain(fields).collect();
-
             Some(DocumentSymbol {
-                name: class.name.clone(),
+                name: record.name.clone(),
                 typ: "class".into(),
-                range: class.define_loc.range,
+                range: record.define_loc.range,
                 kind: DocumentSymbolKind::Class,
-                children,
+                children: template_argument_list.chain(field_list).collect(),
             })
         }
-        Symbol::Def(def) => {
-            let fields = def
+        Symbol::Record(record) if record.kind == RecordKind::Def => {
+            let field_list = record
                 .iter_field()
-                .map(|field_id| symbol_map.field(field_id))
-                .filter(|field| def.define_loc.range.start() <= field.define_loc.range.start())
+                .map(|id| symbol_map.record_field(id))
                 .map(|field| DocumentSymbol {
                     name: field.name.clone(),
-                    typ: "".into(), // TODO
+                    typ: field.typ.to_string().into(),
                     range: field.define_loc.range,
                     kind: DocumentSymbolKind::Field,
-                    children: vec![],
-                })
-                .collect();
+                    children: Vec::new(),
+                });
 
             Some(DocumentSymbol {
-                name: def.name.clone(),
+                name: record.name.clone(),
                 typ: "def".into(),
-                range: def.define_loc.range,
+                range: record.define_loc.range,
                 kind: DocumentSymbolKind::Def,
-                children: fields,
+                children: field_list.collect(),
             })
         }
+        Symbol::Defset(defset) => {
+            let def_list = defset
+                .def_list
+                .iter()
+                .map(|id| symbol_map.symbol((*id).into()))
+                .filter_map(|symbol| symbol_to_document_symbol(symbol_map, symbol));
+
+            Some(DocumentSymbol {
+                name: defset.name.clone(),
+                typ: "defset".into(),
+                range: defset.define_loc.range,
+                kind: DocumentSymbolKind::Defset,
+                children: def_list.collect(),
+            })
+        }
+        Symbol::Multiclass(multiclass) => Some(DocumentSymbol {
+            name: multiclass.name.clone(),
+            typ: "multiclass".into(),
+            range: multiclass.define_loc.range,
+            kind: DocumentSymbolKind::Multiclass,
+            children: vec![],
+        }),
         _ => None,
     }
 }

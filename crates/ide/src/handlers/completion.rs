@@ -3,7 +3,7 @@ use syntax::{
     syntax_kind::SyntaxKind,
 };
 
-use crate::{db::SourceDatabase, file_system::FilePosition};
+use crate::{file_system::FilePosition, index::IndexDatabase, symbol_map::SymbolMap};
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct CompletionItem {
@@ -26,14 +26,18 @@ impl CompletionItem {
 pub enum CompletionItemKind {
     Keyword,
     Type,
+    Class,
 }
 
 pub fn exec(
-    db: &dyn SourceDatabase,
+    db: &dyn IndexDatabase,
     pos: FilePosition,
     trigger_char: Option<String>,
 ) -> Option<Vec<CompletionItem>> {
     let parse = db.parse(pos.file);
+    let index = db.index();
+    let symbol_map = index.symbol_map();
+
     let root_node = parse.syntax_node();
     let cur_token = root_node.token_at_offset(pos.position).left_biased()?;
     let parent_node = cur_token.parent()?;
@@ -48,6 +52,9 @@ pub fn exec(
     match parent_parent_node.kind() {
         SyntaxKind::StatementList => ctx.complete_toplevel_keywords(),
         SyntaxKind::InnerValue => ctx.complete_primitive_values(),
+        SyntaxKind::ClassRef => {
+            ctx.complete_classes(symbol_map);
+        }
         _ if ast::Type::can_cast(parent_parent_node.kind()) => {
             ctx.complete_primitive_types();
         }
@@ -166,6 +173,13 @@ impl CompletionContext {
             "setdagname",
         ];
         self.add_items(&BANG_OPERATORS, CompletionItemKind::Keyword);
+    }
+
+    fn complete_classes(&mut self, symbol_map: &SymbolMap) {
+        for record_id in symbol_map.iter_class() {
+            let record = symbol_map.record(record_id);
+            self.add_item(record.name.clone(), "class", CompletionItemKind::Class)
+        }
     }
 }
 

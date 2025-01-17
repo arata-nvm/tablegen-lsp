@@ -3,37 +3,32 @@ use id_arena::Id;
 
 use crate::file_system::FileRange;
 
-use super::typ::Type;
+use super::{record::RecordId, typ::Type};
 
-pub type VariableId = Id<Variable>;
+pub type DefsetId = Id<Defset>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Variable {
+pub struct Defset {
     pub name: EcoString,
     pub typ: Type,
-    pub kind: VariableKind,
+    pub def_list: Vec<RecordId>,
 
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum VariableKind {
-    Defvar,
-    Foreach,
-    XFilter,
-    XFoldl,
-    XForeach,
-}
-
-impl Variable {
-    pub fn new(name: EcoString, typ: Type, kind: VariableKind, define_loc: FileRange) -> Self {
+impl Defset {
+    pub fn new(name: EcoString, typ: Type, define_loc: FileRange) -> Self {
         Self {
             name,
             typ,
-            kind,
+            def_list: Vec::new(),
             define_loc,
             reference_locs: Vec::new(),
         }
+    }
+
+    pub fn add_def(&mut self, record_id: RecordId) {
+        self.def_list.push(record_id);
     }
 }

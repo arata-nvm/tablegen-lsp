@@ -5,7 +5,6 @@ edition.workspace = true
 
 [dependencies]
 syntax = { path = "../syntax" }
-tblgen-alt = { path = "../tblgen-rs-alt" }
 ecow.workspace = true
 id-arena.workspace = true
 indexmap.workspace = true

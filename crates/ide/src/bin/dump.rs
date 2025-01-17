@@ -3,7 +3,7 @@ use std::{fs, sync::Arc};
 use ide::{
     analysis::AnalysisHost,
     file_system::{FileId, FilePath, FileSet, FileSystem},
-    symbol_map::symbol::Symbol,
+    symbol_map::{record::RecordKind, symbol::Symbol},
 };
 
 pub fn main() {
@@ -21,16 +21,13 @@ pub fn main() {
     let file_content = vfs.read_content(&file_path).expect("failed to read file");
     host.set_file_content(file_id, Arc::from(file_content.as_str()));
     host.set_root_file(&mut vfs, file_id);
-    host.eval(&mut vfs, file_id);
 
-    let analysis = host.analysis();
-    let diagnostics = analysis.diagnostics();
-    println!("------------- Diagnostics -----------------");
-    for diag in diagnostics {
+    let index = host.analysis().index();
+    for diag in index.diagnostics() {
         println!("{:?}", diag);
     }
 
-    let symbol_map = analysis.symbol_map(file_id);
+    let symbol_map = index.symbol_map();
 
     let iter = symbol_map
         .iter_symbols_in_file(file_id)
@@ -38,29 +35,32 @@ pub fn main() {
 
     println!("------------- Classes -----------------");
     for symbol_id in iter {
-        let Symbol::Class(class) = symbol_map.symbol(symbol_id) else {
+        let Symbol::Record(record) = symbol_map.symbol(symbol_id) else {
             continue;
         };
-        let template_args = class
+        if record.kind != RecordKind::Class {
+            continue;
+        }
+        let template_args = record
             .iter_template_arg()
             .map(|id| symbol_map.template_arg(id))
-            .map(|arg| format!("{}", arg.name))
+            .map(|arg| format!("{} {}", arg.typ, arg.name))
             .collect::<Vec<String>>()
             .join(", ");
-        let parent_classes = class
-            .parent_class_list
+        let parent_classes = record
+            .parent_list
             .iter()
-            .map(|&id| symbol_map.class(id))
+            .map(|&id| symbol_map.record(id))
             .map(|class| format!("{}", class.name))
             .collect::<Vec<String>>()
             .join(", ");
         println!(
-            "class {}<{}> : {} {{ {:?}",
-            class.name, template_args, parent_classes, class.define_loc.range
+            "class {}<{}> : {} {{",
+            record.name, template_args, parent_classes
         );
-        for field_id in class.iter_field() {
-            let field = symbol_map.field(field_id);
-            println!("  {} {:?}", field.name, field.define_loc.range);
+        for field_id in record.iter_field() {
+            let field = symbol_map.record_field(field_id);
+            println!("  {} {};", field.typ, field.name);
         }
         println!("}}");
     }
@@ -71,23 +71,23 @@ pub fn main() {
 
     println!("------------- Defs -----------------");
     for symbol_id in iter {
-        let Symbol::Def(def) = symbol_map.symbol(symbol_id) else {
+        let Symbol::Record(record) = symbol_map.symbol(symbol_id) else {
             continue;
         };
-        let parent_classes = def
-            .parent_class_list
+        if record.kind != RecordKind::Def {
+            continue;
+        }
+        let parent_classes = record
+            .parent_list
             .iter()
-            .map(|&id| symbol_map.class(id))
+            .map(|&id| symbol_map.record(id))
             .map(|class| format!("{}", class.name))
             .collect::<Vec<String>>()
             .join(", ");
-        println!(
-            "def {} {{ // {} {:?}",
-            def.name, parent_classes, def.define_loc.range
-        );
-        for field_id in def.iter_field() {
-            let field = symbol_map.field(field_id);
-            println!("  {} {:?}", field.name, field.define_loc.range);
+        println!("def {} {{ // {}", record.name, parent_classes);
+        for field_id in record.iter_field() {
+            let field = symbol_map.record_field(field_id);
+            println!("  {} {};", field.typ, field.name);
         }
         println!("}}");
     }

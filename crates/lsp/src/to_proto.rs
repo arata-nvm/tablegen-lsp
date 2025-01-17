@@ -3,12 +3,15 @@ use ide::{
     file_system::{FileRange, FileSystem},
     handlers::{
         completion::{CompletionItem, CompletionItemKind},
-        document_symbol::{DocumentSymbol, DocumentSymbolKind},
+        document_symbol::DocumentSymbolKind,
+        hover::Hover,
+        inlay_hint::{InlayHint, InlayHintKind},
     },
 };
 use text_size::{TextRange, TextSize};
 
 use ide::handlers::diagnostics::Diagnostic;
+use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
 
 use crate::vfs::{UrlExt, Vfs};
@@ -78,11 +81,47 @@ pub fn document_symbol(
     }
 }
 
+pub fn hover(hover: Hover) -> lsp_types::Hover {
+    let mut contents = vec![lsp_types::MarkedString::from_language_code(
+        String::from("tablegen"),
+        hover.signature,
+    )];
+    if let Some(document) = hover.document {
+        contents.push(lsp_types::MarkedString::from_markdown(String::from("***")));
+        contents.push(lsp_types::MarkedString::from_markdown(document));
+    }
+
+    lsp_types::Hover {
+        contents: lsp_types::HoverContents::Array(contents),
+        range: None,
+    }
+}
+
+pub fn inlay_hint(line_index: &LineIndex, inlay_hint: InlayHint) -> lsp_types::InlayHint {
+    lsp_types::InlayHint {
+        position: position(line_index, inlay_hint.position),
+        label: lsp_types::InlayHintLabel::String(inlay_hint.label),
+        kind: None,
+        text_edits: None,
+        tooltip: None,
+        padding_left: match inlay_hint.kind {
+            InlayHintKind::TemplateArg => Some(false),
+            InlayHintKind::FieldLet => Some(true),
+        },
+        padding_right: match inlay_hint.kind {
+            InlayHintKind::TemplateArg => Some(true),
+            InlayHintKind::FieldLet => Some(false),
+        },
+        data: None,
+    }
+}
+
 pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
     let mut lsp_item = lsp_types::CompletionItem::new_simple(item.label, item.detail);
     lsp_item.kind = Some(match item.kind {
         CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
         CompletionItemKind::Type => lsp_types::CompletionItemKind::CLASS,
+        CompletionItemKind::Class => lsp_types::CompletionItemKind::CLASS,
     });
     lsp_item
 }

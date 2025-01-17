@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    eval::EvalDatabase,
     file_system::{FileId, FileRange},
+    index::IndexDatabase,
 };
 
-pub fn exec(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
+pub fn exec(db: &dyn IndexDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
     let mut diagnostic_list = Vec::new();
 
     let source_root = db.source_root();
@@ -17,8 +17,8 @@ pub fn exec(db: &dyn EvalDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
         )
     }));
 
-    let diagnostics = db.diagnostics(source_root.root());
-    diagnostic_list.extend_from_slice(&diagnostics);
+    let index = db.index();
+    diagnostic_list.extend(index.diagnostics().iter().cloned());
 
     let mut diagnostic_map = HashMap::new();
     for file_id in db.source_root().iter_files() {

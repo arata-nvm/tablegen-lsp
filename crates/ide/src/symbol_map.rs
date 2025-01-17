@@ -2,60 +2,74 @@ use std::fmt::Debug;
 use std::ops::DerefMut;
 use std::{collections::HashMap, ops::Deref};
 
+use defm::{Defm, DefmId};
+use defset::{Defset, DefsetId};
 use ecow::EcoString;
 use id_arena::Arena;
 
+use multiclass::{Multiclass, MulticlassId};
+use record::{Record, RecordId, RecordKind};
+use record_field::{RecordField, RecordFieldId};
+use symbol::{Symbol, SymbolId, SymbolMut};
 use syntax::parser::{TextRange, TextSize};
+use template_arg::{TemplateArgument, TemplateArgumentId};
+use variable::{Variable, VariableId};
 
 use crate::file_system::{FileId, FilePosition, FileRange};
 
-use self::variable::{Variable, VariableId};
-use self::{
-    class::{Class, ClassId},
-    def::{Def, DefId},
-    field::{Field, FieldId},
-    symbol::{Symbol, SymbolId, SymbolMut},
-    template_arg::{TemplateArgument, TemplateArgumentId},
-};
-
-pub mod class;
-pub mod def;
-pub mod expr;
-pub mod field;
-// pub mod record;
+pub mod defm;
+pub mod defset;
+pub mod multiclass;
+pub mod record;
+pub mod record_field;
 pub mod symbol;
 pub mod template_arg;
 pub mod typ;
-pub mod value;
 pub mod variable;
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct SymbolMap {
-    class_list: Arena<Class>,
+    record_list: Arena<Record>,
     template_arg_list: Arena<TemplateArgument>,
-    field_list: Arena<Field>,
-    def_list: Arena<Def>,
+    record_field_list: Arena<RecordField>,
     variable_list: Arena<Variable>,
+    defset_list: Arena<Defset>,
+    multiclass_list: Arena<Multiclass>,
+    defm_list: Arena<Defm>,
 
-    name_to_class: HashMap<EcoString, ClassId>,
-    name_to_def: HashMap<EcoString, DefId>,
-
+    name_to_class: HashMap<EcoString, RecordId>,
+    name_to_def: HashMap<EcoString, RecordId>,
+    name_to_multiclass: HashMap<EcoString, MulticlassId>,
     file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
 }
 
 // immutable api
 impl SymbolMap {
-    pub fn class(&self, class_id: ClassId) -> &Class {
-        self.class_list.get(class_id).expect("invalid class id")
+    pub fn record(&self, record_id: RecordId) -> &Record {
+        self.record_list.get(record_id).expect("invalid record id")
     }
 
-    pub fn class_mut(&mut self, class_id: ClassId) -> &mut Class {
-        self.class_list.get_mut(class_id).expect("invalid class id")
+    pub fn record_mut(&mut self, record_id: RecordId) -> &mut Record {
+        self.record_list
+            .get_mut(record_id)
+            .expect("invalid record id")
     }
 
-    pub fn find_class(&self, name: &EcoString) -> Option<ClassId> {
+    pub fn find_class(&self, name: &EcoString) -> Option<RecordId> {
         self.name_to_class.get(name).copied()
+    }
+
+    pub fn iter_class(&self) -> impl Iterator<Item = RecordId> + '_ {
+        self.name_to_class.values().copied()
+    }
+
+    pub fn find_def(&self, name: &EcoString) -> Option<RecordId> {
+        self.name_to_def.get(name).copied()
+    }
+
+    pub fn iter_def(&self) -> impl Iterator<Item = RecordId> + '_ {
+        self.name_to_def.values().copied()
     }
 
     pub fn template_arg(&self, template_arg_id: TemplateArgumentId) -> &TemplateArgument {
@@ -73,24 +87,16 @@ impl SymbolMap {
             .expect("invalid template argument id")
     }
 
-    pub fn field(&self, field_id: FieldId) -> &Field {
-        self.field_list.get(field_id).expect("invalid field id")
+    pub fn record_field(&self, record_field_id: RecordFieldId) -> &RecordField {
+        self.record_field_list
+            .get(record_field_id)
+            .expect("invalid record field id")
     }
 
-    pub fn field_mut(&mut self, field_id: FieldId) -> &mut Field {
-        self.field_list.get_mut(field_id).expect("invalid field id")
-    }
-
-    pub fn def(&self, def_id: DefId) -> &Def {
-        self.def_list.get(def_id).expect("invalid def id")
-    }
-
-    pub fn def_mut(&mut self, def_id: DefId) -> &mut Def {
-        self.def_list.get_mut(def_id).expect("invalid def id")
-    }
-
-    pub fn find_def(&self, name: &EcoString) -> Option<DefId> {
-        self.name_to_def.get(name).copied()
+    pub fn record_field_mut(&mut self, record_field_id: RecordFieldId) -> &mut RecordField {
+        self.record_field_list
+            .get_mut(record_field_id)
+            .expect("invalid record field id")
     }
 
     pub fn variable(&self, variable_id: VariableId) -> &Variable {
@@ -105,29 +111,75 @@ impl SymbolMap {
             .expect("invalid variable id")
     }
 
+    pub fn defset(&self, defset_id: DefsetId) -> &Defset {
+        self.defset_list.get(defset_id).expect("invalid defset id")
+    }
+
+    pub fn defset_mut(&mut self, defset_id: DefsetId) -> &mut Defset {
+        self.defset_list
+            .get_mut(defset_id)
+            .expect("invalid defset id")
+    }
+
+    pub fn multiclass(&self, multiclass_id: MulticlassId) -> &Multiclass {
+        self.multiclass_list
+            .get(multiclass_id)
+            .expect("invalid multiclass id")
+    }
+
+    pub fn multiclass_mut(&mut self, multiclass_id: MulticlassId) -> &mut Multiclass {
+        self.multiclass_list
+            .get_mut(multiclass_id)
+            .expect("invalid multiclass id")
+    }
+
+    pub fn find_multiclass(&self, name: &EcoString) -> Option<MulticlassId> {
+        self.name_to_multiclass.get(name).copied()
+    }
+
+    pub fn defm(&self, defm_id: DefmId) -> &Defm {
+        self.defm_list.get(defm_id).expect("invalid defm id")
+    }
+
+    pub fn defm_mut(&mut self, defm_id: DefmId) -> &mut Defm {
+        self.defm_list.get_mut(defm_id).expect("invalid defm id")
+    }
+
     pub fn symbol(&self, id: SymbolId) -> Symbol {
         match id {
-            SymbolId::ClassId(class_id) => Symbol::Class(self.class(class_id)),
+            SymbolId::RecordId(record_id) => Symbol::Record(self.record(record_id)),
             SymbolId::TemplateArgumentId(template_arg_id) => {
                 Symbol::TemplateArgument(self.template_arg(template_arg_id))
             }
-            SymbolId::FieldId(field_id) => Symbol::Field(self.field(field_id)),
-            SymbolId::DefId(def_id) => Symbol::Def(self.def(def_id)),
+            SymbolId::RecordFieldId(record_field_id) => {
+                Symbol::RecordField(self.record_field(record_field_id))
+            }
             SymbolId::VariableId(variable_id) => Symbol::Variable(self.variable(variable_id)),
+            SymbolId::DefsetId(defset_id) => Symbol::Defset(self.defset(defset_id)),
+            SymbolId::MulticlassId(multiclass_id) => {
+                Symbol::Multiclass(self.multiclass(multiclass_id))
+            }
+            SymbolId::DefmId(defm_id) => Symbol::Defm(self.defm(defm_id)),
         }
     }
 
     pub fn symbol_mut(&mut self, id: SymbolId) -> SymbolMut {
         match id {
-            SymbolId::ClassId(class_id) => SymbolMut::Class(self.class_mut(class_id)),
+            SymbolId::RecordId(record_id) => SymbolMut::Record(self.record_mut(record_id)),
             SymbolId::TemplateArgumentId(template_arg_id) => {
                 SymbolMut::TemplateArgument(self.template_arg_mut(template_arg_id))
             }
-            SymbolId::FieldId(field_id) => SymbolMut::Field(self.field_mut(field_id)),
-            SymbolId::DefId(def_id) => SymbolMut::Def(self.def_mut(def_id)),
+            SymbolId::RecordFieldId(record_field_id) => {
+                SymbolMut::RecordField(self.record_field_mut(record_field_id))
+            }
             SymbolId::VariableId(variable_id) => {
                 SymbolMut::Variable(self.variable_mut(variable_id))
             }
+            SymbolId::DefsetId(defset_id) => SymbolMut::Defset(self.defset_mut(defset_id)),
+            SymbolId::MulticlassId(multiclass_id) => {
+                SymbolMut::Multiclass(self.multiclass_mut(multiclass_id))
+            }
+            SymbolId::DefmId(defm_id) => SymbolMut::Defm(self.defm_mut(defm_id)),
         }
     }
 
@@ -162,17 +214,32 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
-    pub fn add_class(&mut self, class: Class) -> ClassId {
-        let name = class.name.clone();
-        let define_loc = class.define_loc;
-        let id = self.class_list.alloc(class);
-        self.name_to_class.insert(name, id);
-        self.file_to_symbol_list
-            .entry(define_loc.file)
-            .or_default()
-            .push(id.into());
+    pub fn add_record(&mut self, record: Record, is_global: bool) -> RecordId {
+        let name = record.name.clone();
+        let define_loc = record.define_loc;
+        let kind = record.kind.clone();
+        let id = self.record_list.alloc(record);
+        match kind {
+            RecordKind::Class => {
+                self.name_to_class.insert(name, id);
+            }
+            RecordKind::Def => {
+                self.name_to_def.insert(name, id);
+            }
+        }
+        if is_global {
+            self.file_to_symbol_list
+                .entry(define_loc.file)
+                .or_default()
+                .push(id.into());
+        }
         self.add_to_pos_to_symbol_map(define_loc, id);
         id
+    }
+
+    pub fn add_anonymous_def(&mut self, record: Record) -> RecordId {
+        assert!(record.kind == RecordKind::Def);
+        self.record_list.alloc(record)
     }
 
     pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
@@ -182,40 +249,11 @@ impl SymbolMap {
         id
     }
 
-    pub fn add_field(&mut self, field: Field) -> FieldId {
-        let define_loc = field.define_loc;
-        let id = self.field_list.alloc(field);
+    pub fn add_record_field(&mut self, record_field: RecordField) -> RecordFieldId {
+        let define_loc = record_field.define_loc;
+        let id = self.record_field_list.alloc(record_field);
         self.add_to_pos_to_symbol_map(define_loc, id);
         id
-    }
-
-    pub fn add_def(&mut self, def: Def) -> DefId {
-        let name = def.name.clone();
-        let define_loc = def.define_loc;
-        let id = self.def_list.alloc(def);
-        self.name_to_def.insert(name, id);
-        self.file_to_symbol_list
-            .entry(define_loc.file)
-            .or_default()
-            .push(id.into());
-        self.add_to_pos_to_symbol_map(define_loc, id);
-        id
-    }
-
-    pub fn replace_def(&mut self, id: DefId, mut new_def: Def) {
-        let def_ref = self.def_mut(id);
-
-        new_def.reference_locs.clone_from(&def_ref.reference_locs);
-
-        assert!(def_ref.name == new_def.name);
-        let _ = std::mem::replace(def_ref, new_def);
-    }
-
-    pub fn add_reference(&mut self, symbol_id: impl Into<SymbolId>, reference_loc: FileRange) {
-        let symbol_id = symbol_id.into();
-        let mut symbol = self.symbol_mut(symbol_id);
-        symbol.add_reference(reference_loc);
-        self.add_to_pos_to_symbol_map(reference_loc, symbol_id);
     }
 
     pub fn add_variable(&mut self, variable: Variable) -> VariableId {
@@ -225,7 +263,56 @@ impl SymbolMap {
             .entry(define_loc.file)
             .or_default()
             .push(id.into());
+        self.add_to_pos_to_symbol_map(define_loc, id);
         id
+    }
+
+    pub fn add_defset(&mut self, defset: Defset) -> DefsetId {
+        let define_loc = defset.define_loc;
+        let id = self.defset_list.alloc(defset);
+        self.file_to_symbol_list
+            .entry(define_loc.file)
+            .or_default()
+            .push(id.into());
+        self.add_to_pos_to_symbol_map(define_loc, id);
+        id
+    }
+
+    pub fn add_multiclass(&mut self, multiclass: Multiclass) -> MulticlassId {
+        let name = multiclass.name.clone();
+        let define_loc = multiclass.define_loc;
+        let id = self.multiclass_list.alloc(multiclass);
+        self.name_to_multiclass.insert(name, id);
+        self.file_to_symbol_list
+            .entry(define_loc.file)
+            .or_default()
+            .push(id.into());
+        self.add_to_pos_to_symbol_map(define_loc, id);
+        id
+    }
+
+    pub fn add_defm(&mut self, defm: Defm, is_global: bool) -> DefmId {
+        let define_loc = defm.define_loc;
+        let id = self.defm_list.alloc(defm);
+        if is_global {
+            self.file_to_symbol_list
+                .entry(define_loc.file)
+                .or_default()
+                .push(id.into());
+        }
+        self.add_to_pos_to_symbol_map(define_loc, id);
+        id
+    }
+
+    pub fn add_anonymous_defm(&mut self, defm: Defm) -> DefmId {
+        self.defm_list.alloc(defm)
+    }
+
+    pub fn add_reference(&mut self, symbol_id: impl Into<SymbolId>, reference_loc: FileRange) {
+        let symbol_id = symbol_id.into();
+        let mut symbol = self.symbol_mut(symbol_id);
+        symbol.add_reference(reference_loc);
+        self.add_to_pos_to_symbol_map(reference_loc, symbol_id);
     }
 
     fn add_to_pos_to_symbol_map(&mut self, loc: FileRange, symbol_id: impl Into<SymbolId>) {
