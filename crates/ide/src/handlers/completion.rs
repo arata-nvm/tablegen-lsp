@@ -258,6 +258,7 @@ mod tests {
     #[test]
     fn r#type() {
         insta::assert_debug_snapshot!(check("class Foo<i$"));
+        insta::assert_debug_snapshot!(check("class Foo<int a>; class Bar : Foo$;"));
     }
 
     #[test]
