@@ -218,9 +218,16 @@ impl CompletionContext {
     fn complete_classes(&mut self, symbol_map: &SymbolMap) {
         for record_id in symbol_map.iter_class() {
             let record = symbol_map.record(record_id);
-            self.items.push(CompletionItem::new_simple(
+            let arg_snippet = record
+                .iter_template_arg()
+                .enumerate()
+                .map(|(i, _)| format!("${{{}}}", i + 1))
+                .collect::<Vec<_>>()
+                .join(", ");
+            self.items.push(CompletionItem::new_snippet(
                 record.name.clone(),
-                "class",
+                format!("{}<{}>$0", record.name, arg_snippet),
+                "",
                 CompletionItemKind::Class,
             ));
         }
