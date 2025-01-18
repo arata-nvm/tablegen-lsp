@@ -446,22 +446,49 @@ impl Indexable for ast::ParentClassList {
 
 fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> Option<RecordId> {
     let (name, reference_loc) = utils::identifier(&class_ref.name()?, ctx)?;
-    let class_id = match ctx.symbol_map.find_class(&name) {
-        Some(class_id) => {
-            ctx.symbol_map.add_reference(class_id, reference_loc);
-            Some(class_id)
-        }
-        None => {
-            ctx.error(reference_loc.range, format!("class not found: {name}"));
-            None
-        }
+    let Some(class_id) = ctx.symbol_map.find_class(&name) else {
+        ctx.error(reference_loc.range, format!("class not found: {name}"));
+        return None;
     };
+    ctx.symbol_map.add_reference(class_id, reference_loc);
 
-    if let Some(arg_value_list) = class_ref.arg_value_list() {
-        arg_value_list.index(ctx);
+    let arg_value_types = class_ref
+        .arg_value_list()
+        .and_then(|it| it.index(ctx))
+        .unwrap_or_default();
+
+    let class = ctx.symbol_map.record(class_id);
+    let class_args: Vec<(EcoString, Type)> = class
+        .iter_template_arg()
+        .map(|id| ctx.symbol_map.template_arg(id))
+        .map(|arg| (arg.name.clone(), arg.typ.clone()))
+        .collect();
+
+    if class_args.len() != arg_value_types.len() {
+        ctx.error(
+            class_ref.syntax().text_range(),
+            format!(
+                "expected {} arguments, found {}",
+                class_args.len(),
+                arg_value_types.len()
+            ),
+        );
+        return Some(class_id);
     }
 
-    class_id
+    for ((class_arg_name, class_arg_type), arg_value_type) in
+        class_args.into_iter().zip(arg_value_types.into_iter())
+    {
+        if !class_arg_type.isa(&arg_value_type) {
+            ctx.error(
+				class_ref.syntax().text_range(),
+				format!("value specified for template argument '{class_arg_name}' is of type {arg_value_type}; expected type {class_arg_type}",
+				),
+			);
+        }
+    }
+
+    Some(class_id)
 }
 
 fn resolve_class_ref_as_multiclass(
@@ -488,12 +515,12 @@ fn resolve_class_ref_as_multiclass(
 }
 
 impl Indexable for ast::ArgValueList {
-    type Output = ();
+    type Output = Vec<Type>;
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        for value in self.positional()?.values() {
-            value.index(ctx);
-        }
-        None
+        self.positional()?
+            .values()
+            .map(|value| value.index(ctx))
+            .collect()
     }
 }
 
