@@ -496,22 +496,49 @@ fn resolve_class_ref_as_multiclass(
     ctx: &mut IndexCtx,
 ) -> Option<MulticlassId> {
     let (name, reference_loc) = utils::identifier(&class_ref.name()?, ctx)?;
-    let multiclass_id = match ctx.symbol_map.find_multiclass(&name) {
-        Some(multiclass_id) => {
-            ctx.symbol_map.add_reference(multiclass_id, reference_loc);
-            Some(multiclass_id)
-        }
-        None => {
-            ctx.error(reference_loc.range, format!("multiclass not found: {name}"));
-            None
-        }
+    let Some(multiclass_id) = ctx.symbol_map.find_multiclass(&name) else {
+        ctx.error(reference_loc.range, format!("multiclass not found: {name}"));
+        return None;
     };
+    ctx.symbol_map.add_reference(multiclass_id, reference_loc);
 
-    if let Some(arg_value_list) = class_ref.arg_value_list() {
-        arg_value_list.index(ctx);
+    let arg_value_types = class_ref
+        .arg_value_list()
+        .and_then(|it| it.index(ctx))
+        .unwrap_or_default();
+
+    let multiclass = ctx.symbol_map.multiclass(multiclass_id);
+    let multiclass_args: Vec<(EcoString, Type)> = multiclass
+        .iter_template_arg()
+        .map(|id| ctx.symbol_map.template_arg(id))
+        .map(|arg| (arg.name.clone(), arg.typ.clone()))
+        .collect();
+
+    if multiclass_args.len() != arg_value_types.len() {
+        ctx.error(
+            class_ref.syntax().text_range(),
+            format!(
+                "expected {} arguments, found {}",
+                multiclass_args.len(),
+                arg_value_types.len()
+            ),
+        );
+        return Some(multiclass_id);
     }
 
-    multiclass_id
+    for ((multiclass_arg_name, multiclass_arg_type), arg_value_type) in
+        multiclass_args.into_iter().zip(arg_value_types.into_iter())
+    {
+        if !multiclass_arg_type.isa(&arg_value_type) {
+            ctx.error(
+				class_ref.syntax().text_range(),
+				format!("value specified for template argument '{multiclass_arg_name}' is of type {arg_value_type}; expected type {multiclass_arg_type}",
+				),
+			);
+        }
+    }
+
+    Some(multiclass_id)
 }
 
 impl Indexable for ast::ArgValueList {
