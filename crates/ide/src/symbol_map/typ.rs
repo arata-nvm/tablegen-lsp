@@ -37,6 +37,9 @@ impl Type {
 
     pub fn isa(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
         match (self, other) {
+            // 指定されたビット幅でIntを表現できない場合はエラーを出す必要がある
+            (Self::Int, Self::Bits(_)) | (Self::Bits(_), Self::Int) => true,
+            (Self::String, Self::Code) | (Self::Code, Self::String) => true,
             (Self::List(self_elm_typ), Self::List(other_elm_typ)) => {
                 self_elm_typ.isa(symbol_map, other_elm_typ)
             }
