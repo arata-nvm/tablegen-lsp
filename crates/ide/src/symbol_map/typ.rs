@@ -35,9 +35,20 @@ impl Type {
         record.find_field(symbol_map, name)
     }
 
-    // TODO
-    pub fn isa(&self, other: &Type) -> bool {
-        self == other
+    pub fn isa(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
+        match (self, other) {
+            (Self::List(self_elm_typ), Self::List(other_elm_typ)) => {
+                self_elm_typ.isa(symbol_map, other_elm_typ)
+            }
+            (Self::Record(self_record_id, _), Self::Record(other_record_id, _)) => {
+                if self_record_id == other_record_id {
+                    return true;
+                }
+                let self_record = symbol_map.record(*self_record_id);
+                self_record.is_subclass_of(symbol_map, *other_record_id)
+            }
+            _ => self == other,
+        }
     }
 }
 

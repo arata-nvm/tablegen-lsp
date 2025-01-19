@@ -479,7 +479,7 @@ fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> 
     for ((class_arg_name, class_arg_type), arg_value_type) in
         class_args.into_iter().zip(arg_value_types.into_iter())
     {
-        if !class_arg_type.isa(&arg_value_type) {
+        if !arg_value_type.isa(&ctx.symbol_map, &class_arg_type) {
             ctx.error(
 				class_ref.syntax().text_range(),
 				format!("value specified for template argument '{class_arg_name}' is of type {arg_value_type}; expected type {class_arg_type}",
@@ -529,7 +529,7 @@ fn resolve_class_ref_as_multiclass(
     for ((multiclass_arg_name, multiclass_arg_type), arg_value_type) in
         multiclass_args.into_iter().zip(arg_value_types.into_iter())
     {
-        if !multiclass_arg_type.isa(&arg_value_type) {
+        if !arg_value_type.isa(&ctx.symbol_map, &multiclass_arg_type) {
             ctx.error(
 				class_ref.syntax().text_range(),
 				format!("value specified for template argument '{multiclass_arg_name}' is of type {arg_value_type}; expected type {multiclass_arg_type}",

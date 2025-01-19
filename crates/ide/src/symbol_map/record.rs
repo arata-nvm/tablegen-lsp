@@ -77,4 +77,19 @@ impl Record {
     pub fn add_parent(&mut self, parent_id: RecordId) {
         self.parent_list.push(parent_id);
     }
+
+    pub fn is_subclass_of(&self, symbol_map: &SymbolMap, other_id: RecordId) -> bool {
+        if self.parent_list.contains(&other_id) {
+            return true;
+        }
+
+        for parent_id in &self.parent_list {
+            let parent = symbol_map.record(*parent_id);
+            if parent.is_subclass_of(symbol_map, other_id) {
+                return true;
+            }
+        }
+
+        false
+    }
 }
