@@ -9,10 +9,12 @@ use crate::handlers::completion::{self, CompletionItem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_link::DocumentLink;
 use crate::handlers::document_symbol::DocumentSymbol;
+use crate::handlers::folding_range::FoldingRange;
 use crate::handlers::hover::Hover;
 use crate::handlers::inlay_hint::InlayHint;
 use crate::handlers::{
-    diagnostics, document_link, document_symbol, goto_definition, hover, inlay_hint, references,
+    diagnostics, document_link, document_symbol, folding_range, goto_definition, hover, inlay_hint,
+    references,
 };
 use crate::index::{Index, IndexDatabase};
 use crate::line_index::LineIndex;
@@ -90,5 +92,9 @@ impl Analysis {
 
     pub fn document_link(&self, file_id: FileId) -> Option<Vec<DocumentLink>> {
         document_link::exec(&*self.db, file_id)
+    }
+
+    pub fn folding_range(&self, file_id: FileId) -> Option<Vec<FoldingRange>> {
+        folding_range::exec(&*self.db, file_id)
     }
 }

@@ -1,0 +1,14 @@
+---
+source: crates/ide/src/handlers/folding_range.rs
+expression: "check(r#\"\nclass Foo {\n  int a;\n}\n\nclass Bar;\n\"#)"
+---
+Some(
+    [
+        FoldingRange {
+            range: 0..22,
+        },
+        FoldingRange {
+            range: 24..34,
+        },
+    ],
+)

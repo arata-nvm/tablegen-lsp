@@ -5,6 +5,7 @@ use ide::{
         completion::{CompletionItem, CompletionItemKind},
         document_link::DocumentLink,
         document_symbol::DocumentSymbolKind,
+        folding_range::FoldingRange,
         hover::Hover,
         inlay_hint::{InlayHint, InlayHintKind},
     },
@@ -141,5 +142,22 @@ pub fn document_link(
         target: Some(UrlExt::from_file_path(vfs.path_for_file(&link.target))),
         tooltip: None,
         data: None,
+    }
+}
+
+pub fn folding_range(line_index: &LineIndex, range: FoldingRange) -> lsp_types::FoldingRange {
+    lsp_types::FoldingRange {
+        start_line: line_index
+            .pos_to_line(range.range.start())
+            .try_into()
+            .unwrap(),
+        start_character: None,
+        end_line: line_index
+            .pos_to_line(range.range.end())
+            .try_into()
+            .unwrap(),
+        end_character: None,
+        kind: Some(lsp_types::FoldingRangeKind::Region),
+        collapsed_text: None,
     }
 }

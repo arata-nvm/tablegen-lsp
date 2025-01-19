@@ -4,7 +4,8 @@ use std::sync::{Arc, RwLock};
 use async_lsp::lsp_types::{
     notification, request, CompletionOptions, CompletionParams, CompletionResponse,
     DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions,
-    DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, GotoDefinitionParams,
+    DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, FoldingRange,
+    FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams,
     GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
     InitializeResult, InlayHint, InlayHintParams, Location, OneOf, PublishDiagnosticsParams,
     ReferenceParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
@@ -46,7 +47,8 @@ impl Server {
             .request::<request::HoverRequest, _>(Self::hover)
             .request::<request::InlayHintRequest, _>(Self::inlay_hint)
             .request::<request::Completion, _>(Self::completion)
-            .request::<request::DocumentLinkRequest, _>(Self::document_link);
+            .request::<request::DocumentLinkRequest, _>(Self::document_link)
+            .request::<request::FoldingRangeRequest, _>(Self::folding_range);
         router
     }
 
@@ -88,6 +90,7 @@ impl LanguageServer for Server {
                     resolve_provider: Some(true),
                     work_done_progress_options: Default::default(),
                 }),
+                folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
                 ..Default::default()
             },
         })))
@@ -227,6 +230,26 @@ impl LanguageServer for Server {
                 .map(|it| to_proto::document_link(&vfs, &line_index, it))
                 .collect();
             Ok(Some(lsp_links))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn folding_range(
+        &mut self,
+        params: FoldingRangeParams,
+    ) -> BoxFuture<'static, Result<Option<Vec<FoldingRange>>, Self::Error>> {
+        tracing::info!("folding_range: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
+            let Some(folding_ranges) = snap.analysis.folding_range(file_id) else {
+                return Ok(None);
+            };
+
+            let lsp_folding_ranges = folding_ranges
+                .into_iter()
+                .map(|it| to_proto::folding_range(&line_index, it))
+                .collect();
+            Ok(Some(lsp_folding_ranges))
         });
         Box::pin(async move { task.await.unwrap() })
     }

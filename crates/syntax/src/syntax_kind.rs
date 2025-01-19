@@ -194,6 +194,15 @@ pub enum SyntaxKind {
     __LAST,
 }
 
+impl SyntaxKind {
+    pub fn is_trivia(&self) -> bool {
+        matches!(
+            self,
+            Self::Whitespace | Self::LineComment | Self::BlockComment | Self::PreProcessor
+        )
+    }
+}
+
 impl From<SyntaxKind> for rowan::SyntaxKind {
     fn from(kind: SyntaxKind) -> Self {
         Self(kind as u16)
