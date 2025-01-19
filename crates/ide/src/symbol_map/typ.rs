@@ -38,7 +38,10 @@ impl Type {
 
     pub fn isa(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
         match (self, other) {
+            (Self::Uninitialized, _) | (_, Self::Uninitialized) => true,
             (Self::Any, _) | (_, Self::Any) => true,
+            // 0,1以外の値の場合はエラーを出す必要がある
+            (Self::Int, Self::Bit) | (Self::Bit, Self::Int) => true,
             // 指定されたビット幅でIntを表現できない場合はエラーを出す必要がある
             (Self::Int, Self::Bits(_)) | (Self::Bits(_), Self::Int) => true,
             (Self::String, Self::Code) | (Self::Code, Self::String) => true,
