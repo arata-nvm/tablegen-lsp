@@ -577,7 +577,6 @@ impl Indexable for ast::BodyItem {
     }
 }
 
-// TODO: check type
 // TODO: check if field is already defined
 impl Indexable for ast::FieldDef {
     type Output = ();
@@ -589,20 +588,24 @@ impl Indexable for ast::FieldDef {
 
         let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
         let typ = self.r#type()?.index(ctx)?;
-        let field = RecordField::new(name.clone(), typ, record_id, define_loc);
+        let field = RecordField::new(name.clone(), typ.clone(), record_id, define_loc);
         let field_id = ctx.symbol_map.add_record_field(field);
 
         let record = ctx.symbol_map.record_mut(record_id);
-        record.add_record_field(name, field_id);
+        record.add_record_field(name.clone(), field_id);
 
-        if let Some(value) = self.value() {
-            value.index(ctx);
+        let value_typ = self.value()?.index(ctx)?;
+        if !value_typ.isa(&ctx.symbol_map, &typ) {
+            ctx.error(
+                self.value()?.syntax().text_range(),
+                format!("field '{name}' of type '{typ}' is incompatible with type '{value_typ}'",),
+            );
         }
+
         None
     }
 }
 
-// TODO: check type
 // TODO: check if field is already defined
 impl Indexable for ast::FieldLet {
     type Output = ();
@@ -617,15 +620,24 @@ impl Indexable for ast::FieldLet {
 
         let field_id = record.find_field(&ctx.symbol_map, &name)?;
         let field = ctx.symbol_map.record_field(field_id);
+        let field_typ = field.typ.clone();
 
-        let new_field = RecordField::new(name.clone(), field.typ.clone(), record_id, reference_loc);
+        let new_field = RecordField::new(name.clone(), field_typ.clone(), record_id, reference_loc);
         let new_field_id = ctx.symbol_map.add_record_field(new_field);
 
         let record = ctx.symbol_map.record_mut(record_id);
-        record.add_record_field(name, new_field_id);
+        record.add_record_field(name.clone(), new_field_id);
         ctx.symbol_map.add_reference(field_id, reference_loc);
 
-        self.value()?.index(ctx);
+        let value_typ = self.value()?.index(ctx)?;
+        if !value_typ.isa(&ctx.symbol_map, &field_typ) {
+            ctx.error(
+                self.value()?.syntax().text_range(),
+                format!(
+                    "field '{name}' of type '{field_typ}' is incompatible with type '{value_typ}'",
+                ),
+            );
+        }
 
         None
     }
