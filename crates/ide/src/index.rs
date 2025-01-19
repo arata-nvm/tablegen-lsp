@@ -798,7 +798,7 @@ impl Indexable for ast::BangOperator {
                 predicate.index(ctx);
                 ctx.scopes.pop();
 
-                None
+                Some(Type::Unknown)
             }
             SyntaxKind::XFoldl => {
                 let mut values_iter = self.values();
@@ -838,7 +838,7 @@ impl Indexable for ast::BangOperator {
                 expr.index(ctx);
                 ctx.scopes.pop();
 
-                None
+                Some(Type::Unknown)
             }
             SyntaxKind::XForEach => {
                 let mut values_iter = self.values();
@@ -863,13 +863,13 @@ impl Indexable for ast::BangOperator {
                 expr.index(ctx);
                 ctx.scopes.pop();
 
-                None
+                Some(Type::Unknown)
             }
             _ => {
                 for value in self.values() {
                     value.index(ctx);
                 }
-                None
+                Some(Type::Unknown)
             }
         }
     }
