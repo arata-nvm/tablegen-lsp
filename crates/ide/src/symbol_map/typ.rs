@@ -15,6 +15,7 @@ pub enum Type {
     Record(RecordId, EcoString),
     Uninitialized,
     Unknown,
+    Any, // for empty list
 }
 
 impl Type {
@@ -37,6 +38,7 @@ impl Type {
 
     pub fn isa(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
         match (self, other) {
+            (Self::Any, _) | (_, Self::Any) => true,
             // 指定されたビット幅でIntを表現できない場合はエラーを出す必要がある
             (Self::Int, Self::Bits(_)) | (Self::Bits(_), Self::Int) => true,
             (Self::String, Self::Code) | (Self::Code, Self::String) => true,
@@ -68,6 +70,7 @@ impl std::fmt::Display for Type {
             Self::Record(_, name) => write!(f, "{}", name),
             Self::Uninitialized => write!(f, "uninitialized"),
             Self::Unknown => write!(f, "unknown"),
+            Self::Any => write!(f, "any"),
         }
     }
 }

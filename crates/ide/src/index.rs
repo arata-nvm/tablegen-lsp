@@ -706,7 +706,10 @@ impl Indexable for ast::SimpleValue {
                     .value_list()?
                     .values()
                     .filter_map(|value| value.index(ctx));
-                value_types.nth(0).map(|typ| Type::List(Box::new(typ)))
+                value_types
+                    .nth(0)
+                    .map(|typ| Type::List(Box::new(typ)))
+                    .or(Some(Type::List(Box::new(Type::Any))))
             }
             ast::SimpleValue::Dag(dag) => {
                 if let Some(value) = dag.operator().and_then(|it| it.value()) {
