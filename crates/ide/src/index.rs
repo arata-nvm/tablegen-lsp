@@ -8,6 +8,7 @@ use ecow::EcoString;
 use scope::ScopeKind;
 use syntax::{
     ast::{self, AstNode},
+    parser::TextRange,
     syntax_kind::SyntaxKind,
     SyntaxNodePtr,
 };
@@ -476,14 +477,13 @@ fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> 
         return Some(class_id);
     }
 
-    for ((class_arg_name, class_arg_type), arg_value_type) in
+    for ((class_arg_name, class_arg_type), (arg_value_type, arg_value_range)) in
         class_args.into_iter().zip(arg_value_types.into_iter())
     {
         if !arg_value_type.isa(&ctx.symbol_map, &class_arg_type) {
             ctx.error(
-				class_ref.syntax().text_range(),
-				format!("value specified for template argument '{class_arg_name}' is of type {arg_value_type}; expected type {class_arg_type}",
-				),
+	            arg_value_range,
+				format!("value specified for template argument '{class_arg_name}' is of type {arg_value_type}; expected type {class_arg_type}"),
 			);
         }
     }
@@ -526,14 +526,13 @@ fn resolve_class_ref_as_multiclass(
         return Some(multiclass_id);
     }
 
-    for ((multiclass_arg_name, multiclass_arg_type), arg_value_type) in
+    for ((multiclass_arg_name, multiclass_arg_type), (arg_value_type, arg_value_range)) in
         multiclass_args.into_iter().zip(arg_value_types.into_iter())
     {
         if !arg_value_type.isa(&ctx.symbol_map, &multiclass_arg_type) {
             ctx.error(
-				class_ref.syntax().text_range(),
-				format!("value specified for template argument '{multiclass_arg_name}' is of type {arg_value_type}; expected type {multiclass_arg_type}",
-				),
+	            arg_value_range,
+				format!("value specified for template argument '{multiclass_arg_name}' is of type {arg_value_type}; expected type {multiclass_arg_type}"),
 			);
         }
     }
@@ -542,11 +541,15 @@ fn resolve_class_ref_as_multiclass(
 }
 
 impl Indexable for ast::ArgValueList {
-    type Output = Vec<Type>;
+    type Output = Vec<(Type, TextRange)>;
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         self.positional()?
             .values()
-            .map(|value| value.index(ctx))
+            .map(|value| {
+                value
+                    .index(ctx)
+                    .map(|typ| (typ, value.syntax().text_range()))
+            })
             .collect()
     }
 }
