@@ -453,40 +453,24 @@ fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> 
     };
     ctx.symbol_map.add_reference(class_id, reference_loc);
 
-    let arg_value_types = class_ref
-        .arg_value_list()
-        .and_then(|it| it.index(ctx))
-        .unwrap_or_default();
-
     let class = ctx.symbol_map.record(class_id);
-    let class_args: Vec<(EcoString, Type)> = class
+    let template_args = class
         .iter_template_arg()
         .map(|id| ctx.symbol_map.template_arg(id))
         .map(|arg| (arg.name.clone(), arg.typ.clone()))
         .collect();
 
-    if class_args.len() != arg_value_types.len() {
-        ctx.error(
-            class_ref.syntax().text_range(),
-            format!(
-                "expected {} arguments, found {}",
-                class_args.len(),
-                arg_value_types.len()
-            ),
-        );
-        return Some(class_id);
-    }
+    let arg_values = class_ref
+        .arg_value_list()
+        .and_then(|it| it.index(ctx))
+        .unwrap_or_default();
 
-    for ((class_arg_name, class_arg_type), (arg_value_type, arg_value_range)) in
-        class_args.into_iter().zip(arg_value_types.into_iter())
-    {
-        if !arg_value_type.isa(&ctx.symbol_map, &class_arg_type) {
-            ctx.error(
-	            arg_value_range,
-				format!("value specified for template argument '{class_arg_name}' is of type {arg_value_type}; expected type {class_arg_type}"),
-			);
-        }
-    }
+    check_template_args(
+        ctx,
+        template_args,
+        arg_values,
+        class_ref.syntax().text_range(),
+    );
 
     Some(class_id)
 }
@@ -502,42 +486,58 @@ fn resolve_class_ref_as_multiclass(
     };
     ctx.symbol_map.add_reference(multiclass_id, reference_loc);
 
-    let arg_value_types = class_ref
-        .arg_value_list()
-        .and_then(|it| it.index(ctx))
-        .unwrap_or_default();
-
     let multiclass = ctx.symbol_map.multiclass(multiclass_id);
-    let multiclass_args: Vec<(EcoString, Type)> = multiclass
+    let template_args = multiclass
         .iter_template_arg()
         .map(|id| ctx.symbol_map.template_arg(id))
         .map(|arg| (arg.name.clone(), arg.typ.clone()))
         .collect();
 
-    if multiclass_args.len() != arg_value_types.len() {
+    let arg_values = class_ref
+        .arg_value_list()
+        .and_then(|it| it.index(ctx))
+        .unwrap_or_default();
+
+    check_template_args(
+        ctx,
+        template_args,
+        arg_values,
+        class_ref.syntax().text_range(),
+    );
+
+    Some(multiclass_id)
+}
+
+fn check_template_args(
+    ctx: &mut IndexCtx,
+    template_args: Vec<(EcoString, Type)>,
+    arg_values: Vec<(Type, TextRange)>,
+    range: TextRange,
+) {
+    if template_args.len() != arg_values.len() {
         ctx.error(
-            class_ref.syntax().text_range(),
+            range,
             format!(
                 "expected {} arguments, found {}",
-                multiclass_args.len(),
-                arg_value_types.len()
+                template_args.len(),
+                arg_values.len()
             ),
         );
-        return Some(multiclass_id);
+        return;
     }
 
-    for ((multiclass_arg_name, multiclass_arg_type), (arg_value_type, arg_value_range)) in
-        multiclass_args.into_iter().zip(arg_value_types.into_iter())
+    for ((template_arg_name, template_arg_type), (arg_value_type, arg_value_range)) in
+        template_args.into_iter().zip(arg_values.into_iter())
     {
-        if !arg_value_type.isa(&ctx.symbol_map, &multiclass_arg_type) {
+        if !arg_value_type.isa(&ctx.symbol_map, &template_arg_type) {
             ctx.error(
-	            arg_value_range,
-				format!("value specified for template argument '{multiclass_arg_name}' is of type {arg_value_type}; expected type {multiclass_arg_type}"),
+				arg_value_range,
+				format!(
+					"value specified for template argument '{template_arg_name}' is of type {arg_value_type}; expected type {template_arg_type}"
+				),
 			);
         }
     }
-
-    Some(multiclass_id)
 }
 
 impl Indexable for ast::ArgValueList {
@@ -749,16 +749,29 @@ impl Indexable for ast::SimpleValue {
                 }
             }
             ast::SimpleValue::ClassValue(class_value) => {
-                if let Some(arg_value_list) =
-                    class_value.arg_value_list().and_then(|it| it.positional())
-                {
-                    for value in arg_value_list.values() {
-                        value.index(ctx);
-                    }
-                }
                 let (name, reference_loc) = utils::identifier(&class_value.name()?, ctx)?;
                 let class_id = ctx.symbol_map.find_class(&name)?;
                 ctx.symbol_map.add_reference(class_id, reference_loc);
+
+                let class = ctx.symbol_map.record(class_id);
+                let template_args = class
+                    .iter_template_arg()
+                    .map(|id| ctx.symbol_map.template_arg(id))
+                    .map(|arg| (arg.name.clone(), arg.typ.clone()))
+                    .collect();
+
+                let arg_values = class_value
+                    .arg_value_list()
+                    .and_then(|it| it.index(ctx))
+                    .unwrap_or_default();
+
+                check_template_args(
+                    ctx,
+                    template_args,
+                    arg_values,
+                    class_value.syntax().text_range(),
+                );
+
                 Some(Type::Record(class_id, name))
             }
             ast::SimpleValue::BangOperator(bang_operator) => bang_operator.index(ctx),
