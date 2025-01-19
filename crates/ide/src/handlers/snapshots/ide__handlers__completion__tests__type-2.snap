@@ -6,7 +6,7 @@ expression: "check(\"class Foo<int a>; class Bar : Foo$;\")"
     CompletionItem {
         label: "Bar",
         insert_text_snippet: Some(
-            "Bar<>$0",
+            "Bar$0",
         ),
         detail: "",
         kind: Class,

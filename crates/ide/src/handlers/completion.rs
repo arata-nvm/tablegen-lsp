@@ -226,7 +226,15 @@ impl CompletionContext {
                 .join(", ");
             self.items.push(CompletionItem::new_snippet(
                 record.name.clone(),
-                format!("{}<{}>$0", record.name, arg_snippet),
+                format!(
+                    "{}{}$0",
+                    record.name,
+                    if arg_snippet.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!("<{}>", arg_snippet)
+                    }
+                ),
                 "",
                 CompletionItemKind::Class,
             ));
