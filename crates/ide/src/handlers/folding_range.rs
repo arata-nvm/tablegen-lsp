@@ -1,6 +1,6 @@
-use syntax::{parser::TextRange, syntax_kind::SyntaxKind, SyntaxNode};
+use syntax::{parser::TextRange, syntax_kind::SyntaxKind};
 
-use crate::{db::SourceDatabase, file_system::FileId};
+use crate::{db::SourceDatabase, file_system::FileId, utils};
 
 pub fn exec(db: &dyn SourceDatabase, file_id: FileId) -> Option<Vec<FoldingRange>> {
     let parse = db.parse(file_id);
@@ -14,24 +14,12 @@ pub fn exec(db: &dyn SourceDatabase, file_id: FileId) -> Option<Vec<FoldingRange
             | SyntaxKind::Foreach
             | SyntaxKind::If
             | SyntaxKind::Let
-            | SyntaxKind::MultiClass => Some(folding_range(&node)),
+            | SyntaxKind::MultiClass => Some(utils::range_excluding_trivia(&node)),
             _ => None,
         })
         .map(|range| FoldingRange { range })
         .collect();
     Some(ranges)
-}
-
-fn folding_range(node: &SyntaxNode) -> TextRange {
-    let start = node.text_range().start();
-    let mut end_token = node.last_token();
-    while let Some(token) = end_token {
-        if !token.kind().is_trivia() {
-            return TextRange::new(start, token.text_range().end());
-        }
-        end_token = token.prev_token();
-    }
-    TextRange::empty(start)
 }
 
 #[derive(Debug)]

@@ -7,6 +7,7 @@ use syntax::{
 use crate::{
     file_system::{FileId, IncludeId},
     index::IndexDatabase,
+    utils,
 };
 
 pub fn exec(db: &dyn IndexDatabase, file_id: FileId) -> Option<Vec<DocumentLink>> {
@@ -18,7 +19,7 @@ pub fn exec(db: &dyn IndexDatabase, file_id: FileId) -> Option<Vec<DocumentLink>
         .filter_map(|node| {
             let include = ast::Include::cast(node)?;
             let include_id = IncludeId(SyntaxNodePtr::new(include.syntax()));
-            let range = include.path()?.syntax().text_range();
+            let range = utils::range_excluding_trivia(include.path()?.syntax());
             let target = *include_map.get(&include_id)?;
             Some(DocumentLink { range, target })
         })

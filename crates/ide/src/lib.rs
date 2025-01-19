@@ -6,3 +6,4 @@ pub mod index;
 pub mod line_index;
 pub mod symbol_map;
 pub mod tests;
+pub mod utils;
