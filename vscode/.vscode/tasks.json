@@ -4,13 +4,25 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Build Extension",
+			"group": "build",
 			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never"
-			},
+			"script": "compile",
+			"problemMatcher": "$tsc",
+		},
+		{
+			"label": "Build Server (Debug)",
+			"group": "build",
+			"type": "shell",
+			"command": "cargo build --bin lsp",
+			"problemMatcher": "$rustc"
+		},
+		{
+			"label": "Build Server (Debug) and Extension",
+			"dependsOn": [
+				"Build Extension",
+				"Build Server (Debug)"
+			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
