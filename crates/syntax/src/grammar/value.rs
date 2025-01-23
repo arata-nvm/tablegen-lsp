@@ -7,7 +7,7 @@ use crate::{
 
 use super::{delimited, r#type, statement};
 
-pub(super) const VALUE_START: [TokenKind; 61] = [
+pub(super) const VALUE_START: [TokenKind; 63] = [
     TokenKind::IntVal,
     TokenKind::BinaryIntVal,
     TokenKind::StrVal,
@@ -20,7 +20,7 @@ pub(super) const VALUE_START: [TokenKind; 61] = [
     T!['('],
     TokenKind::Id,
     TokenKind::VarName,
-    T![!concat],
+    T![!con],
     T![!add],
     T![!sub],
     T![!mul],
@@ -36,6 +36,7 @@ pub(super) const VALUE_START: [TokenKind; 61] = [
     T![!listconcat],
     T![!listsplat],
     T![!strconcat],
+    T![!initialized],
     T![!interleave],
     T![!substr],
     T![!find],
@@ -69,6 +70,7 @@ pub(super) const VALUE_START: [TokenKind; 61] = [
     T![!getdagname],
     T![!setdagarg],
     T![!setdagname],
+    T![!repr],
 ];
 
 pub(super) fn opt_value(p: &mut Parser) {

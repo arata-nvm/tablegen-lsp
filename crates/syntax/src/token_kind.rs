@@ -54,56 +54,58 @@ pub enum TokenKind {
     Then,
 
     // Bang operators
-    XConcat,
     XAdd,
-    XSub,
-    XMul,
-    XDiv,
-    XNot,
-    XLog2,
     XAnd,
-    XOr,
-    XXor,
-    XSra,
-    XSrl,
-    XShl,
-    XListConcat,
-    XListSplat,
-    XStrConcat,
-    XInterleave,
-    XSubstr,
-    XFind,
     XCast,
-    XSubst,
-    XForEach,
-    XFilter,
-    XFoldl,
-    XHead,
-    XTail,
-    XSize,
-    XEmpty,
-    XIf,
+    XCon,
     XCond,
-    XEq,
-    XIsA,
     XDag,
-    XNe,
-    XLe,
-    XLt,
-    XGe,
-    XGt,
-    XSetDagOp,
-    XGetDagOp,
+    XDiv,
+    XEmpty,
+    XEq,
     XExists,
-    XListRemove,
-    XToLower,
-    XToUpper,
-    XRange,
+    XFilter,
+    XFind,
+    XFoldl,
+    XForEach,
+    XGe,
     XGetDagArg,
     XGetDagName,
+    XGetDagOp,
+    XGt,
+    XHead,
+    XIf,
+    XInitialized,
+    XInterleave,
+    XIsA,
+    XLe,
+    XListConcat,
+    XListFlatten,
+    XListRemove,
+    XListSplat,
+    XLog2,
+    XLt,
+    XMul,
+    XNe,
+    XNot,
+    XOr,
+    XRange,
+    XRepr,
     XSetDagArg,
     XSetDagName,
-    XRepr,
+    XSetDagOp,
+    XShl,
+    XSize,
+    XSra,
+    XSrl,
+    XStrConcat,
+    XSub,
+    XSubst,
+    XSubstr,
+    XTail,
+    XToLower,
+    XToUpper,
+    XXor,
 
     // Literals
     TrueVal,
@@ -137,55 +139,57 @@ impl TokenKind {
     pub fn is_bang_operator(&self) -> bool {
         matches!(
             self,
-            Self::XConcat
-                | Self::XAdd
-                | Self::XSub
-                | Self::XMul
-                | Self::XDiv
-                | Self::XNot
-                | Self::XLog2
+            Self::XAdd
                 | Self::XAnd
-                | Self::XOr
-                | Self::XXor
-                | Self::XSra
-                | Self::XSrl
-                | Self::XShl
-                | Self::XListConcat
-                | Self::XListSplat
-                | Self::XStrConcat
-                | Self::XInterleave
-                | Self::XSubstr
-                | Self::XFind
                 | Self::XCast
-                | Self::XSubst
-                | Self::XForEach
-                | Self::XFilter
-                | Self::XFoldl
-                | Self::XHead
-                | Self::XTail
-                | Self::XSize
-                | Self::XEmpty
-                | Self::XIf
-                | Self::XEq
-                | Self::XIsA
+                | Self::XCon
                 | Self::XDag
-                | Self::XNe
-                | Self::XLe
-                | Self::XLt
-                | Self::XGe
-                | Self::XGt
-                | Self::XSetDagOp
-                | Self::XGetDagOp
+                | Self::XDiv
+                | Self::XEmpty
+                | Self::XEq
                 | Self::XExists
-                | Self::XListRemove
-                | Self::XToLower
-                | Self::XToUpper
-                | Self::XRange
+                | Self::XFilter
+                | Self::XFind
+                | Self::XFoldl
+                | Self::XForEach
+                | Self::XGe
                 | Self::XGetDagArg
                 | Self::XGetDagName
+                | Self::XGetDagOp
+                | Self::XGt
+                | Self::XHead
+                | Self::XIf
+                | Self::XInitialized
+                | Self::XInterleave
+                | Self::XIsA
+                | Self::XLe
+                | Self::XListConcat
+                | Self::XListFlatten
+                | Self::XListRemove
+                | Self::XListSplat
+                | Self::XLog2
+                | Self::XLt
+                | Self::XMul
+                | Self::XNe
+                | Self::XNot
+                | Self::XOr
+                | Self::XRange
+                | Self::XRepr
                 | Self::XSetDagArg
                 | Self::XSetDagName
-                | Self::XRepr
+                | Self::XSetDagOp
+                | Self::XShl
+                | Self::XSize
+                | Self::XSra
+                | Self::XSrl
+                | Self::XStrConcat
+                | Self::XSub
+                | Self::XSubst
+                | Self::XSubstr
+                | Self::XTail
+                | Self::XToLower
+                | Self::XToUpper
+                | Self::XXor
         )
     }
 
@@ -240,56 +244,58 @@ macro_rules! T {
     [string] => {$crate::token_kind::TokenKind::String};
     [then] => {$crate::token_kind::TokenKind::Then};
 
-    [!concat] => {$crate::token_kind::TokenKind::XConcat};
     [!add] => {$crate::token_kind::TokenKind::XAdd};
-    [!sub] => {$crate::token_kind::TokenKind::XSub};
-    [!mul] => {$crate::token_kind::TokenKind::XMul};
-    [!div] => {$crate::token_kind::TokenKind::XDiv};
-    [!not] => {$crate::token_kind::TokenKind::XNot};
-    [!log2] => {$crate::token_kind::TokenKind::XLog2};
     [!and] => {$crate::token_kind::TokenKind::XAnd};
-    [!or] => {$crate::token_kind::TokenKind::XOr};
-    [!xor] => {$crate::token_kind::TokenKind::XXor};
-    [!sra] => {$crate::token_kind::TokenKind::XSra};
-    [!srl] => {$crate::token_kind::TokenKind::XSrl};
-    [!shl] => {$crate::token_kind::TokenKind::XShl};
-    [!listconcat] => {$crate::token_kind::TokenKind::XListConcat};
-    [!listsplat] => {$crate::token_kind::TokenKind::XListSplat};
-    [!strconcat] => {$crate::token_kind::TokenKind::XStrConcat};
-    [!interleave] => {$crate::token_kind::TokenKind::XInterleave};
-    [!substr] => {$crate::token_kind::TokenKind::XSubstr};
-    [!find] => {$crate::token_kind::TokenKind::XFind};
     [!cast] => {$crate::token_kind::TokenKind::XCast};
-    [!subst] => {$crate::token_kind::TokenKind::XSubst};
-    [!foreach] => {$crate::token_kind::TokenKind::XForEach};
-    [!filter] => {$crate::token_kind::TokenKind::XFilter};
-    [!foldl] => {$crate::token_kind::TokenKind::XFoldl};
-    [!head] => {$crate::token_kind::TokenKind::XHead};
-    [!tail] => {$crate::token_kind::TokenKind::XTail};
-    [!size] => {$crate::token_kind::TokenKind::XSize};
-    [!empty] => {$crate::token_kind::TokenKind::XEmpty};
-    [!if] => {$crate::token_kind::TokenKind::XIf};
+    [!con] => {$crate::token_kind::TokenKind::XCon};
     [!cond] => {$crate::token_kind::TokenKind::XCond};
-    [!eq] => {$crate::token_kind::TokenKind::XEq};
-    [!isa] => {$crate::token_kind::TokenKind::XIsA};
     [!dag] => {$crate::token_kind::TokenKind::XDag};
-    [!ne] => {$crate::token_kind::TokenKind::XNe};
-    [!le] => {$crate::token_kind::TokenKind::XLe};
-    [!lt] => {$crate::token_kind::TokenKind::XLt};
-    [!ge] => {$crate::token_kind::TokenKind::XGe};
-    [!gt] => {$crate::token_kind::TokenKind::XGt};
-    [!setdagop] => {$crate::token_kind::TokenKind::XSetDagOp};
-    [!getdagop] => {$crate::token_kind::TokenKind::XGetDagOp};
+    [!div] => {$crate::token_kind::TokenKind::XDiv};
+    [!empty] => {$crate::token_kind::TokenKind::XEmpty};
+    [!eq] => {$crate::token_kind::TokenKind::XEq};
     [!exists] => {$crate::token_kind::TokenKind::XExists};
-    [!listremove] => {$crate::token_kind::TokenKind::XListRemove};
-    [!tolower] => {$crate::token_kind::TokenKind::XToLower};
-    [!toupper] => {$crate::token_kind::TokenKind::XToUpper};
-    [!range] => {$crate::token_kind::TokenKind::XRange};
+    [!filter] => {$crate::token_kind::TokenKind::XFilter};
+    [!find] => {$crate::token_kind::TokenKind::XFind};
+    [!foldl] => {$crate::token_kind::TokenKind::XFoldl};
+    [!foreach] => {$crate::token_kind::TokenKind::XForEach};
+    [!ge] => {$crate::token_kind::TokenKind::XGe};
     [!getdagarg] => {$crate::token_kind::TokenKind::XGetDagArg};
     [!getdagname] => {$crate::token_kind::TokenKind::XGetDagName};
+    [!getdagop] => {$crate::token_kind::TokenKind::XGetDagOp};
+    [!gt] => {$crate::token_kind::TokenKind::XGt};
+    [!head] => {$crate::token_kind::TokenKind::XHead};
+    [!if] => {$crate::token_kind::TokenKind::XIf};
+    [!initialized] => {$crate::token_kind::TokenKind::XInitialized};
+    [!interleave] => {$crate::token_kind::TokenKind::XInterleave};
+    [!isa] => {$crate::token_kind::TokenKind::XIsA};
+    [!le] => {$crate::token_kind::TokenKind::XLe};
+    [!listconcat] => {$crate::token_kind::TokenKind::XListConcat};
+    [!listflatten] => {$crate::token_kind::TokenKind::XListFlatten};
+    [!listremove] => {$crate::token_kind::TokenKind::XListRemove};
+    [!listsplat] => {$crate::token_kind::TokenKind::XListSplat};
+    [!log2] => {$crate::token_kind::TokenKind::XLog2};
+    [!lt] => {$crate::token_kind::TokenKind::XLt};
+    [!mul] => {$crate::token_kind::TokenKind::XMul};
+    [!ne] => {$crate::token_kind::TokenKind::XNe};
+    [!not] => {$crate::token_kind::TokenKind::XNot};
+    [!or] => {$crate::token_kind::TokenKind::XOr};
+    [!range] => {$crate::token_kind::TokenKind::XRange};
+    [!repr] => {$crate::token_kind::TokenKind::XRepr};
     [!setdagarg] => {$crate::token_kind::TokenKind::XSetDagArg};
     [!setdagname] => {$crate::token_kind::TokenKind::XSetDagName};
-    [!repr] => {$crate::token_kind::TokenKind::XRepr};
+    [!setdagop] => {$crate::token_kind::TokenKind::XSetDagOp};
+    [!shl] => {$crate::token_kind::TokenKind::XShl};
+    [!size] => {$crate::token_kind::TokenKind::XSize};
+    [!sra] => {$crate::token_kind::TokenKind::XSra};
+    [!srl] => {$crate::token_kind::TokenKind::XSrl};
+    [!strconcat] => {$crate::token_kind::TokenKind::XStrConcat};
+    [!sub] => {$crate::token_kind::TokenKind::XSub};
+    [!subst] => {$crate::token_kind::TokenKind::XSubst};
+    [!substr] => {$crate::token_kind::TokenKind::XSubstr};
+    [!tail] => {$crate::token_kind::TokenKind::XTail};
+    [!tolower] => {$crate::token_kind::TokenKind::XToLower};
+    [!toupper] => {$crate::token_kind::TokenKind::XToUpper};
+    [!xor] => {$crate::token_kind::TokenKind::XXor};
 
     [true] => {$crate::token_kind::TokenKind::TrueVal};
     [false] => {$crate::token_kind::TokenKind::FalseVal};
