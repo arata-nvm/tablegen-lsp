@@ -1,3 +1,4 @@
+pub mod bang_operator;
 pub mod context;
 pub mod scope;
 
@@ -9,7 +10,6 @@ use scope::ScopeKind;
 use syntax::{
     ast::{self, AstNode},
     parser::TextRange,
-    syntax_kind::SyntaxKind,
     SyntaxNodePtr,
 };
 
@@ -797,110 +797,6 @@ impl Indexable for ast::SimpleValue {
                     }
                 }
                 None
-            }
-        }
-    }
-}
-
-impl Indexable for ast::BangOperator {
-    type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        match self.kind()? {
-            SyntaxKind::XFilter => {
-                let mut values_iter = self.values();
-                let var = values_iter.next()?;
-                let list = values_iter.next()?;
-                let predicate = values_iter.next()?;
-
-                let list_typ = list.index(ctx)?;
-                let var_typ = list_typ.element_typ()?;
-
-                let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
-                    Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
-                    }
-                    _ => return None,
-                };
-
-                ctx.scopes.push(ScopeKind::XFilter);
-                let variable =
-                    Variable::new(var_name, var_typ, VariableKind::XForeach, var_define_loc);
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
-                predicate.index(ctx);
-                ctx.scopes.pop();
-
-                Some(Type::Unknown)
-            }
-            SyntaxKind::XFoldl => {
-                let mut values_iter = self.values();
-                let init = values_iter.next()?;
-                let list = values_iter.next()?;
-                let acc = values_iter.next()?;
-                let var = values_iter.next()?;
-                let expr = values_iter.next()?;
-
-                let init_typ = init.index(ctx)?;
-                let _list_typ = list.index(ctx)?;
-
-                let (acc_name, acc_define_loc) = match acc.inner_values().next()?.simple_value() {
-                    Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
-                    }
-                    _ => return None,
-                };
-                let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
-                    Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
-                    }
-                    _ => return None,
-                };
-
-                ctx.scopes.push(ScopeKind::XFoldl);
-                let variable_acc = Variable::new(
-                    acc_name,
-                    init_typ.clone(),
-                    VariableKind::XFoldl,
-                    acc_define_loc,
-                );
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable_acc);
-                let variable_var =
-                    Variable::new(var_name, init_typ, VariableKind::XFoldl, var_define_loc);
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable_var);
-                expr.index(ctx);
-                ctx.scopes.pop();
-
-                Some(Type::Unknown)
-            }
-            SyntaxKind::XForEach => {
-                let mut values_iter = self.values();
-                let var = values_iter.next()?;
-                let sequence = values_iter.next()?;
-                let expr = values_iter.next()?;
-
-                let sequence_typ = sequence.index(ctx)?;
-                let var_typ = sequence_typ.element_typ()?;
-
-                let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
-                    Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
-                    }
-                    _ => return None,
-                };
-
-                ctx.scopes.push(ScopeKind::XForeach);
-                let variable =
-                    Variable::new(var_name, var_typ, VariableKind::XForeach, var_define_loc);
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
-                expr.index(ctx);
-                ctx.scopes.pop();
-
-                Some(Type::Unknown)
-            }
-            _ => {
-                for value in self.values() {
-                    value.index(ctx);
-                }
-                Some(Type::Unknown)
             }
         }
     }

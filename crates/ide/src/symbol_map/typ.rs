@@ -2,6 +2,18 @@ use ecow::EcoString;
 
 use super::{record::RecordId, record_field::RecordFieldId, SymbolMap};
 
+#[macro_export]
+macro_rules! TY {
+    [bit] => {$crate::symbol_map::typ::Type::Bit};
+    [int] => {$crate::symbol_map::typ::Type::Int};
+    [string] => {$crate::symbol_map::typ::Type::String};
+    [code] => {$crate::symbol_map::typ::Type::Code};
+    [dag] => {$crate::symbol_map::typ::Type::Dag};
+    [bits<$len:tt>] => {$crate::symbol_map::typ::Type::Bits($len)};
+    [list<$elm_typ:tt>] => {$crate::symbol_map::typ::Type::List(Box::new(TY!($elm_typ)))};
+    [?] => {$crate::symbol_map::typ::Type::Uninitialized};
+}
+
 // TODO: Eq and isa may cause confusion
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Type {
@@ -57,6 +69,18 @@ impl Type {
             }
             _ => self == other,
         }
+    }
+
+    pub fn is_bits(&self) -> bool {
+        matches!(self, Self::Bits(_))
+    }
+
+    pub fn is_list(&self) -> bool {
+        matches!(self, Self::List(_))
+    }
+
+    pub fn is_record(&self) -> bool {
+        matches!(self, Self::Record(_, _))
     }
 }
 
