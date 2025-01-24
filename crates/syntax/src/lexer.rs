@@ -248,7 +248,7 @@ impl<'a> Lexer<'a> {
             "listflatten" => T![!listflatten],
             "listremove" => T![!listremove],
             "listsplat" => T![!listsplat],
-            "log2" => T![!log2],
+            "logtwo" => T![!log2],
             "lt" => T![!lt],
             "mul" => T![!mul],
             "ne" => T![!ne],
