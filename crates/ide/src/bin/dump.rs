@@ -29,9 +29,9 @@ pub fn main() {
 
     let symbol_map = index.symbol_map();
 
-    let iter = symbol_map
-        .iter_symbols_in_file(file_id)
-        .expect("failed to get symbols");
+    let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
+        return;
+    };
 
     println!("------------- Classes -----------------");
     for symbol_id in iter {
