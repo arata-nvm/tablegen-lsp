@@ -15,6 +15,7 @@ use super::{context::IndexCtx, scope::ScopeKind, utils, Indexable};
 impl Indexable for ast::BangOperator {
     type Output = Type;
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+        // BangOperatorの種類をenumで表現したい
         match self.kind()? {
             SyntaxKind::XAdd
             | SyntaxKind::XAnd
@@ -26,7 +27,11 @@ impl Indexable for ast::BangOperator {
                 common::index_values_and_check_types(ctx, values, &TY![int]);
                 Some(TY![int])
             }
-            SyntaxKind::XSub | SyntaxKind::XSrl | SyntaxKind::XSra | SyntaxKind::XShl => {
+            SyntaxKind::XDiv
+            | SyntaxKind::XSub
+            | SyntaxKind::XSrl
+            | SyntaxKind::XSra
+            | SyntaxKind::XShl => {
                 common::unexpect_type_annotation(ctx, self);
                 let values = common::expect_values(ctx, self, 2..=2);
                 common::index_values_and_check_types(ctx, values, &TY![int]);
@@ -44,7 +49,7 @@ impl Indexable for ast::BangOperator {
                 common::index_values_and_check_types(ctx, values, &TY![dag]);
                 Some(TY![dag])
             }
-            SyntaxKind::Dag => {
+            SyntaxKind::XDag => {
                 common::unexpect_type_annotation(ctx, self);
                 let values = common::expect_values(ctx, self, 3..=3);
                 let mut value_types = common::index_values(ctx, values).into_iter();
@@ -87,7 +92,7 @@ impl Indexable for ast::BangOperator {
 
                 Some(TY![bit])
             }
-            SyntaxKind::XEq => {
+            SyntaxKind::XEq | SyntaxKind::XNe => {
                 common::unexpect_type_annotation(ctx, self);
                 let values = common::expect_values(ctx, self, 2..=2);
                 let value_types = common::index_values(ctx, values).into_iter();
@@ -253,7 +258,8 @@ impl Indexable for ast::BangOperator {
                 let expr_typ = expr.index(ctx);
                 ctx.scopes.pop();
 
-                Some(expr_typ.unwrap_or(Type::Unknown))
+                let expr_typ = expr_typ.unwrap_or(Type::Unknown);
+                Some(Type::List(Box::new(expr_typ)))
             }
             SyntaxKind::XGe | SyntaxKind::XGt | SyntaxKind::XLe | SyntaxKind::XLt => {
                 common::unexpect_type_annotation(ctx, self);
@@ -364,7 +370,22 @@ impl Indexable for ast::BangOperator {
                     }
                 }
 
-                Some(TY![bit])
+                let Some((_, Some(then_typ))) = value_types.next() else {
+                    return Some(Type::Unknown);
+                };
+                let Some((else_range, Some(else_typ))) = value_types.next() else {
+                    return Some(Type::Unknown);
+                };
+
+                if then_typ.isa(&ctx.symbol_map, &else_typ) {
+                    Some(then_typ)
+                } else {
+                    ctx.error(
+                        else_range,
+                        format!("inconsistent types {then_typ} and {else_typ} for !if"),
+                    );
+                    Some(Type::Unknown)
+                }
             }
             SyntaxKind::XInitialized => {
                 common::unexpect_type_annotation(ctx, self);
@@ -427,7 +448,7 @@ impl Indexable for ast::BangOperator {
                     let Some(typ) = typ else {
                         continue;
                     };
-                    if typ.isa(&ctx.symbol_map, &list1_type) {
+                    if !typ.isa(&ctx.symbol_map, &list1_type) {
                         ctx.error(range, format!("expected {list1_type}, found {typ}"));
                     }
                 }
@@ -471,7 +492,7 @@ impl Indexable for ast::BangOperator {
                 let (list2_range, list2_type) = value_types.next()?;
                 let list2_type = list2_type.clone()?;
 
-                if !list2_type.isa(&ctx.symbol_map, &list1_type.element_typ()?) {
+                if !list2_type.isa(&ctx.symbol_map, &list1_type) {
                     ctx.error(
                         list2_range,
                         format!("expected {list1_type}, found {list2_type}"),
@@ -743,7 +764,7 @@ impl Indexable for ast::BangOperator {
                 }
                 Some(TY![string])
             }
-            _ => unreachable!(),
+            _ => unreachable!("unexpected syntax kind: {:?}", self.kind()),
         }
     }
 }
