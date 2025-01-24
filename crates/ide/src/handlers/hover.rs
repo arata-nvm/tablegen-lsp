@@ -65,14 +65,14 @@ fn extract_symbol_signature(
             )
         }
         Symbol::Variable(variable) => match variable.kind {
-            VariableKind::Defvar => format!("defvar {}", variable.name),
-            VariableKind::Foreach => format!("foreach {}", variable.name),
-            VariableKind::XFilter => format!("!filter {}", variable.name),
-            VariableKind::XFoldl => format!("!foldl {}", variable.name),
-            VariableKind::XForeach => format!("!foreach {}", variable.name),
+            VariableKind::Defvar => format!("{} {}", variable.typ, variable.name),
+            VariableKind::Foreach => format!("{} {}", variable.typ, variable.name),
+            VariableKind::XFilter => format!("{} {}", variable.typ, variable.name),
+            VariableKind::XFoldl => format!("{} {}", variable.typ, variable.name),
+            VariableKind::XForeach => format!("{} {}", variable.typ, variable.name),
         },
         Symbol::Defset(defset) => {
-            format!("defset {}", defset.name)
+            format!("{} {}", defset.typ, defset.name)
         }
         Symbol::Multiclass(multiclass) => {
             format!("multiclass {}", multiclass.name)
