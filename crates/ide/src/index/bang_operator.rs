@@ -123,7 +123,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((range, Some(typ))) = value_types.next() {
                     if !typ.isa(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(range, "expected string, found {typ}");
+                        ctx.error(range, format!("expected string, found {typ}"));
                     }
                 }
 
