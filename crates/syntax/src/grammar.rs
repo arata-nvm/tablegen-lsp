@@ -155,6 +155,9 @@ mod tests {
 
     #[test]
     fn class_ref() {
+        insta::assert_debug_snapshot!(parse("class Foo : Bar<1, 2>;"));
+        insta::assert_debug_snapshot!(parse("class Foo : Bar<A = 1>;"));
+        insta::assert_debug_snapshot!(parse("class Foo : Bar<1, A = 2>;"));
         insta::assert_debug_snapshot!(parse("class Foo : Bar<"));
     }
 

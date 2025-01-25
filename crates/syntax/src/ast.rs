@@ -204,14 +204,14 @@ asts! {
         arg_value_list: ArgValueList,
     };
     ArgValueList {
-        positional: PositionalArgValueList,
-        named: NamedArgValueList,
+        arg_values: [ArgValue],
     };
-    PositionalArgValueList {
-        values: [Value],
-    };
-    NamedArgValueList {
-        values: [NamedArgValue],
+    ArgValue [
+        PositionalArgValue,
+        NamedArgValue,
+    ];
+    PositionalArgValue {
+        value[0]: Value,
     };
     NamedArgValue {
         name[0]: Value,
@@ -487,12 +487,14 @@ mod tests {
         assert!(class_ref.arg_value_list().is_some());
 
         // arg_value_list
-        let list = class_ref.arg_value_list().unwrap();
-        assert!(list.positional().is_some());
+        let arg_values: Vec<ArgValue> = class_ref.arg_value_list().unwrap().arg_values().collect();
+        assert_eq!(arg_values.len(), 1);
 
         // positional_arg_value_list
-        let positional: Vec<Value> = list.positional().unwrap().values().collect();
-        assert_eq!(positional.len(), 1);
+        let ArgValue::PositionalArgValue(positional) = arg_values.first().unwrap() else {
+            panic!();
+        };
+        assert!(positional.value().is_some());
 
         // body
         let items: Vec<BodyItem> = record_body.body().unwrap().items().collect();

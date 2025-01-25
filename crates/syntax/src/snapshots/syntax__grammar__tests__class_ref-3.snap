@@ -1,0 +1,47 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(\"class Foo : Bar<1, A = 2>;\")"
+---
+(
+    SourceFile@0..26
+      StatementList@0..26
+        Class@0..26
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..10
+            Id@6..9 "Foo"
+            Whitespace@9..10 " "
+          RecordBody@10..26
+            ParentClassList@10..25
+              Colon@10..11 ":"
+              Whitespace@11..12 " "
+              ClassRef@12..25
+                Identifier@12..15
+                  Id@12..15 "Bar"
+                Less@15..16 "<"
+                ArgValueList@16..24
+                  PositionalArgValue@16..17
+                    Value@16..17
+                      InnerValue@16..17
+                        Integer@16..17
+                          IntVal@16..17 "1"
+                  Comma@17..18 ","
+                  Whitespace@18..19 " "
+                  NamedArgValue@19..24
+                    Value@19..21
+                      InnerValue@19..21
+                        Identifier@19..21
+                          Id@19..20 "A"
+                          Whitespace@20..21 " "
+                    Equal@21..22 "="
+                    Whitespace@22..23 " "
+                    Value@23..24
+                      InnerValue@23..24
+                        Integer@23..24
+                          IntVal@23..24 "2"
+                Greater@24..25 ">"
+            Body@25..26
+              Semi@25..26 ";"
+    ,
+    [],
+)

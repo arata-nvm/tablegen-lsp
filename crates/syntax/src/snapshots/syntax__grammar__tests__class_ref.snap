@@ -1,31 +1,40 @@
 ---
 source: crates/syntax/src/grammar.rs
-expression: "parse(\"class Foo : Bar<\")"
+expression: "parse(\"class Foo : Bar<1, 2>;\")"
 ---
 (
-    SourceFile@0..16
-      StatementList@0..16
-        Class@0..16
+    SourceFile@0..22
+      StatementList@0..22
+        Class@0..22
           ClassKw@0..5 "class"
           Whitespace@5..6 " "
           Identifier@6..10
             Id@6..9 "Foo"
             Whitespace@9..10 " "
-          RecordBody@10..16
-            ParentClassList@10..16
+          RecordBody@10..22
+            ParentClassList@10..21
               Colon@10..11 ":"
               Whitespace@11..12 " "
-              ClassRef@12..16
+              ClassRef@12..21
                 Identifier@12..15
                   Id@12..15 "Bar"
                 Less@15..16 "<"
-                ArgValueList@16..16
-            Body@16..16
+                ArgValueList@16..20
+                  PositionalArgValue@16..17
+                    Value@16..17
+                      InnerValue@16..17
+                        Integer@16..17
+                          IntVal@16..17 "1"
+                  Comma@17..18 ","
+                  Whitespace@18..19 " "
+                  PositionalArgValue@19..20
+                    Value@19..20
+                      InnerValue@19..20
+                        Integer@19..20
+                          IntVal@19..20 "2"
+                Greater@20..21 ">"
+            Body@21..22
+              Semi@21..22 ";"
     ,
-    [
-        SyntaxError {
-            range: 16..16,
-            message: "expected '>' in template value list",
-        },
-    ],
+    [],
 )

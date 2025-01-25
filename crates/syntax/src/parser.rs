@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use ecow::eco_format;
-use rowan::{GreenNode, GreenNodeBuilder};
+use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
 pub use rowan::{TextRange, TextSize};
 
 use crate::grammar::RECOVER_TOKENS;
@@ -74,8 +74,18 @@ impl<T: TokenStream> ParserBase<T> {
     }
 
     #[inline]
+    pub(crate) fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) {
+        self.builder.start_node_at(checkpoint, kind.into());
+    }
+
+    #[inline]
     pub(crate) fn finish_node(&mut self) {
         self.builder.finish_node();
+    }
+
+    #[inline]
+    pub(crate) fn checkpoint(&self) -> Checkpoint {
+        self.builder.checkpoint()
     }
 
     #[inline]

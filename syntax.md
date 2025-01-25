@@ -37,9 +37,9 @@ TemplateArgDecl ::= Type Identifier ( "=" Value )?
 RecordBody ::= ParentClassList Body
 ParentClassList ::= ( ":" ClassRef ( "," ClassRef )* )?
 ClassRef ::= Identifier ( "<" ArgValueList? ">" )?
-ArgValueList ::= PositionalArgValueList ","? NamedArgValueList
-PositionalArgValueList ::= ( Value ( "," Value )* ) ?
-NamedArgValueList ::= ( NamedArgValue ( "," NamedArgValue )* )?
+ArgValueList ::= ( ArgValue ( "," ArgValue )* )?
+ArgValue ::= PositionalArgValue | NamedArgValue
+PositionalArgValue ::= Value
 NamedArgValue ::= Value "=" Value
 
 Body ::= ";" | "{" BodyItem* "}"

@@ -1,3 +1,5 @@
+use rowan::Checkpoint;
+
 use crate::{
     grammar::{delimited, r#type, value},
     parser::Parser,
@@ -325,51 +327,45 @@ pub(super) fn class_ref(p: &mut Parser) {
     p.finish_node();
 }
 
-// ArgValueList ::= PositionalArgValueList ","? NamedArgValueList
+// ArgValueList ::= ( ArgValue ( "," ArgValue )* )?
 pub(super) fn arg_value_list(p: &mut Parser) {
     p.start_node(SyntaxKind::ArgValueList);
     if p.at_set(&value::VALUE_START) {
-        positional_arg_value_list(p);
-    }
-    // TODO
-    // p.eat_if(T![,]);
-    // if p.at_set(&VALUE_START) {
-    // named_arg_value_list(p);
-    // }
-    p.finish_node();
-}
-
-// PositionalArgValueList ::= ( Value ( "," Value )* ) ?
-pub(super) fn positional_arg_value_list(p: &mut Parser) {
-    p.start_node(SyntaxKind::PositionalArgValueList);
-    while !p.eof() {
-        value::value(p);
-        if !p.eat_if(T![,]) {
-            break;
+        let mut has_named_arg = false;
+        while !p.eof() {
+            arg_value(p, &mut has_named_arg);
+            if !p.eat_if(T![,]) {
+                break;
+            }
         }
     }
     p.finish_node();
 }
 
-// NamedArgValueList ::= ( NamedArgValue ( "," NamedArgValue )* )?
-#[allow(unused)]
-pub(super) fn named_arg_value_list(p: &mut Parser) {
-    p.start_node(SyntaxKind::NamedArgValueList);
-    while !p.eof() {
-        named_arg_value(p);
-        if !p.eat_if(T![,]) {
-            break;
+// ArgValue ::= PositionalArgValue | NamedArgValue
+pub(super) fn arg_value(p: &mut Parser, has_named_arg: &mut bool) {
+    let checkpoint = p.checkpoint();
+    value::value(p);
+    if !p.eat_if(T![=]) {
+        positional_arg_value(p, checkpoint);
+        if *has_named_arg {
+            p.error("positional argument should be put before named argument");
         }
+    } else {
+        named_arg_value(p, checkpoint);
+        *has_named_arg = true;
     }
+}
+
+// PositionalArgValue ::= Value
+pub(super) fn positional_arg_value(p: &mut Parser, checkpoint: Checkpoint) {
+    p.start_node_at(checkpoint, SyntaxKind::PositionalArgValue);
     p.finish_node();
 }
 
 // NamedArgValue ::= Value "=" Value
-#[allow(unused)]
-pub(super) fn named_arg_value(p: &mut Parser) {
-    p.start_node(SyntaxKind::NamedArgValue);
-    value::value(p);
-    p.expect(T![=]);
+pub(super) fn named_arg_value(p: &mut Parser, checkpoint: Checkpoint) {
+    p.start_node_at(checkpoint, SyntaxKind::NamedArgValue);
     value::value(p);
     p.finish_node();
 }

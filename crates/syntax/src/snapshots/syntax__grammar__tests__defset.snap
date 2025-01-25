@@ -41,7 +41,7 @@ expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : 
                       Id@58..62 "Base"
                     Less@62..63 "<"
                     ArgValueList@63..64
-                      PositionalArgValueList@63..64
+                      PositionalArgValue@63..64
                         Value@63..64
                           InnerValue@63..64
                             Integer@63..64
@@ -67,7 +67,7 @@ expression: "parse(\"defset list<Base> BaseList = {\n                def Foo0 : 
                       Id@94..98 "Base"
                     Less@98..99 "<"
                     ArgValueList@99..100
-                      PositionalArgValueList@99..100
+                      PositionalArgValue@99..100
                         Value@99..100
                           InnerValue@99..100
                             Integer@99..100

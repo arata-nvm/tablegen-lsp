@@ -54,7 +54,7 @@ expression: "parse(\"foreach i = {0, 1} in {\n                def Foo # i : Base
                       Id@54..58 "Base"
                     Less@58..59 "<"
                     ArgValueList@59..60
-                      PositionalArgValueList@59..60
+                      PositionalArgValue@59..60
                         Value@59..60
                           InnerValue@59..60
                             Identifier@59..60

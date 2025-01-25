@@ -43,13 +43,14 @@ expression: "parse(\"class Foo<int A, int B = 1>: Bar<A, 2>;\")"
                   Id@29..32 "Bar"
                 Less@32..33 "<"
                 ArgValueList@33..37
-                  PositionalArgValueList@33..37
+                  PositionalArgValue@33..34
                     Value@33..34
                       InnerValue@33..34
                         Identifier@33..34
                           Id@33..34 "A"
-                    Comma@34..35 ","
-                    Whitespace@35..36 " "
+                  Comma@34..35 ","
+                  Whitespace@35..36 " "
+                  PositionalArgValue@36..37
                     Value@36..37
                       InnerValue@36..37
                         Integer@36..37
