@@ -557,7 +557,7 @@ fn check_template_args(
         };
 
         if let Some((arg_name, arg_typ)) = arg_name_typ {
-            if !arg_value_typ.isa(&ctx.symbol_map, arg_typ) {
+            if !arg_value_typ.can_be_casted_to(&ctx.symbol_map, arg_typ) {
                 ctx.error(
 				arg_value_range,
 				format!(
@@ -658,7 +658,7 @@ impl Indexable for ast::FieldDef {
         record.add_record_field(name.clone(), field_id);
 
         let value_typ = self.value()?.index(ctx)?;
-        if !value_typ.isa(&ctx.symbol_map, &typ) {
+        if !value_typ.can_be_casted_to(&ctx.symbol_map, &typ) {
             ctx.error(
                 self.value()?.syntax().text_range(),
                 format!("field '{name}' of type '{typ}' is incompatible with type '{value_typ}'",),
@@ -693,7 +693,7 @@ impl Indexable for ast::FieldLet {
         ctx.symbol_map.add_reference(field_id, reference_loc);
 
         let value_typ = self.value()?.index(ctx)?;
-        if !value_typ.isa(&ctx.symbol_map, &field_typ) {
+        if !value_typ.can_be_casted_to(&ctx.symbol_map, &field_typ) {
             ctx.error(
                 self.value()?.syntax().text_range(),
                 format!(

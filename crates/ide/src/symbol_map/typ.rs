@@ -48,7 +48,7 @@ impl Type {
         record.find_field(symbol_map, name)
     }
 
-    pub fn isa(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
+    pub fn can_be_casted_to(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
         match (self, other) {
             (Self::Uninitialized, _) | (_, Self::Uninitialized) => true,
             (Self::Any, _) | (_, Self::Any) => true,
@@ -58,7 +58,7 @@ impl Type {
             (Self::Int, Self::Bits(_)) | (Self::Bits(_), Self::Int) => true,
             (Self::String, Self::Code) | (Self::Code, Self::String) => true,
             (Self::List(self_elm_typ), Self::List(other_elm_typ)) => {
-                self_elm_typ.isa(symbol_map, other_elm_typ)
+                self_elm_typ.can_be_casted_to(symbol_map, other_elm_typ)
             }
             (Self::Record(self_record_id, _), Self::Record(other_record_id, _)) => {
                 if self_record_id == other_record_id {
