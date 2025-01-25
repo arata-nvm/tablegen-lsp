@@ -72,15 +72,15 @@ impl Type {
     }
 
     pub fn is_bits(&self) -> bool {
-        matches!(self, Self::Bits(_))
+        matches!(self, Self::Bits(_) | Self::Uninitialized)
     }
 
     pub fn is_list(&self) -> bool {
-        matches!(self, Self::List(_))
+        matches!(self, Self::List(_) | Self::Uninitialized)
     }
 
     pub fn is_record(&self) -> bool {
-        matches!(self, Self::Record(_, _))
+        matches!(self, Self::Record(_, _) | Self::Uninitialized)
     }
 }
 
