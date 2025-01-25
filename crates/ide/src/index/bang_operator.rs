@@ -198,7 +198,8 @@ impl Indexable for ast::BangOperator {
                 let expr = values.get(4)?;
 
                 let init_typ = init.index(ctx)?;
-                let _list_typ = list.index(ctx)?;
+                let list_typ = list.index(ctx)?;
+                let list_elm_typ = list_typ.element_typ()?;
 
                 let (acc_name, acc_define_loc) = match acc.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
@@ -221,12 +222,8 @@ impl Indexable for ast::BangOperator {
                     acc_define_loc,
                 );
                 ctx.scopes.add_variable(&mut ctx.symbol_map, variable_acc);
-                let variable_var = Variable::new(
-                    var_name,
-                    init_typ.clone(),
-                    VariableKind::XFoldl,
-                    var_define_loc,
-                );
+                let variable_var =
+                    Variable::new(var_name, list_elm_typ, VariableKind::XFoldl, var_define_loc);
                 ctx.scopes.add_variable(&mut ctx.symbol_map, variable_var);
                 expr.index(ctx);
                 ctx.scopes.pop();
@@ -693,25 +690,36 @@ impl Indexable for ast::BangOperator {
                 let values = common::expect_values(ctx, self, 3..=3);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
-                if let Some((target_range, Some(target_typ))) = value_types.next() {
-                    if !target_typ.isa(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(target_range, format!("expected string, found {target_typ}"));
-                    }
-                }
+                let (target_range, target_typ) = value_types.next()?;
+                let (repl_range, repl_typ) = value_types.next()?;
+                let (value_range, value_typ) = value_types.next()?;
 
-                if let Some((repl_range, Some(repl_typ))) = value_types.next() {
-                    if !repl_typ.isa(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(repl_range, format!("expected string, found {repl_typ}"));
-                    }
-                }
+                let target_typ = target_typ?;
+                let repl_typ = repl_typ?;
+                let value_typ = value_typ?;
 
-                if let Some((value_range, Some(value_typ))) = value_types.next() {
-                    if !value_typ.isa(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(value_range, format!("expected string, found {value_typ}"));
+                if value_typ.isa(&ctx.symbol_map, &TY![string]) || value_typ.is_record() {
+                    if !target_typ.isa(&ctx.symbol_map, &value_typ) {
+                        ctx.error(
+                            target_range,
+                            format!("expected {value_typ}, found {target_typ}"),
+                        );
                     }
-                }
+                    if !repl_typ.isa(&ctx.symbol_map, &value_typ) {
+                        ctx.error(
+                            repl_range,
+                            format!("expected {value_typ}, found {repl_typ}"),
+                        );
+                    }
 
-                Some(TY![string])
+                    Some(value_typ)
+                } else {
+                    ctx.error(
+                        value_range,
+                        format!("expected string or record, found {target_typ}"),
+                    );
+                    None
+                }
             }
             SyntaxKind::XSubstr => {
                 common::unexpect_type_annotation(ctx, self);
