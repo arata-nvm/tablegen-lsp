@@ -97,8 +97,8 @@ fn inlay_hint_class(
     };
 
     let arg_ranges = arg_list
-        .positional()?
-        .values()
+        .arg_values()
+        .take_while(|it| matches!(it, ast::ArgValue::PositionalArgValue(_)))
         .map(|value| value.syntax().text_range());
 
     let template_arg_names = class

@@ -2,7 +2,7 @@ pub mod bang_operator;
 pub mod context;
 pub mod scope;
 
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use context::IndexCtx;
 use ecow::EcoString;
@@ -377,7 +377,8 @@ impl Indexable for ast::TemplateArgDecl {
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
         let typ = self.r#type()?.index(ctx)?;
-        let template_arg = TemplateArgument::new(name.clone(), typ, define_loc);
+        let has_default_value = self.value().is_some();
+        let template_arg = TemplateArgument::new(name.clone(), typ, has_default_value, define_loc);
         let template_arg_id = ctx.symbol_map.add_template_argument(template_arg);
 
         if let Some(record_id) = ctx.scopes.current_record_id() {
@@ -457,7 +458,7 @@ fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> 
     let template_args = class
         .iter_template_arg()
         .map(|id| ctx.symbol_map.template_arg(id))
-        .map(|arg| (arg.name.clone(), arg.typ.clone()))
+        .cloned()
         .collect();
 
     let arg_values = class_ref
@@ -490,7 +491,7 @@ fn resolve_class_ref_as_multiclass(
     let template_args = multiclass
         .iter_template_arg()
         .map(|id| ctx.symbol_map.template_arg(id))
-        .map(|arg| (arg.name.clone(), arg.typ.clone()))
+        .cloned()
         .collect();
 
     let arg_values = class_ref
@@ -510,47 +511,109 @@ fn resolve_class_ref_as_multiclass(
 
 fn check_template_args(
     ctx: &mut IndexCtx,
-    template_args: Vec<(EcoString, Type)>,
-    arg_values: Vec<(Type, TextRange)>,
+    template_args: Vec<TemplateArgument>,
+    arg_values: Vec<Option<(Option<EcoString>, Type, TextRange)>>,
     range: TextRange,
 ) {
-    if template_args.len() != arg_values.len() {
-        ctx.error(
-            range,
-            format!(
-                "expected {} arguments, found {}",
-                template_args.len(),
-                arg_values.len()
-            ),
-        );
+    if arg_values.len() > template_args.len() {
+        ctx.error(range, format!("too many arguments: {}", arg_values.len()));
         return;
     }
 
-    for ((template_arg_name, template_arg_type), (arg_value_type, arg_value_range)) in
-        template_args.into_iter().zip(arg_values.into_iter())
-    {
-        if !arg_value_type.isa(&ctx.symbol_map, &template_arg_type) {
-            ctx.error(
+    let mut unsolved_args: HashSet<EcoString> =
+        template_args.iter().map(|arg| arg.name.clone()).collect();
+
+    for (idx, arg_value) in arg_values.into_iter().enumerate() {
+        let Some((arg_value_name, arg_value_typ, arg_value_range)) = arg_value else {
+            continue;
+        };
+
+        let arg_name_typ = match arg_value_name {
+            None => {
+                let arg = template_args.get(idx).unwrap();
+                unsolved_args.remove(&arg.name);
+                Some((&arg.name, &arg.typ))
+            }
+            Some(arg_value_name) => {
+                let arg = template_args.iter().find(|arg| arg.name == arg_value_name);
+                if unsolved_args.remove(&arg_value_name) {
+                    arg.map(|it| (&it.name, &it.typ))
+                } else if arg.is_some() {
+                    ctx.error(
+                        arg_value_range,
+                        format!(
+                            "we can only specify the template argument '{arg_value_name}' once"
+                        ),
+                    );
+                    None
+                } else {
+                    ctx.error(
+                        arg_value_range,
+                        format!("argument '{arg_value_name}' doesn't exist"),
+                    );
+                    None
+                }
+            }
+        };
+
+        if let Some((arg_name, arg_typ)) = arg_name_typ {
+            if !arg_value_typ.isa(&ctx.symbol_map, arg_typ) {
+                ctx.error(
 				arg_value_range,
 				format!(
-					"value specified for template argument '{template_arg_name}' is of type {arg_value_type}; expected type {template_arg_type}"
+					"value specified for template argument '{arg_name}' is type of {arg_value_typ}; expected type {arg_typ}"
 				),
 			);
+            }
+        }
+    }
+
+    for unsolved_arg in unsolved_args {
+        let arg = template_args.iter().find(|arg| arg.name == unsolved_arg);
+        if let Some(arg) = arg {
+            if !arg.has_default_value {
+                ctx.error(
+                    range,
+                    format!("value not specified for template argument '{unsolved_arg}'"),
+                );
+            }
         }
     }
 }
 
 impl Indexable for ast::ArgValueList {
-    type Output = Vec<(Type, TextRange)>;
+    type Output = Vec<Option<(Option<EcoString>, Type, TextRange)>>;
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.positional()?
-            .values()
-            .map(|value| {
-                value
-                    .index(ctx)
-                    .map(|typ| (typ, value.syntax().text_range()))
-            })
-            .collect()
+        let result = self
+            .arg_values()
+            .map(|arg_value| arg_value.index(ctx))
+            .collect();
+        Some(result)
+    }
+}
+
+impl Indexable for ast::ArgValue {
+    type Output = (Option<EcoString>, Type, TextRange);
+    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+        match self {
+            ast::ArgValue::PositionalArgValue(positional) => {
+                let typ = positional.value()?.index(ctx)?;
+                Some((None, typ, positional.syntax().text_range()))
+            }
+            ast::ArgValue::NamedArgValue(named) => {
+                let ast::SimpleValue::String(name) =
+                    named.name()?.inner_values().next()?.simple_value()?
+                else {
+                    ctx.error(
+                        named.syntax().text_range(),
+                        "the name of named argument should be a valid identifier",
+                    );
+                    return None;
+                };
+                let typ = named.value()?.index(ctx)?;
+                Some((Some(name.value()), typ, named.syntax().text_range()))
+            }
+        }
     }
 }
 
@@ -769,7 +832,7 @@ impl Indexable for ast::SimpleValue {
                 let template_args = class
                     .iter_template_arg()
                     .map(|id| ctx.symbol_map.template_arg(id))
-                    .map(|arg| (arg.name.clone(), arg.typ.clone()))
+                    .cloned()
                     .collect();
 
                 let arg_values = class_value

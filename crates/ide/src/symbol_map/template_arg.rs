@@ -7,20 +7,22 @@ use super::typ::Type;
 
 pub type TemplateArgumentId = Id<TemplateArgument>;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TemplateArgument {
     pub name: EcoString,
     pub typ: Type,
+    pub has_default_value: bool,
 
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
 
 impl TemplateArgument {
-    pub fn new(name: EcoString, typ: Type, define_loc: FileRange) -> Self {
+    pub fn new(name: EcoString, typ: Type, has_default_value: bool, define_loc: FileRange) -> Self {
         Self {
             name,
             typ,
+            has_default_value,
             define_loc,
             reference_locs: Vec::new(),
         }
