@@ -1,0 +1,10 @@
+**/node_modules
+**/.github
+**/out
+
+*.js
+*.ts
+*.mjs
+*.cjs
+*.json
+*.jsonc
