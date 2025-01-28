@@ -1,8 +1,13 @@
-name: Build and Test
+name: CI(server)
 
 on:
   push:
     branches: [master]
+    paths:
+      - .github/workflows/**
+      - crates/**
+      - Cargo.lock
+      - Cargo.toml
   pull_request:
     branches: [master]
 

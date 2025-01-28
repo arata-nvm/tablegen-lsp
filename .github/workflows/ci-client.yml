@@ -1,0 +1,50 @@
+name: CI(client)
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/**
+      - vscode/**
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: ./vscode
+      - run: npm run compile
+        working-directory: ./vscode
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: ./vscode
+      - run: npm run lint:check
+        working-directory: ./vscode
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: ./vscode
+      - run: npm run format:check
+        working-directory: ./vscode
