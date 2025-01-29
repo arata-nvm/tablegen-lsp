@@ -13,6 +13,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
 
 jobs:
   build:
@@ -30,7 +32,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Build
-        run: cargo build --verbose
+        run: cargo check --verbose --locked
 
   test:
     runs-on: ubuntu-latest
@@ -47,4 +49,4 @@ jobs:
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose --locked
