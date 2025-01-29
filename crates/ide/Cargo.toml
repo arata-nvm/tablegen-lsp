@@ -10,7 +10,6 @@ id-arena.workspace = true
 indexmap.workspace = true
 ropey.workspace = true
 salsa.workspace = true
-thiserror.workspace = true
 tracing.workspace = true
 insta.workspace = true
 iset.workspace = true
