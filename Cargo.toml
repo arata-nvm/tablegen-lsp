@@ -16,7 +16,7 @@ insta = "1.31.0"
 iset = "0.3.1"
 ropey = "1.6.1"
 rowan = "0.16.0"
-salsa = "0.16.1"
+salsa = "0.19.0"
 serde_json = "1.0.138"
 text-size = "1.1.1"
 tokio = { version = "1.36.0", features = ["full"] }
