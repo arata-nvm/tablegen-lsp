@@ -29,6 +29,7 @@ use crate::{
         variable::{Variable, VariableId, VariableKind},
         SymbolMap,
     },
+    TY,
 };
 
 #[salsa::query_group(IndexDatabaseStorage)]
@@ -713,14 +714,21 @@ impl Indexable for ast::Value {
 
         let first_value = inner_values.next()?;
         let first_value_typ = first_value.index(ctx);
+        let mut ret_typ = first_value_typ.clone();
         for inner_value in inner_values {
-            inner_value.index(ctx);
+            if let Some(inner_value_typ) = inner_value.index(ctx) {
+                if inner_value_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
+                    ret_typ = Some(TY![string]);
+                } else if ret_typ != Some(TY![string]) && inner_value_typ.is_list() {
+                    ret_typ = Some(inner_value_typ);
+                }
+            }
         }
 
         match self.inner_values().count() {
             0 => None,
             1 => first_value_typ,
-            _ => Some(Type::String),
+            2.. => ret_typ,
         }
     }
 }
@@ -777,12 +785,14 @@ impl Indexable for ast::SimpleValue {
                 Some(Type::Bits(bits.value_list()?.values().count()))
             }
             ast::SimpleValue::List(list) => {
-                let mut value_types = list
+                let value_types: Vec<_> = list
                     .value_list()?
                     .values()
-                    .filter_map(|value| value.index(ctx));
+                    .filter_map(|value| value.index(ctx))
+                    .collect();
                 value_types
-                    .nth(0)
+                    .into_iter()
+                    .next()
                     .map(|typ| Type::List(Box::new(typ)))
                     .or(Some(Type::List(Box::new(Type::Any))))
             }

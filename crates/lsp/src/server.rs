@@ -1,4 +1,5 @@
 use std::ops::ControlFlow;
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
@@ -8,7 +9,8 @@ use async_lsp::lsp_types::{
     FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams,
     GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
     InitializeResult, InlayHint, InlayHintParams, Location, OneOf, PublishDiagnosticsParams,
-    ReferenceParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    ReferenceParams, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -18,6 +20,7 @@ use tokio::task::{self};
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::FileSystem;
 
+use crate::config::Config;
 use crate::vfs::{UrlExt, Vfs};
 use crate::{from_proto, to_proto};
 
@@ -26,6 +29,7 @@ pub struct Server {
     vfs: Arc<RwLock<Vfs>>,
     client: ClientSocket,
     diagnostic_version: i32,
+    config: Config,
 }
 
 impl Server {
@@ -58,6 +62,7 @@ impl Server {
             vfs: Arc::new(RwLock::new(Vfs::new())),
             client,
             diagnostic_version: 0,
+            config: Config::new(PathBuf::from("/non-existent-path")),
         }
     }
 }
@@ -71,8 +76,23 @@ impl LanguageServer for Server {
         params: InitializeParams,
     ) -> BoxFuture<'static, Result<InitializeResult, Self::Error>> {
         tracing::info!("initialize: {params:?}");
+
+        // let root_uri = params
+        // .workspace_folders
+        // .and_then(|it| it.into_iter().next())
+        // .map(|folder| folder.uri);
+
+        if let Some(options) = params.initialization_options {
+            if options.as_object().filter(|o| !o.is_empty()).is_some() {
+                self.config.update(options);
+            }
+        }
+
         Box::pin(ready(Ok(InitializeResult {
-            server_info: None,
+            server_info: Some(ServerInfo {
+                name: "tablegen-lsp".into(),
+                version: option_env!("CARGO_PKG_VERSION").map(|it| it.into()),
+            }),
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
