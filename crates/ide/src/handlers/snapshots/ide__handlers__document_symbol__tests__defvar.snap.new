@@ -1,0 +1,30 @@
+---
+source: crates/ide/src/handlers/document_symbol.rs
+assertion_line: 234
+expression: "check(r#\"\ndefvar foo = 1;\nclass Foo {\n  defvar bar = 2;\n}\n\"#)"
+---
+Some(
+    [
+        DocumentSymbol {
+            name: "foo",
+            typ: "defvar",
+            range: 7..10,
+            kind: Variable,
+            children: [],
+        },
+        DocumentSymbol {
+            name: "Foo",
+            typ: "class",
+            range: 22..25,
+            kind: Class,
+            children: [],
+        },
+        DocumentSymbol {
+            name: "bar",
+            typ: "defvar",
+            range: 37..40,
+            kind: Variable,
+            children: [],
+        },
+    ],
+)

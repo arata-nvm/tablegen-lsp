@@ -5,6 +5,7 @@ use crate::file_system::FileId;
 use crate::index::IndexDatabase;
 use crate::symbol_map::record::RecordKind;
 use crate::symbol_map::symbol::Symbol;
+use crate::symbol_map::variable::VariableKind;
 use crate::symbol_map::SymbolMap;
 
 pub fn exec(db: &dyn IndexDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
@@ -101,6 +102,22 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
             kind: DocumentSymbolKind::Multiclass,
             children: vec![],
         }),
+        Symbol::Defm(defm) => Some(DocumentSymbol {
+            name: defm.name.clone(),
+            typ: "defm".into(),
+            range: defm.define_loc.range,
+            kind: DocumentSymbolKind::Defm,
+            children: vec![],
+        }),
+        Symbol::Variable(variable) if variable.kind == VariableKind::Defvar => {
+            Some(DocumentSymbol {
+                name: variable.name.clone(),
+                typ: "defvar".into(),
+                range: variable.define_loc.range,
+                kind: DocumentSymbolKind::Variable,
+                children: vec![],
+            })
+        }
         _ => None,
     }
 }
@@ -123,6 +140,7 @@ pub enum DocumentSymbolKind {
     Variable,
     Defset,
     Multiclass,
+    Defm,
 }
 
 #[cfg(test)]
@@ -197,6 +215,28 @@ class Foo;
 def foo : Foo {
   int a
 };
+"#
+        ));
+    }
+
+    #[test]
+    fn multilclass() {
+        insta::assert_debug_snapshot!(check(
+            r#"
+multiclass Foo;
+defm foo: Foo;
+"#
+        ));
+    }
+
+    #[test]
+    fn defvar() {
+        insta::assert_debug_snapshot!(check(
+            r#"
+defvar foo = 1;
+class Foo {
+  defvar bar = 2;
+}
 "#
         ));
     }
