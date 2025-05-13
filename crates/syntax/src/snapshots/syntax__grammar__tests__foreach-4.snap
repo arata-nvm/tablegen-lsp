@@ -1,0 +1,30 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(\"foreach i = Values in {}\")"
+---
+(
+    SourceFile@0..24
+      StatementList@0..24
+        Foreach@0..24
+          ForeachKw@0..7 "foreach"
+          Whitespace@7..8 " "
+          ForeachIterator@8..19
+            Identifier@8..10
+              Id@8..9 "i"
+              Whitespace@9..10 " "
+            Equal@10..11 "="
+            Whitespace@11..12 " "
+            RangePiece@12..19
+              Value@12..19
+                InnerValue@12..19
+                  Identifier@12..19
+                    Id@12..18 "Values"
+                    Whitespace@18..19 " "
+          In@19..21 "in"
+          Whitespace@21..22 " "
+          StatementList@22..24
+            LBrace@22..23 "{"
+            RBrace@23..24 "}"
+    ,
+    [],
+)

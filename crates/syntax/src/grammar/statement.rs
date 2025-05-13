@@ -4,7 +4,6 @@ use crate::{
     grammar::{delimited, r#type, value},
     parser::Parser,
     syntax_kind::SyntaxKind,
-    token_kind::TokenKind,
     T,
 };
 
@@ -248,12 +247,12 @@ pub(super) fn foreach_iterator_init(p: &mut Parser) {
     match p.peek() {
         T!['{'] => {
             p.assert(T!['{']);
-            let m = value::range_list(p);
+            value::range_list(p);
             p.expect_with_msg(T!['}'], "expected '}' at end of bit range list");
-            m
         }
-        TokenKind::IntVal => value::range_piece(p),
-        _ => value::value(p),
+        _ => {
+            value::range_piece(p);
+        }
     };
 }
 

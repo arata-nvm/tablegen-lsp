@@ -14,23 +14,24 @@ expression: "parse(\"foreach i = [0, 1] in {\n                def Foo # i : Base
               Whitespace@9..10 " "
             Equal@10..11 "="
             Whitespace@11..12 " "
-            Value@12..19
-              InnerValue@12..19
-                List@12..19
-                  ValueList@12..19
-                    LSquare@12..13 "["
-                    Value@13..14
-                      InnerValue@13..14
-                        Integer@13..14
-                          IntVal@13..14 "0"
-                    Comma@14..15 ","
-                    Whitespace@15..16 " "
-                    Value@16..17
-                      InnerValue@16..17
-                        Integer@16..17
-                          IntVal@16..17 "1"
-                    RSquare@17..18 "]"
-                    Whitespace@18..19 " "
+            RangePiece@12..19
+              Value@12..19
+                InnerValue@12..19
+                  List@12..19
+                    ValueList@12..19
+                      LSquare@12..13 "["
+                      Value@13..14
+                        InnerValue@13..14
+                          Integer@13..14
+                            IntVal@13..14 "0"
+                      Comma@14..15 ","
+                      Whitespace@15..16 " "
+                      Value@16..17
+                        InnerValue@16..17
+                          Integer@16..17
+                            IntVal@16..17 "1"
+                      RSquare@17..18 "]"
+                      Whitespace@18..19 " "
           In@19..21 "in"
           Whitespace@21..22 " "
           StatementList@22..76
