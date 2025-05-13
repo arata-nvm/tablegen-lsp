@@ -133,15 +133,28 @@ pub(super) fn let_item(p: &mut Parser) {
     p.finish_node();
 }
 
-// MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList "{" MultiClassStatement+ "}"
+// MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList ( ";" | "{" MultiClassStatement+ "}" )
 pub(super) fn multi_class(p: &mut Parser) {
     p.start_node(SyntaxKind::MultiClass);
     p.assert(T![multiclass]);
     value::identifier(p).or_error(p, "expected identifier after multiclass for name");
     opt_template_arg_list(p);
-    parent_class_list(p);
-    p.expect_with_msg(T!['{'], "expected '{' in multiclass definition");
-    multi_class_statements(p);
+    let inherits = parent_class_list(p);
+    match p.peek() {
+        T![;] if inherits => {
+            p.assert(T![;]);
+        }
+        T![;] if !inherits => {
+            p.expect_with_msg(T!['{'], "expected '{' in multiclass definition");
+        }
+        T!['{'] => {
+            p.assert(T!['{']);
+            multi_class_statements(p);
+        }
+        _ => {
+            p.expect_with_msg(T![;], "expected ';' in multiclass definition");
+        }
+    }
     p.finish_node();
 }
 
@@ -301,11 +314,11 @@ pub(super) fn record_body(p: &mut Parser) {
 }
 
 // ParentClassList ::= ( ":" ClassRef ( "," ClassRef )* )?
-pub(super) fn parent_class_list(p: &mut Parser) {
+pub(super) fn parent_class_list(p: &mut Parser) -> bool {
     p.start_node(SyntaxKind::ParentClassList);
     if !p.eat_if(T![:]) {
         p.finish_node();
-        return;
+        return false;
     }
 
     while !p.eof() {
@@ -315,6 +328,7 @@ pub(super) fn parent_class_list(p: &mut Parser) {
         }
     }
     p.finish_node();
+    return true;
 }
 
 // ClassRef ::= Identifier ( "<" ArgValueList? ">" )?

@@ -1,11 +1,11 @@
 ---
 source: crates/syntax/src/grammar.rs
-expression: "parse(\"multiclass foo {\n                def _foo1;\n                def _foo2;\n            }\")"
+expression: "parse(\"multiclass foo {\n                def _foo1;\n                def _foo2;\n            }\n            multiclass foo: bar {}\")"
 ---
 (
-    SourceFile@0..84
-      StatementList@0..84
-        MultiClass@0..84
+    SourceFile@0..119
+      StatementList@0..119
+        MultiClass@0..97
           MultiClassKw@0..10 "multiclass"
           Whitespace@10..11 " "
           Identifier@11..15
@@ -14,7 +14,7 @@ expression: "parse(\"multiclass foo {\n                def _foo1;\n             
           ParentClassList@15..15
           LBrace@15..16 "{"
           Whitespace@16..33 "\n                "
-          StatementList@33..84
+          StatementList@33..97
             Def@33..60
               DefKw@33..36 "def"
               Whitespace@36..37 " "
@@ -40,6 +40,32 @@ expression: "parse(\"multiclass foo {\n                def _foo1;\n             
                   Semi@69..70 ";"
                   Whitespace@70..83 "\n            "
             RBrace@83..84 "}"
+            Whitespace@84..97 "\n            "
+        MultiClass@97..119
+          MultiClassKw@97..107 "multiclass"
+          Whitespace@107..108 " "
+          Identifier@108..111
+            Id@108..111 "foo"
+          ParentClassList@111..117
+            Colon@111..112 ":"
+            Whitespace@112..113 " "
+            ClassRef@113..117
+              Identifier@113..117
+                Id@113..116 "bar"
+                Whitespace@116..117 " "
+          LBrace@117..118 "{"
+          StatementList@118..119
+            Error@118..119
+              RBrace@118..119 "}"
     ,
-    [],
+    [
+        SyntaxError {
+            range: 118..119,
+            message: "expected 'assert', 'def', 'defm', 'defvar', 'dump', 'foreach', 'let', or 'if' in multiclass body",
+        },
+        SyntaxError {
+            range: 119..119,
+            message: "expected RBrace",
+        },
+    ],
 )

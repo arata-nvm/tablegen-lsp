@@ -1,0 +1,40 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(\"multiclass foo: bar;\n            multiclass foo;\")"
+---
+(
+    SourceFile@0..48
+      StatementList@0..48
+        MultiClass@0..33
+          MultiClassKw@0..10 "multiclass"
+          Whitespace@10..11 " "
+          Identifier@11..14
+            Id@11..14 "foo"
+          ParentClassList@14..19
+            Colon@14..15 ":"
+            Whitespace@15..16 " "
+            ClassRef@16..19
+              Identifier@16..19
+                Id@16..19 "bar"
+          Semi@19..20 ";"
+          Whitespace@20..33 "\n            "
+        MultiClass@33..47
+          MultiClassKw@33..43 "multiclass"
+          Whitespace@43..44 " "
+          Identifier@44..47
+            Id@44..47 "foo"
+          ParentClassList@47..47
+        Error@47..48
+          Semi@47..48 ";"
+    ,
+    [
+        SyntaxError {
+            range: 47..48,
+            message: "expected '{' in multiclass definition",
+        },
+        SyntaxError {
+            range: 47..48,
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
+        },
+    ],
+)

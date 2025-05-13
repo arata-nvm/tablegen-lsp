@@ -95,7 +95,12 @@ mod tests {
             "multiclass foo {
                 def _foo1;
                 def _foo2;
-            }"
+            }
+            multiclass foo: bar {}"
+        ));
+        insta::assert_debug_snapshot!(parse(
+            "multiclass foo: bar;
+            multiclass foo;"
         ));
     }
 

@@ -551,7 +551,13 @@ mod tests {
 
     #[test]
     fn multi_class() {
-        let node = parse::<MultiClass>("multiclass Foo<int A>: Bar {}");
+        let node = parse::<MultiClass>("multiclass Foo<int A>: Bar;");
+        assert!(node.name().is_some());
+        assert!(node.template_arg_list().is_some());
+        assert!(node.parent_class_list().is_some());
+        assert!(node.statement_list().is_none());
+
+        let node = parse::<MultiClass>("multiclass Foo<int A> {}");
         assert!(node.name().is_some());
         assert!(node.template_arg_list().is_some());
         assert!(node.parent_class_list().is_some());
