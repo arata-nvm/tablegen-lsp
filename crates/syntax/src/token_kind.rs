@@ -76,6 +76,7 @@ pub enum TokenKind {
     XHead,
     XIf,
     XInitialized,
+    XInstances,
     XInterleave,
     XIsA,
     XLe,
@@ -160,6 +161,7 @@ impl TokenKind {
                 | Self::XHead
                 | Self::XIf
                 | Self::XInitialized
+                | Self::XInstances
                 | Self::XInterleave
                 | Self::XIsA
                 | Self::XLe
@@ -266,6 +268,7 @@ macro_rules! T {
     [!head] => {$crate::token_kind::TokenKind::XHead};
     [!if] => {$crate::token_kind::TokenKind::XIf};
     [!initialized] => {$crate::token_kind::TokenKind::XInitialized};
+    [!instances] => {$crate::token_kind::TokenKind::XInstances};
     [!interleave] => {$crate::token_kind::TokenKind::XInterleave};
     [!isa] => {$crate::token_kind::TokenKind::XIsA};
     [!le] => {$crate::token_kind::TokenKind::XLe};
