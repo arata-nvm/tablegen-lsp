@@ -155,17 +155,18 @@ pub(super) fn multi_class_statements(p: &mut Parser) {
     p.finish_node();
 }
 
-// MultiClassStatement ::= Assert | Def | Defm | Dump | Foreach | Let | If
+// MultiClassStatement ::= Assert | Def | Defm | Defvar | Dump | Foreach | Let | If
 pub(super) fn multi_class_statement(p: &mut Parser) {
     match p.peek() {
         T![assert] => r#assert(p),
         T![def] => def(p),
         T![defm] => defm(p),
+        T![defvar] => defvar(p),
         T![dump] => dump(p),
         T![foreach] => foreach(p),
         T![let] => r#let(p),
         T![if] => r#if(p),
-        _ => p.error_and_eat("expected 'assert', 'def', 'defm', 'dump', 'foreach', 'let', or 'if' in multiclass body"),
+        _ => p.error_and_eat("expected 'assert', 'def', 'defm', 'defvar', 'dump', 'foreach', 'let', or 'if' in multiclass body"),
     }
 }
 
