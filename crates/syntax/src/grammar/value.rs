@@ -171,16 +171,14 @@ pub(super) fn range_list(p: &mut Parser) -> CompletedMarker {
     CompletedMarker::Success
 }
 
-// RangePiece ::= Integer | Integer "..." Integer | Integer "-" Integer | Integer Integer
+// RangePiece ::= Value | Value "..." Value | Value "-" Value | Value Value
 pub(super) fn range_piece(p: &mut Parser) -> CompletedMarker {
     p.start_node(SyntaxKind::RangePiece);
-    integer(p).or_error(p, "expected integer or bitrange");
+    value(p);
     if p.at_set(&[T![...], T![-]]) {
         p.eat();
     }
-    if p.at(TokenKind::IntVal) {
-        integer(p).or_error(p, "expected integer value as end of range");
-    }
+    opt_value(p);
     p.finish_node();
     CompletedMarker::Success
 }

@@ -27,11 +27,15 @@ expression: "parse(\"let A = 1, B<1...3> = 0b101 in { class Foo; }\")"
               Less@12..13 "<"
               RangeList@13..18
                 RangePiece@13..18
-                  Integer@13..14
-                    IntVal@13..14 "1"
+                  Value@13..14
+                    InnerValue@13..14
+                      Integer@13..14
+                        IntVal@13..14 "1"
                   DotDotDot@14..17 "..."
-                  Integer@17..18
-                    IntVal@17..18 "3"
+                  Value@17..18
+                    InnerValue@17..18
+                      Integer@17..18
+                        IntVal@17..18 "3"
               Greater@18..19 ">"
               Whitespace@19..20 " "
               Equal@20..21 "="

@@ -200,7 +200,7 @@ mod tests {
     #[test]
     fn inner_value() {
         insta::assert_debug_snapshot!(parse(
-            "class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<int> C = Hoge[0...1]>;"
+            "class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<int> C = Hoge[0...1], bit D = Hoge{Hoge.Fuga...Hoge.Fuga}>;"
         ));
     }
 

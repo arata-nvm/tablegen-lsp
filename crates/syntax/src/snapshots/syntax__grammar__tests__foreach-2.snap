@@ -17,13 +17,17 @@ expression: "parse(\"foreach i = {0, 1} in {\n                def Foo # i : Base
             LBrace@12..13 "{"
             RangeList@13..17
               RangePiece@13..14
-                Integer@13..14
-                  IntVal@13..14 "0"
+                Value@13..14
+                  InnerValue@13..14
+                    Integer@13..14
+                      IntVal@13..14 "0"
               Comma@14..15 ","
               Whitespace@15..16 " "
               RangePiece@16..17
-                Integer@16..17
-                  IntVal@16..17 "1"
+                Value@16..17
+                  InnerValue@16..17
+                    Integer@16..17
+                      IntVal@16..17 "1"
             RBrace@17..18 "}"
             Whitespace@18..19 " "
           In@19..21 "in"

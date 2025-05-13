@@ -279,8 +279,8 @@ asts! {
         pieces: [RangePiece],
     };
     RangePiece {
-        start[0]: Integer,
-        end[1]: Integer,
+        start[0]: Value,
+        end[1]: Value,
     };
     SliceSuffix {
         element_list: SliceElements,

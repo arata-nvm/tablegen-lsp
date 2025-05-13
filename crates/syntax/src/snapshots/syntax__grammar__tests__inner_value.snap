@@ -1,16 +1,16 @@
 ---
 source: crates/syntax/src/grammar.rs
-expression: "parse(\"class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<int> C = Hoge[0...1]>;\")"
+expression: "parse(\"class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<int> C = Hoge[0...1], bit D = Hoge{Hoge.Fuga...Hoge.Fuga}>;\")"
 ---
 (
-    SourceFile@0..81
-      StatementList@0..81
-        Class@0..81
+    SourceFile@0..118
+      StatementList@0..118
+        Class@0..118
           ClassKw@0..5 "class"
           Whitespace@5..6 " "
           Identifier@6..9
             Id@6..9 "Foo"
-          TemplateArgList@9..80
+          TemplateArgList@9..117
             Less@9..10 "<"
             TemplateArgDecl@10..27
               IntType@10..14
@@ -52,11 +52,15 @@ expression: "parse(\"class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<
                     LBrace@45..46 "{"
                     RangeList@46..51
                       RangePiece@46..51
-                        Integer@46..47
-                          IntVal@46..47 "0"
+                        Value@46..47
+                          InnerValue@46..47
+                            Integer@46..47
+                              IntVal@46..47 "0"
                         DotDotDot@47..50 "..."
-                        Integer@50..51
-                          IntVal@50..51 "1"
+                        Value@50..51
+                          InnerValue@50..51
+                            Integer@50..51
+                              IntVal@50..51 "1"
                     RBrace@51..52 "}"
             Comma@52..53 ","
             Whitespace@53..54 " "
@@ -91,11 +95,48 @@ expression: "parse(\"class Foo<int A = Hoge.Fuga, bits<2> B = Hoge{0...1}, list<
                             Integer@77..78
                               IntVal@77..78 "1"
                     RSquare@78..79 "]"
-            Greater@79..80 ">"
-          RecordBody@80..81
-            ParentClassList@80..80
-            Body@80..81
-              Semi@80..81 ";"
+            Comma@79..80 ","
+            Whitespace@80..81 " "
+            TemplateArgDecl@81..116
+              BitType@81..85
+                Bit@81..84 "bit"
+                Whitespace@84..85 " "
+              Identifier@85..87
+                Id@85..86 "D"
+                Whitespace@86..87 " "
+              Equal@87..88 "="
+              Whitespace@88..89 " "
+              Value@89..116
+                InnerValue@89..116
+                  Identifier@89..93
+                    Id@89..93 "Hoge"
+                  RangeSuffix@93..116
+                    LBrace@93..94 "{"
+                    RangeList@94..115
+                      RangePiece@94..115
+                        Value@94..103
+                          InnerValue@94..103
+                            Identifier@94..98
+                              Id@94..98 "Hoge"
+                            FieldSuffix@98..103
+                              Dot@98..99 "."
+                              Identifier@99..103
+                                Id@99..103 "Fuga"
+                        DotDotDot@103..106 "..."
+                        Value@106..115
+                          InnerValue@106..115
+                            Identifier@106..110
+                              Id@106..110 "Hoge"
+                            FieldSuffix@110..115
+                              Dot@110..111 "."
+                              Identifier@111..115
+                                Id@111..115 "Fuga"
+                    RBrace@115..116 "}"
+            Greater@116..117 ">"
+          RecordBody@117..118
+            ParentClassList@117..117
+            Body@117..118
+              Semi@117..118 ";"
     ,
     [],
 )
