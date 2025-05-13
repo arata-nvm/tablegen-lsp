@@ -1,0 +1,24 @@
+---
+source: crates/syntax/src/lexer.rs
+expression: "tokenize(\"8 i 8i 16 i 16i 0 xhoge 0xhoge\")"
+---
+[
+    IntVal,
+    Whitespace,
+    Id,
+    Whitespace,
+    Id,
+    Whitespace,
+    IntVal,
+    Whitespace,
+    Id,
+    Whitespace,
+    Id,
+    Whitespace,
+    IntVal,
+    Whitespace,
+    Id,
+    Whitespace,
+    Id,
+    Eof,
+]

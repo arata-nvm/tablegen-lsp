@@ -130,6 +130,11 @@ impl<'a> Lexer<'a> {
             _ => unreachable!(),
         };
 
+        if self.s.eat_if(is_identifier_start) {
+            self.s.eat_while(is_identifier_continue);
+            return TokenKind::Id;
+        }
+
         let number = self.s.get(start..self.s.cursor());
         if interpret_number(number).is_none() {
             match base {
@@ -389,5 +394,10 @@ mod tests {
     #[test]
     fn preprocessor() {
         insta::assert_debug_snapshot!(tokenize("#ifdef #ifndef #else #endif #define"))
+    }
+
+    #[test]
+    fn id() {
+        insta::assert_debug_snapshot!(tokenize("8 i 8i 16 i 16i 0 xhoge 0xhoge"));
     }
 }
