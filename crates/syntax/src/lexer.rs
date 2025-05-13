@@ -99,9 +99,26 @@ impl<'a> Lexer<'a> {
     }
 
     fn block_comment(&mut self) -> TokenKind {
-        self.s.eat_until("*/");
-        self.s.eat_if("*/");
-        TokenKind::BlockComment
+        let mut depth = 1;
+        while !self.s.done() {
+            self.s.eat_until(['/', '*']);
+            if self.s.eat_if("/*") {
+                depth += 1;
+            } else if self.s.eat_if("*/") {
+                depth -= 1;
+                if depth == 0 {
+                    break;
+                }
+            } else {
+                self.s.eat();
+            }
+        }
+
+        if depth == 0 {
+            TokenKind::BlockComment
+        } else {
+            self.error("Unterminated comment")
+        }
     }
 
     fn number(&mut self, start: usize, c: char) -> TokenKind {
@@ -350,6 +367,8 @@ mod tests {
     #[test]
     fn block_comment() {
         insta::assert_debug_snapshot!(tokenize("/* hogefuga */42"));
+        insta::assert_debug_snapshot!(tokenize("/* /* */ */42"));
+        insta::assert_debug_snapshot!(tokenize("/* /*/ */ */42"));
     }
 
     #[test]

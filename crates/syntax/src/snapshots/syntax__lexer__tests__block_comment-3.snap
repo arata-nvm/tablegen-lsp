@@ -1,0 +1,9 @@
+---
+source: crates/syntax/src/lexer.rs
+expression: "tokenize(\"/* /*/ */ */42\")"
+---
+[
+    BlockComment,
+    IntVal,
+    Eof,
+]
