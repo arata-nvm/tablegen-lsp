@@ -117,6 +117,9 @@ pub(super) fn name_value(p: &mut Parser) -> CompletedMarker {
     p.start_node(SyntaxKind::Value);
     inner_name_value(p);
     while p.eat_if(T![#]) {
+        if p.at_set(&[T![:], T![;], T!['{']]) {
+            break;
+        }
         inner_name_value(p);
     }
     p.finish_node();
