@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn simple_value() {
         insta::assert_debug_snapshot!(parse(
-            "class Foo<int A = 1, string B = \"hoge\", bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2)> {
+            "class Foo<int A = 1, string B = \"hoge\", bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2), dag L = ([1, 2] A:$hoge)> {
                 code C = [{ true }];
             }"
         ));

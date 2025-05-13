@@ -1,16 +1,16 @@
 ---
 source: crates/syntax/src/grammar.rs
-expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2)> {\n                code C = [{ true }];\n            }\")"
+expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", bit D = false, int E = ?, bits<2> F = {0, 1}, list<int> G = [1, 2], dag H = (add A:$hoge), int I = A, int J = !add(A, B), int K = !cond(false: 1, true: 2), dag L = ([1, 2] A:$hoge)> {\n                code C = [{ true }];\n            }\")"
 ---
 (
-    SourceFile@0..248
-      StatementList@0..248
-        Class@0..248
+    SourceFile@0..274
+      StatementList@0..274
+        Class@0..274
           ClassKw@0..5 "class"
           Whitespace@5..6 " "
           Identifier@6..9
             Id@6..9 "Foo"
-          TemplateArgList@9..196
+          TemplateArgList@9..222
             Less@9..10 "<"
             TemplateArgDecl@10..19
               IntType@10..14
@@ -246,29 +246,72 @@ expression: "parse(\"class Foo<int A = 1, string B = \\\"hoge\\\", bit D = false
                           Integer@192..193
                             IntVal@192..193 "2"
                     RParen@193..194 ")"
-            Greater@194..195 ">"
+            Comma@194..195 ","
             Whitespace@195..196 " "
-          RecordBody@196..248
-            ParentClassList@196..196
-            Body@196..248
-              LBrace@196..197 "{"
-              Whitespace@197..214 "\n                "
-              FieldDef@214..247
-                CodeType@214..219
-                  CodeKw@214..218 "code"
-                  Whitespace@218..219 " "
-                Identifier@219..221
-                  Id@219..220 "C"
-                  Whitespace@220..221 " "
-                Equal@221..222 "="
-                Whitespace@222..223 " "
-                Value@223..233
-                  InnerValue@223..233
-                    Code@223..233
-                      CodeFragment@223..233 "[{ true }]"
-                Semi@233..234 ";"
-                Whitespace@234..247 "\n            "
-              RBrace@247..248 "}"
+            TemplateArgDecl@196..220
+              DagType@196..200
+                DagKw@196..199 "dag"
+                Whitespace@199..200 " "
+              Identifier@200..202
+                Id@200..201 "L"
+                Whitespace@201..202 " "
+              Equal@202..203 "="
+              Whitespace@203..204 " "
+              Value@204..220
+                InnerValue@204..220
+                  Dag@204..220
+                    LParen@204..205 "("
+                    DagArg@205..212
+                      Value@205..212
+                        InnerValue@205..212
+                          List@205..212
+                            ValueList@205..212
+                              LSquare@205..206 "["
+                              Value@206..207
+                                InnerValue@206..207
+                                  Integer@206..207
+                                    IntVal@206..207 "1"
+                              Comma@207..208 ","
+                              Whitespace@208..209 " "
+                              Value@209..210
+                                InnerValue@209..210
+                                  Integer@209..210
+                                    IntVal@209..210 "2"
+                              RSquare@210..211 "]"
+                              Whitespace@211..212 " "
+                    DagArgList@212..219
+                      DagArg@212..219
+                        Value@212..213
+                          InnerValue@212..213
+                            Identifier@212..213
+                              Id@212..213 "A"
+                        Colon@213..214 ":"
+                        VarName@214..219
+                          VarNameKw@214..219 "$hoge"
+                    RParen@219..220 ")"
+            Greater@220..221 ">"
+            Whitespace@221..222 " "
+          RecordBody@222..274
+            ParentClassList@222..222
+            Body@222..274
+              LBrace@222..223 "{"
+              Whitespace@223..240 "\n                "
+              FieldDef@240..273
+                CodeType@240..245
+                  CodeKw@240..244 "code"
+                  Whitespace@244..245 " "
+                Identifier@245..247
+                  Id@245..246 "C"
+                  Whitespace@246..247 " "
+                Equal@247..248 "="
+                Whitespace@248..249 " "
+                Value@249..259
+                  InnerValue@249..259
+                    Code@249..259
+                      CodeFragment@249..259 "[{ true }]"
+                Semi@259..260 ";"
+                Whitespace@260..273 "\n            "
+              RBrace@273..274 "}"
     ,
     [],
 )
