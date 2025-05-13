@@ -72,6 +72,7 @@ pub enum TokenKind {
     XGetDagArg,
     XGetDagName,
     XGetDagOp,
+    XGetOp,
     XGt,
     XHead,
     XIf,
@@ -157,6 +158,7 @@ impl TokenKind {
                 | Self::XGetDagArg
                 | Self::XGetDagName
                 | Self::XGetDagOp
+                | Self::XGetOp
                 | Self::XGt
                 | Self::XHead
                 | Self::XIf
@@ -264,6 +266,7 @@ macro_rules! T {
     [!getdagarg] => {$crate::token_kind::TokenKind::XGetDagArg};
     [!getdagname] => {$crate::token_kind::TokenKind::XGetDagName};
     [!getdagop] => {$crate::token_kind::TokenKind::XGetDagOp};
+    [!getop] => {$crate::token_kind::TokenKind::XGetOp};
     [!gt] => {$crate::token_kind::TokenKind::XGt};
     [!head] => {$crate::token_kind::TokenKind::XHead};
     [!if] => {$crate::token_kind::TokenKind::XIf};

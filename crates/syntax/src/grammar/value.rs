@@ -7,7 +7,7 @@ use crate::{
 
 use super::{delimited, r#type, statement};
 
-pub(super) const VALUE_START: [TokenKind; 65] = [
+pub(super) const VALUE_START: [TokenKind; 66] = [
     TokenKind::IntVal,
     TokenKind::BinaryIntVal,
     TokenKind::StrVal,
@@ -38,6 +38,7 @@ pub(super) const VALUE_START: [TokenKind; 65] = [
     T![!getdagarg],
     T![!getdagname],
     T![!getdagop],
+    T![!getop],
     T![!gt],
     T![!head],
     T![!if],

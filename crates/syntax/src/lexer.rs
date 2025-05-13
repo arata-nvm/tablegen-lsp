@@ -259,6 +259,7 @@ impl<'a> Lexer<'a> {
             "getdagarg" => T![!getdagarg],
             "getdagname" => T![!getdagname],
             "getdagop" => T![!getdagop],
+            "getop" => T![!getop],
             "gt" => T![!gt],
             "head" => T![!head],
             "if" => T![!if],
@@ -397,7 +398,7 @@ mod tests {
     #[test]
     fn bangoperator() {
         insta::assert_debug_snapshot!(tokenize(
-          "!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !repr"
+          "!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !getop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !repr"
         ));
     }
 
