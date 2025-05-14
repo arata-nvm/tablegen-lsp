@@ -38,6 +38,7 @@ pub enum TokenKind {
     Def,
     Defm,
     Defset,
+    Deftype,
     Defvar,
     Dump,
     ElseKw,
@@ -235,6 +236,7 @@ macro_rules! T {
     [def] => {$crate::token_kind::TokenKind::Def};
     [defm] => {$crate::token_kind::TokenKind::Defm};
     [defset] => {$crate::token_kind::TokenKind::Defset};
+    [deftype] => {$crate::token_kind::TokenKind::Deftype};
     [defvar] => {$crate::token_kind::TokenKind::Defvar};
     [dump] => {$crate::token_kind::TokenKind::Dump};
     [else] => {$crate::token_kind::TokenKind::ElseKw};

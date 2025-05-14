@@ -155,6 +155,10 @@ asts! {
         name: Identifier,
         statement_list: StatementList,
     };
+    Deftype {
+        name: Identifier,
+        typ: Type,
+    };
     Defvar {
         name: Identifier,
         value: Value,

@@ -121,6 +121,11 @@ mod tests {
     }
 
     #[test]
+    fn deftype() {
+        insta::assert_debug_snapshot!(parse("deftype Index = int;"))
+    }
+
+    #[test]
     fn defvar() {
         insta::assert_debug_snapshot!(parse("defvar i = 0;"));
     }

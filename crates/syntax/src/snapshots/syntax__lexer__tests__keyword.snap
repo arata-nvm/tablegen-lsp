@@ -1,6 +1,6 @@
 ---
 source: crates/syntax/src/lexer.rs
-expression: "tokenize(\"assert bit bits class code dag def defm defset defvar dump else field foreach if in include int let list multiclass string then\")"
+expression: "tokenize(\"assert bit bits class code dag def defm defset deftype defvar dump else field foreach if in include int let list multiclass string then\")"
 ---
 [
     Assert,
@@ -20,6 +20,8 @@ expression: "tokenize(\"assert bit bits class code dag def defm defset defvar du
     Defm,
     Whitespace,
     Defset,
+    Whitespace,
+    Deftype,
     Whitespace,
     Defvar,
     Whitespace,

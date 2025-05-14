@@ -1,0 +1,21 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(\"deftype Index = int;\")"
+---
+(
+    SourceFile@0..20
+      StatementList@0..20
+        Deftype@0..20
+          DeftypeKw@0..7 "deftype"
+          Whitespace@7..8 " "
+          Identifier@8..14
+            Id@8..13 "Index"
+            Whitespace@13..14 " "
+          Equal@14..15 "="
+          Whitespace@15..16 " "
+          IntType@16..19
+            Int@16..19 "int"
+          Semi@19..20 ";"
+    ,
+    [],
+)

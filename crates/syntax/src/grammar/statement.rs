@@ -44,7 +44,7 @@ pub(super) fn statement_list(p: &mut Parser, typ: StatementListType) {
     p.finish_node();
 }
 
-// Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Dump | Foreach | If | Let | MultiClass
+// Statement ::= Include | Assert | Class | Def | Defm | Deftype | Defset | Defvar | Dump | Foreach | If | Let | MultiClass
 pub(super) fn statement(p: &mut Parser) {
     match p.peek() {
         T![include] => include(p),
@@ -53,6 +53,7 @@ pub(super) fn statement(p: &mut Parser) {
         T![def] => def(p),
         T![defm] => defm(p),
         T![defset] => defset(p),
+        T![deftype] => deftype(p),
         T![defvar] => defvar(p),
         T![dump] => dump(p),
         T![foreach] => foreach(p),
@@ -200,6 +201,17 @@ pub(super) fn defset(p: &mut Parser) {
     value::identifier(p);
     p.expect(T![=]);
     statement_list(p, StatementListType::Block);
+    p.finish_node();
+}
+
+// Deftype ::= "deftype" Identifier "=" Type ";"
+pub(super) fn deftype(p: &mut Parser) {
+    p.start_node(SyntaxKind::Deftype);
+    p.assert(T![deftype]);
+    value::identifier(p);
+    p.expect(T![=]);
+    r#type::r#type(p);
+    p.expect(T![;]);
     p.finish_node();
 }
 

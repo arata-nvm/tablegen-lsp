@@ -1,6 +1,6 @@
 SourceFile ::= StatementList
 StatementList ::= Statement*
-Statement ::= Include | Assert | Class | Def | Defm | Defset | Defvar | Dump | Foreach | If | Let | MultiClass
+Statement ::= Include | Assert | Class | Def | Defm | Defset | Deftype | Defvar | Dump | Foreach | If | Let | MultiClass
 
 Include ::= "include" String
 
@@ -18,6 +18,8 @@ MultiClassStatement ::= Assert | Def | Defm | Defvar | Dump | Foreach | Let | If
 Defm ::= "defm" Value? ParentClassList ";"
 
 Defset ::= "defset" Type Identifier "=" "{" Statement* "}"
+
+Deftype ::= "deftype" Identifier "=" Type ";"
 
 Defvar ::= "defvar" Identifier "=" Value ";"
 
