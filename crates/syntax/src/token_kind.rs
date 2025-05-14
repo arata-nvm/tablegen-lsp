@@ -88,6 +88,7 @@ pub enum TokenKind {
     XListSplat,
     XLog2,
     XLt,
+    XMatch,
     XMul,
     XNe,
     XNot,
@@ -175,6 +176,7 @@ impl TokenKind {
                 | Self::XListSplat
                 | Self::XLog2
                 | Self::XLt
+                | Self::XMatch
                 | Self::XMul
                 | Self::XNe
                 | Self::XNot
@@ -285,6 +287,7 @@ macro_rules! T {
     [!listsplat] => {$crate::token_kind::TokenKind::XListSplat};
     [!log2] => {$crate::token_kind::TokenKind::XLog2};
     [!lt] => {$crate::token_kind::TokenKind::XLt};
+    [!match] => {$crate::token_kind::TokenKind::XMatch};
     [!mul] => {$crate::token_kind::TokenKind::XMul};
     [!ne] => {$crate::token_kind::TokenKind::XNe};
     [!not] => {$crate::token_kind::TokenKind::XNot};
