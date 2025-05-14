@@ -96,6 +96,7 @@ pub enum TokenKind {
     XSetDagArg,
     XSetDagName,
     XSetDagOp,
+    XSetOp,
     XShl,
     XSize,
     XSra,
@@ -182,6 +183,7 @@ impl TokenKind {
                 | Self::XSetDagArg
                 | Self::XSetDagName
                 | Self::XSetDagOp
+                | Self::XSetOp
                 | Self::XShl
                 | Self::XSize
                 | Self::XSra
@@ -290,6 +292,7 @@ macro_rules! T {
     [!setdagarg] => {$crate::token_kind::TokenKind::XSetDagArg};
     [!setdagname] => {$crate::token_kind::TokenKind::XSetDagName};
     [!setdagop] => {$crate::token_kind::TokenKind::XSetDagOp};
+    [!setop] => {$crate::token_kind::TokenKind::XSetOp};
     [!shl] => {$crate::token_kind::TokenKind::XShl};
     [!size] => {$crate::token_kind::TokenKind::XSize};
     [!sra] => {$crate::token_kind::TokenKind::XSra};
