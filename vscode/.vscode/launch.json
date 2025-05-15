@@ -10,11 +10,14 @@
       "type": "extensionHost",
       "request": "launch",
       "args": [
+        "--profile-temp",
+        "--extensionDevelopmentPath=${workspaceFolder}",
         "${workspaceFolder}/../",
-        "--extensionDevelopmentPath=${workspaceFolder}"
       ],
-      "outFiles": ["${workspaceFolder}/out/**/*.js"],
-      "preLaunchTask": "${defaultBuildTask}"
+      "outFiles": [
+        "${workspaceFolder}/out/**/*.js"
+      ],
+      "preLaunchTask": "${defaultBuildTask}",
     },
     {
       "name": "Extension Tests",
@@ -24,7 +27,9 @@
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
       ],
-      "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/out/test/**/*.js"
+      ],
       "preLaunchTask": "${defaultBuildTask}"
     }
   ]
