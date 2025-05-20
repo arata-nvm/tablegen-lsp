@@ -524,13 +524,14 @@ fn check_template_args(
         template_args.iter().map(|arg| arg.name.clone()).collect();
 
     for (idx, arg_value) in arg_values.into_iter().enumerate() {
+        let arg = template_args.get(idx).unwrap();
         let Some((arg_value_name, arg_value_typ, arg_value_range)) = arg_value else {
+            unsolved_args.remove(&arg.name);
             continue;
         };
 
         let arg_name_typ = match arg_value_name {
             None => {
-                let arg = template_args.get(idx).unwrap();
                 unsolved_args.remove(&arg.name);
                 Some((&arg.name, &arg.typ))
             }
@@ -891,7 +892,7 @@ impl Indexable for ast::Type {
                     }
                     None => {
                         ctx.error(reference_loc.range, format!("class not found: {name}"));
-                        None
+                        Some(Type::NotResolved(name))
                     }
                 }
             }

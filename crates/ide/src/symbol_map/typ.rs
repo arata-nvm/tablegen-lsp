@@ -25,6 +25,7 @@ pub enum Type {
     Bits(usize),
     List(Box<Type>),
     Record(RecordId, EcoString),
+    NotResolved(EcoString),
     Uninitialized,
     Unknown,
     Any, // for empty list
@@ -95,6 +96,7 @@ impl std::fmt::Display for Type {
             Self::Bits(width) => write!(f, "bits<{}>", width),
             Self::List(typ) => write!(f, "list<{}>", typ),
             Self::Record(_, name) => write!(f, "{}", name),
+            Self::NotResolved(name) => write!(f, "{}", name),
             Self::Uninitialized => write!(f, "uninitialized"),
             Self::Unknown => write!(f, "unknown"),
             Self::Any => write!(f, "any"),
