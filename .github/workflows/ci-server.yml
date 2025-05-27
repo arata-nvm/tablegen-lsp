@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
     paths:
+      - .cargo/**
       - .github/workflows/**
       - crates/**
       - Cargo.lock
