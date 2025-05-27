@@ -797,13 +797,12 @@ impl Indexable for ast::SimpleValue {
             }
             ast::SimpleValue::Identifier(identifier) => {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
+                if name == "NAME" {
+                    return Some(Type::String);
+                }
                 let Some(symbol_id) = ctx.resolve_id(&name) else {
-                    return if name == "NAME" {
-                        Some(Type::String)
-                    } else {
-                        ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));
-                        None
-                    };
+                    ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));
+                    return None;
                 };
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
                 match ctx.symbol_map.symbol(symbol_id) {
