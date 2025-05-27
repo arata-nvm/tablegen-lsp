@@ -7,12 +7,7 @@ use syntax::{
 use crate::{
     file_system::FileRange,
     index::IndexDatabase,
-    symbol_map::{
-        record::{Record, RecordKind},
-        record_field::RecordField,
-        symbol::Symbol,
-        SymbolMap,
-    },
+    symbol_map::{class::Class, record::RecordField, symbol::Symbol, SymbolMap},
 };
 
 #[derive(Debug)]
@@ -52,8 +47,8 @@ pub fn exec(db: &dyn IndexDatabase, range: FileRange) -> Option<Vec<InlayHint>> 
         let symbol = symbol_map.symbol(symbol_id);
         match symbol {
             // TODO: 参照箇所のみをイテレートしたい
-            Symbol::Record(record) if record.kind == RecordKind::Class => {
-                if let Some(new_hints) = inlay_hint_class(db, symbol_map, record, symbol_loc) {
+            Symbol::Class(class) => {
+                if let Some(new_hints) = inlay_hint_class(db, symbol_map, class, symbol_loc) {
                     hints.extend(new_hints);
                 }
             }
@@ -71,7 +66,7 @@ pub fn exec(db: &dyn IndexDatabase, range: FileRange) -> Option<Vec<InlayHint>> 
 fn inlay_hint_class(
     db: &dyn IndexDatabase,
     symbol_map: &SymbolMap,
-    class: &Record,
+    class: &Class,
     symbol_loc: FileRange,
 ) -> Option<Vec<InlayHint>> {
     let parse = db.parse(symbol_loc.file);

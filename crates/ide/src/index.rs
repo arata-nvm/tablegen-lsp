@@ -18,12 +18,13 @@ use crate::{
     file_system::{FileRange, IncludeId},
     handlers::diagnostics::Diagnostic,
     symbol_map::{
+        class::{Class, ClassId},
+        def::Def,
         defm::Defm,
         defset::Defset,
         multiclass::{Multiclass, MulticlassId},
-        record::{Record, RecordId, RecordKind},
-        record_field::RecordField,
-        symbol::Symbol,
+        record::RecordField,
+        symbol::{Symbol, SymbolId},
         template_arg::TemplateArgument,
         typ::Type,
         variable::{Variable, VariableId, VariableKind},
@@ -146,10 +147,10 @@ impl Indexable for ast::Class {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
-        let record = Record::new(name, RecordKind::Class, define_loc);
-        let record_id = ctx.symbol_map.add_record(record, true);
+        let class = Class::new(name, define_loc);
+        let class_id = ctx.symbol_map.add_class(class, true);
 
-        ctx.scopes.push(ScopeKind::Record(record_id));
+        ctx.scopes.push(ScopeKind::Class(class_id));
         if let Some(list) = self.template_arg_list() {
             list.index(ctx);
         }
@@ -171,14 +172,13 @@ impl Indexable for ast::Def {
         let def_id = match self.name() {
             Some(name_value) => {
                 let (name, define_loc) = index_name_value(name_value, ctx)?;
-                let def = Record::new(name, RecordKind::Def, define_loc);
-                ctx.symbol_map.add_record(def, defset_id.is_none())
+                let def = Def::new(name, define_loc);
+                ctx.symbol_map.add_def(def, defset_id.is_none())
             }
             None => {
                 let name = ctx.next_anonymous_def_name();
-                let def = Record::new(
+                let def = Def::new(
                     name,
-                    RecordKind::Def,
                     FileRange::new(ctx.current_file_id(), self.syntax().text_range()),
                 );
                 ctx.symbol_map.add_anonymous_def(def)
@@ -190,7 +190,7 @@ impl Indexable for ast::Def {
             defset.add_def(def_id);
         }
 
-        ctx.scopes.push(ScopeKind::Record(def_id));
+        ctx.scopes.push(ScopeKind::Def(def_id));
         self.record_body()?.index(ctx);
         ctx.scopes.pop();
 
@@ -378,9 +378,9 @@ impl Indexable for ast::TemplateArgDecl {
         let template_arg = TemplateArgument::new(name.clone(), typ, has_default_value, define_loc);
         let template_arg_id = ctx.symbol_map.add_template_argument(template_arg);
 
-        if let Some(record_id) = ctx.scopes.current_record_id() {
-            let record = ctx.symbol_map.record_mut(record_id);
-            record.add_template_arg(name, template_arg_id);
+        if let Some(class_id) = ctx.scopes.current_class_id() {
+            let class = ctx.symbol_map.class_mut(class_id);
+            class.add_template_arg(name, template_arg_id);
         } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
             let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
             multiclass.add_template_arg(name, template_arg_id);
@@ -412,7 +412,7 @@ impl Indexable for ast::ParentClassList {
         if let Some(record_id) = ctx.scopes.current_record_id() {
             for class_ref in self.classes() {
                 if let Some(class_id) = resolve_class_ref_as_class(&class_ref, ctx) {
-                    let record = ctx.symbol_map.record_mut(record_id);
+                    let mut record = ctx.symbol_map.record_mut(record_id);
                     record.add_parent(class_id);
                 }
             }
@@ -443,7 +443,7 @@ impl Indexable for ast::ParentClassList {
     }
 }
 
-fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> Option<RecordId> {
+fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> Option<ClassId> {
     let (name, reference_loc) = utils::identifier(&class_ref.name()?, ctx)?;
     let Some(class_id) = ctx.symbol_map.find_class(&name) else {
         ctx.error_by_filerange(reference_loc, format!("class not found: {name}"));
@@ -451,7 +451,7 @@ fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> 
     };
     ctx.symbol_map.add_reference(class_id, reference_loc);
 
-    let class = ctx.symbol_map.record(class_id);
+    let class = ctx.symbol_map.class(class_id);
     let template_args = class
         .iter_template_arg()
         .map(|id| ctx.symbol_map.template_arg(id))
@@ -652,7 +652,7 @@ impl Indexable for ast::FieldDef {
         let field = RecordField::new(name.clone(), typ.clone(), record_id, define_loc);
         let field_id = ctx.symbol_map.add_record_field(field);
 
-        let record = ctx.symbol_map.record_mut(record_id);
+        let mut record = ctx.symbol_map.record_mut(record_id);
         record.add_record_field(name.clone(), field_id);
 
         let value_typ = self.value()?.index(ctx)?;
@@ -686,7 +686,7 @@ impl Indexable for ast::FieldLet {
         let new_field = RecordField::new(name.clone(), field_typ.clone(), record_id, reference_loc);
         let new_field_id = ctx.symbol_map.add_record_field(new_field);
 
-        let record = ctx.symbol_map.record_mut(record_id);
+        let mut record = ctx.symbol_map.record_mut(record_id);
         record.add_record_field(name.clone(), new_field_id);
         ctx.symbol_map.add_reference(field_id, reference_loc);
 
@@ -805,13 +805,13 @@ impl Indexable for ast::SimpleValue {
                     return None;
                 };
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
+
+                if let SymbolId::DefId(def_id) = symbol_id {
+                    return Some(Type::Record(def_id.into(), name));
+                };
                 match ctx.symbol_map.symbol(symbol_id) {
-                    Symbol::Record(record) if record.kind == RecordKind::Def => {
-                        // FIXME
-                        let record_id = ctx.symbol_map.find_def(&name)?;
-                        Some(Type::Record(record_id, name))
-                    }
-                    Symbol::Record(_) => None,
+                    Symbol::Class(_) => None,
+                    Symbol::Def(_) => None, // unreachable
                     Symbol::TemplateArgument(template_arg) => Some(template_arg.typ.clone()),
                     Symbol::RecordField(field) => Some(field.typ.clone()),
                     Symbol::Variable(variable) => Some(variable.typ.clone()),
@@ -825,7 +825,7 @@ impl Indexable for ast::SimpleValue {
                 let class_id = ctx.symbol_map.find_class(&name)?;
                 ctx.symbol_map.add_reference(class_id, reference_loc);
 
-                let class = ctx.symbol_map.record(class_id);
+                let class = ctx.symbol_map.class(class_id);
                 let template_args = class
                     .iter_template_arg()
                     .map(|id| ctx.symbol_map.template_arg(id))
@@ -844,7 +844,7 @@ impl Indexable for ast::SimpleValue {
                     class_value.syntax().text_range(),
                 );
 
-                Some(Type::Record(class_id, name))
+                Some(Type::Record(class_id.into(), name))
             }
             ast::SimpleValue::BangOperator(bang_operator) => bang_operator.index(ctx),
             ast::SimpleValue::CondOperator(cond_operator) => {
@@ -884,7 +884,7 @@ impl Indexable for ast::Type {
                 match ctx.symbol_map.find_class(&name) {
                     Some(class_id) => {
                         ctx.symbol_map.add_reference(class_id, reference_loc);
-                        Some(Type::Record(class_id, name))
+                        Some(Type::Record(class_id.into(), name))
                     }
                     None => {
                         ctx.error_by_filerange(reference_loc, format!("class not found: {name}"));

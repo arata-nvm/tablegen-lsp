@@ -3,7 +3,7 @@ use id_arena::Id;
 
 use crate::file_system::FileRange;
 
-use super::{record::RecordId, typ::Type};
+use super::{def::DefId, typ::Type};
 
 pub type DefsetId = Id<Defset>;
 
@@ -11,7 +11,7 @@ pub type DefsetId = Id<Defset>;
 pub struct Defset {
     pub name: EcoString,
     pub typ: Type,
-    pub def_list: Vec<RecordId>,
+    pub def_list: Vec<DefId>,
 
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
@@ -28,7 +28,7 @@ impl Defset {
         }
     }
 
-    pub fn add_def(&mut self, record_id: RecordId) {
-        self.def_list.push(record_id);
+    pub fn add_def(&mut self, def_id: DefId) {
+        self.def_list.push(def_id);
     }
 }

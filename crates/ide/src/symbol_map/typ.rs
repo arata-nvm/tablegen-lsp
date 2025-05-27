@@ -1,6 +1,9 @@
 use ecow::EcoString;
 
-use super::{record::RecordId, record_field::RecordFieldId, SymbolMap};
+use super::{
+    record::{RecordFieldId, RecordId},
+    SymbolMap,
+};
 
 #[macro_export]
 macro_rules! TY {
@@ -65,8 +68,15 @@ impl Type {
                 if self_record_id == other_record_id {
                     return true;
                 }
-                let self_record = symbol_map.record(*self_record_id);
-                self_record.is_subclass_of(symbol_map, *other_record_id)
+                match other_record_id {
+                    // class, class || def, class
+                    RecordId::Class(other_class_id) => {
+                        let self_record = symbol_map.record(*self_record_id);
+                        self_record.is_subclass_of(symbol_map, *other_class_id)
+                    }
+                    // class, def || def, def
+                    RecordId::Def(_) => false,
+                }
             }
             _ => self == other,
         }

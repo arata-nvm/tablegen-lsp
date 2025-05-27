@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use ecow::EcoString;
 
 use crate::symbol_map::{
+    class::ClassId,
+    def::DefId,
     defm::DefmId,
     defset::DefsetId,
     multiclass::MulticlassId,
@@ -32,6 +34,14 @@ impl Scopes {
 
     pub fn pop(&mut self) -> Scope {
         self.scopes.pop().expect("scope is empty")
+    }
+
+    pub fn current_class_id(&self) -> Option<ClassId> {
+        self.scopes.iter().rev().find_map(|scope| scope.class_id())
+    }
+
+    pub fn current_def_id(&self) -> Option<DefId> {
+        self.scopes.iter().rev().find_map(|scope| scope.def_id())
     }
 
     pub fn current_record_id(&self) -> Option<RecordId> {
@@ -65,13 +75,19 @@ impl Scopes {
             if let Some(id) = scope.find_variable(name) {
                 return Some(id.into());
             }
-            if let Some(record_id) = scope.record_id() {
-                let record = symbol_map.record(record_id);
-                if let Some(field_id) = record.find_field(symbol_map, name) {
+            if let Some(class_id) = scope.class_id() {
+                let class = symbol_map.class(class_id);
+                if let Some(field_id) = class.find_field(symbol_map, name) {
                     return Some(field_id.into());
                 }
-                if let Some(template_arg_id) = record.find_template_arg(name) {
+                if let Some(template_arg_id) = class.find_template_arg(name) {
                     return Some(template_arg_id.into());
+                }
+            }
+            if let Some(def_id) = scope.def_id() {
+                let def = symbol_map.def(def_id);
+                if let Some(field_id) = def.find_field(symbol_map, name) {
+                    return Some(field_id.into());
                 }
             }
             if let Some(multiclass_id) = scope.multiclass_id() {
@@ -99,7 +115,8 @@ pub struct Scope {
 #[derive(Debug)]
 pub enum ScopeKind {
     Root,
-    Record(RecordId),
+    Class(ClassId),
+    Def(DefId),
     Foreach(EcoString, VariableId),
     Defset(DefsetId),
     Multiclass(MulticlassId),
@@ -117,9 +134,24 @@ impl Scope {
         }
     }
 
+    pub fn class_id(&self) -> Option<ClassId> {
+        match self.kind {
+            ScopeKind::Class(id) => Some(id),
+            _ => None,
+        }
+    }
+
+    pub fn def_id(&self) -> Option<DefId> {
+        match self.kind {
+            ScopeKind::Def(id) => Some(id),
+            _ => None,
+        }
+    }
+
     pub fn record_id(&self) -> Option<RecordId> {
         match self.kind {
-            ScopeKind::Record(id) => Some(id),
+            ScopeKind::Class(id) => Some(id.into()),
+            ScopeKind::Def(id) => Some(id.into()),
             _ => None,
         }
     }

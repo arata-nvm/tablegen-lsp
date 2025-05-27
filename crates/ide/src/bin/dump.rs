@@ -3,7 +3,7 @@ use std::{fs, sync::Arc};
 use ide::{
     analysis::AnalysisHost,
     file_system::{FileId, FilePath, FileSet, FileSystem},
-    symbol_map::{record::RecordKind, symbol::Symbol},
+    symbol_map::symbol::Symbol,
 };
 
 pub fn main() {
@@ -35,30 +35,27 @@ pub fn main() {
 
     println!("------------- Classes -----------------");
     for symbol_id in iter {
-        let Symbol::Record(record) = symbol_map.symbol(symbol_id) else {
+        let Symbol::Class(class) = symbol_map.symbol(symbol_id) else {
             continue;
         };
-        if record.kind != RecordKind::Class {
-            continue;
-        }
-        let template_args = record
+        let template_args = class
             .iter_template_arg()
             .map(|id| symbol_map.template_arg(id))
             .map(|arg| format!("{} {}", arg.typ, arg.name))
             .collect::<Vec<String>>()
             .join(", ");
-        let parent_classes = record
+        let parent_classes = class
             .parent_list
             .iter()
-            .map(|&id| symbol_map.record(id))
+            .map(|&id| symbol_map.class(id))
             .map(|class| format!("{}", class.name))
             .collect::<Vec<String>>()
             .join(", ");
         println!(
             "class {}<{}> : {} {{",
-            record.name, template_args, parent_classes
+            class.name, template_args, parent_classes
         );
-        for field_id in record.iter_field() {
+        for field_id in class.iter_field() {
             let field = symbol_map.record_field(field_id);
             println!("  {} {};", field.typ, field.name);
         }
@@ -71,21 +68,18 @@ pub fn main() {
 
     println!("------------- Defs -----------------");
     for symbol_id in iter {
-        let Symbol::Record(record) = symbol_map.symbol(symbol_id) else {
+        let Symbol::Def(def) = symbol_map.symbol(symbol_id) else {
             continue;
         };
-        if record.kind != RecordKind::Def {
-            continue;
-        }
-        let parent_classes = record
+        let parent_classes = def
             .parent_list
             .iter()
-            .map(|&id| symbol_map.record(id))
+            .map(|&id| symbol_map.class(id))
             .map(|class| format!("{}", class.name))
             .collect::<Vec<String>>()
             .join(", ");
-        println!("def {} {{ // {}", record.name, parent_classes);
-        for field_id in record.iter_field() {
+        println!("def {} {{ // {}", def.name, parent_classes);
+        for field_id in def.iter_field() {
             let field = symbol_map.record_field(field_id);
             println!("  {} {};", field.typ, field.name);
         }

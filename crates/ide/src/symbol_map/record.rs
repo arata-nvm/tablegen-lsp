@@ -1,95 +1,104 @@
 use ecow::EcoString;
 use id_arena::Id;
-use indexmap::IndexMap;
 
 use crate::file_system::FileRange;
 
-use super::{record_field::RecordFieldId, template_arg::TemplateArgumentId, SymbolMap};
+use super::{
+    class::{Class, ClassId},
+    def::{Def, DefId},
+    typ::Type,
+    SymbolMap,
+};
 
-pub type RecordId = Id<Record>;
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum RecordId {
+    Class(ClassId),
+    Def(DefId),
+}
+
+impl From<ClassId> for RecordId {
+    fn from(class_id: ClassId) -> Self {
+        Self::Class(class_id)
+    }
+}
+
+impl From<DefId> for RecordId {
+    fn from(def_id: DefId) -> Self {
+        Self::Def(def_id)
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Record {
+pub enum Record<'a> {
+    Class(&'a Class),
+    Def(&'a Def),
+}
+
+impl<'a> Record<'a> {
+    pub fn name(&self) -> &EcoString {
+        match self {
+            Self::Class(class) => &class.name,
+            Self::Def(def) => &def.name,
+        }
+    }
+
+    pub fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
+        match self {
+            Self::Class(class) => class.find_field(symbol_map, name),
+            Self::Def(def) => def.find_field(symbol_map, name),
+        }
+    }
+
+    pub fn is_subclass_of(&self, symbol_map: &SymbolMap, other_id: ClassId) -> bool {
+        match self {
+            Self::Class(class) => class.is_subclass_of(symbol_map, other_id),
+            Self::Def(def) => def.is_subclass_of(symbol_map, other_id),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum RecordMut<'a> {
+    Class(&'a mut Class),
+    Def(&'a mut Def),
+}
+
+impl<'a> RecordMut<'a> {
+    pub fn add_record_field(&mut self, name: EcoString, record_field_id: RecordFieldId) {
+        match self {
+            Self::Class(class) => class.add_record_field(name, record_field_id),
+            Self::Def(def) => def.add_record_field(name, record_field_id),
+        }
+    }
+
+    pub fn add_parent(&mut self, parent_id: ClassId) {
+        match self {
+            Self::Class(class) => class.add_parent(parent_id),
+            Self::Def(def) => def.add_parent(parent_id),
+        }
+    }
+}
+
+pub type RecordFieldId = Id<RecordField>;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RecordField {
     pub name: EcoString,
-    pub kind: RecordKind,
-    pub name_to_template_arg: IndexMap<EcoString, TemplateArgumentId>,
-    pub name_to_record_field: IndexMap<EcoString, RecordFieldId>,
-    pub parent_list: Vec<RecordId>,
+    pub typ: Type,
+    pub parent: RecordId,
 
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum RecordKind {
-    Class,
-    Def,
-}
-
-impl Record {
-    pub fn new(name: EcoString, kind: RecordKind, define_loc: FileRange) -> Self {
+impl RecordField {
+    pub fn new(name: EcoString, typ: Type, parent: RecordId, define_loc: FileRange) -> Self {
         Self {
             name,
-            kind,
-            name_to_template_arg: IndexMap::new(),
-            name_to_record_field: IndexMap::new(),
-            parent_list: Vec::new(),
+            typ,
+            parent,
             define_loc,
             reference_locs: Vec::new(),
         }
-    }
-
-    pub fn add_template_arg(&mut self, name: EcoString, template_arg_id: TemplateArgumentId) {
-        self.name_to_template_arg.insert(name, template_arg_id);
-    }
-
-    pub fn iter_template_arg(&self) -> impl Iterator<Item = TemplateArgumentId> + '_ {
-        self.name_to_template_arg.values().copied()
-    }
-
-    pub fn find_template_arg(&self, name: &EcoString) -> Option<TemplateArgumentId> {
-        self.name_to_template_arg.get(name).copied()
-    }
-
-    pub fn add_record_field(&mut self, name: EcoString, record_field_id: RecordFieldId) {
-        self.name_to_record_field.insert(name, record_field_id);
-    }
-
-    pub fn iter_field(&self) -> impl Iterator<Item = RecordFieldId> + '_ {
-        self.name_to_record_field.values().copied()
-    }
-
-    pub fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
-        if let Some(field_id) = self.name_to_record_field.get(name) {
-            return Some(*field_id);
-        }
-
-        for parent_id in &self.parent_list {
-            let parent = symbol_map.record(*parent_id);
-            if let Some(field_id) = parent.find_field(symbol_map, name) {
-                return Some(field_id);
-            }
-        }
-
-        None
-    }
-
-    pub fn add_parent(&mut self, parent_id: RecordId) {
-        self.parent_list.push(parent_id);
-    }
-
-    pub fn is_subclass_of(&self, symbol_map: &SymbolMap, other_id: RecordId) -> bool {
-        if self.parent_list.contains(&other_id) {
-            return true;
-        }
-
-        for parent_id in &self.parent_list {
-            let parent = symbol_map.record(*parent_id);
-            if parent.is_subclass_of(symbol_map, other_id) {
-                return true;
-            }
-        }
-
-        false
     }
 }

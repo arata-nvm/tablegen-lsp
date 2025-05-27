@@ -4,7 +4,6 @@ use syntax::SyntaxNode;
 
 use crate::file_system::{FilePosition, FileRange};
 use crate::index::IndexDatabase;
-use crate::symbol_map::record::RecordKind;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
 use crate::symbol_map::SymbolMap;
@@ -37,9 +36,9 @@ fn extract_symbol_signature(
     let symbol = symbol_map.find_symbol_at(pos)?;
 
     let symbol_info = match symbol {
-        Symbol::Record(record) if record.kind == RecordKind::Class => {
-            let name = &record.name;
-            let template_arg = record
+        Symbol::Class(class) => {
+            let name = &class.name;
+            let template_arg = class
                 .iter_template_arg()
                 .map(|id| symbol_map.template_arg(id))
                 .map(|arg| format!("{} {}", arg.typ, arg.name))
@@ -50,10 +49,9 @@ fn extract_symbol_signature(
                 true => format!("class {name}"),
             }
         }
-        Symbol::Record(record) if record.kind == RecordKind::Def => {
-            format!("def {}", record.name)
+        Symbol::Def(def) => {
+            format!("def {}", def.name)
         }
-        Symbol::Record(_) => unreachable!("unexpected record kind"),
         Symbol::TemplateArgument(template_arg) => {
             format!("{} {}", template_arg.typ, template_arg.name)
         }
@@ -61,7 +59,9 @@ fn extract_symbol_signature(
             let parent = symbol_map.record(record_field.parent);
             format!(
                 "{} {}::{}",
-                record_field.typ, parent.name, record_field.name
+                record_field.typ,
+                parent.name(),
+                record_field.name
             )
         }
         Symbol::Variable(variable) => match variable.kind {

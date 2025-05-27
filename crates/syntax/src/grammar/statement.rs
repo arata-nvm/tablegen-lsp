@@ -339,7 +339,7 @@ pub(super) fn parent_class_list(p: &mut Parser) -> bool {
         }
     }
     p.finish_node();
-    return true;
+    true
 }
 
 // ClassRef ::= Identifier ( "<" ArgValueList? ">" )?

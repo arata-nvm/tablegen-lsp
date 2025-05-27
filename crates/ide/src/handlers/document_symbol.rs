@@ -3,7 +3,6 @@ use syntax::parser::TextRange;
 
 use crate::file_system::FileId;
 use crate::index::IndexDatabase;
-use crate::symbol_map::record::RecordKind;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::SymbolMap;
 
@@ -28,8 +27,8 @@ pub fn exec(db: &dyn IndexDatabase, file_id: FileId) -> Option<Vec<DocumentSymbo
 
 fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<DocumentSymbol> {
     match symbol {
-        Symbol::Record(record) if record.kind == RecordKind::Class => {
-            let template_argument_list = record
+        Symbol::Class(class) => {
+            let template_argument_list = class
                 .iter_template_arg()
                 .map(|id| symbol_map.template_arg(id))
                 .map(|arg| DocumentSymbol {
@@ -40,7 +39,7 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
                     children: Vec::new(),
                 });
 
-            let field_list = record
+            let field_list = class
                 .iter_field()
                 .map(|id| symbol_map.record_field(id))
                 .map(|field| DocumentSymbol {
@@ -52,15 +51,15 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
                 });
 
             Some(DocumentSymbol {
-                name: record.name.clone(),
+                name: class.name.clone(),
                 typ: "class".into(),
-                range: record.define_loc.range,
+                range: class.define_loc.range,
                 kind: DocumentSymbolKind::Class,
                 children: template_argument_list.chain(field_list).collect(),
             })
         }
-        Symbol::Record(record) if record.kind == RecordKind::Def => {
-            let field_list = record
+        Symbol::Def(def) => {
+            let field_list = def
                 .iter_field()
                 .map(|id| symbol_map.record_field(id))
                 .map(|field| DocumentSymbol {
@@ -72,9 +71,9 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
                 });
 
             Some(DocumentSymbol {
-                name: record.name.clone(),
+                name: def.name.clone(),
                 typ: "def".into(),
-                range: record.define_loc.range,
+                range: def.define_loc.range,
                 kind: DocumentSymbolKind::Def,
                 children: field_list.collect(),
             })
