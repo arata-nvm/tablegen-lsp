@@ -148,8 +148,20 @@ impl Indexable for ast::Class {
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
         let class = Class::new(name, define_loc);
-        let class_id = ctx.symbol_map.add_class(class, true);
 
+        let is_declaration = self.template_arg_list().is_none()
+            && self
+                .record_body()
+                .and_then(|it| it.body())
+                .map(|it| it.is_declaration())
+                .unwrap_or(false);
+
+        if is_declaration {
+            ctx.symbol_map.declare_class(class);
+            return None;
+        }
+
+        let class_id = ctx.symbol_map.add_class(class, true);
         ctx.scopes.push(ScopeKind::Class(class_id));
         if let Some(list) = self.template_arg_list() {
             list.index(ctx);

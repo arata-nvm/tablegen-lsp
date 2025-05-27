@@ -223,6 +223,13 @@ asts! {
     };
     Body {
         items: [BodyItem],
+        pub fn is_declaration(&self) -> bool {
+            self.items().count() == 0
+            && self
+                .0
+                .first_child_or_token_by_kind(&|kind| kind == SyntaxKind::Semi)
+                .is_some()
+        }
     };
     BodyItem [
         FieldDef,

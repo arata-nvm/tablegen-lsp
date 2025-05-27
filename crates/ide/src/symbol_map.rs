@@ -41,6 +41,7 @@ pub struct SymbolMap {
     defm_list: Arena<Defm>,
 
     name_to_class: HashMap<EcoString, ClassId>,
+    name_to_class_declaration: HashMap<EcoString, ClassId>,
     name_to_def: HashMap<EcoString, DefId>,
     name_to_defset: HashMap<EcoString, DefsetId>,
     name_to_multiclass: HashMap<EcoString, MulticlassId>,
@@ -244,10 +245,25 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
+    pub fn declare_class(&mut self, class: Class) -> ClassId {
+        let name = class.name.clone();
+        let id = self.class_list.alloc(class);
+        self.name_to_class.insert(name.clone(), id);
+        self.name_to_class_declaration.insert(name.clone(), id);
+        id
+    }
+
     pub fn add_class(&mut self, class: Class, is_global: bool) -> ClassId {
         let name = class.name.clone();
         let define_loc = class.define_loc;
-        let id = self.class_list.alloc(class);
+        let id = match self.name_to_class_declaration.remove(&name) {
+            Some(id) => {
+                let class_mut = self.class_mut(id);
+                let _ = std::mem::replace(class_mut, class);
+                id
+            }
+            None => self.class_list.alloc(class),
+        };
         self.name_to_class.insert(name, id);
         if is_global {
             self.file_to_symbol_list
