@@ -58,7 +58,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((arguments_range, Some(arguments_type))) = value_types.next() {
                     if !arguments_type.is_list() {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             arguments_range,
                             format!("expected list, found {arguments_type}"),
                         );
@@ -67,7 +67,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((names_range, Some(names_type))) = value_types.next() {
                     if !names_type.can_be_casted_to(&ctx.symbol_map, &TY![list<string>]) {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             names_range,
                             format!("expected list<string>, found {names_type}"),
                         );
@@ -86,7 +86,10 @@ impl Indexable for ast::BangOperator {
                         || typ.is_list()
                         || typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]))
                     {
-                        ctx.error(range, format!("expected string, list, or dag; found {typ}"));
+                        ctx.error_by_textrange(
+                            range,
+                            format!("expected string, list, or dag; found {typ}"),
+                        );
                     }
                 }
 
@@ -107,7 +110,7 @@ impl Indexable for ast::BangOperator {
                         || typ.can_be_casted_to(&ctx.symbol_map, &TY![string])
                         || typ.is_record())
                     {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             range,
                             format!("expected bit, bits, int, string, or record; found {typ}",),
                         );
@@ -123,7 +126,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((range, Some(typ))) = value_types.next() {
                     if !typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(range, format!("expected string, found {typ}"));
+                        ctx.error_by_textrange(range, format!("expected string, found {typ}"));
                     }
                 }
 
@@ -163,7 +166,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((string1_range, Some(string1_typ))) = value_types.next() {
                     if !string1_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             string1_range,
                             format!("expected string, found {string1_typ}"),
                         );
@@ -172,7 +175,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((string2_range, Some(string2_typ))) = value_types.next() {
                     if !string2_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             string2_range,
                             format!("expected string, found {string2_typ}"),
                         );
@@ -181,7 +184,10 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((start_range, Some(start_typ))) = value_types.next() {
                     if !start_typ.can_be_casted_to(&ctx.symbol_map, &TY![int]) {
-                        ctx.error(start_range, format!("expected int, found {start_typ}"));
+                        ctx.error_by_textrange(
+                            start_range,
+                            format!("expected int, found {start_typ}"),
+                        );
                     }
                 }
 
@@ -272,7 +278,7 @@ impl Indexable for ast::BangOperator {
                         || typ.can_be_casted_to(&ctx.symbol_map, &TY![int])
                         || typ.can_be_casted_to(&ctx.symbol_map, &TY![string]))
                     {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             range,
                             format!("expected bit, bits, int, or string; found {typ}",),
                         );
@@ -288,7 +294,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next() {
                     if !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]) {
-                        ctx.error(dag_range, format!("expected dag, found {dag_typ}"));
+                        ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
                     }
                 }
 
@@ -296,7 +302,7 @@ impl Indexable for ast::BangOperator {
                     if !(key_typ.can_be_casted_to(&ctx.symbol_map, &TY![int])
                         || key_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]))
                     {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             key_range,
                             format!("expected int, or string; found {key_typ}"),
                         );
@@ -312,13 +318,16 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next() {
                     if !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]) {
-                        ctx.error(dag_range, format!("expected dag, found {dag_typ}"));
+                        ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
                     }
                 }
 
                 if let Some((index_range, Some(index_typ))) = value_types.next() {
                     if !index_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]) {
-                        ctx.error(index_range, format!("expected dag, found {index_typ}"));
+                        ctx.error_by_textrange(
+                            index_range,
+                            format!("expected dag, found {index_typ}"),
+                        );
                     }
                 }
 
@@ -331,7 +340,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next() {
                     if !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]) {
-                        ctx.error(dag_range, format!("expected dag, found {dag_typ}"));
+                        ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
                     }
                 }
 
@@ -346,7 +355,10 @@ impl Indexable for ast::BangOperator {
                 match list_typ? {
                     Type::List(elm_typ) => Some(*elm_typ.clone()),
                     list_typ => {
-                        ctx.error(list_range, format!("expected list, found {list_typ}"));
+                        ctx.error_by_textrange(
+                            list_range,
+                            format!("expected list, found {list_typ}"),
+                        );
                         Some(Type::Unknown)
                     }
                 }
@@ -360,7 +372,7 @@ impl Indexable for ast::BangOperator {
                     if !(test_typ.can_be_casted_to(&ctx.symbol_map, &TY![bit])
                         || test_typ.can_be_casted_to(&ctx.symbol_map, &TY![int]))
                     {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             test_range,
                             format!("expected bit, or int; found {test_typ}"),
                         );
@@ -377,7 +389,7 @@ impl Indexable for ast::BangOperator {
                 if then_typ.can_be_casted_to(&ctx.symbol_map, &else_typ) {
                     Some(then_typ)
                 } else {
-                    ctx.error(
+                    ctx.error_by_textrange(
                         else_range,
                         format!("inconsistent types {then_typ} and {else_typ} for !if"),
                     );
@@ -403,7 +415,7 @@ impl Indexable for ast::BangOperator {
                                 Type::Any | Type::String | Type::Int | Type::Bits(_) | Type::Bit
                             ) => {}
                         _ => {
-                            ctx.error(
+                            ctx.error_by_textrange(
                                 list_range,
                                 format!(
                                     "expected list of string, int, bits, or bit; found {list_type}"
@@ -415,7 +427,10 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((delim_range, Some(delim_type))) = value_types.next() {
                     if !delim_type.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(delim_range, format!("expected string, found {delim_type}"));
+                        ctx.error_by_textrange(
+                            delim_range,
+                            format!("expected string, found {delim_type}"),
+                        );
                     }
                 }
 
@@ -437,7 +452,10 @@ impl Indexable for ast::BangOperator {
                 };
 
                 if !list1_type.is_list() {
-                    ctx.error(list1_range, format!("expected list, found {list1_type}"));
+                    ctx.error_by_textrange(
+                        list1_range,
+                        format!("expected list, found {list1_type}"),
+                    );
                     return Some(Type::Unknown);
                 }
 
@@ -446,7 +464,10 @@ impl Indexable for ast::BangOperator {
                         continue;
                     };
                     if !typ.can_be_casted_to(&ctx.symbol_map, &list1_type) {
-                        ctx.error(range, format!("expected {list1_type}, found {typ}"));
+                        ctx.error_by_textrange(
+                            range,
+                            format!("expected {list1_type}, found {typ}"),
+                        );
                     }
                 }
 
@@ -468,7 +489,7 @@ impl Indexable for ast::BangOperator {
                         Some(Type::List(inner_type.clone()))
                     }
                 } else {
-                    ctx.error(list_range, format!("expected list, found {list_type}"));
+                    ctx.error_by_textrange(list_range, format!("expected list, found {list_type}"));
                     Some(Type::Unknown)
                 }
             }
@@ -482,7 +503,10 @@ impl Indexable for ast::BangOperator {
                 };
 
                 if !list1_type.is_list() {
-                    ctx.error(list1_range, format!("expected list, found {list1_type}"));
+                    ctx.error_by_textrange(
+                        list1_range,
+                        format!("expected list, found {list1_type}"),
+                    );
                     return Some(Type::Unknown);
                 }
 
@@ -490,7 +514,7 @@ impl Indexable for ast::BangOperator {
                 let list2_type = list2_type.clone()?;
 
                 if !list2_type.can_be_casted_to(&ctx.symbol_map, &list1_type) {
-                    ctx.error(
+                    ctx.error_by_textrange(
                         list2_range,
                         format!("expected {list1_type}, found {list2_type}"),
                     );
@@ -509,7 +533,10 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((count_range, Some(count_typ))) = value_types.next() {
                     if !count_typ.can_be_casted_to(&ctx.symbol_map, &TY![int]) {
-                        ctx.error(count_range, format!("expected int, found {count_typ}"));
+                        ctx.error_by_textrange(
+                            count_range,
+                            format!("expected int, found {count_typ}"),
+                        );
                     }
                 }
 
@@ -522,7 +549,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((range, Some(typ))) = value_types.next() {
                     if !typ.can_be_casted_to(&ctx.symbol_map, &TY![int]) {
-                        ctx.error(range, format!("expected int, found {typ}"));
+                        ctx.error_by_textrange(range, format!("expected int, found {typ}"));
                     }
                 }
 
@@ -535,7 +562,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((range, Some(typ))) = value_types.next() {
                     if !typ.can_be_casted_to(&ctx.symbol_map, &TY![int]) {
-                        ctx.error(range, format!("expected int, found {typ}"));
+                        ctx.error_by_textrange(range, format!("expected int, found {typ}"));
                     }
                 }
 
@@ -559,12 +586,12 @@ impl Indexable for ast::BangOperator {
                             continue;
                         };
                         if !typ.can_be_casted_to(&ctx.symbol_map, &TY![int]) {
-                            ctx.error(range, format!("expected int, found {typ}"));
+                            ctx.error_by_textrange(range, format!("expected int, found {typ}"));
                         }
                     }
                 } else if start_or_list_typ.is_list() {
                     if value_types.next().is_some() {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             start_or_list_range,
                             format!(
                                 "expected one list, found extra value of type {start_or_list_typ}"
@@ -572,7 +599,7 @@ impl Indexable for ast::BangOperator {
                         );
                     }
                 } else {
-                    ctx.error(
+                    ctx.error_by_textrange(
                         start_or_list_range,
                         format!("expected int or list, found {start_or_list_typ}"),
                     );
@@ -593,7 +620,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next() {
                     if !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]) {
-                        ctx.error(dag_range, format!("expected dag, found {dag_typ}"));
+                        ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
                     }
                 }
 
@@ -601,7 +628,7 @@ impl Indexable for ast::BangOperator {
                     if !(key_typ.can_be_casted_to(&ctx.symbol_map, &TY![int])
                         || key_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]))
                     {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             key_range,
                             format!("expected int, or string; found {key_typ}"),
                         );
@@ -617,7 +644,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next() {
                     if !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]) {
-                        ctx.error(dag_range, format!("expected dag, found {dag_typ}"));
+                        ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
                     }
                 }
 
@@ -625,7 +652,7 @@ impl Indexable for ast::BangOperator {
                     if !(key_typ.can_be_casted_to(&ctx.symbol_map, &TY![int])
                         || key_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]))
                     {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             key_range,
                             format!("expected int, or string; found {key_typ}"),
                         );
@@ -634,7 +661,10 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((name_range, Some(name_typ))) = value_types.next() {
                     if !name_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(name_range, format!("expected string, found {name_typ}"));
+                        ctx.error_by_textrange(
+                            name_range,
+                            format!("expected string, found {name_typ}"),
+                        );
                     }
                 }
 
@@ -647,7 +677,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next() {
                     if !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]) {
-                        ctx.error(dag_range, format!("expected dag, found {dag_typ}"));
+                        ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
                     }
                 }
 
@@ -663,7 +693,10 @@ impl Indexable for ast::BangOperator {
                         || typ.is_list()
                         || typ.can_be_casted_to(&ctx.symbol_map, &TY![dag]))
                     {
-                        ctx.error(range, format!("expected string, list, or dag; found {typ}"));
+                        ctx.error_by_textrange(
+                            range,
+                            format!("expected string, list, or dag; found {typ}"),
+                        );
                     }
                 }
 
@@ -679,7 +712,7 @@ impl Indexable for ast::BangOperator {
                         continue;
                     };
                     if !typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(range, format!("expected string, found {typ}"));
+                        ctx.error_by_textrange(range, format!("expected string, found {typ}"));
                     }
                 }
 
@@ -702,13 +735,13 @@ impl Indexable for ast::BangOperator {
                     || value_typ.is_record()
                 {
                     if !target_typ.can_be_casted_to(&ctx.symbol_map, &value_typ) {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             target_range,
                             format!("expected {value_typ}, found {target_typ}"),
                         );
                     }
                     if !repl_typ.can_be_casted_to(&ctx.symbol_map, &value_typ) {
-                        ctx.error(
+                        ctx.error_by_textrange(
                             repl_range,
                             format!("expected {value_typ}, found {repl_typ}"),
                         );
@@ -716,7 +749,7 @@ impl Indexable for ast::BangOperator {
 
                     Some(value_typ)
                 } else {
-                    ctx.error(
+                    ctx.error_by_textrange(
                         value_range,
                         format!("expected string or record, found {target_typ}"),
                     );
@@ -730,19 +763,25 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((string_range, Some(string_typ))) = value_types.next() {
                     if !string_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(string_range, format!("expected string, found {string_typ}"));
+                        ctx.error_by_textrange(
+                            string_range,
+                            format!("expected string, found {string_typ}"),
+                        );
                     }
                 }
 
                 if let Some((start_range, Some(start_typ))) = value_types.next() {
                     if !start_typ.can_be_casted_to(&ctx.symbol_map, &TY![int]) {
-                        ctx.error(start_range, format!("expected int, found {start_typ}"));
+                        ctx.error_by_textrange(
+                            start_range,
+                            format!("expected int, found {start_typ}"),
+                        );
                     }
                 }
 
                 if let Some((len_range, Some(len_typ))) = value_types.next() {
                     if !len_typ.can_be_casted_to(&ctx.symbol_map, &TY![int]) {
-                        ctx.error(len_range, format!("expected int, found {len_typ}"));
+                        ctx.error_by_textrange(len_range, format!("expected int, found {len_typ}"));
                     }
                 }
 
@@ -758,7 +797,7 @@ impl Indexable for ast::BangOperator {
                         return Some(list_typ);
                     }
 
-                    ctx.error(list_range, format!("expected list, found {list_typ}"));
+                    ctx.error_by_textrange(list_range, format!("expected list, found {list_typ}"));
                 }
                 Some(Type::Unknown)
             }
@@ -769,7 +808,7 @@ impl Indexable for ast::BangOperator {
 
                 if let Some((range, Some(typ))) = value_types.next() {
                     if !typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
-                        ctx.error(range, format!("expected string, found {typ}"));
+                        ctx.error_by_textrange(range, format!("expected string, found {typ}"));
                     }
                 }
                 Some(TY![string])
@@ -796,7 +835,7 @@ mod common {
         match node.r#type() {
             Some(typ) => typ.index(ctx),
             None => {
-                ctx.error(node.syntax().text_range(), "expected type annotation");
+                ctx.error_by_syntax(node.syntax(), "expected type annotation");
                 None
             }
         }
@@ -804,7 +843,7 @@ mod common {
 
     pub(super) fn unexpect_type_annotation(ctx: &mut super::IndexCtx, node: &ast::BangOperator) {
         if let Some(typ) = node.r#type() {
-            ctx.error(typ.syntax().text_range(), "unexpected type annotation");
+            ctx.error_by_syntax(typ.syntax(), "unexpected type annotation");
         }
     }
 
@@ -818,24 +857,24 @@ mod common {
         match (num.start_bound(), num.end_bound()) {
             (Bound::Included(start), Bound::Included(end)) if start == end => {
                 if values.len() != *start {
-                    ctx.error(
-                        node.syntax().text_range(),
+                    ctx.error_by_syntax(
+                        node.syntax(),
                         format!("expected {start} arguments, found {values_len}"),
                     );
                 }
             }
             (Bound::Included(start), Bound::Included(end)) if start != end => {
                 if values.len() < *start || *end < values.len() {
-                    ctx.error(
-                        node.syntax().text_range(),
+                    ctx.error_by_syntax(
+                        node.syntax(),
                         format!("expected {start} to {end} arguments, found {values_len}"),
                     );
                 }
             }
             (Bound::Included(start), Bound::Unbounded) => {
                 if values.len() < *start {
-                    ctx.error(
-                        node.syntax().text_range(),
+                    ctx.error_by_syntax(
+                        node.syntax(),
                         format!("expected {start} or more arguments, found {values_len}"),
                     );
                 }
@@ -866,8 +905,8 @@ mod common {
             };
 
             if !value_type.can_be_casted_to(&ctx.symbol_map, expected) {
-                ctx.error(
-                    value.syntax().text_range(),
+                ctx.error_by_syntax(
+                    value.syntax(),
                     format!("expected {expected}, found {value_type}"),
                 );
             }

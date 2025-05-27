@@ -117,10 +117,7 @@ impl Indexable for ast::Include {
         let include_id = IncludeId(SyntaxNodePtr::new(self.syntax()));
         let Some(include_file_id) = include_map.get(&include_id).copied() else {
             let path = self.path().map(|it| it.value()).unwrap_or_default();
-            ctx.error(
-                self.syntax().text_range(),
-                format!("include file not found: {path}"),
-            );
+            ctx.error_by_syntax(self.syntax(), format!("include file not found: {path}"));
             return None;
         };
 
@@ -449,7 +446,7 @@ impl Indexable for ast::ParentClassList {
 fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> Option<RecordId> {
     let (name, reference_loc) = utils::identifier(&class_ref.name()?, ctx)?;
     let Some(class_id) = ctx.symbol_map.find_class(&name) else {
-        ctx.error(reference_loc.range, format!("class not found: {name}"));
+        ctx.error_by_filerange(reference_loc, format!("class not found: {name}"));
         return None;
     };
     ctx.symbol_map.add_reference(class_id, reference_loc);
@@ -482,7 +479,7 @@ fn resolve_class_ref_as_multiclass(
 ) -> Option<MulticlassId> {
     let (name, reference_loc) = utils::identifier(&class_ref.name()?, ctx)?;
     let Some(multiclass_id) = ctx.symbol_map.find_multiclass(&name) else {
-        ctx.error(reference_loc.range, format!("multiclass not found: {name}"));
+        ctx.error_by_filerange(reference_loc, format!("multiclass not found: {name}"));
         return None;
     };
     ctx.symbol_map.add_reference(multiclass_id, reference_loc);
@@ -516,7 +513,7 @@ fn check_template_args(
     range: TextRange,
 ) {
     if arg_values.len() > template_args.len() {
-        ctx.error(range, format!("too many arguments: {}", arg_values.len()));
+        ctx.error_by_textrange(range, format!("too many arguments: {}", arg_values.len()));
         return;
     }
 
@@ -540,7 +537,7 @@ fn check_template_args(
                 if unsolved_args.remove(&arg_value_name) {
                     arg.map(|it| (&it.name, &it.typ))
                 } else if arg.is_some() {
-                    ctx.error(
+                    ctx.error_by_textrange(
                         arg_value_range,
                         format!(
                             "we can only specify the template argument '{arg_value_name}' once"
@@ -548,7 +545,7 @@ fn check_template_args(
                     );
                     None
                 } else {
-                    ctx.error(
+                    ctx.error_by_textrange(
                         arg_value_range,
                         format!("argument '{arg_value_name}' doesn't exist"),
                     );
@@ -559,12 +556,12 @@ fn check_template_args(
 
         if let Some((arg_name, arg_typ)) = arg_name_typ {
             if !arg_value_typ.can_be_casted_to(&ctx.symbol_map, arg_typ) {
-                ctx.error(
-				arg_value_range,
-				format!(
-					"value specified for template argument '{arg_name}' is type of {arg_value_typ}; expected type {arg_typ}"
-				),
-			);
+                ctx.error_by_textrange(
+    				arg_value_range,
+    				format!(
+    					"value specified for template argument '{arg_name}' is type of {arg_value_typ}; expected type {arg_typ}"
+    				),
+    			);
             }
         }
     }
@@ -573,7 +570,7 @@ fn check_template_args(
         let arg = template_args.iter().find(|arg| arg.name == unsolved_arg);
         if let Some(arg) = arg {
             if !arg.has_default_value {
-                ctx.error(
+                ctx.error_by_textrange(
                     range,
                     format!("value not specified for template argument '{unsolved_arg}'"),
                 );
@@ -605,8 +602,8 @@ impl Indexable for ast::ArgValue {
                 let ast::SimpleValue::String(name) =
                     named.name()?.inner_values().next()?.simple_value()?
                 else {
-                    ctx.error(
-                        named.syntax().text_range(),
+                    ctx.error_by_syntax(
+                        named.syntax(),
                         "the name of named argument should be a valid identifier",
                     );
                     return None;
@@ -660,8 +657,8 @@ impl Indexable for ast::FieldDef {
 
         let value_typ = self.value()?.index(ctx)?;
         if !value_typ.can_be_casted_to(&ctx.symbol_map, &typ) {
-            ctx.error(
-                self.value()?.syntax().text_range(),
+            ctx.error_by_syntax(
+                self.value()?.syntax(),
                 format!("field '{name}' of type '{typ}' is incompatible with type '{value_typ}'",),
             );
         }
@@ -695,8 +692,8 @@ impl Indexable for ast::FieldLet {
 
         let value_typ = self.value()?.index(ctx)?;
         if !value_typ.can_be_casted_to(&ctx.symbol_map, &field_typ) {
-            ctx.error(
-                self.value()?.syntax().text_range(),
+            ctx.error_by_syntax(
+                self.value()?.syntax(),
                 format!(
                     "field '{name}' of type '{field_typ}' is incompatible with type '{value_typ}'",
                 ),
@@ -746,8 +743,8 @@ impl Indexable for ast::InnerValue {
                 ast::ValueSuffix::FieldSuffix(field_suffix) => {
                     let (name, reference_loc) = utils::identifier(&field_suffix.name()?, ctx)?;
                     let Some(field_id) = lhs_typ.find_field(&ctx.symbol_map, &name) else {
-                        ctx.error(
-                            field_suffix.syntax().text_range(),
+                        ctx.error_by_syntax(
+                            field_suffix.syntax(),
                             format!("cannot access field: {name}"),
                         );
                         return None;
@@ -804,7 +801,7 @@ impl Indexable for ast::SimpleValue {
                     return if name == "NAME" {
                         Some(Type::String)
                     } else {
-                        ctx.error(reference_loc.range, format!("symbol not found: {name}"));
+                        ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));
                         None
                     };
                 };
@@ -891,7 +888,7 @@ impl Indexable for ast::Type {
                         Some(Type::Record(class_id, name))
                     }
                     None => {
-                        ctx.error(reference_loc.range, format!("class not found: {name}"));
+                        ctx.error_by_filerange(reference_loc, format!("class not found: {name}"));
                         Some(Type::NotResolved(name))
                     }
                 }

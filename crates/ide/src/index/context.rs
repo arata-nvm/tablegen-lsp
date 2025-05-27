@@ -1,5 +1,8 @@
 use ecow::{eco_format, EcoString};
-use syntax::parser::TextRange;
+use syntax::{
+    parser::{TextRange, TextSize},
+    SyntaxNode,
+};
 
 use crate::{
     file_system::{FileId, FileRange},
@@ -56,10 +59,33 @@ impl<'a> IndexCtx<'a> {
         self.scopes.find_variable_in_current_scope(name)
     }
 
-    pub fn error(&mut self, range: TextRange, message: impl Into<String>) {
+    /// `range`で与えられた位置に`message`をエラーとして記録する。
+    /// ファイルIDは`current_file_id()`から取得する。
+    pub fn error_by_textrange(&mut self, range: TextRange, message: impl Into<String>) {
         let file = self.current_file_id();
         self.diagnostics
             .push(Diagnostic::new(FileRange::new(file, range), message));
+    }
+
+    /// `range`で与えられた位置に`message`をエラーとして記録する。
+    pub fn error_by_filerange(&mut self, range: FileRange, message: impl Into<String>) {
+        self.diagnostics.push(Diagnostic::new(range, message));
+    }
+
+    /// `node`で与えられた位置に`message`をエラーとして記録する。
+    /// `node`の範囲のうち、末尾のtrivial tokenの直前までの範囲を用いる。
+    pub fn error_by_syntax(&mut self, node: &SyntaxNode, message: impl Into<String>) {
+        fn find_last_not_trivia(node: &SyntaxNode) -> Option<TextSize> {
+            let mut token = node.last_token()?;
+            while token.kind().is_trivia() {
+                token = token.prev_token()?;
+            }
+            Some(token.text_range().end())
+        }
+
+        let range = node.text_range();
+        let end = find_last_not_trivia(node).unwrap_or(range.end());
+        self.error_by_textrange(TextRange::new(range.start(), end), message);
     }
 
     pub fn finish(self) -> Index {
