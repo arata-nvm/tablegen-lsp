@@ -19,17 +19,21 @@
         "languages": [
             {
                 "id": "tablegen",
+                "aliases": [
+                    "TableGen",
+                    "td"
+                ],
                 "extensions": [
                     ".td"
                 ],
-                "configuration": "./language-configuration.json"
+                "configuration": "./third-party/language-configuration.json"
             }
         ],
         "grammars": [
             {
                 "language": "tablegen",
                 "scopeName": "source.tablegen",
-                "path": "./language-grammar.json"
+                "path": "./third-party/language-grammar.json"
             }
         ],
         "commands": [
