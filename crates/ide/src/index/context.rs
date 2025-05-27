@@ -52,6 +52,9 @@ impl<'a> IndexCtx<'a> {
         if let Some(def_id) = self.symbol_map.find_def(name) {
             return Some(def_id.into());
         }
+        if let Some(defset_id) = self.symbol_map.find_defset(name) {
+            return Some(defset_id.into());
+        }
         None
     }
 

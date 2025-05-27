@@ -39,6 +39,7 @@ pub struct SymbolMap {
 
     name_to_class: HashMap<EcoString, RecordId>,
     name_to_def: HashMap<EcoString, RecordId>,
+    name_to_defset: HashMap<EcoString, DefsetId>,
     name_to_multiclass: HashMap<EcoString, MulticlassId>,
     file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
@@ -119,6 +120,10 @@ impl SymbolMap {
         self.defset_list
             .get_mut(defset_id)
             .expect("invalid defset id")
+    }
+
+    pub fn find_defset(&self, name: &EcoString) -> Option<DefsetId> {
+        self.name_to_defset.get(name).copied()
     }
 
     pub fn multiclass(&self, multiclass_id: MulticlassId) -> &Multiclass {
@@ -268,8 +273,10 @@ impl SymbolMap {
     }
 
     pub fn add_defset(&mut self, defset: Defset) -> DefsetId {
+        let name = defset.name.clone();
         let define_loc = defset.define_loc;
         let id = self.defset_list.alloc(defset);
+        self.name_to_defset.insert(name, id);
         self.file_to_symbol_list
             .entry(define_loc.file)
             .or_default()
