@@ -33,3 +33,7 @@ debug = 0
 lto = true
 codegen-units = 1
 panic = "abort"
+
+[profile.profiling]
+debug = true
+inherits = "release"
