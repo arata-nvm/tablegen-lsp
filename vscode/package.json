@@ -41,8 +41,34 @@
                 "command": "tablegen-lsp.restartServer",
                 "title": "Restart server",
                 "category": "tablegen-lsp"
+            },
+            {
+                "command": "tablegen-lsp.setSourceRoot",
+                "title": "Set Source Root",
+                "category": "tablegen-lsp"
+            },
+            {
+                "command": "tablegen-lsp.clearSourceRoot",
+                "title": "Clear Source Root",
+                "category": "tablegen-lsp"
             }
         ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "tablegen-lsp.setSourceRoot",
+                    "group": "tablegen-lsp",
+                    "when": "resourceScheme == file && resourceExtname == .td"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "tablegen-lsp.setSourceRoot",
+                    "group": "tablegen-lsp",
+                    "when": "resourceScheme == file && resourceExtname == .td"
+                }
+            ]
+        },
         "configuration": {
             "title": "tablegen-lsp",
             "properties": {

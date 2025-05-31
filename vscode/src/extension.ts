@@ -3,7 +3,17 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
 
-let client: LanguageClient;
+const extensionId = "tablegen-lsp";
+const languageId = "tablegen";
+
+const commandRestartServer = "tablegen-lsp.restartServer";
+const commandSetSourceRoot = "tablegen-lsp.setSourceRoot";
+const commandClearSourceRoot = "tablegen-lsp.clearSourceRoot";
+const commandOpenSourceRoot = "tablegen-lsp.openSourceRoot";
+
+let client: LanguageClient | undefined;
+let statusBarItem: vscode.StatusBarItem | undefined;
+let sourceRoot: vscode.Uri | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
     initialize(context).catch((err) => {
@@ -13,19 +23,50 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function initialize(context: vscode.ExtensionContext): Promise<void> {
-    client = createClient(context);
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
+    statusBarItem.command = commandOpenSourceRoot;
+    statusBarItem.tooltip = "Go to TableGen source root";
+    updateStatusBarItem();
+    statusBarItem.show();
 
     context.subscriptions.push(
-        vscode.commands.registerCommand("tablegen-lsp.restartServer", async () => {
+        vscode.commands.registerCommand(commandRestartServer, async () => {
             // FIXME: OUTPUTのtablegen-lspの項目が増殖する
-            await client.dispose();
+            await client?.dispose();
             client = createClient(context);
             await client.start();
         }),
+        vscode.commands.registerCommand(commandSetSourceRoot, (uri: vscode.Uri | undefined) => {
+            const document = vscode.window.activeTextEditor?.document;
+            if (uri) {
+                sourceRoot = uri;
+            } else if (document?.uri.fsPath.endsWith(".td")) {
+                sourceRoot = document.uri;
+            } else {
+                vscode.window.showInformationMessage("No file selected.");
+                return;
+            }
+
+            updateStatusBarItem();
+        }),
+        vscode.commands.registerCommand(commandClearSourceRoot, () => {
+            sourceRoot = null;
+            updateStatusBarItem();
+        }),
+        vscode.commands.registerCommand(commandOpenSourceRoot, async () => {
+            if (!sourceRoot) {
+                vscode.window.showInformationMessage("No source root set.");
+                return;
+            }
+
+            const document = await vscode.workspace.openTextDocument(sourceRoot);
+            await vscode.window.showTextDocument(document);
+        }),
+        statusBarItem
     );
 
     vscode.workspace.onDidChangeConfiguration(async (event) => {
-        if (!event.affectsConfiguration("tablegen-lsp")) {
+        if (!event.affectsConfiguration(extensionId)) {
             return;
         }
 
@@ -33,10 +74,11 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
             "The tablegen-lsp configuration has been updated. Please restart the language server for the changes to take effect.";
         const userResponse = await vscode.window.showInformationMessage(message, "Restart now");
         if (userResponse) {
-            await vscode.commands.executeCommand("tablegen-lsp.restartServer");
+            await vscode.commands.executeCommand(commandRestartServer);
         }
     });
 
+    client = createClient(context);
     await client.start();
 }
 
@@ -62,14 +104,14 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
         },
     };
 
-    const config = vscode.workspace.getConfiguration("tablegen-lsp");
+    const config = vscode.workspace.getConfiguration(extensionId);
     const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: "file", language: "tablegen" }],
+        documentSelector: [{ scheme: "file", language: languageId }],
         initializationOptions: config,
     };
 
     return new LanguageClient(
-        "tablegen-lsp",
+        extensionId,
         "TableGen Language Server",
         serverOptions,
         clientOptions,
@@ -99,4 +141,15 @@ function getServer(): string {
     }
 
     throw new Error("This platform is currently not supported");
+}
+
+function updateStatusBarItem() {
+    if (statusBarItem) {
+        if (sourceRoot) {
+            const sourceRootFileName = sourceRoot.fsPath.split(path.sep).pop();
+            statusBarItem.text = `$(root-folder) ${sourceRootFileName}`;
+        } else {
+            statusBarItem.text = "$(root-folder) No Source Root";
+        }
+    }
 }
