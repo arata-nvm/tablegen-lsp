@@ -19,7 +19,7 @@ use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::FileSystem;
 
 use crate::vfs::{UrlExt, Vfs};
-use crate::{from_proto, to_proto};
+use crate::{from_proto, lsp_ext, to_proto};
 
 pub struct Server {
     host: AnalysisHost,
@@ -41,6 +41,8 @@ impl Server {
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
             .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
+            .notification::<lsp_ext::SetSourceRoot>(Self::set_source_root)
+            .notification::<lsp_ext::ClearSourceRoot>(Self::clear_source_root)
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
             .request::<request::GotoDefinition, _>(Self::definition)
             .request::<request::References, _>(Self::references)
@@ -265,6 +267,18 @@ impl LanguageServer for Server {
             self.set_file_content(&params.text_document.uri, &change.text);
             self.update_diagnostics();
         }
+        ControlFlow::Continue(())
+    }
+}
+
+impl Server {
+    fn set_source_root(&mut self, params: lsp_ext::SetSourceRootParams) -> <Self as LanguageServer>::NotifyResult {
+        tracing::info!("set_source_root: {params:?}");
+        ControlFlow::Continue(())
+    }
+
+    fn clear_source_root(&mut self, _params: lsp_ext::ClearSourceRootParams) -> <Self as LanguageServer>::NotifyResult {
+        tracing::info!("clear_source_root");
         ControlFlow::Continue(())
     }
 }

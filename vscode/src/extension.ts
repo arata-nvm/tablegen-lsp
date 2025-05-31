@@ -11,6 +11,9 @@ const commandSetSourceRoot = "tablegen-lsp.setSourceRoot";
 const commandClearSourceRoot = "tablegen-lsp.clearSourceRoot";
 const commandOpenSourceRoot = "tablegen-lsp.openSourceRoot";
 
+const lspNotificationSetSourceRoot = "tablegenLsp/setSourceRoot";
+const lspNotificationClearSourceRoot = "tablegenLsp/clearSourceRoot";
+
 let client: LanguageClient | undefined;
 let statusBarItem: vscode.StatusBarItem | undefined;
 let sourceRoot: vscode.Uri | null = null;
@@ -36,7 +39,7 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
             client = createClient(context);
             await client.start();
         }),
-        vscode.commands.registerCommand(commandSetSourceRoot, (uri: vscode.Uri | undefined) => {
+        vscode.commands.registerCommand(commandSetSourceRoot, async (uri: vscode.Uri | undefined) => {
             const document = vscode.window.activeTextEditor?.document;
             if (uri) {
                 sourceRoot = uri;
@@ -48,10 +51,12 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
             }
 
             updateStatusBarItem();
+            await client?.sendNotification(lspNotificationSetSourceRoot, { uri: sourceRoot.toString() });
         }),
-        vscode.commands.registerCommand(commandClearSourceRoot, () => {
+        vscode.commands.registerCommand(commandClearSourceRoot, async () => {
             sourceRoot = null;
             updateStatusBarItem();
+            await client?.sendNotification(lspNotificationClearSourceRoot, {});
         }),
         vscode.commands.registerCommand(commandOpenSourceRoot, async () => {
             if (!sourceRoot) {

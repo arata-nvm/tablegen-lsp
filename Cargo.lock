@@ -545,6 +545,7 @@ dependencies = [
  "async-lsp",
  "futures",
  "ide",
+ "serde",
  "serde_json",
  "text-size",
  "tokio",
