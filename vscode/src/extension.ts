@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function initialize(context: vscode.ExtensionContext): Promise<void> {
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
     statusBarItem.command = commandOpenSourceRoot;
     statusBarItem.tooltip = "Go to TableGen source root";
     updateStatusBarItem();
