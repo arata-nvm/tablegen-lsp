@@ -14,6 +14,7 @@ use record::{Record, RecordField, RecordFieldId, RecordId, RecordMut};
 use symbol::{Symbol, SymbolId, SymbolMut};
 use syntax::parser::{TextRange, TextSize};
 use template_arg::{TemplateArgument, TemplateArgumentId};
+use thiserror::Error;
 use variable::{Variable, VariableId};
 
 use crate::file_system::{FileId, FilePosition, FileRange};
@@ -47,6 +48,12 @@ pub struct SymbolMap {
     name_to_multiclass: HashMap<EcoString, MulticlassId>,
     file_to_symbol_list: HashMap<FileId, Vec<SymbolId>>,
     pos_to_symbol_map: HashMap<FileId, IntervalMap<TextSize, SymbolId>>,
+}
+
+#[derive(Debug, Error)]
+pub enum SymbolMapError {
+    #[error("Class '{0}' already defined")]
+    ClassAlreadyDefined(EcoString),
 }
 
 // immutable api
@@ -245,34 +252,28 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
-    pub fn declare_class(&mut self, class: Class) -> ClassId {
-        let name = class.name.clone();
-        let id = self.class_list.alloc(class);
-        self.name_to_class.insert(name.clone(), id);
-        self.name_to_class_declaration.insert(name.clone(), id);
-        id
-    }
-
-    pub fn add_class(&mut self, class: Class, is_global: bool) -> ClassId {
+    pub fn add_class(&mut self, class: Class, is_global: bool) -> Result<ClassId, SymbolMapError> {
         let name = class.name.clone();
         let define_loc = class.define_loc;
-        let id = match self.name_to_class_declaration.remove(&name) {
-            Some(id) => {
-                let class_mut = self.class_mut(id);
-                let _ = std::mem::replace(class_mut, class);
-                id
-            }
-            None => self.class_list.alloc(class),
-        };
+        let id = self.alloc_or_replace_class(class)?;
         self.name_to_class.insert(name, id);
-        if is_global {
-            self.file_to_symbol_list
-                .entry(define_loc.file)
-                .or_default()
-                .push(id.into());
+        self.add_symbol_to_file(id, define_loc, is_global);
+        Ok(id)
+    }
+
+    fn alloc_or_replace_class(&mut self, class: Class) -> Result<ClassId, SymbolMapError> {
+        let Some(class_id) = self.name_to_class.get(&class.name).copied() else {
+            return Ok(self.class_list.alloc(class));
+        };
+
+        let existing_class = self.class(class_id);
+        if !existing_class.is_empty() {
+            return Err(SymbolMapError::ClassAlreadyDefined(class.name.clone()));
         }
-        self.add_to_pos_to_symbol_map(define_loc, id);
-        id
+
+        let class_mut = self.class_mut(class_id);
+        let _ = std::mem::replace(class_mut, class);
+        Ok(class_id)
     }
 
     pub fn add_def(&mut self, def: Def, is_global: bool) -> DefId {
@@ -280,13 +281,7 @@ impl SymbolMap {
         let define_loc = def.define_loc;
         let id = self.def_list.alloc(def);
         self.name_to_def.insert(name, id);
-        if is_global {
-            self.file_to_symbol_list
-                .entry(define_loc.file)
-                .or_default()
-                .push(id.into());
-        }
-        self.add_to_pos_to_symbol_map(define_loc, id);
+        self.add_symbol_to_file(id, define_loc, is_global);
         id
     }
 
@@ -297,25 +292,21 @@ impl SymbolMap {
     pub fn add_template_argument(&mut self, template_arg: TemplateArgument) -> TemplateArgumentId {
         let define_loc = template_arg.define_loc;
         let id = self.template_arg_list.alloc(template_arg);
-        self.add_to_pos_to_symbol_map(define_loc, id);
+        self.add_symbol_to_file(id, define_loc, false);
         id
     }
 
     pub fn add_record_field(&mut self, record_field: RecordField) -> RecordFieldId {
         let define_loc = record_field.define_loc;
         let id = self.record_field_list.alloc(record_field);
-        self.add_to_pos_to_symbol_map(define_loc, id);
+        self.add_symbol_to_file(id, define_loc, false);
         id
     }
 
     pub fn add_variable(&mut self, variable: Variable) -> VariableId {
         let define_loc = variable.define_loc;
         let id = self.variable_list.alloc(variable);
-        self.file_to_symbol_list
-            .entry(define_loc.file)
-            .or_default()
-            .push(id.into());
-        self.add_to_pos_to_symbol_map(define_loc, id);
+        self.add_symbol_to_file(id, define_loc, true);
         id
     }
 
@@ -324,11 +315,7 @@ impl SymbolMap {
         let define_loc = defset.define_loc;
         let id = self.defset_list.alloc(defset);
         self.name_to_defset.insert(name, id);
-        self.file_to_symbol_list
-            .entry(define_loc.file)
-            .or_default()
-            .push(id.into());
-        self.add_to_pos_to_symbol_map(define_loc, id);
+        self.add_symbol_to_file(id, define_loc, true);
         id
     }
 
@@ -337,24 +324,14 @@ impl SymbolMap {
         let define_loc = multiclass.define_loc;
         let id = self.multiclass_list.alloc(multiclass);
         self.name_to_multiclass.insert(name, id);
-        self.file_to_symbol_list
-            .entry(define_loc.file)
-            .or_default()
-            .push(id.into());
-        self.add_to_pos_to_symbol_map(define_loc, id);
+        self.add_symbol_to_file(id, define_loc, true);
         id
     }
 
     pub fn add_defm(&mut self, defm: Defm, is_global: bool) -> DefmId {
         let define_loc = defm.define_loc;
         let id = self.defm_list.alloc(defm);
-        if is_global {
-            self.file_to_symbol_list
-                .entry(define_loc.file)
-                .or_default()
-                .push(id.into());
-        }
-        self.add_to_pos_to_symbol_map(define_loc, id);
+        self.add_symbol_to_file(id, define_loc, is_global);
         id
     }
 
@@ -366,19 +343,25 @@ impl SymbolMap {
         let symbol_id = symbol_id.into();
         let mut symbol = self.symbol_mut(symbol_id);
         symbol.add_reference(reference_loc);
-        self.add_to_pos_to_symbol_map(reference_loc, symbol_id);
+        self.add_symbol_to_file(symbol_id, reference_loc, false);
     }
 
-    fn add_to_pos_to_symbol_map(&mut self, loc: FileRange, symbol_id: impl Into<SymbolId>) {
-        // ignore the symbol if its range is empty
-        if loc.range.is_empty() {
-            return;
+    fn add_symbol_to_file(&mut self, id: impl Into<SymbolId>, loc: FileRange, is_global: bool) {
+        let id = id.into();
+
+        if is_global {
+            self.file_to_symbol_list
+                .entry(loc.file)
+                .or_default()
+                .push(id);
         }
 
-        self.pos_to_symbol_map
-            .entry(loc.file)
-            .or_insert_with(IntervalMap::new)
-            .insert(loc.range.into(), symbol_id.into());
+        if !loc.range.is_empty() {
+            self.pos_to_symbol_map
+                .entry(loc.file)
+                .or_insert_with(IntervalMap::new)
+                .insert(loc.range.into(), id);
+        }
     }
 }
 

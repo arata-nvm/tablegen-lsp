@@ -1,0 +1,5 @@
+---
+source: crates/ide/src/handlers/diagnostics.rs
+expression: "check(\"class Foo; class Foo { int b; }\")"
+---
+[]

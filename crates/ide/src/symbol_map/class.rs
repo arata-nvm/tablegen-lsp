@@ -84,4 +84,10 @@ impl Class {
 
         false
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.name_to_template_arg.is_empty()
+            && self.name_to_record_field.is_empty()
+            && self.parent_list.is_empty()
+    }
 }

@@ -149,19 +149,13 @@ impl Indexable for ast::Class {
         let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
         let class = Class::new(name, define_loc);
 
-        let is_declaration = self.template_arg_list().is_none()
-            && self
-                .record_body()
-                .and_then(|it| it.body())
-                .map(|it| it.is_declaration())
-                .unwrap_or(false);
-
-        if is_declaration {
-            ctx.symbol_map.declare_class(class);
-            return None;
-        }
-
-        let class_id = ctx.symbol_map.add_class(class, true);
+        let class_id = match ctx.symbol_map.add_class(class, true) {
+            Ok(class_id) => class_id,
+            Err(err) => {
+                ctx.error_by_filerange(define_loc, err.to_string());
+                return None;
+            }
+        };
         ctx.scopes.push(ScopeKind::Class(class_id));
         if let Some(list) = self.template_arg_list() {
             list.index(ctx);

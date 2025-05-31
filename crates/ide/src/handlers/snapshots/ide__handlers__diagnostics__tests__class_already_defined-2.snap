@@ -1,6 +1,6 @@
 ---
 source: crates/ide/src/handlers/diagnostics.rs
-expression: "check(\"clas\")"
+expression: "check(\"class Foo { int a; } class Foo { int b; }\")"
 ---
 [
     Diagnostic {
@@ -8,8 +8,8 @@ expression: "check(\"clas\")"
             file: FileId(
                 0,
             ),
-            range: 0..4,
+            range: 27..30,
         },
-        message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
+        message: "Class 'Foo' already defined",
     },
 ]

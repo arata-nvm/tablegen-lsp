@@ -54,18 +54,21 @@ mod tests {
 
     use crate::{db::SourceDatabase, tests};
 
+    use super::Diagnostic;
+
+    fn check(s: &str) -> Vec<Diagnostic> {
+        let (db, f) = tests::single_file(s);
+        super::exec(&db).remove(&f.root_file()).unwrap()
+    }
+
     #[test]
     fn syntax() {
-        let (db, _) = tests::single_file("clas");
-        let diags = super::exec(&db);
-        insta::assert_debug_snapshot!(diags);
+        insta::assert_debug_snapshot!(check("clas"));
     }
 
     #[test]
     fn eval() {
-        let (db, _) = tests::single_file(r#"include "not_exist.td""#);
-        let diags = super::exec(&db);
-        insta::assert_debug_snapshot!(diags);
+        insta::assert_debug_snapshot!(check(r#"include "not_exist.td""#));
     }
 
     #[test]
@@ -77,5 +80,11 @@ mod tests {
         let diags2 = super::exec(&db);
 
         insta::assert_debug_snapshot!((diags1, diags2));
+    }
+
+    #[test]
+    fn class_already_defined() {
+        insta::assert_debug_snapshot!(check("class Foo; class Foo { int b; }"));
+        insta::assert_debug_snapshot!(check("class Foo { int a; } class Foo { int b; }"));
     }
 }
