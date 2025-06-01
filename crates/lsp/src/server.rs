@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    notification, request, CompletionOptions, CompletionParams, CompletionResponse,
+    notification, request, CompletionOptions, CompletionParams, CompletionResponse, Diagnostic,
     DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions,
     DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, FoldingRange,
     FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams,
@@ -28,6 +28,13 @@ pub struct Server {
     diagnostic_version: i32,
 }
 
+pub struct ServerSnapshot {
+    pub analysis: Analysis,
+    pub vfs: Arc<RwLock<Vfs>>,
+}
+
+struct UpdateDiagnosticsEvent(i32, Vec<(Url, Vec<Diagnostic>)>);
+
 impl Server {
     pub fn new_router(client: ClientSocket) -> Router<Self> {
         let this = Self::new(client);
@@ -50,7 +57,8 @@ impl Server {
             .request::<request::InlayHintRequest, _>(Self::inlay_hint)
             .request::<request::Completion, _>(Self::completion)
             .request::<request::DocumentLinkRequest, _>(Self::document_link)
-            .request::<request::FoldingRangeRequest, _>(Self::folding_range);
+            .request::<request::FoldingRangeRequest, _>(Self::folding_range)
+            .event::<UpdateDiagnosticsEvent>(Self::update_diagnostics);
         router
     }
 
@@ -258,27 +266,48 @@ impl LanguageServer for Server {
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         self.set_file_content(&params.text_document.uri, &params.text_document.text);
-        self.update_diagnostics();
+        self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
 
     fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
         if let Some(change) = params.content_changes.first() {
             self.set_file_content(&params.text_document.uri, &change.text);
-            self.update_diagnostics();
+            self.spawn_update_diagnostics();
         }
         ControlFlow::Continue(())
     }
 }
 
 impl Server {
-    fn set_source_root(&mut self, params: lsp_ext::SetSourceRootParams) -> <Self as LanguageServer>::NotifyResult {
+    fn set_source_root(
+        &mut self,
+        params: lsp_ext::SetSourceRootParams,
+    ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("set_source_root: {params:?}");
         ControlFlow::Continue(())
     }
 
-    fn clear_source_root(&mut self, _params: lsp_ext::ClearSourceRootParams) -> <Self as LanguageServer>::NotifyResult {
+    fn clear_source_root(
+        &mut self,
+        _params: lsp_ext::ClearSourceRootParams,
+    ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("clear_source_root");
+        ControlFlow::Continue(())
+    }
+}
+
+impl Server {
+    fn update_diagnostics(
+        &mut self,
+        UpdateDiagnosticsEvent(version, diagnostics): UpdateDiagnosticsEvent,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        for (uri, lsp_diags) in diagnostics {
+            let params = PublishDiagnosticsParams::new(uri, lsp_diags, Some(version));
+            self.client
+                .publish_diagnostics(params)
+                .expect("failed to publish diagnostics");
+        }
         ControlFlow::Continue(())
     }
 }
@@ -293,13 +322,14 @@ impl Server {
         self.host.set_root_file(&mut *vfs, file_id);
     }
 
-    fn update_diagnostics(&mut self) {
+    fn spawn_update_diagnostics(&mut self) {
         let diag_version = self.bump_diagnostic_version();
-        let mut client = self.client.clone();
+        let client = self.client.clone();
         self.spawn_with_snapshot((), move |snap, _| {
+            let mut diags = Vec::new();
             for (file_id, diagnostics) in snap.analysis.diagnostics() {
                 let line_index = snap.analysis.line_index(file_id);
-                let lsp_diags = diagnostics
+                let lsp_diags: Vec<Diagnostic> = diagnostics
                     .into_iter()
                     .map(|diag| to_proto::diagnostic(&line_index, diag))
                     .collect();
@@ -308,11 +338,12 @@ impl Server {
                 let file_path = vfs.path_for_file(&file_id);
                 let file_uri = UrlExt::from_file_path(file_path);
 
-                let params = PublishDiagnosticsParams::new(file_uri, lsp_diags, Some(diag_version));
-                client
-                    .publish_diagnostics(params)
-                    .expect("failed to publish diagnostics");
+                diags.push((file_uri, lsp_diags));
             }
+
+            client
+                .emit(UpdateDiagnosticsEvent(diag_version, diags))
+                .expect("failed to emit update diagnostics event");
         });
     }
 
@@ -333,9 +364,4 @@ impl Server {
         };
         task::spawn_blocking(move || f(snap, params))
     }
-}
-
-pub struct ServerSnapshot {
-    pub analysis: Analysis,
-    pub vfs: Arc<RwLock<Vfs>>,
 }
