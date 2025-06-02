@@ -3,7 +3,11 @@ use syntax::{
     syntax_kind::SyntaxKind,
 };
 
-use crate::{file_system::FilePosition, index::IndexDatabase, symbol_map::SymbolMap};
+use crate::{
+    file_system::{FilePosition, SourceUnitId},
+    index::IndexDatabase,
+    symbol_map::SymbolMap,
+};
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct CompletionItem {
@@ -51,11 +55,12 @@ pub enum CompletionItemKind {
 
 pub fn exec(
     db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
     pos: FilePosition,
     trigger_char: Option<String>,
 ) -> Option<Vec<CompletionItem>> {
     let parse = db.parse(pos.file);
-    let index = db.index();
+    let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
 
     let root_node = parse.syntax_node();
@@ -250,15 +255,21 @@ mod tests {
 
     fn check(s: &str) -> Vec<CompletionItem> {
         let (db, f) = tests::single_file(s);
-        let mut result = super::exec(&db, f.marker(0), None).expect("completion failed");
+        let mut result =
+            super::exec(&db, f.source_unit_id(), f.marker(0), None).expect("completion failed");
         result.sort_by(|a, b| a.label.cmp(&b.label));
         result
     }
 
     fn check_trigger(s: &str, trigger_char: impl Into<String>) -> Vec<CompletionItem> {
         let (db, f) = tests::single_file(s);
-        let mut result =
-            super::exec(&db, f.marker(0), Some(trigger_char.into())).expect("completion failed");
+        let mut result = super::exec(
+            &db,
+            f.source_unit_id(),
+            f.marker(0),
+            Some(trigger_char.into()),
+        )
+        .expect("completion failed");
         result.sort_by(|a, b| a.label.cmp(&b.label));
         result
     }

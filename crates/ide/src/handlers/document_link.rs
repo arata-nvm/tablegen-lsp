@@ -5,13 +5,18 @@ use syntax::{
 };
 
 use crate::{
-    file_system::{FileId, IncludeId},
+    file_system::{FileId, IncludeId, SourceUnitId},
     index::IndexDatabase,
     utils,
 };
 
-pub fn exec(db: &dyn IndexDatabase, file_id: FileId) -> Option<Vec<DocumentLink>> {
-    let include_map = db.resolved_include_map(file_id);
+pub fn exec(
+    db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
+    file_id: FileId,
+) -> Option<Vec<DocumentLink>> {
+    let source_unit = db.source_unit(source_unit_id);
+    let include_map = source_unit.include_map(&file_id)?;
     let parse = db.parse(file_id);
     let root_node = parse.syntax_node();
     let links = root_node
@@ -41,7 +46,7 @@ mod tests {
 
     fn check(s: &str) -> Vec<DocumentLink> {
         let (db, f) = tests::multiple_files(s);
-        super::exec(&db, f.root_file()).unwrap_or_default()
+        super::exec(&db, f.source_unit_id(), f.root_file()).unwrap_or_default()
     }
 
     #[test]

@@ -1,13 +1,17 @@
 use ecow::EcoString;
 use syntax::parser::TextRange;
 
-use crate::file_system::FileId;
+use crate::file_system::{FileId, SourceUnitId};
 use crate::index::IndexDatabase;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::SymbolMap;
 
-pub fn exec(db: &dyn IndexDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
-    let index = db.index();
+pub fn exec(
+    db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
+    file_id: FileId,
+) -> Option<Vec<DocumentSymbol>> {
+    let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
 
     let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
@@ -132,7 +136,7 @@ mod tests {
 
     fn check(s: &str) -> Option<Vec<DocumentSymbol>> {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.root_file())
+        super::exec(&db, f.source_unit_id(), f.root_file())
     }
 
     #[test]
@@ -160,7 +164,7 @@ class Foo;
 class Bar;
             "#,
         );
-        let symbols = super::exec(&db, f.root_file());
+        let symbols = super::exec(&db, f.source_unit_id(), f.root_file());
         insta::assert_debug_snapshot!(symbols);
     }
 

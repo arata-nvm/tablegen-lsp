@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use syntax::Parse;
 
-use crate::file_system::{FileId, IncludeId, SourceRoot};
+use crate::file_system::{FileId, SourceUnit, SourceUnitId};
 use crate::index::IndexDatabaseStorage;
 use crate::line_index::LineIndex;
 
@@ -29,14 +28,11 @@ pub trait SourceDatabase {
     fn file_content(&self, file_id: FileId) -> Arc<str>;
 
     #[salsa::input]
-    fn source_root(&self) -> Arc<SourceRoot>;
+    fn source_unit(&self, source_unit_id: SourceUnitId) -> Arc<SourceUnit>;
 
     fn line_index(&self, file_id: FileId) -> Arc<LineIndex>;
 
     fn parse(&self, file_id: FileId) -> Parse;
-
-    #[salsa::input]
-    fn resolved_include_map(&self, file_id: FileId) -> HashMap<IncludeId, FileId>;
 }
 
 fn line_index(db: &dyn SourceDatabase, file_id: FileId) -> Arc<LineIndex> {

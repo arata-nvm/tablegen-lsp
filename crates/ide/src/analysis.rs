@@ -4,7 +4,7 @@ use std::sync::Arc;
 use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
-use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem};
+use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem, SourceUnitId};
 use crate::handlers::completion::{self, CompletionItem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_link::DocumentLink;
@@ -39,9 +39,15 @@ impl AnalysisHost {
         self.db.set_file_content(file_id, text);
     }
 
-    pub fn set_root_file<FS: FileSystem>(&mut self, fs: &mut FS, root_file: FileId) {
-        let source_root = file_system::collect_sources(&mut self.db, fs, root_file);
-        self.db.set_source_root(Arc::new(source_root));
+    pub fn load_source_unit<FS: FileSystem>(
+        &mut self,
+        fs: &mut FS,
+        root_file: FileId,
+    ) -> SourceUnitId {
+        let id = root_file.into();
+        let source_unit = file_system::collect_sources(&mut self.db, fs, root_file);
+        self.db.set_source_unit(id, Arc::new(source_unit));
+        id
     }
 }
 
@@ -54,44 +60,65 @@ impl Analysis {
         self.db.line_index(file_id)
     }
 
-    pub fn index(&self) -> Arc<Index> {
-        self.db.index()
+    pub fn index(&self, source_unit_id: SourceUnitId) -> Arc<Index> {
+        self.db.index(source_unit_id)
     }
 
-    pub fn diagnostics(&self) -> HashMap<FileId, Vec<Diagnostic>> {
-        diagnostics::exec(&*self.db)
+    pub fn diagnostics(&self, source_unit_id: SourceUnitId) -> HashMap<FileId, Vec<Diagnostic>> {
+        diagnostics::exec(&*self.db, source_unit_id)
     }
 
-    pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
-        document_symbol::exec(&*self.db, file_id)
+    pub fn document_symbol(
+        &self,
+        source_unit_id: SourceUnitId,
+        file_id: FileId,
+    ) -> Option<Vec<DocumentSymbol>> {
+        document_symbol::exec(&*self.db, source_unit_id, file_id)
     }
 
-    pub fn goto_definition(&self, pos: FilePosition) -> Option<FileRange> {
-        goto_definition::exec(&*self.db, pos)
+    pub fn goto_definition(
+        &self,
+        source_unit_id: SourceUnitId,
+        pos: FilePosition,
+    ) -> Option<FileRange> {
+        goto_definition::exec(&*self.db, source_unit_id, pos)
     }
 
-    pub fn references(&self, pos: FilePosition) -> Option<Vec<FileRange>> {
-        references::exec(&*self.db, pos)
+    pub fn references(
+        &self,
+        source_unit_id: SourceUnitId,
+        pos: FilePosition,
+    ) -> Option<Vec<FileRange>> {
+        references::exec(&*self.db, source_unit_id, pos)
     }
 
-    pub fn hover(&self, pos: FilePosition) -> Option<Hover> {
-        hover::exec(&*self.db, pos)
+    pub fn hover(&self, source_unit_id: SourceUnitId, pos: FilePosition) -> Option<Hover> {
+        hover::exec(&*self.db, source_unit_id, pos)
     }
 
-    pub fn inlay_hint(&self, range: FileRange) -> Option<Vec<InlayHint>> {
-        inlay_hint::exec(&*self.db, range)
+    pub fn inlay_hint(
+        &self,
+        source_unit_id: SourceUnitId,
+        range: FileRange,
+    ) -> Option<Vec<InlayHint>> {
+        inlay_hint::exec(&*self.db, source_unit_id, range)
     }
 
     pub fn completion(
         &self,
+        source_unit_id: SourceUnitId,
         pos: FilePosition,
         trigger_char: Option<String>,
     ) -> Option<Vec<CompletionItem>> {
-        completion::exec(&*self.db, pos, trigger_char)
+        completion::exec(&*self.db, source_unit_id, pos, trigger_char)
     }
 
-    pub fn document_link(&self, file_id: FileId) -> Option<Vec<DocumentLink>> {
-        document_link::exec(&*self.db, file_id)
+    pub fn document_link(
+        &self,
+        source_unit_id: SourceUnitId,
+        file_id: FileId,
+    ) -> Option<Vec<DocumentLink>> {
+        document_link::exec(&*self.db, source_unit_id, file_id)
     }
 
     pub fn folding_range(&self, file_id: FileId) -> Option<Vec<FoldingRange>> {

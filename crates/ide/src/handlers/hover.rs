@@ -2,7 +2,7 @@ use syntax::parser::TextRange;
 use syntax::syntax_kind::SyntaxKind;
 use syntax::SyntaxNode;
 
-use crate::file_system::{FilePosition, FileRange};
+use crate::file_system::{FilePosition, FileRange, SourceUnitId};
 use crate::index::IndexDatabase;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
@@ -14,8 +14,12 @@ pub struct Hover {
     pub document: Option<String>,
 }
 
-pub fn exec(db: &dyn IndexDatabase, pos: FilePosition) -> Option<Hover> {
-    let index = db.index();
+pub fn exec(
+    db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
+    pos: FilePosition,
+) -> Option<Hover> {
+    let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
 
     let (signature, define_loc) = extract_symbol_signature(symbol_map, pos)?;
@@ -147,7 +151,7 @@ mod tests {
 
     fn check(s: &str) -> Hover {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.marker(0)).expect("definition not found")
+        super::exec(&db, f.source_unit_id(), f.marker(0)).expect("definition not found")
     }
 
     #[test]

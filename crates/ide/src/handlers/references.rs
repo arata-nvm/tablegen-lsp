@@ -1,10 +1,14 @@
 use crate::{
-    file_system::{FilePosition, FileRange},
+    file_system::{FilePosition, FileRange, SourceUnitId},
     index::IndexDatabase,
 };
 
-pub fn exec(db: &dyn IndexDatabase, pos: FilePosition) -> Option<Vec<FileRange>> {
-    let index = db.index();
+pub fn exec(
+    db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
+    pos: FilePosition,
+) -> Option<Vec<FileRange>> {
+    let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
     let symbol = symbol_map.find_symbol_at(pos)?;
     Some(symbol.reference_locs().to_vec())
@@ -16,7 +20,8 @@ mod tests {
 
     fn check(s: &str) -> Vec<String> {
         let (db, f) = tests::single_file(s);
-        let references = super::exec(&db, f.marker(0)).expect("definition not found");
+        let references =
+            super::exec(&db, f.source_unit_id(), f.marker(0)).expect("definition not found");
         let content = f.file_content(&f.root_file());
         references
             .into_iter()

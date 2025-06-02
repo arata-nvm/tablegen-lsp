@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
@@ -16,7 +17,7 @@ use futures::future::{ready, BoxFuture};
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
-use ide::file_system::FileSystem;
+use ide::file_system::{FileId, FileSystem, SourceUnitId};
 
 use crate::vfs::{UrlExt, Vfs};
 use crate::{from_proto, lsp_ext, to_proto};
@@ -26,6 +27,8 @@ pub struct Server {
     vfs: Arc<RwLock<Vfs>>,
     client: ClientSocket,
     diagnostic_version: i32,
+    emitted_diagnostics: HashSet<FileId>,
+    root_file: Option<FileId>,
 }
 
 pub struct ServerSnapshot {
@@ -33,7 +36,7 @@ pub struct ServerSnapshot {
     pub vfs: Arc<RwLock<Vfs>>,
 }
 
-struct UpdateDiagnosticsEvent(i32, Vec<(Url, Vec<Diagnostic>)>);
+struct UpdateDiagnosticsEvent(i32, Vec<(FileId, Url, Vec<Diagnostic>)>);
 
 impl Server {
     pub fn new_router(client: ClientSocket) -> Router<Self> {
@@ -68,10 +71,13 @@ impl Server {
             vfs: Arc::new(RwLock::new(Vfs::new())),
             client,
             diagnostic_version: 0,
+            emitted_diagnostics: HashSet::new(),
+            root_file: None,
         }
     }
 }
 
+// request, notificationのハンドラー
 impl LanguageServer for Server {
     type Error = ResponseError;
     type NotifyResult = ControlFlow<async_lsp::Result<()>>;
@@ -111,9 +117,11 @@ impl LanguageServer for Server {
         params: HoverParams,
     ) -> BoxFuture<'static, Result<Option<Hover>, Self::Error>> {
         tracing::info!("hover: {params:?}");
+        let source_unit_id =
+            self.current_source_unit(&params.text_document_position_params.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
-            let Some(hover) = snap.analysis.hover(pos) else {
+            let Some(hover) = snap.analysis.hover(source_unit_id, pos) else {
                 return Ok(None);
             };
             let lsp_hover = to_proto::hover(hover);
@@ -127,10 +135,12 @@ impl LanguageServer for Server {
         params: GotoDefinitionParams,
     ) -> BoxFuture<'static, Result<Option<GotoDefinitionResponse>, Self::Error>> {
         tracing::info!("goto_definition: {params:?}");
+        let source_unit_id =
+            self.current_source_unit(&params.text_document_position_params.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (pos, line_index) =
                 from_proto::file_pos(&snap, params.text_document_position_params);
-            let Some(location) = snap.analysis.goto_definition(pos) else {
+            let Some(location) = snap.analysis.goto_definition(source_unit_id, pos) else {
                 return Ok(None);
             };
 
@@ -146,9 +156,11 @@ impl LanguageServer for Server {
         params: ReferenceParams,
     ) -> BoxFuture<'static, Result<Option<Vec<Location>>, Self::Error>> {
         tracing::info!("references: {params:?}");
+        let source_unit_id =
+            self.current_source_unit(&params.text_document_position.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (pos, line_index) = from_proto::file_pos(&snap, params.text_document_position);
-            let Some(location_list) = snap.analysis.references(pos) else {
+            let Some(location_list) = snap.analysis.references(source_unit_id, pos) else {
                 return Ok(None);
             };
             let vfs = snap.vfs.read().unwrap();
@@ -166,9 +178,10 @@ impl LanguageServer for Server {
         params: DocumentSymbolParams,
     ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
         tracing::info!("document_symbol: {params:?}");
+        let source_unit_id = self.current_source_unit(&params.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(symbols) = snap.analysis.document_symbol(file_id) else {
+            let Some(symbols) = snap.analysis.document_symbol(source_unit_id, file_id) else {
                 return Ok(None);
             };
 
@@ -186,10 +199,11 @@ impl LanguageServer for Server {
         params: InlayHintParams,
     ) -> BoxFuture<'static, Result<Option<Vec<InlayHint>>, Self::Error>> {
         tracing::info!("inlay_hint: {params:?}");
+        let source_unit_id = self.current_source_unit(&params.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (range, line_index) =
                 from_proto::file_range(&snap, params.text_document, params.range);
-            let Some(inlay_hints) = snap.analysis.inlay_hint(range) else {
+            let Some(inlay_hints) = snap.analysis.inlay_hint(source_unit_id, range) else {
                 return Ok(None);
             };
 
@@ -207,10 +221,13 @@ impl LanguageServer for Server {
         params: CompletionParams,
     ) -> BoxFuture<'static, Result<Option<CompletionResponse>, Self::Error>> {
         tracing::info!("completion: {params:?}");
+        let source_unit_id =
+            self.current_source_unit(&params.text_document_position.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
             let trigger_char = params.context.and_then(|it| it.trigger_character);
-            let Some(completion_list) = snap.analysis.completion(pos, trigger_char) else {
+            let Some(completion_list) = snap.analysis.completion(source_unit_id, pos, trigger_char)
+            else {
                 return Ok(None);
             };
 
@@ -228,9 +245,10 @@ impl LanguageServer for Server {
         params: DocumentLinkParams,
     ) -> BoxFuture<'static, Result<Option<Vec<DocumentLink>>, Self::Error>> {
         tracing::info!("document link: {params:?}");
+        let source_unit_id = self.current_source_unit(&params.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(links) = snap.analysis.document_link(file_id) else {
+            let Some(links) = snap.analysis.document_link(source_unit_id, file_id) else {
                 return Ok(None);
             };
 
@@ -265,26 +283,35 @@ impl LanguageServer for Server {
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
-        self.set_file_content(&params.text_document.uri, &params.text_document.text);
-        self.spawn_update_diagnostics();
+        tracing::info!("did_open: {params:?}");
+        let source_unit_id =
+            self.set_file_content(&params.text_document.uri, &params.text_document.text);
+        self.spawn_update_diagnostics(source_unit_id);
         ControlFlow::Continue(())
     }
 
     fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
+        tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
-            self.set_file_content(&params.text_document.uri, &change.text);
-            self.spawn_update_diagnostics();
+            let source_unit_id = self.set_file_content(&params.text_document.uri, &change.text);
+            self.spawn_update_diagnostics(source_unit_id);
         }
         ControlFlow::Continue(())
     }
 }
 
+// lsp_extのハンドラー
 impl Server {
     fn set_source_root(
         &mut self,
         params: lsp_ext::SetSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("set_source_root: {params:?}");
+        self.clear_diagnostics();
+        let path = UrlExt::to_file_path(&params.uri);
+        let mut vfs = self.vfs.write().unwrap();
+        let file_id = vfs.assign_or_get_file_id(path);
+        self.root_file.replace(file_id);
         ControlFlow::Continue(())
     }
 
@@ -293,41 +320,47 @@ impl Server {
         _params: lsp_ext::ClearSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("clear_source_root");
+        self.clear_diagnostics();
+        self.root_file.take();
         ControlFlow::Continue(())
     }
 }
 
+// eventのハンドラー
 impl Server {
     fn update_diagnostics(
         &mut self,
         UpdateDiagnosticsEvent(version, diagnostics): UpdateDiagnosticsEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
-        for (uri, lsp_diags) in diagnostics {
+        tracing::info!("update_diagnostics: {version:?}");
+        for (file_id, uri, lsp_diags) in diagnostics {
             let params = PublishDiagnosticsParams::new(uri, lsp_diags, Some(version));
             self.client
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
+            self.emitted_diagnostics.insert(file_id);
         }
         ControlFlow::Continue(())
     }
 }
 
 impl Server {
-    fn set_file_content(&mut self, uri: &Url, text: &str) {
+    fn set_file_content(&mut self, uri: &Url, text: &str) -> SourceUnitId {
         let path = UrlExt::to_file_path(uri);
         let mut vfs = self.vfs.write().unwrap();
         let file_id = vfs.assign_or_get_file_id(path);
         let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
-        self.host.set_root_file(&mut *vfs, file_id);
+        self.host.load_source_unit(&mut *vfs, file_id)
     }
 
-    fn spawn_update_diagnostics(&mut self) {
+    fn spawn_update_diagnostics(&mut self, source_unit_id: SourceUnitId) {
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
+
         self.spawn_with_snapshot((), move |snap, _| {
             let mut diags = Vec::new();
-            for (file_id, diagnostics) in snap.analysis.diagnostics() {
+            for (file_id, diagnostics) in snap.analysis.diagnostics(source_unit_id) {
                 let line_index = snap.analysis.line_index(file_id);
                 let lsp_diags: Vec<Diagnostic> = diagnostics
                     .into_iter()
@@ -338,7 +371,7 @@ impl Server {
                 let file_path = vfs.path_for_file(&file_id);
                 let file_uri = UrlExt::from_file_path(file_path);
 
-                diags.push((file_uri, lsp_diags));
+                diags.push((file_id, file_uri, lsp_diags));
             }
 
             client
@@ -353,6 +386,18 @@ impl Server {
         version
     }
 
+    fn clear_diagnostics(&mut self) {
+        let diag_version = self.bump_diagnostic_version();
+        let vfs = self.vfs.read().unwrap();
+        for file_id in self.emitted_diagnostics.drain() {
+            let uri = UrlExt::from_file_path(vfs.path_for_file(&file_id));
+            let params = PublishDiagnosticsParams::new(uri, vec![], Some(diag_version));
+            self.client
+                .publish_diagnostics(params)
+                .expect("failed to publish diagnostics");
+        }
+    }
+
     fn spawn_with_snapshot<P: Send + 'static, T: Send + 'static>(
         &mut self,
         params: P,
@@ -363,5 +408,17 @@ impl Server {
             vfs: Arc::clone(&self.vfs),
         };
         task::spawn_blocking(move || f(snap, params))
+    }
+
+    fn current_source_unit(&mut self, uri: &Url) -> SourceUnitId {
+        let file_id = match self.root_file {
+            Some(file_id) => file_id,
+            None => {
+                let path = UrlExt::to_file_path(uri);
+                let mut vfs = self.vfs.write().unwrap();
+                vfs.assign_or_get_file_id(path)
+            }
+        };
+        file_id.into()
     }
 }

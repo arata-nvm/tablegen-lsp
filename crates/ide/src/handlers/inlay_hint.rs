@@ -5,7 +5,7 @@ use syntax::{
 };
 
 use crate::{
-    file_system::FileRange,
+    file_system::{FileRange, SourceUnitId},
     index::IndexDatabase,
     symbol_map::{class::Class, record::RecordField, symbol::Symbol, SymbolMap},
 };
@@ -33,8 +33,12 @@ impl InlayHint {
     }
 }
 
-pub fn exec(db: &dyn IndexDatabase, range: FileRange) -> Option<Vec<InlayHint>> {
-    let index = db.index();
+pub fn exec(
+    db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
+    range: FileRange,
+) -> Option<Vec<InlayHint>> {
+    let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
 
     let Some(iter) = symbol_map.iter_symbols_in_range(range) else {
@@ -146,7 +150,8 @@ mod tests {
 
     fn check(s: &str) -> Vec<InlayHint> {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.full_range(f.root_file())).expect("inlay hint not found")
+        super::exec(&db, f.source_unit_id(), f.full_range(f.root_file()))
+            .expect("inlay hint not found")
     }
 
     #[test]

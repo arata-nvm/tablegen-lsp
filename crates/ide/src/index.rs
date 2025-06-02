@@ -15,7 +15,7 @@ use syntax::{
 
 use crate::{
     db::SourceDatabase,
-    file_system::{FileRange, IncludeId},
+    file_system::{FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
     symbol_map::{
         class::{Class, ClassId},
@@ -34,7 +34,7 @@ use crate::{
 
 #[salsa::query_group(IndexDatabaseStorage)]
 pub trait IndexDatabase: SourceDatabase {
-    fn index(&self) -> Arc<Index>;
+    fn index(&self, source_unit_id: SourceUnitId) -> Arc<Index>;
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -53,15 +53,14 @@ impl Index {
     }
 }
 
-fn index(db: &dyn IndexDatabase) -> Arc<Index> {
-    let source_root = db.source_root();
-    let root_file = source_root.root();
+fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Arc<Index> {
+    let source_unit = db.source_unit(source_unit_id);
 
-    let parse = db.parse(root_file);
+    let parse = db.parse(source_unit.root());
     let source_file =
         ast::SourceFile::cast(parse.syntax_node()).expect("failed to SourceFile::cast");
 
-    let mut ctx = IndexCtx::new(db, root_file);
+    let mut ctx = IndexCtx::new(db, source_unit);
     source_file.index(&mut ctx);
     Arc::new(ctx.finish())
 }
@@ -113,7 +112,7 @@ impl Indexable for ast::Include {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         let file_id = ctx.current_file_id();
-        let include_map = ctx.db.resolved_include_map(file_id);
+        let include_map = ctx.source_unit.include_map(&file_id)?;
 
         let include_id = IncludeId(SyntaxNodePtr::new(self.syntax()));
         let Some(include_file_id) = include_map.get(&include_id).copied() else {

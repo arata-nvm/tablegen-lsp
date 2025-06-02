@@ -1,27 +1,30 @@
 use std::collections::HashMap;
 
 use crate::{
-    file_system::{FileId, FileRange},
+    file_system::{FileId, FileRange, SourceUnitId},
     index::IndexDatabase,
 };
 
-pub fn exec(db: &dyn IndexDatabase) -> HashMap<FileId, Vec<Diagnostic>> {
+pub fn exec(
+    db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
+) -> HashMap<FileId, Vec<Diagnostic>> {
     let mut diagnostic_list = Vec::new();
 
-    let source_root = db.source_root();
-    let parse = db.parse(source_root.root());
+    let source_unit = db.source_unit(source_unit_id);
+    let parse = db.parse(source_unit.root());
     diagnostic_list.extend(parse.errors().iter().map(|err| {
         Diagnostic::new(
-            FileRange::new(source_root.root(), err.range),
+            FileRange::new(source_unit.root(), err.range),
             err.message.to_string(),
         )
     }));
 
-    let index = db.index();
+    let index = db.index(source_unit_id);
     diagnostic_list.extend(index.diagnostics().iter().cloned());
 
     let mut diagnostic_map = HashMap::new();
-    for file_id in db.source_root().iter_files() {
+    for file_id in source_unit.iter_files() {
         diagnostic_map.insert(file_id, Vec::new());
     }
 
@@ -58,7 +61,9 @@ mod tests {
 
     fn check(s: &str) -> Vec<Diagnostic> {
         let (db, f) = tests::single_file(s);
-        super::exec(&db).remove(&f.root_file()).unwrap()
+        super::exec(&db, f.source_unit_id())
+            .remove(&f.root_file())
+            .unwrap()
     }
 
     #[test]
@@ -74,10 +79,10 @@ mod tests {
     #[test]
     fn update_diag() {
         let (mut db, f) = tests::single_file("class Foo");
-        let diags1 = super::exec(&db);
+        let diags1 = super::exec(&db, f.source_unit_id());
 
         db.set_file_content(f.root_file(), Arc::from("class Foo;"));
-        let diags2 = super::exec(&db);
+        let diags2 = super::exec(&db, f.source_unit_id());
 
         insta::assert_debug_snapshot!((diags1, diags2));
     }

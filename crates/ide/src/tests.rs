@@ -4,7 +4,9 @@ use syntax::parser::TextRange;
 
 use crate::{
     db::{SourceDatabase, SourceDatabaseStorage},
-    file_system::{self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem},
+    file_system::{
+        self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem, SourceUnitId,
+    },
     index::IndexDatabaseStorage,
 };
 
@@ -38,8 +40,8 @@ impl TestDatabase {
             db.set_file_content(file_id, Arc::from(content));
         }
 
-        let source_root = file_system::collect_sources(&mut db, f, f.root_file());
-        db.set_source_root(Arc::new(source_root));
+        let source_unit = file_system::collect_sources(&mut db, f, f.root_file());
+        db.set_source_unit(f.root_file().into(), Arc::new(source_unit));
 
         db
     }
@@ -146,6 +148,10 @@ impl Fixture {
     pub fn file_content(&self, id: &FileId) -> String {
         let path = self.file_set.path_for_file(id);
         self.file_contents[path].clone()
+    }
+
+    pub fn source_unit_id(&self) -> SourceUnitId {
+        self.root_file().into()
     }
 
     fn insert_file(&mut self, path: FilePath, content: String) {

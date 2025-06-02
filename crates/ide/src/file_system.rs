@@ -96,31 +96,32 @@ impl FileSet {
     }
 }
 
-#[derive(Debug)]
-pub struct SourceRoot {
-    file_set: FileSet,
-    root: FileId,
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct SourceUnitId(FileId);
+
+impl From<FileId> for SourceUnitId {
+    fn from(file_id: FileId) -> Self {
+        Self(file_id)
+    }
 }
 
-impl SourceRoot {
-    pub fn new(file_set: FileSet, root: FileId) -> Self {
-        Self { file_set, root }
-    }
+#[derive(Debug)]
+pub struct SourceUnit {
+    root: FileId,
+    includes: HashMap<FileId, IncludeMap>,
+}
 
+impl SourceUnit {
     pub fn root(&self) -> FileId {
         self.root
     }
 
-    pub fn file_for_path(&self, path: &FilePath) -> Option<FileId> {
-        self.file_set.file_for_path(path)
-    }
-
-    pub fn path_for_file(&self, file_id: &FileId) -> &FilePath {
-        self.file_set.path_for_file(file_id)
-    }
-
     pub fn iter_files(&self) -> impl Iterator<Item = FileId> + '_ {
-        self.file_set.iter_files()
+        self.includes.keys().copied()
+    }
+
+    pub fn include_map(&self, file_id: &FileId) -> Option<&IncludeMap> {
+        self.includes.get(file_id)
     }
 }
 
@@ -135,18 +136,17 @@ pub trait FileSystem {
 pub fn collect_sources<FS: FileSystem>(
     db: &mut dyn SourceDatabase,
     fs: &mut FS,
-    root_file: FileId,
-) -> SourceRoot {
-    let mut file_set = FileSet::new();
+    root: FileId,
+) -> SourceUnit {
+    let mut includes = HashMap::new();
 
-    let mut files = VecDeque::new();
-    files.push_back(root_file);
-    while let Some(file_id) = files.pop_front() {
+    let mut queue = VecDeque::new();
+    queue.push_back(root);
+    while let Some(file_id) = queue.pop_front() {
         let parse = db.parse(file_id);
 
         let file_path = fs.path_for_file(&file_id);
         let file_dir = file_path.parent().expect("file dir not found");
-        file_set.insert(file_id, file_path.clone());
 
         let mut include_map = HashMap::new();
         // FIXME
@@ -155,21 +155,25 @@ pub fn collect_sources<FS: FileSystem>(
             include_dir_list.push(FilePath(PathBuf::from_str(&include_dir).unwrap()));
         }
         for (include_id, include_path) in list_includes(parse.syntax_node()) {
-            if let Some(resolved_file_id) =
+            let Some(resolved_file_id) =
                 resolve_include_file(db, fs, include_path, &include_dir_list)
-            {
-                include_map.insert(include_id, resolved_file_id);
-                files.push_back(resolved_file_id);
-            }
+            else {
+                continue;
+            };
+
+            include_map.insert(include_id, resolved_file_id);
+            queue.push_back(resolved_file_id);
         }
-        db.set_resolved_include_map(file_id, include_map)
+        includes.insert(file_id, include_map);
     }
 
-    SourceRoot::new(file_set, root_file)
+    SourceUnit { root, includes }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct IncludeId(pub SyntaxNodePtr);
+
+pub type IncludeMap = HashMap<IncludeId, FileId>;
 
 fn list_includes(root_node: SyntaxNode) -> Vec<(IncludeId, EcoString)> {
     (|| -> Option<_> {
