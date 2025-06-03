@@ -87,22 +87,25 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           cross build --release --target ${{ matrix.target }} --verbose
-          echo "BIN=target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}" >> $GITHUB_ENV
-          mv target/${{ matrix.target }}/release/lsp ${BIN}
+          bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}"
+          mv target/${{ matrix.target }}/release/lsp ${bin}
+          echo "BIN=${BIN}" >> $GITHUB_ENV
 
       - name: Build release binary (macos)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           cargo build --release --target ${{ matrix.target }} --verbose
-          echo "BIN=target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}" >> $GITHUB_ENV
-          mv target/${{ matrix.target }}/release/lsp ${BIN}
+          bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}"
+          mv target/${{ matrix.target }}/release/lsp ${bin}
+          echo "BIN=${BIN}" >> $GITHUB_ENV
 
       - name: Build release binary (windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           cargo build --release --target ${{ matrix.target }} --verbose
-          echo "BIN=target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}.exe" >> $GITHUB_ENV
-          mv target/${{ matrix.target }}/release/lsp.exe ${BIN}
+          bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}.exe"
+          mv target/${{ matrix.target }}/release/lsp.exe ${bin}
+          echo "BIN=${BIN}" >> $GITHUB_ENV
       
       - name: Upload release binary
         env:
@@ -111,14 +114,3 @@ jobs:
         run: |
           version="${{ needs.create-release.outputs.version }}"
           gh release upload "${version}" "${{ env.BIN }}"
-
-      - name: Rename relase binary
-        shell: bash
-        run: |
-          mv target/${{ matrix.target }}/release/{lsp,tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}${{ matrix.extension }}}
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            target/${{ matrix.target }}/release/tablegen-lsp{,-${{ github.ref_name }}-${{ matrix.target }}${{ matrix.extension }}}
