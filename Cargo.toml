@@ -35,6 +35,7 @@ debug = 0
 lto = true
 codegen-units = 1
 panic = "abort"
+strip = true
 
 [profile.profiling]
 debug = true
