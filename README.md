@@ -46,4 +46,4 @@ Some files in this project are derived from the LLVM Project and are licensed un
 - [`vscode/third-party/language-configuration.json`](vscode/third-party/language-configuration.json)
 - [`vscode/third-party/language-grammar.json`](vscode/third-party/language-grammar.json)
 
-For the full text of the Apache License v2.0 with LLVM Exceptions, please see [`vscode/third-party/LICENSE.txt`](vscode/third-party/LICENSE.txt).
+For the full text of the Apache License v2.0 with LLVM Exceptions, please see [`vscode/third-party/LICENSE.TXT`](vscode/third-party/LICENSE.TXT).
