@@ -125,7 +125,8 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
 
 function getServer(): string {
     const serverDir = path.join(__dirname, "..", "server");
-    const version = vscode.extensions.getExtension(extensionName)?.packageJSON.version;
+    const extension = vscode.extensions.getExtension(extensionName)?.packageJSON as { version: string } | undefined;
+    const version = extension?.version;
     switch (platform()) {
         case "darwin":
             switch (arch()) {
