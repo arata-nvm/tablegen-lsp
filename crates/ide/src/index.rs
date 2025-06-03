@@ -8,9 +8,9 @@ use context::IndexCtx;
 use ecow::EcoString;
 use scope::ScopeKind;
 use syntax::{
+    SyntaxNodePtr,
     ast::{self, AstNode},
     parser::TextRange,
-    SyntaxNodePtr,
 };
 
 use crate::{
@@ -18,6 +18,7 @@ use crate::{
     file_system::{FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
     symbol_map::{
+        SymbolMap,
         class::{Class, ClassId},
         def::Def,
         defm::Defm,
@@ -28,7 +29,6 @@ use crate::{
         template_arg::TemplateArgument,
         typ::Type,
         variable::{Variable, VariableId, VariableKind},
-        SymbolMap,
     },
 };
 
@@ -780,10 +780,8 @@ impl Indexable for ast::SimpleValue {
                 Some(Type::Bits(bits.value_list()?.values().count()))
             }
             ast::SimpleValue::List(list) => {
-                let mut value_types = list
-                    .value_list()?
-                    .values()
-                    .filter_map(|value| value.index(ctx));
+                let value_list = list.value_list()?;
+                let mut value_types = value_list.values().filter_map(|value| value.index(ctx));
                 value_types
                     .nth(0)
                     .map(|typ| Type::List(Box::new(typ)))
