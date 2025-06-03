@@ -150,6 +150,7 @@ jobs:
         run: |
           mkdir -p server
           gh release download "${{ needs.create-release.outputs.version }}" --pattern "tablegen-lsp-*" --dir server
+          chmod 0755 server/*
       
       - name: Package client
         run: npm run package
