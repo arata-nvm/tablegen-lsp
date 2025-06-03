@@ -138,15 +138,14 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install vsce
-        run: npm install -g @vscode/vsce
-
       - name: Install dependencies
         working-directory: ./vscode
         run: npm ci
 
       - name: Download server binaries
         working-directory: ./vscode
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p server
           version="${{ needs.create-release.outputs.version }}"
