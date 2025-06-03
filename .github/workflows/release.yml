@@ -89,7 +89,7 @@ jobs:
           cross build --release --target ${{ matrix.target }} --verbose
           bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}"
           mv target/${{ matrix.target }}/release/lsp ${bin}
-          echo "BIN=${BIN}" >> $GITHUB_ENV
+          echo "BIN=${bin}" >> $GITHUB_ENV
 
       - name: Build release binary (macos)
         if: ${{ matrix.os == 'macos-latest' }}
@@ -97,7 +97,7 @@ jobs:
           cargo build --release --target ${{ matrix.target }} --verbose
           bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}"
           mv target/${{ matrix.target }}/release/lsp ${bin}
-          echo "BIN=${BIN}" >> $GITHUB_ENV
+          echo "BIN=${bin}" >> $GITHUB_ENV
 
       - name: Build release binary (windows)
         if: ${{ matrix.os == 'windows-latest' }}
@@ -105,7 +105,7 @@ jobs:
           cargo build --release --target ${{ matrix.target }} --verbose
           bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}.exe"
           mv target/${{ matrix.target }}/release/lsp.exe ${bin}
-          echo "BIN=${BIN}" >> $GITHUB_ENV
+          echo "BIN=${bin}" >> $GITHUB_ENV
       
       - name: Upload release binary
         env:
