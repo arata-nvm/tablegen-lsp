@@ -16,31 +16,28 @@ jobs:
       matrix:
         job:
           - { os: ubuntu-latest  , target: x86_64-unknown-linux-gnu       , use-cross: true  , extension: "" }
-          - { os: macos-latest   , target: x86_64-apple-darwin            , use-cross: false , extension: "" }
-          - { os: windows-latest , target: x86_64-pc-windows-msvc         , use-cross: false , extension: .exe }
           - { os: ubuntu-latest  , target: aarch64-unknown-linux-gnu      , use-cross: true  , extension: "" }
-          - { os: macos-latest   , target: aarch64-apple-darwin           , use-cross: false , extension: "" }
-          - { os: windows-latest , target: aarch64-pc-windows-msvc        , use-cross: false , extension: .exe }
           - { os: ubuntu-latest  , target: armv7-unknown-linux-gnueabihf  , use-cross: true  , extension: "" }
+          - { os: macos-latest   , target: x86_64-apple-darwin            , use-cross: false , extension: "" }
+          - { os: macos-latest   , target: aarch64-apple-darwin           , use-cross: false , extension: "" }
+          - { os: windows-latest , target: x86_64-pc-windows-msvc         , use-cross: false , extension: .exe }
+          - { os: windows-latest , target: aarch64-pc-windows-msvc        , use-cross: false , extension: .exe }
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.job.target }}
-          override: true
-          profile: minimal
+      - name: Install cross
+        if: ${{ matrix.job.use-cross }}
+        run: cargo install cross --git https://github.com/cross-rs/cross
+      
+      - name: Build (cargo)
+        if: ${{ !matrix.job.use-cross }}
+        run: cargo build --release --target ${{ matrix.job.target }} --verbose
 
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.job.use-cross }}
-          command: build
-          args: --release --target ${{ matrix.job.target }} --verbose
+      - name: Build (cross)
+        if: ${{ matrix.job.use-cross }}
+        run: cross build --release --target ${{ matrix.job.target }} --verbose
 
       - name: Rename artifacts
         shell: bash
@@ -50,6 +47,5 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
           files: |
             target/${{ matrix.job.target }}/release/tablegen-lsp{,-${{ github.ref_name }}-${{ matrix.job.target }}${{ matrix.job.extension }}}
