@@ -1,7 +1,0 @@
-[target.'cfg(target_vendor = "apple")']
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld", "-Ctarget-cpu=native"]
-
-[target.'cfg(target_os = "linux")']
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld", "-Ctarget-cpu=native"]
