@@ -3,7 +3,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
 
-const extensionId = "tablegen-lsp";
+const extensionName = "tablegen-lsp";
 const languageId = "tablegen";
 
 const commandRestartServer = "tablegen-lsp.restartServer";
@@ -71,7 +71,7 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
     );
 
     vscode.workspace.onDidChangeConfiguration(async (event) => {
-        if (!event.affectsConfiguration(extensionId)) {
+        if (!event.affectsConfiguration(extensionName)) {
             return;
         }
 
@@ -109,14 +109,14 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
         },
     };
 
-    const config = vscode.workspace.getConfiguration(extensionId);
+    const config = vscode.workspace.getConfiguration(extensionName);
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: "file", language: languageId }],
         initializationOptions: config,
     };
 
     return new LanguageClient(
-        extensionId,
+        extensionName,
         "TableGen Language Server",
         serverOptions,
         clientOptions,
@@ -124,25 +124,35 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
 }
 
 function getServer(): string {
+    const serverDir = path.join(__dirname, "..", "server");
+    const version = vscode.extensions.getExtension(extensionName)?.packageJSON.version;
     switch (platform()) {
         case "darwin":
             switch (arch()) {
                 case "arm64":
-                    return "tablegen-lsp-master-aarch64-apple-darwin";
+                    return path.join(serverDir, `tablegen-lsp-${version}-aarch64-apple-darwin`);
                 case "x64":
-                    return "tablegen-lsp-master-x86_64-apple-darwin";
+                    return path.join(serverDir, `tablegen-lsp-${version}-x86_64-apple-darwin`);
             }
             break;
         case "linux":
             switch (arch()) {
+                case "arm":
+                    return path.join(serverDir, `tablegen-lsp-${version}-armv7-unknown-linux-gnueabihf`);
                 case "arm64":
-                    return "tablegen-lsp-master-aarch64-unknown-linux-gnu";
+                    return path.join(serverDir, `tablegen-lsp-${version}-aarch64-unknown-linux-gnu`);
                 case "x64":
-                    return "tablegen-lsp-master-x86_64-unknown-linux-gnu";
+                    return path.join(serverDir, `tablegen-lsp-${version}-x86_64-unknown-linux-gnu`);
             }
             break;
         case "win32":
-            return "tablegen-lsp-master-x86_64-pc-windows-msvc.exe";
+            switch (arch()) {
+                case "arm64":
+                    return path.join(serverDir, `tablegen-lsp-${version}-aarch64-pc-windows-msvc.exe`);
+                case "x64":
+                    return path.join(serverDir, `tablegen-lsp-${version}-x86_64-pc-windows-msvc.exe`);
+            }
+            break;
     }
 
     throw new Error("This platform is currently not supported");

@@ -6,7 +6,7 @@
     "repository": {
         "url": "https://github.com/arata-nvm/tablegen-lsp"
     },
-    "version": "0.0.3",
+    "version": "0.2.0",
     "engines": {
         "vscode": "^1.82.0"
     },
@@ -84,10 +84,11 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "pretest": "npm run compile && npm run lint",
+        "vscode:prepublish": "npm run build-base -- --minify",
+        "package": "vsce package",
+        "build-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node20",
+        "build": "npm run build-base -- --sourcemap",
+        "watch": "npm run build-base -- --sourcemap --watch",
         "format:fix": "prettier --write ./src",
         "format:check": "prettier --check ./src",
         "lint:fix": "eslint --fix ./src",
@@ -98,7 +99,9 @@
         "@types/mocha": "^10.0.1",
         "@types/node": "22.x",
         "@types/vscode": "^1.82.0",
+        "@vscode/vsce": "^3.4.2",
         "@vscode/test-electron": "^2.3.4",
+        "esbuild": "^0.25.5",
         "eslint": "^9.0.0",
         "glob": "^11.0.0",
         "mocha": "^11.0.0",

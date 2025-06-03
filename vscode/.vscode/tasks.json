@@ -14,7 +14,7 @@
 			"dependsOn": "Install Dependensies",
 			"group": "build",
 			"type": "npm",
-			"script": "compile",
+			"script": "build",
 			"problemMatcher": "$tsc",
 		},
 		{
