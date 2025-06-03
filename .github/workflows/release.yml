@@ -149,8 +149,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p server
-          version="${{ needs.create-release.outputs.version }}"
-          gh release download "${version}" --pattern "tablegen-lsp-*" --dir server
+          gh release download "${{ needs.create-release.outputs.version }}" --pattern "tablegen-lsp-*" --dir server
       
       - name: Package client
         run: npm run package
@@ -159,13 +158,11 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          version="${{ needs.create-release.outputs.version }}"
-          gh release upload "${version}" "tablegen-lsp-${version}.vsix"
+        run: gh release upload "${{ needs.create-release.outputs.version }}" "tablegen-lsp-${{ needs.create-release.outputs.version }}.vsix"
 
       - name: Publish extension
         shell: bash
-        run: npx vsce publish --pat "${{ secrets.VSCE_TOKEN }}" --packagePath "tablegen-lsp-${version}.vsix"
+        run: npx vsce publish --pat "${{ secrets.VSCE_TOKEN }}" --packagePath "tablegen-lsp-${{ needs.create-release.outputs.version }}.vsix"
 
   publish-release:
     needs: ['create-release', 'build-server', 'build-client']
@@ -179,4 +176,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           version="${{ needs.create-release.outputs.version }}"
-          gh release edit "${version}" --draft=false
+          gh release edit "${{ needs.create-release.outputs.version }}" --draft=false
