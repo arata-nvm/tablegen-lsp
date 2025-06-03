@@ -45,7 +45,7 @@ jobs:
       - name: Rename artifacts
         shell: bash
         run: |
-          mv target/${{ matrix.job.target }}/release/tablegen-lsp{,-${{ github.ref_name }}-${{ matrix.job.target }}${{ matrix.job.extension }}}
+          mv target/${{ matrix.job.target }}/release/{lsp,tablegen-lsp-${{ github.ref_name }}-${{ matrix.job.target }}${{ matrix.job.extension }}}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
