@@ -1,29 +1,49 @@
 # tablegen-lsp
 
-A language server for [TableGen](https://llvm.org/docs/TableGen/index.html).
+A language server and VS Code extension for [TableGen](https://llvm.org/docs/TableGen/index.html).
+
+## Installation
+
+This extension is available on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=arata-nvm.tablegen-lsp).
+
+## Configuration
+
+See [`docs/configuration.md`](docs/configuration.md) for configuration options.
 
 ## Features
 
-### Syntax Highlighting
+See [`docs/features.md`](docs/features.md) for a list of features currently implemented or planned.
 
-![Syntax Highlighting](images/syntax-highlighting.png)
+## Development
 
-### Diagnostics
+### Building from Source
 
-![Diagnostics](images/diagnostics.png)
+```bash
+# Clone the repository
+git clone https://github.com/arata-nvm/tablegen-lsp
+cd tablegen-lsp
 
-### Goto Definition / References
+# Build the project
+cargo build
+```
 
-![References](images/references.png)
+### Running Tests
 
-### Code Completion
+```bash
+cargo test
+```
 
-![Code Completion](images/completion.png)
+### Debugging
 
-### Inlay Hint
+1. Open the [`vscode`](vscode) directory in VS Code
+2. Press <kbd>F5</kbd> to start debugging
 
-![Inlay Hint](images/inlay-hint.png)
+## License
 
-### Hover
+This project is licensed under the [MIT License](vscode/LICENSE).
 
-![Hover](images/hover.png)
+Some files in this project are derived from the LLVM Project and are licensed under the Apache License v2.0 with LLVM Exceptions:
+- [`vscode/third-party/language-configuration.json`](vscode/third-party/language-configuration.json)
+- [`vscode/third-party/language-grammar.json`](vscode/third-party/language-grammar.json)
+
+For the full text of the Apache License v2.0 with LLVM Exceptions, please see [`vscode/third-party/LICENSE.TXT`](vscode/third-party/LICENSE.TXT).

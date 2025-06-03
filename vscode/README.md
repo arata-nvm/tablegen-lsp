@@ -1,21 +1,28 @@
 # tablegen-lsp
 
-A language server for [TableGen](https://llvm.org/docs/TableGen/index.html).
+This extension provides support for the [TableGen](https://llvm.org/docs/TableGen/index.html).
 
 ## Features
 
-- Syntax highlighting
-- Diagnostics
-- Goto definition
-- References
-- Code completion
-- Inlay hint
+- code completion
+- diagnostics
+- document symbol
+- find references
+- folding
+- goto definition
+- hover
+- inlay hints
+- syntax highlighting
 
-## License
+For more details, see [features.md](https://github.com/arata-nvm/tablegen-lsp/blob/master/docs/features.md).
 
-This project includes files from the LLVM Project, which is licensed under the Apache License v2.0 with LLVM Exceptions.
-The following files are covered by the license:
-- `third-party/language-configuration.json`
-- `third-party/language-grammar.json`
+## Quick Start
 
-The full text of the Apache License v2.0 with LLVM Exceptions can be found in the `third-party/LICENSE.txt` file.
+Install the [tablegen-lsp extension](https://marketplace.visualstudio.com/items?itemName=arata-nvm.tablegen-lsp) from the VS Code Marketplace.
+
+## Configuration
+
+This extension provides configurations through VS Code settings. All configurations are under `tablegen-lsp.*`.
+
+See [configuration.md](https://github.com/arata-nvm/tablegen-lsp/blob/master/docs/configuration.md) for more details.
+
