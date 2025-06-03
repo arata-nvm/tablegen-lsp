@@ -129,6 +129,9 @@ jobs:
   build-client:
     needs: ['create-release', 'build-server']
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./vscode
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -139,11 +142,9 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        working-directory: ./vscode
         run: npm ci
 
       - name: Download server binaries
-        working-directory: ./vscode
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -152,7 +153,6 @@ jobs:
           gh release download "${version}" --pattern "tablegen-lsp-*" --dir server
       
       - name: Package client
-        working-directory: ./vscode
         run: npm run package
       
       - name: Upload client
@@ -162,3 +162,21 @@ jobs:
         run: |
           version="${{ needs.create-release.outputs.version }}"
           gh release upload "${version}" "tablegen-lsp-${version}.vsix"
+
+      - name: Publish extension
+        shell: bash
+        run: npx vsce publish --pat "${{ secrets.VSCE_TOKEN }}" --packagePath "tablegen-lsp-${version}.vsix"
+
+  publish-release:
+    needs: ['create-release', 'build-server', 'build-client']
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ needs.create-release.outputs.version }}"
+          gh release edit "${version}" --draft=false
