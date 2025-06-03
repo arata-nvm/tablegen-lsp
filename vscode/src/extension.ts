@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
 
 const extensionName = "tablegen-lsp";
+const extensionId = `arata-nvm.${extensionName}`;
 const languageId = "tablegen";
 
 const commandRestartServer = "tablegen-lsp.restartServer";
@@ -125,7 +126,7 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
 
 function getServer(): string {
     const serverDir = path.join(__dirname, "..", "server");
-    const extension = vscode.extensions.getExtension(extensionName)?.packageJSON as { version: string } | undefined;
+    const extension = vscode.extensions.getExtension(extensionId)?.packageJSON as { version: string } | undefined;
     const version = extension?.version;
     switch (platform()) {
         case "darwin":
