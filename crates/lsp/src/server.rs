@@ -3,22 +3,26 @@ use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    notification, request, CompletionOptions, CompletionParams, CompletionResponse, Diagnostic,
-    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions,
-    DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, FoldingRange,
-    FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams,
-    GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
-    InitializeResult, InlayHint, InlayHintParams, Location, OneOf, PublishDiagnosticsParams,
-    ReferenceParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    CompletionOptions, CompletionParams, CompletionResponse, ConfigurationItem,
+    ConfigurationParams, Diagnostic, DidChangeConfigurationParams, DidChangeTextDocumentParams,
+    DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions, DocumentLinkParams,
+    DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
+    FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
+    HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InitializedParams,
+    InlayHint, InlayHintParams, Location, MessageType, OneOf, PublishDiagnosticsParams,
+    ReferenceParams, ServerCapabilities, ShowMessageParams, TextDocumentSyncCapability,
+    TextDocumentSyncKind, Url, notification, request,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
-use futures::future::{ready, BoxFuture};
+use futures::future::{BoxFuture, ready};
+use serde_json::Value;
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::{FileId, FileSystem, SourceUnitId};
 
+use crate::config::{CONFIG_SECTION, Config};
 use crate::vfs::{UrlExt, Vfs};
 use crate::{from_proto, lsp_ext, to_proto};
 
@@ -29,6 +33,7 @@ pub struct Server {
     diagnostic_version: i32,
     emitted_diagnostics: HashSet<FileId>,
     root_file: Option<FileId>,
+    config: Arc<Config>,
 }
 
 pub struct ServerSnapshot {
@@ -37,6 +42,7 @@ pub struct ServerSnapshot {
 }
 
 struct UpdateDiagnosticsEvent(i32, Vec<(FileId, Url, Vec<Diagnostic>)>);
+struct UpdateConfigEvent(Value);
 
 impl Server {
     pub fn new_router(client: ClientSocket) -> Router<Self> {
@@ -44,13 +50,14 @@ impl Server {
         let mut router = Router::new(this);
         router
             .request::<request::Initialize, _>(Self::initialize)
-            .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
             .request::<request::Shutdown, _>(|_, _| ready(Ok(())))
+            .notification::<notification::Initialized>(Self::initialized)
             .notification::<notification::Exit>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
             .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
+            .notification::<notification::DidChangeConfiguration>(Self::did_change_configuration)
             .notification::<lsp_ext::SetSourceRoot>(Self::set_source_root)
             .notification::<lsp_ext::ClearSourceRoot>(Self::clear_source_root)
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
@@ -61,7 +68,8 @@ impl Server {
             .request::<request::Completion, _>(Self::completion)
             .request::<request::DocumentLinkRequest, _>(Self::document_link)
             .request::<request::FoldingRangeRequest, _>(Self::folding_range)
-            .event::<UpdateDiagnosticsEvent>(Self::update_diagnostics);
+            .event::<UpdateDiagnosticsEvent>(Self::update_diagnostics)
+            .event::<UpdateConfigEvent>(Self::update_config);
         router
     }
 
@@ -73,6 +81,7 @@ impl Server {
             diagnostic_version: 0,
             emitted_diagnostics: HashSet::new(),
             root_file: None,
+            config: Arc::new(Config::default()),
         }
     }
 }
@@ -282,6 +291,11 @@ impl LanguageServer for Server {
         Box::pin(async move { task.await.unwrap() })
     }
 
+    fn initialized(&mut self, _: InitializedParams) -> Self::NotifyResult {
+        self.spawn_reload_config();
+        ControlFlow::Continue(())
+    }
+
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_open: {params:?}");
         let source_unit_id =
@@ -296,6 +310,15 @@ impl LanguageServer for Server {
             let source_unit_id = self.set_file_content(&params.text_document.uri, &change.text);
             self.spawn_update_diagnostics(source_unit_id);
         }
+        ControlFlow::Continue(())
+    }
+
+    fn did_change_configuration(
+        &mut self,
+        params: DidChangeConfigurationParams,
+    ) -> Self::NotifyResult {
+        tracing::info!("did_change_configuration: {params:?}");
+        self.spawn_reload_config();
         ControlFlow::Continue(())
     }
 }
@@ -342,6 +365,25 @@ impl Server {
         }
         ControlFlow::Continue(())
     }
+
+    fn update_config(
+        &mut self,
+        UpdateConfigEvent(v): UpdateConfigEvent,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        tracing::info!("update_config: {v:?}");
+
+        let config = Arc::get_mut(&mut self.config).expect("config is not initialized");
+        if let Err(err) = config.update(v) {
+            self.client
+                .show_message(ShowMessageParams {
+                    typ: MessageType::ERROR,
+                    message: format!("failed to reload config: {err}"),
+                })
+                .expect("failed to show message");
+        }
+
+        ControlFlow::Continue(())
+    }
 }
 
 impl Server {
@@ -351,7 +393,8 @@ impl Server {
         let file_id = vfs.assign_or_get_file_id(path);
         let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
-        self.host.load_source_unit(&mut *vfs, file_id)
+        self.host
+            .load_source_unit(&mut *vfs, file_id, &self.config.include_dirs)
     }
 
     fn spawn_update_diagnostics(&mut self, source_unit_id: SourceUnitId) {
@@ -420,5 +463,38 @@ impl Server {
             }
         };
         file_id.into()
+    }
+
+    fn spawn_reload_config(&mut self) {
+        tracing::info!("reload_config");
+        let mut client = self.client.clone();
+        tokio::spawn(async move {
+            let ret = client
+                .configuration(ConfigurationParams {
+                    items: vec![ConfigurationItem {
+                        scope_uri: None,
+                        section: Some(CONFIG_SECTION.into()),
+                    }],
+                })
+                .await;
+
+            let mut v = match ret {
+                Ok(v) => v,
+                Err(err) => {
+                    client
+                        .show_message(ShowMessageParams {
+                            typ: MessageType::ERROR,
+                            message: format!("failed to reload config: {err}"),
+                        })
+                        .expect("failed to show message");
+                    return;
+                }
+            };
+
+            let v = v.pop().unwrap_or_default();
+            client
+                .emit(UpdateConfigEvent(v))
+                .expect("failed to emit update config event");
+        });
     }
 }

@@ -40,7 +40,7 @@ impl TestDatabase {
             db.set_file_content(file_id, Arc::from(content));
         }
 
-        let source_unit = file_system::collect_sources(&mut db, f, f.root_file());
+        let source_unit = file_system::collect_sources(&mut db, f, f.root_file(), &[]);
         db.set_source_unit(f.root_file().into(), Arc::new(source_unit));
 
         db

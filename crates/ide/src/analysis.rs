@@ -4,7 +4,9 @@ use std::sync::Arc;
 use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
-use crate::file_system::{self, FileId, FilePosition, FileRange, FileSystem, SourceUnitId};
+use crate::file_system::{
+    self, FileId, FilePath, FilePosition, FileRange, FileSystem, SourceUnitId,
+};
 use crate::handlers::completion::{self, CompletionItem};
 use crate::handlers::diagnostics::Diagnostic;
 use crate::handlers::document_link::DocumentLink;
@@ -43,9 +45,10 @@ impl AnalysisHost {
         &mut self,
         fs: &mut FS,
         root_file: FileId,
+        include_dirs: &[FilePath],
     ) -> SourceUnitId {
         let id = root_file.into();
-        let source_unit = file_system::collect_sources(&mut self.db, fs, root_file);
+        let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
         self.db.set_source_unit(id, Arc::new(source_unit));
         id
     }

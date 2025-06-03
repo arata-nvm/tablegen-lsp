@@ -1,13 +1,11 @@
 use std::collections::{HashMap, VecDeque};
-use std::env;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::sync::Arc;
 
 use ecow::EcoString;
 use syntax::ast::AstNode;
 use syntax::parser::{TextRange, TextSize};
-use syntax::{ast, SyntaxNode, SyntaxNodePtr};
+use syntax::{SyntaxNode, SyntaxNodePtr, ast};
 
 use crate::db::SourceDatabase;
 
@@ -137,6 +135,7 @@ pub fn collect_sources<FS: FileSystem>(
     db: &mut dyn SourceDatabase,
     fs: &mut FS,
     root: FileId,
+    include_dirs: &[FilePath],
 ) -> SourceUnit {
     let mut includes = HashMap::new();
 
@@ -148,12 +147,10 @@ pub fn collect_sources<FS: FileSystem>(
         let file_path = fs.path_for_file(&file_id);
         let file_dir = file_path.parent().expect("file dir not found");
 
-        let mut include_map = HashMap::new();
-        // FIXME
         let mut include_dir_list = vec![file_dir];
-        if let Ok(include_dir) = env::var("INCLUDE_DIR") {
-            include_dir_list.push(FilePath(PathBuf::from_str(&include_dir).unwrap()));
-        }
+        include_dir_list.extend(include_dirs.iter().cloned());
+
+        let mut include_map = HashMap::new();
         for (include_id, include_path) in list_includes(parse.syntax_node()) {
             let Some(resolved_file_id) =
                 resolve_include_file(db, fs, include_path, &include_dir_list)

@@ -20,7 +20,7 @@ pub fn main() {
     let file_id = vfs.assign_or_get_file_id(file_path.clone());
     let file_content = vfs.read_content(&file_path).expect("failed to read file");
     host.set_file_content(file_id, Arc::from(file_content.as_str()));
-    let source_unit_id = host.load_source_unit(&mut vfs, file_id);
+    let source_unit_id = host.load_source_unit(&mut vfs, file_id, &[]);
 
     let index = host.analysis().index(source_unit_id);
     for diag in index.diagnostics() {
