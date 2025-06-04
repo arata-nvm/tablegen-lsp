@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
@@ -30,10 +29,10 @@ pub struct Server {
     host: AnalysisHost,
     vfs: Arc<RwLock<Vfs>>,
     client: ClientSocket,
-    diagnostic_version: i32,
-    emitted_diagnostics: HashSet<FileId>,
-    root_file: Option<FileId>,
     config: Arc<Config>,
+
+    diagnostic_version: i32,
+    root_file: Option<FileId>,
 }
 
 pub struct ServerSnapshot {
@@ -41,7 +40,7 @@ pub struct ServerSnapshot {
     pub vfs: Arc<RwLock<Vfs>>,
 }
 
-struct UpdateDiagnosticsEvent(i32, Vec<(FileId, Url, Vec<Diagnostic>)>);
+struct UpdateDiagnosticsEvent(i32, Vec<(Url, Vec<Diagnostic>)>);
 struct UpdateConfigEvent(Value);
 
 impl Server {
@@ -79,7 +78,6 @@ impl Server {
             vfs: Arc::new(RwLock::new(Vfs::new())),
             client,
             diagnostic_version: 0,
-            emitted_diagnostics: HashSet::new(),
             root_file: None,
             config: Arc::new(Config::default()),
         }
@@ -333,7 +331,6 @@ impl Server {
         params: lsp_ext::SetSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("set_source_root: {params:?}");
-        self.clear_diagnostics();
         let path = UrlExt::to_file_path(&params.uri);
         let mut vfs = self.vfs.write().unwrap();
         let file_id = vfs.assign_or_get_file_id(path);
@@ -346,7 +343,6 @@ impl Server {
         _params: lsp_ext::ClearSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("clear_source_root");
-        self.clear_diagnostics();
         self.root_file.take();
         ControlFlow::Continue(())
     }
@@ -359,12 +355,11 @@ impl Server {
         UpdateDiagnosticsEvent(version, diagnostics): UpdateDiagnosticsEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_diagnostics: {version:?}");
-        for (file_id, uri, lsp_diags) in diagnostics {
+        for (uri, lsp_diags) in diagnostics {
             let params = PublishDiagnosticsParams::new(uri, lsp_diags, Some(version));
             self.client
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
-            self.emitted_diagnostics.insert(file_id);
         }
         ControlFlow::Continue(())
     }
@@ -417,7 +412,7 @@ impl Server {
                 let file_path = vfs.path_for_file(&file_id);
                 let file_uri = UrlExt::from_file_path(file_path);
 
-                diags.push((file_id, file_uri, lsp_diags));
+                diags.push((file_uri, lsp_diags));
             }
 
             client
@@ -430,18 +425,6 @@ impl Server {
         let version = self.diagnostic_version;
         self.diagnostic_version += 1;
         version
-    }
-
-    fn clear_diagnostics(&mut self) {
-        let diag_version = self.bump_diagnostic_version();
-        let vfs = self.vfs.read().unwrap();
-        for file_id in self.emitted_diagnostics.drain() {
-            let uri = UrlExt::from_file_path(vfs.path_for_file(&file_id));
-            let params = PublishDiagnosticsParams::new(uri, vec![], Some(diag_version));
-            self.client
-                .publish_diagnostics(params)
-                .expect("failed to publish diagnostics");
-        }
     }
 
     fn spawn_with_snapshot<P: Send + 'static, T: Send + 'static>(
