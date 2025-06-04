@@ -71,19 +71,6 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
         statusBarItem
     );
 
-    vscode.workspace.onDidChangeConfiguration(async (event) => {
-        if (!event.affectsConfiguration(extensionName)) {
-            return;
-        }
-
-        const message =
-            "The tablegen-lsp configuration has been updated. Please restart the language server for the changes to take effect.";
-        const userResponse = await vscode.window.showInformationMessage(message, "Restart now");
-        if (userResponse) {
-            await vscode.commands.executeCommand(commandRestartServer);
-        }
-    });
-
     client = createClient(context);
     await client.start();
 }
