@@ -8,18 +8,16 @@ use context::IndexCtx;
 use ecow::EcoString;
 use scope::ScopeKind;
 use syntax::{
-    SyntaxNodePtr,
     ast::{self, AstNode},
     parser::TextRange,
+    SyntaxNodePtr,
 };
 
 use crate::{
-    TY,
     db::SourceDatabase,
     file_system::{FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
     symbol_map::{
-        SymbolMap,
         class::{Class, ClassId},
         def::Def,
         defm::Defm,
@@ -30,7 +28,9 @@ use crate::{
         template_arg::TemplateArgument,
         typ::Type,
         variable::{Variable, VariableId, VariableKind},
+        SymbolMap,
     },
+    TY,
 };
 
 #[salsa::query_group(IndexDatabaseStorage)]

@@ -125,6 +125,72 @@ impl LanguageServer for Server {
         })))
     }
 
+    fn folding_range(
+        &mut self,
+        params: FoldingRangeParams,
+    ) -> BoxFuture<'static, Result<Option<Vec<FoldingRange>>, Self::Error>> {
+        tracing::info!("folding_range: {params:?}");
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
+            let Some(folding_ranges) = snap.analysis.folding_range(file_id) else {
+                return Ok(None);
+            };
+
+            let lsp_folding_ranges = folding_ranges
+                .into_iter()
+                .map(|it| to_proto::folding_range(&line_index, it))
+                .collect();
+            Ok(Some(lsp_folding_ranges))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn inlay_hint(
+        &mut self,
+        params: InlayHintParams,
+    ) -> BoxFuture<'static, Result<Option<Vec<InlayHint>>, Self::Error>> {
+        tracing::info!("inlay_hint: {params:?}");
+        let source_unit_id = self.current_source_unit(&params.text_document.uri);
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (range, line_index) =
+                from_proto::file_range(&snap, params.text_document, params.range);
+            let Some(inlay_hints) = snap.analysis.inlay_hint(source_unit_id, range) else {
+                return Ok(None);
+            };
+
+            let lsp_inlay_hints = inlay_hints
+                .into_iter()
+                .map(|it| to_proto::inlay_hint(&line_index, it))
+                .collect();
+            Ok(Some(lsp_inlay_hints))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
+    fn completion(
+        &mut self,
+        params: CompletionParams,
+    ) -> BoxFuture<'static, Result<Option<CompletionResponse>, Self::Error>> {
+        tracing::info!("completion: {params:?}");
+        let source_unit_id =
+            self.current_source_unit(&params.text_document_position.text_document.uri);
+        let task = self.spawn_with_snapshot(params, move |snap, params| {
+            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
+            let trigger_char = params.context.and_then(|it| it.trigger_character);
+            let Some(completion_list) = snap.analysis.completion(source_unit_id, pos, trigger_char)
+            else {
+                return Ok(None);
+            };
+
+            let lsp_completion_list = completion_list
+                .into_iter()
+                .map(to_proto::completion_item)
+                .collect();
+            Ok(Some(CompletionResponse::Array(lsp_completion_list)))
+        });
+        Box::pin(async move { task.await.unwrap() })
+    }
+
     fn hover(
         &mut self,
         params: HoverParams,
@@ -207,52 +273,6 @@ impl LanguageServer for Server {
         Box::pin(async move { task.await.unwrap() })
     }
 
-    fn inlay_hint(
-        &mut self,
-        params: InlayHintParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<InlayHint>>, Self::Error>> {
-        tracing::info!("inlay_hint: {params:?}");
-        let source_unit_id = self.current_source_unit(&params.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (range, line_index) =
-                from_proto::file_range(&snap, params.text_document, params.range);
-            let Some(inlay_hints) = snap.analysis.inlay_hint(source_unit_id, range) else {
-                return Ok(None);
-            };
-
-            let lsp_inlay_hints = inlay_hints
-                .into_iter()
-                .map(|it| to_proto::inlay_hint(&line_index, it))
-                .collect();
-            Ok(Some(lsp_inlay_hints))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn completion(
-        &mut self,
-        params: CompletionParams,
-    ) -> BoxFuture<'static, Result<Option<CompletionResponse>, Self::Error>> {
-        tracing::info!("completion: {params:?}");
-        let source_unit_id =
-            self.current_source_unit(&params.text_document_position.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
-            let trigger_char = params.context.and_then(|it| it.trigger_character);
-            let Some(completion_list) = snap.analysis.completion(source_unit_id, pos, trigger_char)
-            else {
-                return Ok(None);
-            };
-
-            let lsp_completion_list = completion_list
-                .into_iter()
-                .map(to_proto::completion_item)
-                .collect();
-            Ok(Some(CompletionResponse::Array(lsp_completion_list)))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
     fn document_link(
         &mut self,
         params: DocumentLinkParams,
@@ -275,27 +295,16 @@ impl LanguageServer for Server {
         Box::pin(async move { task.await.unwrap() })
     }
 
-    fn folding_range(
-        &mut self,
-        params: FoldingRangeParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<FoldingRange>>, Self::Error>> {
-        tracing::info!("folding_range: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(folding_ranges) = snap.analysis.folding_range(file_id) else {
-                return Ok(None);
-            };
-
-            let lsp_folding_ranges = folding_ranges
-                .into_iter()
-                .map(|it| to_proto::folding_range(&line_index, it))
-                .collect();
-            Ok(Some(lsp_folding_ranges))
-        });
-        Box::pin(async move { task.await.unwrap() })
+    fn initialized(&mut self, _: InitializedParams) -> Self::NotifyResult {
+        self.spawn_reload_config();
+        ControlFlow::Continue(())
     }
 
-    fn initialized(&mut self, _: InitializedParams) -> Self::NotifyResult {
+    fn did_change_configuration(
+        &mut self,
+        params: DidChangeConfigurationParams,
+    ) -> Self::NotifyResult {
+        tracing::info!("did_change_configuration: {params:?}");
         self.spawn_reload_config();
         ControlFlow::Continue(())
     }
@@ -331,15 +340,6 @@ impl LanguageServer for Server {
             self.opened_source_units.remove(&source_unit_id);
         }
         self.spawn_update_diagnostics();
-        ControlFlow::Continue(())
-    }
-
-    fn did_change_configuration(
-        &mut self,
-        params: DidChangeConfigurationParams,
-    ) -> Self::NotifyResult {
-        tracing::info!("did_change_configuration: {params:?}");
-        self.spawn_reload_config();
         ControlFlow::Continue(())
     }
 }
