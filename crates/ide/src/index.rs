@@ -304,7 +304,7 @@ impl Indexable for ast::ForeachIteratorInit {
     type Output = Type;
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         match self {
-            // bacause RangeList and RangePiece have no items to index, we skip them
+            // because RangeList and RangePiece have no items to index, we skip them
             Self::RangeList(_) | Self::RangePiece(_) => Some(Type::Int),
             Self::Value(value) => value.index(ctx).and_then(|it| it.element_typ()),
         }
