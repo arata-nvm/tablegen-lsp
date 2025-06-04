@@ -1,0 +1,22 @@
+---
+source: crates/ide/src/handlers/document_symbol.rs
+expression: "check(r#\"\nmulticlass Foo {\n    def a;\n}\ndefm foo: Foo;\n\"#)"
+---
+Some(
+    [
+        DocumentSymbol {
+            name: "Foo",
+            typ: "multiclass",
+            range: 11..14,
+            kind: Multiclass,
+            children: [],
+        },
+        DocumentSymbol {
+            name: "foo",
+            typ: "defm",
+            range: 35..38,
+            kind: Defm,
+            children: [],
+        },
+    ],
+)

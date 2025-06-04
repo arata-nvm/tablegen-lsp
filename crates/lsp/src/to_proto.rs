@@ -74,6 +74,7 @@ pub fn document_symbol(
             DocumentSymbolKind::Variable => lsp_types::SymbolKind::VARIABLE,
             DocumentSymbolKind::Defset => lsp_types::SymbolKind::VARIABLE,
             DocumentSymbolKind::Multiclass => lsp_types::SymbolKind::CLASS,
+            DocumentSymbolKind::Defm => lsp_types::SymbolKind::VARIABLE,
         },
         tags: None,
         deprecated: None,
