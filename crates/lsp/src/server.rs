@@ -10,7 +10,7 @@ use async_lsp::lsp_types::{
     FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
     HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InitializedParams,
     InlayHint, InlayHintParams, Location, MessageType, OneOf, PublishDiagnosticsParams,
-    ReferenceParams, ServerCapabilities, ShowMessageParams, TextDocumentSyncCapability,
+    ReferenceParams, ServerCapabilities, ServerInfo, ShowMessageParams, TextDocumentSyncCapability,
     TextDocumentSyncKind, Url, notification, request,
 };
 use async_lsp::router::Router;
@@ -97,7 +97,10 @@ impl LanguageServer for Server {
     ) -> BoxFuture<'static, Result<InitializeResult, Self::Error>> {
         tracing::info!("initialize: {params:?}");
         Box::pin(ready(Ok(InitializeResult {
-            server_info: None,
+            server_info: Some(ServerInfo {
+                name: "tablegen-lsp".into(),
+                version: Some(env!("CARGO_PKG_VERSION").into()),
+            }),
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
