@@ -781,9 +781,13 @@ impl Indexable for ast::SimpleValue {
             }
             ast::SimpleValue::List(list) => {
                 let value_list = list.value_list()?;
-                let mut value_types = value_list.values().filter_map(|value| value.index(ctx));
+                let value_types: Vec<_> = value_list
+                    .values()
+                    .filter_map(|value| value.index(ctx))
+                    .collect();
                 value_types
-                    .nth(0)
+                    .into_iter()
+                    .next()
                     .map(|typ| Type::List(Box::new(typ)))
                     .or(Some(Type::List(Box::new(Type::Any))))
             }
