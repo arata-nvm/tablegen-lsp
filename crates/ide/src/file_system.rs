@@ -142,6 +142,10 @@ pub fn collect_sources<FS: FileSystem>(
     let mut queue = VecDeque::new();
     queue.push_back(root);
     while let Some(file_id) = queue.pop_front() {
+        if includes.contains_key(&file_id) {
+            continue;
+        }
+
         let parse = db.parse(file_id);
 
         let file_path = fs.path_for_file(&file_id);
