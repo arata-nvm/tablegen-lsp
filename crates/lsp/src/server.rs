@@ -1,27 +1,28 @@
+use std::collections::{HashMap, HashSet};
 use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    CompletionOptions, CompletionParams, CompletionResponse, ConfigurationItem,
-    ConfigurationParams, Diagnostic, DidChangeConfigurationParams, DidChangeTextDocumentParams,
-    DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions, DocumentLinkParams,
-    DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
-    FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
-    HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InitializedParams,
-    InlayHint, InlayHintParams, Location, MessageType, OneOf, PublishDiagnosticsParams,
-    ReferenceParams, ServerCapabilities, ServerInfo, ShowMessageParams, TextDocumentSyncCapability,
-    TextDocumentSyncKind, Url, notification, request,
+    notification, request, CompletionOptions, CompletionParams,
+    CompletionResponse, ConfigurationItem, ConfigurationParams, Diagnostic,
+    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentLink, DocumentLinkOptions, DocumentLinkParams, DocumentSymbolParams,
+    DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
+    FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
+    HoverProviderCapability, InitializeParams, InitializeResult, InitializedParams, InlayHint, InlayHintParams, Location,
+    MessageType, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
+    ServerInfo, ShowMessageParams, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
-use futures::future::{BoxFuture, ready};
+use futures::future::{ready, BoxFuture};
 use serde_json::Value;
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
-use ide::file_system::{FileId, FileSystem, SourceUnitId};
+use ide::file_system::{FileSystem, SourceUnitId};
 
-use crate::config::{CONFIG_SECTION, Config};
+use crate::config::{Config, CONFIG_SECTION};
 use crate::vfs::{UrlExt, Vfs};
 use crate::{from_proto, lsp_ext, to_proto};
 
@@ -32,7 +33,8 @@ pub struct Server {
     config: Arc<Config>,
 
     diagnostic_version: i32,
-    root_file: Option<FileId>,
+    opened_source_units: HashSet<SourceUnitId>,
+    root_source_unit: Option<SourceUnitId>,
 }
 
 pub struct ServerSnapshot {
@@ -40,7 +42,7 @@ pub struct ServerSnapshot {
     pub vfs: Arc<RwLock<Vfs>>,
 }
 
-struct UpdateDiagnosticsEvent(i32, Vec<(Url, Vec<Diagnostic>)>);
+struct UpdateDiagnosticsEvent(i32, HashMap<Url, Vec<Diagnostic>>);
 struct UpdateConfigEvent(Value);
 
 impl Server {
@@ -55,7 +57,7 @@ impl Server {
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
             .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
+            .notification::<notification::DidCloseTextDocument>(Self::did_close)
             .notification::<notification::DidChangeConfiguration>(Self::did_change_configuration)
             .notification::<lsp_ext::SetSourceRoot>(Self::set_source_root)
             .notification::<lsp_ext::ClearSourceRoot>(Self::clear_source_root)
@@ -77,9 +79,10 @@ impl Server {
             host: AnalysisHost::new(),
             vfs: Arc::new(RwLock::new(Vfs::new())),
             client,
-            diagnostic_version: 0,
-            root_file: None,
             config: Arc::new(Config::default()),
+            diagnostic_version: 0,
+            opened_source_units: HashSet::new(),
+            root_source_unit: None,
         }
     }
 }
@@ -300,17 +303,34 @@ impl LanguageServer for Server {
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_open: {params:?}");
         let source_unit_id =
-            self.set_file_content(&params.text_document.uri, &params.text_document.text);
-        self.spawn_update_diagnostics(source_unit_id);
+            self.load_source_unit(&params.text_document.uri, &params.text_document.text);
+        self.opened_source_units.insert(source_unit_id);
+        self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
 
     fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
-            let source_unit_id = self.set_file_content(&params.text_document.uri, &change.text);
-            self.spawn_update_diagnostics(source_unit_id);
+            self.load_source_unit(&params.text_document.uri, &change.text);
+            self.spawn_update_diagnostics();
         }
+        ControlFlow::Continue(())
+    }
+
+    fn did_close(&mut self, params: DidCloseTextDocumentParams) -> Self::NotifyResult {
+        tracing::info!("did_close: {params:?}");
+        {
+            let path = UrlExt::to_file_path(&params.text_document.uri);
+            let vfs = self.vfs.read().unwrap();
+            let Some(file_id) = vfs.file_for_path(&path) else {
+                tracing::warn!("cannot find file id: {path:?}");
+                return ControlFlow::Continue(());
+            };
+            let source_unit_id = file_id.into();
+            self.opened_source_units.remove(&source_unit_id);
+        }
+        self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
 
@@ -331,10 +351,18 @@ impl Server {
         params: lsp_ext::SetSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("set_source_root: {params:?}");
-        let path = UrlExt::to_file_path(&params.uri);
-        let mut vfs = self.vfs.write().unwrap();
-        let file_id = vfs.assign_or_get_file_id(path);
-        self.root_file.replace(file_id);
+        let content = {
+            let path = UrlExt::to_file_path(&params.uri);
+            let vfs = self.vfs.read().unwrap();
+            let Some(content) = vfs.read_content(&path) else {
+                tracing::warn!("failed to read file: {path:?}");
+                return ControlFlow::Continue(());
+            };
+            content
+        };
+        let source_unit_id = self.load_source_unit(&params.uri, &content);
+        self.root_source_unit.replace(source_unit_id);
+        self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
 
@@ -343,76 +371,52 @@ impl Server {
         _params: lsp_ext::ClearSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("clear_source_root");
-        self.root_file.take();
-        ControlFlow::Continue(())
-    }
-}
-
-// eventのハンドラー
-impl Server {
-    fn update_diagnostics(
-        &mut self,
-        UpdateDiagnosticsEvent(version, diagnostics): UpdateDiagnosticsEvent,
-    ) -> <Self as LanguageServer>::NotifyResult {
-        tracing::info!("update_diagnostics: {version:?}");
-        for (uri, lsp_diags) in diagnostics {
-            let params = PublishDiagnosticsParams::new(uri, lsp_diags, Some(version));
-            self.client
-                .publish_diagnostics(params)
-                .expect("failed to publish diagnostics");
-        }
-        ControlFlow::Continue(())
-    }
-
-    fn update_config(
-        &mut self,
-        UpdateConfigEvent(v): UpdateConfigEvent,
-    ) -> <Self as LanguageServer>::NotifyResult {
-        tracing::info!("update_config: {v:?}");
-
-        let config = Arc::get_mut(&mut self.config).expect("config is not initialized");
-        if let Err(err) = config.update(v) {
-            self.client
-                .show_message(ShowMessageParams {
-                    typ: MessageType::ERROR,
-                    message: format!("failed to reload config: {err}"),
-                })
-                .expect("failed to show message");
-        }
-
+        self.root_source_unit.take();
+        self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
 }
 
 impl Server {
-    fn set_file_content(&mut self, uri: &Url, text: &str) -> SourceUnitId {
-        let path = UrlExt::to_file_path(uri);
-        let mut vfs = self.vfs.write().unwrap();
-        let file_id = vfs.assign_or_get_file_id(path);
-        let text = Arc::from(text);
-        self.host.set_file_content(file_id, text);
-        self.host
-            .load_source_unit(&mut *vfs, file_id, &self.config.include_dirs)
+    fn spawn_with_snapshot<P: Send + 'static, T: Send + 'static>(
+        &mut self,
+        params: P,
+        f: impl FnOnce(ServerSnapshot, P) -> T + Send + 'static,
+    ) -> task::JoinHandle<T> {
+        let snap = ServerSnapshot {
+            analysis: self.host.analysis(),
+            vfs: Arc::clone(&self.vfs),
+        };
+        task::spawn_blocking(move || f(snap, params))
     }
 
-    fn spawn_update_diagnostics(&mut self, source_unit_id: SourceUnitId) {
+    fn spawn_update_diagnostics(&mut self) {
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
+        let opened_source_units = match self.root_source_unit {
+            Some(source_unit_id) => HashSet::from([source_unit_id]),
+            None => self.opened_source_units.clone(),
+        };
 
         self.spawn_with_snapshot((), move |snap, _| {
-            let mut diags = Vec::new();
-            for (file_id, diagnostics) in snap.analysis.diagnostics(source_unit_id) {
-                let line_index = snap.analysis.line_index(file_id);
-                let lsp_diags: Vec<Diagnostic> = diagnostics
-                    .into_iter()
-                    .map(|diag| to_proto::diagnostic(&line_index, diag))
-                    .collect();
+            let mut diags = HashMap::new();
+            for source_unit_id in opened_source_units {
+                for (file_id, diagnostics) in snap.analysis.diagnostics(source_unit_id) {
+                    let line_index = snap.analysis.line_index(file_id);
+                    let lsp_diags: Vec<Diagnostic> = diagnostics
+                        .into_iter()
+                        .map(|diag| to_proto::diagnostic(&line_index, diag))
+                        .collect();
 
-                let vfs = snap.vfs.read().unwrap();
-                let file_path = vfs.path_for_file(&file_id);
-                let file_uri = UrlExt::from_file_path(file_path);
+                    let vfs = snap.vfs.read().unwrap();
+                    let file_path = vfs.path_for_file(&file_id);
+                    let file_uri = UrlExt::from_file_path(file_path);
 
-                diags.push((file_uri, lsp_diags));
+                    diags
+                        .entry(file_uri)
+                        .or_insert(Vec::new())
+                        .extend(lsp_diags);
+                }
             }
 
             client
@@ -427,28 +431,18 @@ impl Server {
         version
     }
 
-    fn spawn_with_snapshot<P: Send + 'static, T: Send + 'static>(
+    fn update_diagnostics(
         &mut self,
-        params: P,
-        f: impl FnOnce(ServerSnapshot, P) -> T + Send + 'static,
-    ) -> task::JoinHandle<T> {
-        let snap = ServerSnapshot {
-            analysis: self.host.analysis(),
-            vfs: Arc::clone(&self.vfs),
-        };
-        task::spawn_blocking(move || f(snap, params))
-    }
-
-    fn current_source_unit(&mut self, uri: &Url) -> SourceUnitId {
-        let file_id = match self.root_file {
-            Some(file_id) => file_id,
-            None => {
-                let path = UrlExt::to_file_path(uri);
-                let mut vfs = self.vfs.write().unwrap();
-                vfs.assign_or_get_file_id(path)
-            }
-        };
-        file_id.into()
+        UpdateDiagnosticsEvent(version, diagnostics): UpdateDiagnosticsEvent,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        tracing::info!("update_diagnostics: {version:?}");
+        for (uri, lsp_diags) in diagnostics {
+            let params = PublishDiagnosticsParams::new(uri, lsp_diags, Some(version));
+            self.client
+                .publish_diagnostics(params)
+                .expect("failed to publish diagnostics");
+        }
+        ControlFlow::Continue(())
     }
 
     fn spawn_reload_config(&mut self) {
@@ -482,5 +476,47 @@ impl Server {
                 .emit(UpdateConfigEvent(v))
                 .expect("failed to emit update config event");
         });
+    }
+
+    fn update_config(
+        &mut self,
+        UpdateConfigEvent(v): UpdateConfigEvent,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        tracing::info!("update_config: {v:?}");
+
+        let config = Arc::get_mut(&mut self.config).expect("config is not initialized");
+        if let Err(err) = config.update(v) {
+            self.client
+                .show_message(ShowMessageParams {
+                    typ: MessageType::ERROR,
+                    message: format!("failed to reload config: {err}"),
+                })
+                .expect("failed to show message");
+        }
+
+        self.spawn_update_diagnostics();
+
+        ControlFlow::Continue(())
+    }
+
+    fn load_source_unit(&mut self, uri: &Url, text: &str) -> SourceUnitId {
+        let path = UrlExt::to_file_path(uri);
+        let mut vfs = self.vfs.write().unwrap();
+        let file_id = vfs.assign_or_get_file_id(path);
+        let text = Arc::from(text);
+        self.host.set_file_content(file_id, text);
+        self.host
+            .load_source_unit(&mut *vfs, file_id, &self.config.include_dirs)
+    }
+
+    fn current_source_unit(&mut self, uri: &Url) -> SourceUnitId {
+        match self.root_source_unit {
+            Some(source_unit_id) => source_unit_id,
+            None => {
+                let path = UrlExt::to_file_path(uri);
+                let mut vfs = self.vfs.write().unwrap();
+                vfs.assign_or_get_file_id(path).into()
+            }
+        }
     }
 }
