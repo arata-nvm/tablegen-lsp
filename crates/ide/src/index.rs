@@ -14,6 +14,7 @@ use syntax::{
 };
 
 use crate::{
+    TY,
     db::SourceDatabase,
     file_system::{FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
@@ -716,15 +717,18 @@ impl Indexable for ast::Value {
 
         let first_value = inner_values.next()?;
         let first_value_typ = first_value.index(ctx);
+        let mut ret_typ = first_value_typ.clone();
         for inner_value in inner_values {
-            inner_value.index(ctx);
+            if let Some(inner_value_typ) = inner_value.index(ctx) {
+                if inner_value_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
+                    ret_typ = Some(TY![string]);
+                } else if ret_typ != Some(TY![string]) && inner_value_typ.is_list() {
+                    ret_typ = Some(inner_value_typ);
+                }
+            }
         }
 
-        match self.inner_values().count() {
-            0 => None,
-            1 => first_value_typ,
-            _ => Some(Type::String),
-        }
+        ret_typ
     }
 }
 
