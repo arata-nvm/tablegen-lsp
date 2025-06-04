@@ -727,34 +727,34 @@ impl Indexable for ast::BangOperator {
                 let (repl_range, repl_typ) = value_types.next()?;
                 let (value_range, value_typ) = value_types.next()?;
 
-                let target_typ = target_typ?;
-                let repl_typ = repl_typ?;
                 let value_typ = value_typ?;
-
-                if value_typ.can_be_casted_to(&ctx.symbol_map, &TY![string])
-                    || value_typ.is_record()
+                if !(value_typ.can_be_casted_to(&ctx.symbol_map, &TY![string])
+                    || value_typ.is_record())
                 {
-                    if !target_typ.can_be_casted_to(&ctx.symbol_map, &value_typ) {
-                        ctx.error_by_textrange(
-                            target_range,
-                            format!("expected {value_typ}, found {target_typ}"),
-                        );
-                    }
-                    if !repl_typ.can_be_casted_to(&ctx.symbol_map, &value_typ) {
-                        ctx.error_by_textrange(
-                            repl_range,
-                            format!("expected {value_typ}, found {repl_typ}"),
-                        );
-                    }
-
-                    Some(value_typ)
-                } else {
                     ctx.error_by_textrange(
                         value_range,
-                        format!("expected string or record, found {target_typ}"),
+                        format!("expected string or record, found {value_typ}"),
                     );
-                    None
+                    return Some(Type::Unknown);
                 }
+
+                let target_typ = target_typ?;
+                if !target_typ.can_be_casted_to(&ctx.symbol_map, &value_typ) {
+                    ctx.error_by_textrange(
+                        target_range,
+                        format!("expected {value_typ}, found {target_typ}"),
+                    );
+                }
+
+                let repl_typ = repl_typ?;
+                if !repl_typ.can_be_casted_to(&ctx.symbol_map, &value_typ) {
+                    ctx.error_by_textrange(
+                        repl_range,
+                        format!("expected {value_typ}, found {repl_typ}"),
+                    );
+                }
+
+                Some(value_typ)
             }
             SyntaxKind::XSubstr => {
                 common::unexpect_type_annotation(ctx, self);
