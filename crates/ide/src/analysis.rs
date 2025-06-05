@@ -47,7 +47,7 @@ impl AnalysisHost {
         root_file: FileId,
         include_dirs: &[FilePath],
     ) -> SourceUnitId {
-        let id = root_file.into();
+        let id = SourceUnitId::from_root_file(root_file);
         let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
         self.db.set_source_unit(id, Arc::new(source_unit));
         id

@@ -336,7 +336,7 @@ impl LanguageServer for Server {
                 tracing::warn!("cannot find file id: {path:?}");
                 return ControlFlow::Continue(());
             };
-            let source_unit_id = file_id.into();
+            let source_unit_id = SourceUnitId::from_root_file(file_id);
             self.opened_source_units.remove(&source_unit_id);
         }
         self.spawn_update_diagnostics();
@@ -515,7 +515,8 @@ impl Server {
             None => {
                 let path = UrlExt::to_file_path(uri);
                 let mut vfs = self.vfs.write().unwrap();
-                vfs.assign_or_get_file_id(path).into()
+                let file_id = vfs.assign_or_get_file_id(path);
+                SourceUnitId::from_root_file(file_id)
             }
         }
     }

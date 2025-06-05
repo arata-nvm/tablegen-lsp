@@ -5,7 +5,7 @@ use std::sync::Arc;
 use ecow::EcoString;
 use syntax::ast::AstNode;
 use syntax::parser::{TextRange, TextSize};
-use syntax::{SyntaxNode, SyntaxNodePtr, ast};
+use syntax::{ast, SyntaxNode, SyntaxNodePtr};
 
 use crate::db::SourceDatabase;
 
@@ -97,9 +97,9 @@ impl FileSet {
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct SourceUnitId(FileId);
 
-impl From<FileId> for SourceUnitId {
-    fn from(file_id: FileId) -> Self {
-        Self(file_id)
+impl SourceUnitId {
+    pub fn from_root_file(root_file: FileId) -> Self {
+        Self(root_file)
     }
 }
 

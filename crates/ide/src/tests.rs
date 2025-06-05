@@ -40,8 +40,9 @@ impl TestDatabase {
             db.set_file_content(file_id, Arc::from(content));
         }
 
+        let id = SourceUnitId::from_root_file(f.root_file());
         let source_unit = file_system::collect_sources(&mut db, f, f.root_file(), &[]);
-        db.set_source_unit(f.root_file().into(), Arc::new(source_unit));
+        db.set_source_unit(id, Arc::new(source_unit));
 
         db
     }
@@ -151,7 +152,7 @@ impl Fixture {
     }
 
     pub fn source_unit_id(&self) -> SourceUnitId {
-        self.root_file().into()
+        SourceUnitId::from_root_file(self.root_file())
     }
 
     fn insert_file(&mut self, path: FilePath, content: String) {
