@@ -8,7 +8,7 @@ There are some options for tablegen-lsp.
 {
     // The path to the include directory.
     // Type: [string]
-    "tablegen-lsp.includePaths": [
+    "tablegen-lsp.includePath": [
         "/path/to/include",
     ]
 }

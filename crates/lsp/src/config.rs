@@ -12,12 +12,12 @@ pub struct Config {
 
 impl Config {
     pub fn update(&mut self, mut v: Value) -> Result<(), String> {
-        let Some(v) = v.pointer_mut("/includePaths") else {
+        let Some(v) = v.pointer_mut("/includePath") else {
             return Ok(());
         };
         let v: Vec<String> = match serde_json::from_value(v.take()) {
             Ok(v) => v,
-            Err(_) => return Err("invalid value of tablegen-lsp.includePaths".into()),
+            Err(_) => return Err("invalid value of tablegen-lsp.includePath".into()),
         };
 
         self.include_dirs = v
