@@ -223,8 +223,7 @@ impl LanguageServer for Server {
         let source_unit_id =
             self.current_source_unit(&params.text_document_position_params.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, line_index) =
-                from_proto::file_pos(&snap, params.text_document_position_params);
+            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
             let Some(location) = snap.analysis.goto_definition(source_unit_id, pos) else {
                 return Ok(None);
             };
@@ -243,7 +242,7 @@ impl LanguageServer for Server {
         let source_unit_id =
             self.current_source_unit(&params.text_document_position.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, line_index) = from_proto::file_pos(&snap, params.text_document_position);
+            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
             let Some(location_list) = snap.analysis.references(source_unit_id, pos) else {
                 return Ok(None);
             };
