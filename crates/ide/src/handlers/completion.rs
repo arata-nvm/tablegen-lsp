@@ -74,16 +74,18 @@ pub fn exec(
         ctx.complete_bang_operators();
     }
 
-    match parent_parent_node.kind() {
-        SyntaxKind::StatementList => ctx.complete_toplevel_keywords(),
-        SyntaxKind::InnerValue => ctx.complete_primitive_values(),
-        SyntaxKind::ClassRef => {
-            ctx.complete_classes(symbol_map);
-        }
-        _ if ast::Type::can_cast(parent_parent_node.kind()) => {
-            ctx.complete_primitive_types();
-        }
-        _ => {}
+    let kind = parent_parent_node.kind();
+    if matches!(kind, SyntaxKind::StatementList) {
+        ctx.complete_toplevel_keywords();
+    }
+    if matches!(kind, SyntaxKind::InnerValue) {
+        ctx.complete_primitive_values();
+    }
+    if matches!(kind, SyntaxKind::ClassRef | SyntaxKind::ClassId) {
+        ctx.complete_classes(symbol_map);
+    }
+    if ast::Type::can_cast(kind) {
+        ctx.complete_primitive_types();
     }
 
     Some(ctx.finish())
