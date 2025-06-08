@@ -402,6 +402,22 @@ impl Indexable for ast::BangOperator {
                 common::index_values(ctx, values);
                 Some(TY![bit])
             }
+            SyntaxKind::XInstances => {
+                let typ = common::expect_type_annotation(ctx, self);
+                let values = common::expect_values(ctx, self, 0..=1);
+                let mut value_types = common::index_values(ctx, values).into_iter();
+
+                if let Some((regex_range, Some(regex_typ))) = value_types.next() {
+                    if !regex_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
+                        ctx.error_by_textrange(
+                            regex_range,
+                            "expected string type argument in !instances operator",
+                        );
+                    }
+                }
+
+                typ.map(|it| Type::List(Box::new(it)))
+            }
             SyntaxKind::XInterleave => {
                 common::unexpect_type_annotation(ctx, self);
                 let values = common::expect_values(ctx, self, 2..=2);
