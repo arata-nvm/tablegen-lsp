@@ -1,10 +1,8 @@
-use ide::file_system::FilePosition;
 use ide::{
     analysis::AnalysisHost,
     file_system::{FileId, FilePath, FileSet, FileSystem},
 };
 use std::{fs, sync::Arc};
-use syntax::parser::TextSize;
 use tracing_subscriber::EnvFilter;
 
 pub fn main() {
