@@ -2,11 +2,10 @@ pub mod bang_operator;
 pub mod context;
 pub mod scope;
 
-use std::{collections::HashSet, sync::Arc};
-
 use context::IndexCtx;
 use ecow::EcoString;
 use scope::ScopeKind;
+use std::{collections::HashSet, sync::Arc};
 use syntax::{
     ast::{self, AstNode},
     parser::TextRange,
@@ -173,13 +172,14 @@ impl Indexable for ast::Class {
 impl Indexable for ast::Def {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let defset_id = ctx.scopes.current_defset_id();
+        let is_global = ctx.scopes.current_defset_id().is_none()
+            && ctx.scopes.current_multiclass_id().is_none();
 
         let def_id = match self.name() {
             Some(name_value) => {
                 let (name, define_loc) = index_name_value(name_value, ctx)?;
                 let def = Def::new(name, define_loc);
-                ctx.symbol_map.add_def(def, defset_id.is_none())
+                ctx.symbol_map.add_def(def, is_global)
             }
             None => {
                 let name = ctx.next_anonymous_def_name();
@@ -191,9 +191,12 @@ impl Indexable for ast::Def {
             }
         };
 
-        if let Some(defset_id) = defset_id {
+        if let Some(defset_id) = ctx.scopes.current_defset_id() {
             let defset = ctx.symbol_map.defset_mut(defset_id);
             defset.add_def(def_id);
+        } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
+            let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
+            multiclass.add_def(def_id);
         }
 
         ctx.scopes.push(ScopeKind::Def(def_id));

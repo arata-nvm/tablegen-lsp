@@ -9,7 +9,15 @@ Some(
             typ: "multiclass",
             range: 11..14,
             kind: Multiclass,
-            children: [],
+            children: [
+                DocumentSymbol {
+                    name: "a",
+                    typ: "def",
+                    range: 25..26,
+                    kind: Def,
+                    children: [],
+                },
+            ],
         },
         DocumentSymbol {
             name: "foo",

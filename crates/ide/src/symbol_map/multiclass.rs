@@ -2,9 +2,9 @@ use ecow::EcoString;
 use id_arena::Id;
 use indexmap::IndexMap;
 
-use crate::file_system::FileRange;
-
 use super::template_arg::TemplateArgumentId;
+use crate::file_system::FileRange;
+use crate::symbol_map::def::DefId;
 
 pub type MulticlassId = Id<Multiclass>;
 
@@ -13,6 +13,7 @@ pub struct Multiclass {
     pub name: EcoString,
     pub name_to_template_arg: IndexMap<EcoString, TemplateArgumentId>,
     pub parent_list: Vec<MulticlassId>,
+    pub def_list: Vec<DefId>,
 
     pub define_loc: FileRange,
     pub reference_locs: Vec<FileRange>,
@@ -24,6 +25,7 @@ impl Multiclass {
             name,
             name_to_template_arg: IndexMap::new(),
             parent_list: Vec::new(),
+            def_list: Vec::new(),
             define_loc,
             reference_locs: Vec::new(),
         }
@@ -43,5 +45,9 @@ impl Multiclass {
 
     pub fn add_parent(&mut self, parent_id: MulticlassId) {
         self.parent_list.push(parent_id);
+    }
+
+    pub fn add_def(&mut self, def_id: DefId) {
+        self.def_list.push(def_id);
     }
 }

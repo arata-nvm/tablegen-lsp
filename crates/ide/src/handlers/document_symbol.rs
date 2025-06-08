@@ -3,9 +3,9 @@ use syntax::parser::TextRange;
 
 use crate::file_system::{FileId, SourceUnitId};
 use crate::index::IndexDatabase;
-use crate::symbol_map::SymbolMap;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
+use crate::symbol_map::SymbolMap;
 
 pub fn exec(
     db: &dyn IndexDatabase,
@@ -17,7 +17,7 @@ pub fn exec(
 
     let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
         tracing::info!("no symbols found in file: {file_id:?}");
-        return None;
+        return Some(vec![]);
     };
 
     let mut symbols = Vec::new();
@@ -98,13 +98,21 @@ fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<D
                 children: def_list.collect(),
             })
         }
-        Symbol::Multiclass(multiclass) => Some(DocumentSymbol {
-            name: multiclass.name.clone(),
-            typ: "multiclass".into(),
-            range: multiclass.define_loc.range,
-            kind: DocumentSymbolKind::Multiclass,
-            children: vec![],
-        }),
+        Symbol::Multiclass(multiclass) => {
+            let def_list = multiclass
+                .def_list
+                .iter()
+                .map(|id| symbol_map.symbol((*id).into()))
+                .filter_map(|symbol| symbol_to_document_symbol(symbol_map, symbol));
+
+            Some(DocumentSymbol {
+                name: multiclass.name.clone(),
+                typ: "multiclass".into(),
+                range: multiclass.define_loc.range,
+                kind: DocumentSymbolKind::Multiclass,
+                children: def_list.collect(),
+            })
+        }
         Symbol::Defm(defm) => Some(DocumentSymbol {
             name: defm.name.clone(),
             typ: "defm".into(),
