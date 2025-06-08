@@ -51,6 +51,7 @@ pub enum CompletionItemKind {
     Keyword,
     Type,
     Class,
+    Def,
 }
 
 pub fn exec(
@@ -80,6 +81,7 @@ pub fn exec(
     }
     if matches!(kind, SyntaxKind::InnerValue) {
         ctx.complete_primitive_values();
+        ctx.complete_defs(symbol_map);
     }
     if matches!(kind, SyntaxKind::ClassRef | SyntaxKind::ClassId) {
         ctx.complete_classes(symbol_map);
@@ -247,6 +249,17 @@ impl CompletionContext {
             ));
         }
     }
+
+    fn complete_defs(&mut self, symbol_map: &SymbolMap) {
+        for def_id in symbol_map.iter_def() {
+            let def = symbol_map.def(def_id);
+            self.items.push(CompletionItem::new_simple(
+                def.name.clone(),
+                "",
+                CompletionItemKind::Def,
+            ));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -290,6 +303,7 @@ mod tests {
     #[test]
     fn value() {
         insta::assert_debug_snapshot!(check("class Foo<int a = t$"));
+        insta::assert_debug_snapshot!(check("def foo; defvar tmp = f$"));
     }
 
     #[test]
