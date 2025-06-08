@@ -197,7 +197,9 @@ impl Indexable for ast::Def {
         }
 
         ctx.scopes.push(ScopeKind::Def(def_id));
-        self.record_body()?.index(ctx);
+        if let Some(record_body) = self.record_body() {
+            record_body.index(ctx);
+        }
         ctx.scopes.pop();
 
         None
@@ -234,7 +236,9 @@ impl Indexable for ast::Defm {
         };
 
         ctx.scopes.push(ScopeKind::Defm(defm_id));
-        self.parent_class_list()?.index(ctx);
+        if let Some(parent_class_list) = self.parent_class_list() {
+            parent_class_list.index(ctx);
+        }
         ctx.scopes.pop();
 
         None
@@ -250,7 +254,9 @@ impl Indexable for ast::Defset {
         let defset_id = ctx.symbol_map.add_defset(defset);
 
         ctx.scopes.push(ScopeKind::Defset(defset_id));
-        self.statement_list()?.index(ctx);
+        if let Some(statement_list) = self.statement_list() {
+            statement_list.index(ctx);
+        }
         ctx.scopes.pop();
 
         None
@@ -281,7 +287,9 @@ impl Indexable for ast::Foreach {
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         let (name, variable_id) = self.iterator()?.index(ctx)?;
         ctx.scopes.push(ScopeKind::Foreach(name, variable_id));
-        self.body()?.index(ctx);
+        if let Some(body) = self.body() {
+            body.index(ctx);
+        }
         ctx.scopes.pop();
         None
     }
@@ -356,9 +364,15 @@ impl Indexable for ast::MultiClass {
         let multiclass_id = ctx.symbol_map.add_multiclass(multiclass);
 
         ctx.scopes.push(ScopeKind::Multiclass(multiclass_id));
-        self.template_arg_list()?.index(ctx);
-        self.parent_class_list()?.index(ctx);
-        self.statement_list()?.index(ctx);
+        if let Some(template_arg_list) = self.template_arg_list() {
+            template_arg_list.index(ctx);
+        }
+        if let Some(parent_class_list) = self.parent_class_list() {
+            parent_class_list.index(ctx);
+        }
+        if let Some(statement_list) = self.statement_list() {
+            statement_list.index(ctx);
+        }
         ctx.scopes.pop();
 
         None
