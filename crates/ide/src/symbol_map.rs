@@ -157,6 +157,10 @@ impl SymbolMap {
         self.name_to_defset.get(name).copied()
     }
 
+    pub fn iter_defset(&self) -> impl Iterator<Item = DefsetId> + '_ {
+        self.name_to_defset.values().copied()
+    }
+
     pub fn multiclass(&self, multiclass_id: MulticlassId) -> &Multiclass {
         self.multiclass_list
             .get(multiclass_id)

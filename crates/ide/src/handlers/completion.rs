@@ -52,6 +52,7 @@ pub enum CompletionItemKind {
     Type,
     Class,
     Def,
+    Defset,
 }
 
 pub fn exec(
@@ -82,6 +83,7 @@ pub fn exec(
     if matches!(kind, SyntaxKind::InnerValue) {
         ctx.complete_primitive_values();
         ctx.complete_defs(symbol_map);
+        ctx.complete_defsets(symbol_map);
     }
     if matches!(kind, SyntaxKind::ClassRef | SyntaxKind::ClassId) {
         ctx.complete_classes(symbol_map);
@@ -260,6 +262,17 @@ impl CompletionContext {
             ));
         }
     }
+
+    fn complete_defsets(&mut self, symbol_map: &SymbolMap) {
+        for defset_id in symbol_map.iter_defset() {
+            let defset = symbol_map.defset(defset_id);
+            self.items.push(CompletionItem::new_simple(
+                defset.name.clone(),
+                "",
+                CompletionItemKind::Defset,
+            ));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -304,6 +317,9 @@ mod tests {
     fn value() {
         insta::assert_debug_snapshot!(check("class Foo<int a = t$"));
         insta::assert_debug_snapshot!(check("def foo; defvar tmp = f$"));
+        insta::assert_debug_snapshot!(check(
+            "class Foo; defset list<Foo> foo = {} defvar tmp = f$"
+        ));
     }
 
     #[test]
