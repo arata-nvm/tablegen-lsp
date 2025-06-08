@@ -19,7 +19,7 @@ use serde_json::Value;
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
-use ide::file_system::{FileSystem, SourceUnitId};
+use ide::file_system::{FileId, FileSystem, SourceUnitId};
 
 use crate::config::Config;
 use crate::vfs::{UrlExt, Vfs};
@@ -41,7 +41,7 @@ pub struct ServerSnapshot {
     pub vfs: Arc<RwLock<Vfs>>,
 }
 
-struct UpdateDiagnosticsEvent(i32, HashMap<Url, Vec<Diagnostic>>);
+struct UpdateDiagnosticsEvent(i32, HashMap<FileId, Vec<Diagnostic>>);
 struct UpdateConfigEvent(Value);
 
 impl Server {
@@ -400,14 +400,7 @@ impl Server {
                         .map(|diag| to_proto::diagnostic(&line_index, diag))
                         .collect();
 
-                    let vfs = snap.vfs.read().unwrap();
-                    let file_path = vfs.path_for_file(&file_id);
-                    let file_uri = UrlExt::from_file_path(file_path);
-
-                    diags
-                        .entry(file_uri)
-                        .or_insert(Vec::new())
-                        .extend(lsp_diags);
+                    diags.entry(file_id).or_insert(Vec::new()).extend(lsp_diags);
                 }
             }
 
@@ -428,8 +421,12 @@ impl Server {
         UpdateDiagnosticsEvent(version, diagnostics): UpdateDiagnosticsEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_diagnostics: {version:?}");
-        for (uri, lsp_diags) in diagnostics {
-            let params = PublishDiagnosticsParams::new(uri, lsp_diags, Some(version));
+        for (file_id, lsp_diags) in diagnostics {
+            let vfs = self.vfs.read().unwrap();
+            let file_path = vfs.path_for_file(&file_id);
+            let file_uri = UrlExt::from_file_path(file_path);
+
+            let params = PublishDiagnosticsParams::new(file_uri, lsp_diags, Some(version));
             self.client
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
