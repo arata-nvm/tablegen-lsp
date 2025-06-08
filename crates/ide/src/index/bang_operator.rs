@@ -813,7 +813,10 @@ impl Indexable for ast::BangOperator {
                 }
                 Some(TY![string])
             }
-            _ => unreachable!("unexpected syntax kind: {:?}", self.kind()),
+            _ => {
+                tracing::warn!("unexpected syntax kind: {:?}", self.kind());
+                Some(Type::Unknown)
+            }
         }
     }
 }
