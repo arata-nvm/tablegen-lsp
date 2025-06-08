@@ -391,7 +391,6 @@ impl Indexable for ast::TemplateArgDecl {
             let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
             multiclass.add_template_arg(name, template_arg_id);
         } else {
-            tracing::debug!("{} {:?}", line!(), ctx.scopes);
             panic!("template arg decl outside of record or multiclass");
         }
 
@@ -439,10 +438,6 @@ impl Indexable for ast::ParentClassList {
                 }
             }
         } else {
-            let start = self.syntax().text_range().start();
-            let line_index = ctx.db.line_index(ctx.current_file_id());
-            let line = line_index.pos_to_line(start);
-            tracing::debug!("{} {line} {:?}", line!(), ctx.scopes);
             panic!("parent class list outside of record or multiclass");
         }
         None
