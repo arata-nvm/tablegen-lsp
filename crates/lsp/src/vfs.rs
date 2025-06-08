@@ -44,12 +44,7 @@ impl FileSystem for Vfs {
     }
 
     fn read_content(&self, file_path: &FilePath) -> Option<String> {
-        let Ok(content) = fs::read_to_string(&file_path.0) else {
-            tracing::info!("failed to read file: file_path={file_path:?}");
-            return None;
-        };
-
-        Some(content)
+        fs::read_to_string(&file_path.0).ok()
     }
 }
 
