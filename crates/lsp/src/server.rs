@@ -229,8 +229,7 @@ impl LanguageServer for Server {
                 return Ok(None);
             };
 
-            let vfs = snap.vfs.read().unwrap();
-            let lsp_location = to_proto::location(&vfs, &line_index, location);
+            let lsp_location = to_proto::location(&snap, location);
             Ok(Some(GotoDefinitionResponse::Scalar(lsp_location)))
         });
         Box::pin(async move { task.await.unwrap() })
@@ -248,10 +247,10 @@ impl LanguageServer for Server {
             let Some(location_list) = snap.analysis.references(source_unit_id, pos) else {
                 return Ok(None);
             };
-            let vfs = snap.vfs.read().unwrap();
+
             let lsp_location_list = location_list
                 .into_iter()
-                .map(|it| to_proto::location(&vfs, &line_index, it))
+                .map(|it| to_proto::location(&snap, it))
                 .collect();
             Ok(Some(lsp_location_list))
         });

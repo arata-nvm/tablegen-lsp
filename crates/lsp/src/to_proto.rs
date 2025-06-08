@@ -12,11 +12,11 @@ use ide::{
 };
 use text_size::{TextRange, TextSize};
 
+use crate::server::ServerSnapshot;
+use crate::vfs::{UrlExt, Vfs};
 use ide::handlers::diagnostics::Diagnostic;
 use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
-
-use crate::vfs::{UrlExt, Vfs};
 
 pub fn position(line_index: &LineIndex, position: TextSize) -> lsp_types::Position {
     let line = line_index.pos_to_line(position);
@@ -35,11 +35,14 @@ pub fn range(line_index: &LineIndex, range: TextRange) -> lsp_types::Range {
     )
 }
 
-pub fn location(vfs: &Vfs, line_index: &LineIndex, file_range: FileRange) -> lsp_types::Location {
+pub fn location(snap: &ServerSnapshot, file_range: FileRange) -> lsp_types::Location {
+    let vfs = &snap.vfs.read().unwrap();
+    let line_index = snap.analysis.line_index(file_range.file);
     let path = vfs.path_for_file(&file_range.file);
+
     lsp_types::Location::new(
         UrlExt::from_file_path(path),
-        range(line_index, file_range.range),
+        range(&line_index, file_range.range),
     )
 }
 
