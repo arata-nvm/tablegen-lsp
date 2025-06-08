@@ -4,12 +4,11 @@ use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
     notification, request, CompletionOptions, CompletionParams,
-    CompletionResponse, ConfigurationItem, ConfigurationParams, Diagnostic,
-    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentLink, DocumentLinkOptions, DocumentLinkParams, DocumentSymbolParams,
-    DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
-    FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
-    HoverProviderCapability, InitializeParams, InitializeResult, InitializedParams, InlayHint, InlayHintParams, Location,
+    CompletionResponse, Diagnostic, DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions,
+    DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, FoldingRange,
+    FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
+    HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams, Location,
     MessageType, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
     ServerInfo, ShowMessageParams, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
@@ -22,7 +21,7 @@ use tokio::task::{self};
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::{FileSystem, SourceUnitId};
 
-use crate::config::{Config, CONFIG_SECTION};
+use crate::config::Config;
 use crate::vfs::{UrlExt, Vfs};
 use crate::{from_proto, lsp_ext, to_proto};
 
@@ -58,7 +57,6 @@ impl Server {
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
             .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidCloseTextDocument>(Self::did_close)
-            .notification::<notification::DidChangeConfiguration>(Self::did_change_configuration)
             .notification::<lsp_ext::SetSourceRoot>(Self::set_source_root)
             .notification::<lsp_ext::ClearSourceRoot>(Self::clear_source_root)
             .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
@@ -97,6 +95,14 @@ impl LanguageServer for Server {
         params: InitializeParams,
     ) -> BoxFuture<'static, Result<InitializeResult, Self::Error>> {
         tracing::info!("initialize: {params:?}");
+
+        // TODO: It seems that did_change_configuration is not called, so we need to update the config here.
+        if let Some(options) = params.initialization_options {
+            if options.as_object().filter(|it| !it.is_empty()).is_some() {
+                let _ = self.update_config(UpdateConfigEvent(options));
+            }
+        }
+
         Box::pin(ready(Ok(InitializeResult {
             server_info: Some(ServerInfo {
                 name: "tablegen-lsp".into(),
@@ -295,20 +301,6 @@ impl LanguageServer for Server {
         Box::pin(async move { task.await.unwrap() })
     }
 
-    fn initialized(&mut self, _: InitializedParams) -> Self::NotifyResult {
-        self.spawn_reload_config();
-        ControlFlow::Continue(())
-    }
-
-    fn did_change_configuration(
-        &mut self,
-        params: DidChangeConfigurationParams,
-    ) -> Self::NotifyResult {
-        tracing::info!("did_change_configuration: {params:?}");
-        self.spawn_reload_config();
-        ControlFlow::Continue(())
-    }
-
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_open: {params:?}");
         let source_unit_id =
@@ -445,46 +437,13 @@ impl Server {
         ControlFlow::Continue(())
     }
 
-    fn spawn_reload_config(&mut self) {
-        tracing::info!("reload_config");
-        let mut client = self.client.clone();
-        tokio::spawn(async move {
-            let ret = client
-                .configuration(ConfigurationParams {
-                    items: vec![ConfigurationItem {
-                        scope_uri: None,
-                        section: Some(CONFIG_SECTION.into()),
-                    }],
-                })
-                .await;
-
-            let mut v = match ret {
-                Ok(v) => v,
-                Err(err) => {
-                    client
-                        .show_message(ShowMessageParams {
-                            typ: MessageType::ERROR,
-                            message: format!("failed to reload config: {err}"),
-                        })
-                        .expect("failed to show message");
-                    return;
-                }
-            };
-
-            let v = v.pop().unwrap_or_default();
-            client
-                .emit(UpdateConfigEvent(v))
-                .expect("failed to emit update config event");
-        });
-    }
-
     fn update_config(
         &mut self,
         UpdateConfigEvent(v): UpdateConfigEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_config: {v:?}");
 
-        let config = Arc::get_mut(&mut self.config).expect("config is not initialized");
+        let config = Arc::get_mut(&mut self.config).expect("cannot get mutable reference");
         if let Err(err) = config.update(v) {
             self.client
                 .show_message(ShowMessageParams {
@@ -493,8 +452,6 @@ impl Server {
                 })
                 .expect("failed to show message");
         }
-
-        self.spawn_update_diagnostics();
 
         ControlFlow::Continue(())
     }

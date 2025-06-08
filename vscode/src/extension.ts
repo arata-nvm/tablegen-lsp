@@ -68,6 +68,18 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
             const document = await vscode.workspace.openTextDocument(sourceRoot);
             await vscode.window.showTextDocument(document);
         }),
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
+            if (!event.affectsConfiguration(extensionName)) {
+                return;
+            }
+
+            const message =
+                "The tablegen-lsp configuration has been updated. Please restart the language server for the changes to take effect.";
+            const userResponse = await vscode.window.showInformationMessage(message, "Restart now");
+            if (userResponse) {
+                await vscode.commands.executeCommand(commandRestartServer);
+            }
+        }),
         statusBarItem
     );
 
@@ -91,7 +103,7 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
                     // eslint-disable-next-line @typescript-eslint/naming-convention
                     RUST_BACKTRACE: "1",
                     // eslint-disable-next-line @typescript-eslint/naming-convention
-                    RUST_LOG: "DEBUG",
+                    RUST_LOG: "INFO",
                 }),
             },
         },
