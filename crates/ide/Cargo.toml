@@ -12,5 +12,6 @@ ropey.workspace = true
 salsa.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+tracing-subscriber.workspace = true
 insta.workspace = true
 iset.workspace = true
