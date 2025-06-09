@@ -1,8 +1,9 @@
 use syntax::{
     ast::{self, AstNode},
-    syntax_kind::SyntaxKind,
+    SyntaxNode,
 };
 
+use crate::symbol_map::class::ClassId;
 use crate::{
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
@@ -51,6 +52,7 @@ pub enum CompletionItemKind {
     Keyword,
     Type,
     Class,
+    TemplateArgument,
     Def,
     Defset,
 }
@@ -66,33 +68,52 @@ pub fn exec(
     let symbol_map = index.symbol_map();
 
     let root_node = parse.syntax_node();
-    let cur_token = root_node.token_at_offset(pos.position).left_biased()?;
-    let parent_node = cur_token.parent()?;
-    let parent_parent_node = parent_node.parent()?;
+    let token_at_pos = root_node.token_at_offset(pos.position).left_biased()?;
+    let node_at_pos = token_at_pos.parent()?;
 
     let mut ctx = CompletionContext::new();
-
     if trigger_char == Some("!".into()) {
         ctx.complete_bang_operators();
     }
 
-    let kind = parent_parent_node.kind();
-    if matches!(kind, SyntaxKind::StatementList) {
+    if within::<ast::StatementList>(&node_at_pos, 2).is_some() {
         ctx.complete_toplevel_keywords();
     }
-    if matches!(kind, SyntaxKind::InnerValue) {
+    if within::<ast::InnerValue>(&node_at_pos, 2).is_some() {
         ctx.complete_primitive_values();
         ctx.complete_defs(symbol_map);
         ctx.complete_defsets(symbol_map);
+        if let Some(class) = find::<ast::Class>(&node_at_pos) {
+            (|| -> Option<()> {
+                let class_name = class.name()?;
+                let class_name = class_name.value()?;
+                let class_id = symbol_map.find_class(&class_name)?;
+                ctx.complete_template_arguments(symbol_map, class_id);
+                None
+            })();
+        }
     }
-    if matches!(kind, SyntaxKind::ClassRef | SyntaxKind::ClassId) {
+    if within::<ast::ClassRef>(&node_at_pos, 2).is_some()
+        || within::<ast::ClassId>(&node_at_pos, 2).is_some()
+    {
         ctx.complete_classes(symbol_map);
     }
-    if ast::Type::can_cast(kind) {
+    if within::<ast::Type>(&node_at_pos, 2).is_some() {
         ctx.complete_primitive_types();
     }
 
     Some(ctx.finish())
+}
+
+fn find<N: AstNode<Language = syntax::Language>>(node: &SyntaxNode) -> Option<N> {
+    node.ancestors().find_map(N::cast)
+}
+
+fn within<N: AstNode<Language = syntax::Language>>(
+    node: &SyntaxNode,
+    max_depth: usize,
+) -> Option<N> {
+    node.ancestors().take(max_depth).find_map(N::cast)
 }
 
 struct CompletionContext {
@@ -248,6 +269,18 @@ impl CompletionContext {
                 ),
                 "class",
                 CompletionItemKind::Class,
+            ));
+        }
+    }
+
+    fn complete_template_arguments(&mut self, symbol_map: &SymbolMap, class_id: ClassId) {
+        let class = symbol_map.class(class_id);
+        for arg_id in class.iter_template_arg() {
+            let arg = symbol_map.template_arg(arg_id);
+            self.items.push(CompletionItem::new_simple(
+                arg.name.clone(),
+                arg.typ.to_string(),
+                CompletionItemKind::TemplateArgument,
             ));
         }
     }
