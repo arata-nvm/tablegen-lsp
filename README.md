@@ -4,7 +4,7 @@ A language server and VS Code extension for [TableGen](https://llvm.org/docs/Tab
 
 ## Quick Start
 
-See [docs/tutorial.md](docs/tutorial.md) for a quick start.
+See [`docs/tutorial.md`](docs/tutorial.md) for a quick start.
 
 ## Features
 
