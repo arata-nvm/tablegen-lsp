@@ -2,6 +2,10 @@
 
 This extension provides support for the [TableGen](https://llvm.org/docs/TableGen/index.html).
 
+## Quick Start
+
+See [tutorial.md](https://github.com/arata-nvm/tablegen-lsp/blob/master/docs/tutorial.md) for a quick start.
+
 ## Features
 
 - code completion
@@ -16,9 +20,6 @@ This extension provides support for the [TableGen](https://llvm.org/docs/TableGe
 
 For more details, see [features.md](https://github.com/arata-nvm/tablegen-lsp/blob/master/docs/features.md).
 
-## Quick Start
-
-Install the [tablegen-lsp extension](https://marketplace.visualstudio.com/items?itemName=arata-nvm.tablegen-lsp) from the VS Code Marketplace.
 
 ## Configuration
 
