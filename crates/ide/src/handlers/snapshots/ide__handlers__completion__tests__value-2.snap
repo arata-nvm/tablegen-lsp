@@ -12,7 +12,7 @@ expression: "check(\"def foo; defvar tmp = f$\")"
     CompletionItem {
         label: "foo",
         insert_text_snippet: None,
-        detail: "",
+        detail: "def",
         kind: Def,
     },
     CompletionItem {

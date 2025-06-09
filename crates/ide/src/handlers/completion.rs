@@ -246,7 +246,7 @@ impl CompletionContext {
                         format!("<{}>", arg_snippet)
                     }
                 ),
-                "",
+                "class",
                 CompletionItemKind::Class,
             ));
         }
@@ -257,7 +257,7 @@ impl CompletionContext {
             let def = symbol_map.def(def_id);
             self.items.push(CompletionItem::new_simple(
                 def.name.clone(),
-                "",
+                "def",
                 CompletionItemKind::Def,
             ));
         }
@@ -268,7 +268,7 @@ impl CompletionContext {
             let defset = symbol_map.defset(defset_id);
             self.items.push(CompletionItem::new_simple(
                 defset.name.clone(),
-                "",
+                defset.typ.to_string(),
                 CompletionItemKind::Defset,
             ));
         }

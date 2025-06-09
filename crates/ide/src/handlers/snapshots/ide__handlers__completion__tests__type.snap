@@ -8,7 +8,7 @@ expression: "check(\"class Foo<i$\")"
         insert_text_snippet: Some(
             "Foo$0",
         ),
-        detail: "",
+        detail: "class",
         kind: Class,
     },
     CompletionItem {

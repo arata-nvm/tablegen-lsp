@@ -12,7 +12,7 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
     CompletionItem {
         label: "foo",
         insert_text_snippet: None,
-        detail: "",
+        detail: "list<Foo>",
         kind: Defset,
     },
     CompletionItem {
