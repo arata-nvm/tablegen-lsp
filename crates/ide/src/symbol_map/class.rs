@@ -66,7 +66,8 @@ impl Class {
         None
     }
 
-    pub fn add_parent(&mut self, parent_id: ClassId) {
+    /// callers must ensure that the parent is not already inherited
+    pub(super) fn add_parent(&mut self, parent_id: ClassId) {
         self.parent_list.push(parent_id);
     }
 

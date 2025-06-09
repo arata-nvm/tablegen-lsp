@@ -71,7 +71,7 @@ impl<'a> RecordMut<'a> {
         }
     }
 
-    pub fn add_parent(&mut self, parent_id: ClassId) {
+    pub(super) fn add_parent(&mut self, parent_id: ClassId) {
         match self {
             Self::Class(class) => class.add_parent(parent_id),
             Self::Def(def) => def.add_parent(parent_id),

@@ -92,4 +92,9 @@ mod tests {
         insta::assert_debug_snapshot!(check("class Foo; class Foo { int b; }"));
         insta::assert_debug_snapshot!(check("class Foo { int a; } class Foo { int b; }"));
     }
+
+    #[test]
+    fn class_cyclic_inheritance() {
+        insta::assert_debug_snapshot!(check("class Foo : Foo;"));
+    }
 }

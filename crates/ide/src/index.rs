@@ -434,8 +434,9 @@ impl Indexable for ast::ParentClassList {
         if let Some(record_id) = ctx.scopes.current_record_id() {
             for class_ref in self.classes() {
                 if let Some(class_id) = resolve_class_ref_as_class(&class_ref, ctx) {
-                    let mut record = ctx.symbol_map.record_mut(record_id);
-                    record.add_parent(class_id);
+                    if let Err(e) = ctx.symbol_map.add_parent_to_record(record_id, class_id) {
+                        ctx.error_by_syntax(class_ref.syntax(), e.to_string());
+                    }
                 }
             }
         } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {

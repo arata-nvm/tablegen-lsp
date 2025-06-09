@@ -54,6 +54,8 @@ pub struct SymbolMap {
 pub enum SymbolMapError {
     #[error("Class '{0}' already defined")]
     ClassAlreadyDefined(EcoString),
+    #[error("Class '{0}' has cyclic inheritance")]
+    ClassCyclicInheritance(EcoString),
 }
 
 // immutable api
@@ -366,6 +368,23 @@ impl SymbolMap {
                 .or_insert_with(IntervalMap::new)
                 .insert(loc.range.into(), id);
         }
+    }
+
+    pub fn add_parent_to_record(
+        &mut self,
+        record_id: RecordId,
+        parent_id: ClassId,
+    ) -> Result<(), SymbolMapError> {
+        if let RecordId::Class(class_id) = record_id {
+            let class = self.class(class_id);
+            if class_id == parent_id || class.is_subclass_of(self, parent_id) {
+                return Err(SymbolMapError::ClassCyclicInheritance(class.name.clone()));
+            }
+        }
+
+        let mut record = self.record_mut(record_id);
+        record.add_parent(parent_id);
+        Ok(())
     }
 }
 
