@@ -2,6 +2,14 @@
 
 A language server and VS Code extension for [TableGen](https://llvm.org/docs/TableGen/index.html).
 
+## Quick Start
+
+See [docs/tutorial.md](docs/tutorial.md) for a quick start.
+
+## Features
+
+See [`docs/features.md`](docs/features.md) for a list of features currently implemented or planned.
+
 ## Installation
 
 This extension is available on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=arata-nvm.tablegen-lsp).
@@ -9,10 +17,6 @@ This extension is available on the [VS Code Marketplace](https://marketplace.vis
 ## Configuration
 
 See [`docs/configuration.md`](docs/configuration.md) for configuration options.
-
-## Features
-
-See [`docs/features.md`](docs/features.md) for a list of features currently implemented or planned.
 
 ## Development
 
