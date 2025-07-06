@@ -2,7 +2,7 @@ use ide::{
     analysis::AnalysisHost,
     file_system::{FileId, FilePath, FileSet, FileSystem},
 };
-use std::{fs, sync::Arc};
+use std::fs;
 use tracing_subscriber::EnvFilter;
 
 pub fn main() {
@@ -41,7 +41,7 @@ pub fn main() {
     let file_path = FilePath(input_file.into());
     let file_id = vfs.assign_or_get_file_id(file_path.clone());
     let file_content = vfs.read_content(&file_path).expect("failed to read file");
-    host.set_file_content(file_id, Arc::from(file_content.as_str()));
+    host.set_file_content(file_id, file_content.as_str());
     let source_unit_id = host.load_source_unit(&mut vfs, file_id, &include_dirs);
 
     let analysis = host.analysis();

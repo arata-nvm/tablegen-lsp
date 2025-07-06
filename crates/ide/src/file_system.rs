@@ -1,13 +1,12 @@
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use ecow::EcoString;
 use syntax::ast::AstNode;
 use syntax::parser::{TextRange, TextSize};
-use syntax::{ast, SyntaxNode, SyntaxNodePtr};
+use syntax::{SyntaxNode, SyntaxNodePtr, ast};
 
-use crate::db::SourceDatabase;
+use crate::db::{Db, parse};
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct FileId(pub u32);
@@ -132,7 +131,7 @@ pub trait FileSystem {
 }
 
 pub fn collect_sources<FS: FileSystem>(
-    db: &mut dyn SourceDatabase,
+    db: &mut dyn Db,
     fs: &mut FS,
     root: FileId,
     include_dirs: &[FilePath],
@@ -146,7 +145,7 @@ pub fn collect_sources<FS: FileSystem>(
             continue;
         }
 
-        let parse = db.parse(file_id);
+        let parse = parse(db, file_id);
 
         let file_path = fs.path_for_file(&file_id);
         let file_dir = file_path.parent().expect("file dir not found");
@@ -197,7 +196,7 @@ fn list_includes(root_node: SyntaxNode) -> Vec<(IncludeId, EcoString)> {
 }
 
 fn resolve_include_file<FS: FileSystem>(
-    db: &mut dyn SourceDatabase,
+    db: &mut dyn Db,
     fs: &mut FS,
     include_path: EcoString,
     include_dir_list: &[FilePath],
@@ -206,7 +205,7 @@ fn resolve_include_file<FS: FileSystem>(
         let candidate_file_path = include_dir.join(include_path.as_str());
         if let Some(file_content) = fs.read_content(&candidate_file_path) {
             let file_id = fs.assign_or_get_file_id(candidate_file_path.clone());
-            db.set_file_content(file_id, Arc::from(file_content.as_str()));
+            db.set_file_content(file_id, file_content.as_str());
             return Some(file_id);
         }
     }

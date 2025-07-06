@@ -1,18 +1,19 @@
 use ecow::EcoString;
 use syntax::parser::TextRange;
 
+use crate::db::Db;
 use crate::file_system::{FileId, SourceUnitId};
-use crate::index::IndexDatabase;
+use crate::index::index;
+use crate::symbol_map::SymbolMap;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
-use crate::symbol_map::SymbolMap;
 
 pub fn exec(
-    db: &dyn IndexDatabase,
+    db: &dyn Db,
     source_unit_id: SourceUnitId,
     file_id: FileId,
 ) -> Option<Vec<DocumentSymbol>> {
-    let index = db.index(source_unit_id);
+    let index = index(db, source_unit_id);
     let symbol_map = index.symbol_map();
 
     let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {

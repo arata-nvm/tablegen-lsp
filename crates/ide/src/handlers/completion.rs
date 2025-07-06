@@ -1,12 +1,15 @@
 use syntax::{
-    ast::{self, AstNode},
     SyntaxNode,
+    ast::{self, AstNode},
 };
 
-use crate::symbol_map::class::ClassId;
+use crate::{
+    db::{Db, parse},
+    index::index,
+    symbol_map::class::ClassId,
+};
 use crate::{
     file_system::{FilePosition, SourceUnitId},
-    index::IndexDatabase,
     symbol_map::SymbolMap,
 };
 
@@ -58,13 +61,13 @@ pub enum CompletionItemKind {
 }
 
 pub fn exec(
-    db: &dyn IndexDatabase,
+    db: &dyn Db,
     source_unit_id: SourceUnitId,
     pos: FilePosition,
     trigger_char: Option<String>,
 ) -> Option<Vec<CompletionItem>> {
-    let parse = db.parse(pos.file);
-    let index = db.index(source_unit_id);
+    let parse = parse(db, pos.file);
+    let index = index(db, source_unit_id);
     let symbol_map = index.symbol_map();
 
     let root_node = parse.syntax_node();

@@ -7,16 +7,18 @@ use ecow::EcoString;
 use scope::ScopeKind;
 use std::{collections::HashSet, sync::Arc};
 use syntax::{
+    SyntaxNodePtr,
     ast::{self, AstNode},
     parser::TextRange,
-    SyntaxNodePtr,
 };
 
 use crate::{
-    db::SourceDatabase,
+    TY,
+    db::{Db, parse},
     file_system::{FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
     symbol_map::{
+        SymbolMap,
         class::{Class, ClassId},
         def::Def,
         defm::Defm,
@@ -27,15 +29,8 @@ use crate::{
         template_arg::TemplateArgument,
         typ::Type,
         variable::{Variable, VariableId, VariableKind},
-        SymbolMap,
     },
-    TY,
 };
-
-#[salsa::query_group(IndexDatabaseStorage)]
-pub trait IndexDatabase: SourceDatabase {
-    fn index(&self, source_unit_id: SourceUnitId) -> Arc<Index>;
-}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Index {
@@ -53,16 +48,25 @@ impl Index {
     }
 }
 
-fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Arc<Index> {
-    let source_unit = db.source_unit(source_unit_id);
+#[salsa::input]
+struct SourceUnit {
+    id: SourceUnitId,
+}
 
-    let parse = db.parse(source_unit.root());
-    let source_file =
-        ast::SourceFile::cast(parse.syntax_node()).expect("failed to SourceFile::cast");
+pub fn index(db: &dyn Db, source_unit_id: SourceUnitId) -> Arc<Index> {
+    #[salsa::tracked]
+    fn index(db: &dyn Db, source_unit: SourceUnit) -> Arc<Index> {
+        let source_unit = db.source_unit(source_unit.id(db));
 
-    let mut ctx = IndexCtx::new(db, source_unit);
-    source_file.index(&mut ctx);
-    Arc::new(ctx.finish())
+        let parse = parse(db, source_unit.root());
+        let source_file =
+            ast::SourceFile::cast(parse.syntax_node()).expect("failed to SourceFile::cast");
+
+        let mut ctx = IndexCtx::new(db, source_unit);
+        source_file.index(&mut ctx);
+        Arc::new(ctx.finish())
+    }
+    index(db, SourceUnit::new(db, source_unit_id))
 }
 
 pub trait Indexable {
@@ -121,7 +125,7 @@ impl Indexable for ast::Include {
             return None;
         };
 
-        let parse = ctx.db.parse(include_file_id);
+        let parse = parse(ctx.db, include_file_id);
         let source_file = ast::SourceFile::cast(parse.syntax_node())?;
 
         ctx.push_file(include_file_id);

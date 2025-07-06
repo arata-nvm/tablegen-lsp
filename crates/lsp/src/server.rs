@@ -3,18 +3,18 @@ use std::ops::ControlFlow;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    notification, request, CompletionOptions, CompletionParams,
-    CompletionResponse, Diagnostic, DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions,
-    DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, FoldingRange,
-    FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
-    HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams, Location,
-    MessageType, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
-    ServerInfo, ShowMessageParams, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    CompletionOptions, CompletionParams, CompletionResponse, Diagnostic,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentLink, DocumentLinkOptions, DocumentLinkParams, DocumentSymbolParams,
+    DocumentSymbolResponse, FoldingRange, FoldingRangeParams, FoldingRangeProviderCapability,
+    GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability,
+    InitializeParams, InitializeResult, InlayHint, InlayHintParams, Location, MessageType, OneOf,
+    PublishDiagnosticsParams, ReferenceParams, ServerCapabilities, ServerInfo, ShowMessageParams,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url, notification, request,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
-use futures::future::{ready, BoxFuture};
+use futures::future::{BoxFuture, ready};
 use serde_json::Value;
 use tokio::task::{self};
 
@@ -455,7 +455,6 @@ impl Server {
         let path = UrlExt::to_file_path(uri);
         let mut vfs = self.vfs.write().unwrap();
         let file_id = vfs.assign_or_get_file_id(path);
-        let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
         self.host
             .load_source_unit(&mut *vfs, file_id, &self.config.include_dirs)

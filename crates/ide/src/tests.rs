@@ -1,48 +1,41 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path};
 
 use syntax::parser::TextRange;
 
 use crate::{
-    db::{SourceDatabase, SourceDatabaseStorage},
+    db::{Db, RootDatabase},
     file_system::{
         self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem, SourceUnitId,
     },
-    index::IndexDatabaseStorage,
 };
 
 const DEFAULT_FILE_PATH: &str = "/main.td";
 const MARKER_INDICATOR: char = '$';
 
-pub fn single_file(fixture: &str) -> (TestDatabase, Fixture) {
+pub fn single_file(fixture: &str) -> (impl Db, Fixture) {
     let mut f = Fixture::single_file(fixture);
     let db = TestDatabase::new(&mut f);
     (db, f)
 }
 
-pub fn multiple_files(fixture: &str) -> (TestDatabase, Fixture) {
+pub fn multiple_files(fixture: &str) -> (impl Db, Fixture) {
     let mut f = Fixture::multiple_files(fixture);
     let db = TestDatabase::new(&mut f);
     (db, f)
 }
 
-#[salsa::database(SourceDatabaseStorage, IndexDatabaseStorage)]
-#[derive(Default)]
-pub struct TestDatabase {
-    storage: salsa::Storage<Self>,
-}
-
-impl salsa::Database for TestDatabase {}
+pub struct TestDatabase {}
 
 impl TestDatabase {
-    fn new(f: &mut Fixture) -> Self {
-        let mut db = Self::default();
+    fn new(f: &mut Fixture) -> RootDatabase {
+        let mut db = RootDatabase::default();
         for (file_id, content) in f.files() {
-            db.set_file_content(file_id, Arc::from(content));
+            db.set_file_content(file_id, content);
         }
 
         let id = SourceUnitId::from_root_file(f.root_file());
         let source_unit = file_system::collect_sources(&mut db, f, f.root_file(), &[]);
-        db.set_source_unit(id, Arc::new(source_unit));
+        db.set_source_unit(id, source_unit);
 
         db
     }

@@ -1,23 +1,23 @@
 use syntax::{
+    SyntaxNodePtr,
     ast::{self, AstNode},
     parser::TextRange,
-    SyntaxNodePtr,
 };
 
 use crate::{
+    db::{Db, parse},
     file_system::{FileId, IncludeId, SourceUnitId},
-    index::IndexDatabase,
     utils,
 };
 
 pub fn exec(
-    db: &dyn IndexDatabase,
+    db: &dyn Db,
     source_unit_id: SourceUnitId,
     file_id: FileId,
 ) -> Option<Vec<DocumentLink>> {
     let source_unit = db.source_unit(source_unit_id);
     let include_map = source_unit.include_map(&file_id)?;
-    let parse = db.parse(file_id);
+    let parse = parse(db, file_id);
     let root_node = parse.syntax_node();
     let links = root_node
         .descendants()

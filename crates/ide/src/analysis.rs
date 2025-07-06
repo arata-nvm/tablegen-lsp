@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use salsa::ParallelDatabase;
-
-use crate::db::{RootDatabase, SourceDatabase};
+use crate::db::{Db, RootDatabase, line_index};
 use crate::file_system::{
     self, FileId, FilePath, FilePosition, FileRange, FileSystem, SourceUnitId,
 };
@@ -18,7 +16,7 @@ use crate::handlers::{
     diagnostics, document_link, document_symbol, folding_range, goto_definition, hover, inlay_hint,
     references,
 };
-use crate::index::{Index, IndexDatabase};
+use crate::index::{Index, index};
 use crate::line_index::LineIndex;
 
 #[derive(Default)]
@@ -33,11 +31,11 @@ impl AnalysisHost {
 
     pub fn analysis(&self) -> Analysis {
         Analysis {
-            db: self.db.snapshot(),
+            db: self.db.clone(),
         }
     }
 
-    pub fn set_file_content(&mut self, file_id: FileId, text: Arc<str>) {
+    pub fn set_file_content(&mut self, file_id: FileId, text: &str) {
         self.db.set_file_content(file_id, text);
     }
 
@@ -49,26 +47,26 @@ impl AnalysisHost {
     ) -> SourceUnitId {
         let id = SourceUnitId::from_root_file(root_file);
         let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
-        self.db.set_source_unit(id, Arc::new(source_unit));
+        self.db.set_source_unit(id, source_unit);
         id
     }
 }
 
 pub struct Analysis {
-    db: salsa::Snapshot<RootDatabase>,
+    db: RootDatabase,
 }
 
 impl Analysis {
     pub fn line_index(&self, file_id: FileId) -> Arc<LineIndex> {
-        self.db.line_index(file_id)
+        line_index(&self.db, file_id)
     }
 
     pub fn index(&self, source_unit_id: SourceUnitId) -> Arc<Index> {
-        self.db.index(source_unit_id)
+        index(&self.db, source_unit_id)
     }
 
     pub fn diagnostics(&self, source_unit_id: SourceUnitId) -> HashMap<FileId, Vec<Diagnostic>> {
-        diagnostics::exec(&*self.db, source_unit_id)
+        diagnostics::exec(&self.db, source_unit_id)
     }
 
     pub fn document_symbol(
@@ -76,7 +74,7 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         file_id: FileId,
     ) -> Option<Vec<DocumentSymbol>> {
-        document_symbol::exec(&*self.db, source_unit_id, file_id)
+        document_symbol::exec(&self.db, source_unit_id, file_id)
     }
 
     pub fn goto_definition(
@@ -84,7 +82,7 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         pos: FilePosition,
     ) -> Option<FileRange> {
-        goto_definition::exec(&*self.db, source_unit_id, pos)
+        goto_definition::exec(&self.db, source_unit_id, pos)
     }
 
     pub fn references(
@@ -92,11 +90,11 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         pos: FilePosition,
     ) -> Option<Vec<FileRange>> {
-        references::exec(&*self.db, source_unit_id, pos)
+        references::exec(&self.db, source_unit_id, pos)
     }
 
     pub fn hover(&self, source_unit_id: SourceUnitId, pos: FilePosition) -> Option<Hover> {
-        hover::exec(&*self.db, source_unit_id, pos)
+        hover::exec(&self.db, source_unit_id, pos)
     }
 
     pub fn inlay_hint(
@@ -104,7 +102,7 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         range: FileRange,
     ) -> Option<Vec<InlayHint>> {
-        inlay_hint::exec(&*self.db, source_unit_id, range)
+        inlay_hint::exec(&self.db, source_unit_id, range)
     }
 
     pub fn completion(
@@ -113,7 +111,7 @@ impl Analysis {
         pos: FilePosition,
         trigger_char: Option<String>,
     ) -> Option<Vec<CompletionItem>> {
-        completion::exec(&*self.db, source_unit_id, pos, trigger_char)
+        completion::exec(&self.db, source_unit_id, pos, trigger_char)
     }
 
     pub fn document_link(
@@ -121,10 +119,10 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         file_id: FileId,
     ) -> Option<Vec<DocumentLink>> {
-        document_link::exec(&*self.db, source_unit_id, file_id)
+        document_link::exec(&self.db, source_unit_id, file_id)
     }
 
     pub fn folding_range(&self, file_id: FileId) -> Option<Vec<FoldingRange>> {
-        folding_range::exec(&*self.db, file_id)
+        folding_range::exec(&self.db, file_id)
     }
 }

@@ -1,18 +1,16 @@
 use std::collections::HashMap;
 
 use crate::{
+    db::{Db, parse},
     file_system::{FileId, FileRange, SourceUnitId},
-    index::IndexDatabase,
+    index::index,
 };
 
-pub fn exec(
-    db: &dyn IndexDatabase,
-    source_unit_id: SourceUnitId,
-) -> HashMap<FileId, Vec<Diagnostic>> {
+pub fn exec(db: &dyn Db, source_unit_id: SourceUnitId) -> HashMap<FileId, Vec<Diagnostic>> {
     let mut diagnostic_list = Vec::new();
 
     let source_unit = db.source_unit(source_unit_id);
-    let parse = db.parse(source_unit.root());
+    let parse = parse(db, source_unit.root());
     diagnostic_list.extend(parse.errors().iter().map(|err| {
         Diagnostic::new(
             FileRange::new(source_unit.root(), err.range),
@@ -20,7 +18,7 @@ pub fn exec(
         )
     }));
 
-    let index = db.index(source_unit_id);
+    let index = index(db, source_unit_id);
     diagnostic_list.extend(index.diagnostics().iter().cloned());
 
     let mut diagnostic_map = HashMap::new();
@@ -53,9 +51,7 @@ impl Diagnostic {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
-    use crate::{db::SourceDatabase, tests};
+    use crate::{db::Db, tests};
 
     use super::Diagnostic;
 
@@ -81,7 +77,7 @@ mod tests {
         let (mut db, f) = tests::single_file("class Foo");
         let diags1 = super::exec(&db, f.source_unit_id());
 
-        db.set_file_content(f.root_file(), Arc::from("class Foo;"));
+        db.set_file_content(f.root_file(), "class Foo;");
         let diags2 = super::exec(&db, f.source_unit_id());
 
         insta::assert_debug_snapshot!((diags1, diags2));

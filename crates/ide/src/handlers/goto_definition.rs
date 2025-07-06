@@ -1,14 +1,11 @@
 use crate::{
+    db::Db,
     file_system::{FilePosition, FileRange, SourceUnitId},
-    index::IndexDatabase,
+    index::index,
 };
 
-pub fn exec(
-    db: &dyn IndexDatabase,
-    source_unit_id: SourceUnitId,
-    pos: FilePosition,
-) -> Option<FileRange> {
-    let index = db.index(source_unit_id);
+pub fn exec(db: &dyn Db, source_unit_id: SourceUnitId, pos: FilePosition) -> Option<FileRange> {
+    let index = index(db, source_unit_id);
     let symbol_map = index.symbol_map();
     let symbol = symbol_map.find_symbol_at(pos)?;
     Some(*symbol.define_loc())
