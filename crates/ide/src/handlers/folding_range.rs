@@ -1,9 +1,13 @@
 use syntax::{parser::TextRange, syntax_kind::SyntaxKind};
 
-use crate::{db::SourceDatabase, file_system::FileId, utils};
+use crate::{
+    db::{Db, parse},
+    file_system::FileId,
+    utils,
+};
 
-pub fn exec(db: &dyn SourceDatabase, file_id: FileId) -> Option<Vec<FoldingRange>> {
-    let parse = db.parse(file_id);
+pub fn exec(db: &dyn Db, file_id: FileId) -> Option<Vec<FoldingRange>> {
+    let parse = parse(db, file_id);
     let root_node = parse.syntax_node();
     let ranges = root_node
         .descendants()

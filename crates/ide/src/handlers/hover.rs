@@ -1,12 +1,13 @@
+use syntax::SyntaxNode;
 use syntax::parser::TextRange;
 use syntax::syntax_kind::SyntaxKind;
-use syntax::SyntaxNode;
 
+use crate::db::{Db, parse};
 use crate::file_system::{FilePosition, FileRange, SourceUnitId};
-use crate::index::IndexDatabase;
+use crate::index::index;
+use crate::symbol_map::SymbolMap;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
-use crate::symbol_map::SymbolMap;
 
 #[derive(Debug)]
 pub struct Hover {
@@ -14,17 +15,13 @@ pub struct Hover {
     pub document: Option<String>,
 }
 
-pub fn exec(
-    db: &dyn IndexDatabase,
-    source_unit_id: SourceUnitId,
-    pos: FilePosition,
-) -> Option<Hover> {
-    let index = db.index(source_unit_id);
+pub fn exec(db: &dyn Db, source_unit_id: SourceUnitId, pos: FilePosition) -> Option<Hover> {
+    let index = index(db, source_unit_id);
     let symbol_map = index.symbol_map();
 
     let (signature, define_loc) = extract_symbol_signature(symbol_map, pos)?;
 
-    let parse = db.parse(define_loc.file);
+    let parse = parse(db, define_loc.file);
     let symbol_doc = extract_doc_comments(parse.syntax_node(), define_loc.range);
 
     Some(Hover {
@@ -136,11 +133,7 @@ fn extract_doc_comments(root: SyntaxNode, range: TextRange) -> Option<String> {
     }
 
     let doc = comments.into_iter().rev().collect::<Vec<_>>().join("\n");
-    if doc.is_empty() {
-        None
-    } else {
-        Some(doc)
-    }
+    if doc.is_empty() { None } else { Some(doc) }
 }
 
 #[cfg(test)]

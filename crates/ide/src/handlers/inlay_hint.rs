@@ -5,9 +5,10 @@ use syntax::{
 };
 
 use crate::{
+    db::{Db, parse},
     file_system::{FileRange, SourceUnitId},
-    index::IndexDatabase,
-    symbol_map::{class::Class, record::RecordField, symbol::Symbol, SymbolMap},
+    index::index,
+    symbol_map::{SymbolMap, class::Class, record::RecordField, symbol::Symbol},
 };
 
 #[derive(Debug)]
@@ -33,12 +34,8 @@ impl InlayHint {
     }
 }
 
-pub fn exec(
-    db: &dyn IndexDatabase,
-    source_unit_id: SourceUnitId,
-    range: FileRange,
-) -> Option<Vec<InlayHint>> {
-    let index = db.index(source_unit_id);
+pub fn exec(db: &dyn Db, source_unit_id: SourceUnitId, range: FileRange) -> Option<Vec<InlayHint>> {
+    let index = index(db, source_unit_id);
     let symbol_map = index.symbol_map();
 
     let Some(iter) = symbol_map.iter_symbols_in_range(range) else {
@@ -68,12 +65,12 @@ pub fn exec(
 }
 
 fn inlay_hint_class(
-    db: &dyn IndexDatabase,
+    db: &dyn Db,
     symbol_map: &SymbolMap,
     class: &Class,
     symbol_loc: FileRange,
 ) -> Option<Vec<InlayHint>> {
-    let parse = db.parse(symbol_loc.file);
+    let parse = parse(db, symbol_loc.file);
     let root_node = parse.syntax_node();
     let id_node = root_node.covering_element(symbol_loc.range);
     let identifier_node = match id_node.kind() {
@@ -118,11 +115,11 @@ fn inlay_hint_class(
 }
 
 fn inlay_hint_record_field(
-    db: &dyn IndexDatabase,
+    db: &dyn Db,
     record_field: &RecordField,
     symbol_loc: FileRange,
 ) -> Option<Vec<InlayHint>> {
-    let parse = db.parse(symbol_loc.file);
+    let parse = parse(db, symbol_loc.file);
     let root_node = parse.syntax_node();
     let id_node = root_node.covering_element(symbol_loc.range);
     let identifier_node = match id_node.kind() {

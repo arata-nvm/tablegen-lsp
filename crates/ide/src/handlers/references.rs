@@ -1,14 +1,15 @@
 use crate::{
+    db::Db,
     file_system::{FilePosition, FileRange, SourceUnitId},
-    index::IndexDatabase,
+    index::index,
 };
 
 pub fn exec(
-    db: &dyn IndexDatabase,
+    db: &dyn Db,
     source_unit_id: SourceUnitId,
     pos: FilePosition,
 ) -> Option<Vec<FileRange>> {
-    let index = db.index(source_unit_id);
+    let index = index(db, source_unit_id);
     let symbol_map = index.symbol_map();
     let symbol = symbol_map.find_symbol_at(pos)?;
     Some(symbol.reference_locs().to_vec())

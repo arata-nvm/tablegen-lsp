@@ -1,21 +1,22 @@
 use std::sync::Arc;
 
-use ecow::{eco_format, EcoString};
+use ecow::{EcoString, eco_format};
 use syntax::{
-    parser::{TextRange, TextSize},
     SyntaxNode,
+    parser::{TextRange, TextSize},
 };
 
 use crate::{
+    db::Db,
     file_system::{FileId, FileRange, SourceUnit},
     handlers::diagnostics::Diagnostic,
-    symbol_map::{symbol::SymbolId, variable::VariableId, SymbolMap},
+    symbol_map::{SymbolMap, symbol::SymbolId, variable::VariableId},
 };
 
-use super::{scope::Scopes, Index, IndexDatabase};
+use super::{Index, scope::Scopes};
 
 pub struct IndexCtx<'a> {
-    pub db: &'a dyn IndexDatabase,
+    pub db: &'a dyn Db,
     pub source_unit: Arc<SourceUnit>,
     pub file_trace: Vec<FileId>,
     pub symbol_map: SymbolMap,
@@ -25,7 +26,7 @@ pub struct IndexCtx<'a> {
 }
 
 impl<'a> IndexCtx<'a> {
-    pub fn new(db: &'a dyn IndexDatabase, source_unit: Arc<SourceUnit>) -> Self {
+    pub fn new(db: &'a dyn Db, source_unit: Arc<SourceUnit>) -> Self {
         let root = source_unit.root();
         Self {
             db,
