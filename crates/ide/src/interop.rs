@@ -45,8 +45,8 @@ fn convert_diagnostic(
         kind: diag.kind(),
         message: message.as_str()?.to_string(),
         filename: filename.as_str()?.to_string(),
+        line: diag.line() - 1,
         column: diag.column(),
-        line: diag.line(),
     })
 }
 
