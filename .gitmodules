@@ -1,0 +1,3 @@
+[submodule "tblgen-rs-alt"]
+	path = crates/tblgen-rs-alt
+	url = https://github.com/arata-nvm/tblgen-rs-alt
