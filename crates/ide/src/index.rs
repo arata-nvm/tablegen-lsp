@@ -7,16 +7,19 @@ use ecow::EcoString;
 use scope::ScopeKind;
 use std::{collections::HashSet, sync::Arc};
 use syntax::{
+    SyntaxNodePtr,
     ast::{self, AstNode},
     parser::TextRange,
-    SyntaxNodePtr,
 };
 
 use crate::{
+    TY,
     db::SourceDatabase,
     file_system::{FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
+    interop::TblgenSymbolTable,
     symbol_map::{
+        SymbolMap,
         class::{Class, ClassId},
         def::Def,
         defm::Defm,
@@ -27,9 +30,7 @@ use crate::{
         template_arg::TemplateArgument,
         typ::Type,
         variable::{Variable, VariableId, VariableKind},
-        SymbolMap,
     },
-    TY,
 };
 
 #[salsa::query_group(IndexDatabaseStorage)]
@@ -60,7 +61,12 @@ fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Arc<Index> {
     let source_file =
         ast::SourceFile::cast(parse.syntax_node()).expect("failed to SourceFile::cast");
 
-    let mut ctx = IndexCtx::new(db, source_unit);
+    let symtab = match db.tblgen_symbol_table(source_unit_id) {
+        Some(symtab) => symtab,
+        None => Arc::new(TblgenSymbolTable::default()),
+    };
+
+    let mut ctx = IndexCtx::new(db, source_unit, symtab);
     source_file.index(&mut ctx);
     Arc::new(ctx.finish())
 }
@@ -825,8 +831,12 @@ impl Indexable for ast::SimpleValue {
                     return Some(Type::String);
                 }
                 let Some(symbol_id) = ctx.resolve_id(&name) else {
-                    ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));
-                    return None;
+                    return if ctx.tblgen_symtab_has_def(&name) {
+                        Some(Type::Unknown)
+                    } else {
+                        ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));
+                        None
+                    };
                 };
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
 

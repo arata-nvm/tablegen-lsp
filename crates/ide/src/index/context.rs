@@ -9,6 +9,7 @@ use syntax::{
 use crate::{
     file_system::{FileId, FileRange, SourceUnit},
     handlers::diagnostics::Diagnostic,
+    interop::TblgenSymbolTable,
     symbol_map::{SymbolMap, symbol::SymbolId, variable::VariableId},
 };
 
@@ -22,10 +23,15 @@ pub struct IndexCtx<'a> {
     pub diagnostics: Vec<Diagnostic>,
     pub scopes: Scopes,
     pub anonymous_def_index: u32,
+    pub tblgen_symtab: Arc<TblgenSymbolTable>,
 }
 
 impl<'a> IndexCtx<'a> {
-    pub fn new(db: &'a dyn IndexDatabase, source_unit: Arc<SourceUnit>) -> Self {
+    pub fn new(
+        db: &'a dyn IndexDatabase,
+        source_unit: Arc<SourceUnit>,
+        tblgen_symtab: Arc<TblgenSymbolTable>,
+    ) -> Self {
         let root = source_unit.root();
         Self {
             db,
@@ -35,6 +41,7 @@ impl<'a> IndexCtx<'a> {
             diagnostics: Vec::new(),
             scopes: Scopes::default(),
             anonymous_def_index: 0,
+            tblgen_symtab,
         }
     }
 
@@ -65,6 +72,10 @@ impl<'a> IndexCtx<'a> {
 
     pub fn resolve_id_in_current_scope(&self, name: &EcoString) -> Option<VariableId> {
         self.scopes.find_variable_in_current_scope(name)
+    }
+
+    pub fn tblgen_symtab_has_def(&self, name: &EcoString) -> bool {
+        self.tblgen_symtab.has_def(name)
     }
 
     /// `range`で与えられた位置に`message`をエラーとして記録する。

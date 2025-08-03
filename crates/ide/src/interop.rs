@@ -1,5 +1,6 @@
-use std::str::Utf8Error;
+use std::{collections::HashSet, str::Utf8Error};
 
+use ecow::EcoString;
 use tblgen::TableGenParser;
 pub use tblgen::diagnostic::DiagnosticKind;
 
@@ -8,6 +9,22 @@ use crate::file_system::FilePath;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TblgenParseResult {
     pub diagnostics: Vec<TblgenDiagnostic>,
+    pub symbol_table: TblgenSymbolTable,
+}
+
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
+pub struct TblgenSymbolTable {
+    pub def_names: HashSet<EcoString>,
+}
+
+impl TblgenSymbolTable {
+    pub fn new(def_names: HashSet<EcoString>) -> Self {
+        TblgenSymbolTable { def_names }
+    }
+
+    pub fn has_def(&self, name: &str) -> bool {
+        self.def_names.contains(name)
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -15,8 +32,8 @@ pub struct TblgenDiagnostic {
     pub kind: tblgen::diagnostic::DiagnosticKind,
     pub message: String,
     pub filename: String,
-    pub column: i32,
     pub line: i32,
+    pub column: i32,
 }
 
 pub fn parse_source_unit_with_tblgen(
@@ -24,16 +41,29 @@ pub fn parse_source_unit_with_tblgen(
     include_dirs: &[FilePath],
 ) -> Result<TblgenParseResult, Utf8Error> {
     let mut parser = TableGenParser::new().add_source_file(root_file.to_str());
+    if let Some(parent) = root_file.parent() {
+        parser = parser.add_include_directory(parent.to_str());
+    }
     for include_dir in include_dirs {
         parser = parser.add_include_directory(include_dir.to_str());
     }
     let result = parser.parse();
-    let diagnostics = result
-        .diagnostics
-        .into_iter()
-        .map(convert_diagnostic)
-        .collect::<Result<_, _>>()?;
-    Ok(TblgenParseResult { diagnostics })
+
+    Ok(TblgenParseResult {
+        diagnostics: result
+            .diagnostics
+            .into_iter()
+            .map(convert_diagnostic)
+            .collect::<Result<_, _>>()?,
+        symbol_table: TblgenSymbolTable::new(
+            result
+                .record_keeper
+                .defs()
+                .filter_map(|(name, _)| name.ok())
+                .map(EcoString::from)
+                .collect(),
+        ),
+    })
 }
 
 fn convert_diagnostic(

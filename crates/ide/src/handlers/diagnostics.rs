@@ -19,14 +19,8 @@ pub fn exec(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Vec<Diagnos
     let index = db.index(source_unit_id);
     diagnotics.extend(index.diagnostics().iter().cloned());
 
-    if let Some(tblgen_result) = db.tblgen_parse_result(source_unit_id) {
-        diagnotics.extend(
-            tblgen_result
-                .diagnostics
-                .iter()
-                .cloned()
-                .map(Diagnostic::Tblgen),
-        );
+    if let Some(tblgen_diags) = db.tblgen_diagnostics(source_unit_id) {
+        diagnotics.extend(tblgen_diags.iter().cloned().map(Diagnostic::Tblgen));
     }
 
     diagnotics

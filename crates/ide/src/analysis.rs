@@ -44,10 +44,12 @@ impl AnalysisHost {
     pub fn set_tblgen_parse_result(
         &mut self,
         source_unit_id: SourceUnitId,
-        result: Arc<TblgenParseResult>,
+        result: TblgenParseResult,
     ) {
         self.db
-            .set_tblgen_parse_result(source_unit_id, Some(result));
+            .set_tblgen_diagnostics(source_unit_id, Some(Arc::new(result.diagnostics)));
+        self.db
+            .set_tblgen_symbol_table(source_unit_id, Some(Arc::new(result.symbol_table)));
     }
 
     pub fn load_source_unit<FS: FileSystem>(
@@ -59,7 +61,8 @@ impl AnalysisHost {
         let id = SourceUnitId::from_root_file(root_file);
         let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
         self.db.set_source_unit(id, Arc::new(source_unit));
-        self.db.set_tblgen_parse_result(id, None);
+        self.db.set_tblgen_diagnostics(id, None);
+        self.db.set_tblgen_symbol_table(id, None);
         id
     }
 }
