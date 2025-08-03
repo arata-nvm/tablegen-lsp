@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/ide", "crates/lsp", "crates/syntax"]
+members = ["crates/ide", "crates/lsp", "crates/syntax", "crates/tblgen-rs-alt"]
 resolver = "2"
 
 [workspace.package]
