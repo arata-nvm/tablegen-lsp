@@ -49,3 +49,21 @@ fn convert_diagnostic(
         line: diag.line(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use crate::file_system::FilePath;
+
+    #[test]
+    fn foreach() {
+        let root_file = FilePath::from(Path::new("testdata/foreach.td"));
+        let result = super::parse_source_unit_with_tblgen(&root_file, &[]).expect("valid code");
+        assert!(result.diagnostics.is_empty());
+        assert!(!result.symbol_table.has_def("Foo"));
+        assert!(result.symbol_table.has_def("foo1"));
+        assert!(result.symbol_table.has_def("foo2"));
+        assert!(!result.symbol_table.has_def("foo"));
+    }
+}
