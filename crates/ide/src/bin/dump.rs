@@ -55,13 +55,9 @@ pub fn main() {
             }
         }
         "diag" => {
-            let all_diags = analysis.diagnostics(source_unit_id);
-            for (file, diags) in all_diags {
-                let path = vfs.path_for_file(&file);
-                println!("{path:?}:");
-                for diag in diags {
-                    println!("  {diag:?}");
-                }
+            let diags = analysis.diagnostics(source_unit_id);
+            for diag in diags {
+                println!("{diag:?}");
             }
         }
         "doc-symbol" => {

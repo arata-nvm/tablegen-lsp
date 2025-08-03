@@ -1,11 +1,10 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use salsa::ParallelDatabase;
 
 use crate::db::{RootDatabase, SourceDatabase};
 use crate::file_system::{
-    self, FileId, FilePath, FilePosition, FileRange, FileSystem, SourceUnitId,
+    self, FileId, FilePath, FilePosition, FileRange, FileSystem, SourceUnit, SourceUnitId,
 };
 use crate::handlers::completion::{self, CompletionItem};
 use crate::handlers::diagnostics::Diagnostic;
@@ -19,6 +18,7 @@ use crate::handlers::{
     references,
 };
 use crate::index::{Index, IndexDatabase};
+use crate::interop::TblgenParseResult;
 use crate::line_index::LineIndex;
 
 #[derive(Default)]
@@ -41,6 +41,15 @@ impl AnalysisHost {
         self.db.set_file_content(file_id, text);
     }
 
+    pub fn set_tblgen_parse_result(
+        &mut self,
+        source_unit_id: SourceUnitId,
+        result: Arc<TblgenParseResult>,
+    ) {
+        self.db
+            .set_tblgen_parse_result(source_unit_id, Some(result));
+    }
+
     pub fn load_source_unit<FS: FileSystem>(
         &mut self,
         fs: &mut FS,
@@ -50,6 +59,7 @@ impl AnalysisHost {
         let id = SourceUnitId::from_root_file(root_file);
         let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
         self.db.set_source_unit(id, Arc::new(source_unit));
+        self.db.set_tblgen_parse_result(id, None);
         id
     }
 }
@@ -67,7 +77,11 @@ impl Analysis {
         self.db.index(source_unit_id)
     }
 
-    pub fn diagnostics(&self, source_unit_id: SourceUnitId) -> HashMap<FileId, Vec<Diagnostic>> {
+    pub fn source_unit(&self, source_unit_id: SourceUnitId) -> Arc<SourceUnit> {
+        self.db.source_unit(source_unit_id)
+    }
+
+    pub fn diagnostics(&self, source_unit_id: SourceUnitId) -> Vec<Diagnostic> {
         diagnostics::exec(&*self.db, source_unit_id)
     }
 

@@ -1,53 +1,55 @@
-use std::collections::HashMap;
-
 use crate::{
-    file_system::{FileId, FileRange, SourceUnitId},
+    file_system::{FileRange, SourceUnitId},
     index::IndexDatabase,
+    interop::TblgenDiagnostic,
 };
 
-pub fn exec(
-    db: &dyn IndexDatabase,
-    source_unit_id: SourceUnitId,
-) -> HashMap<FileId, Vec<Diagnostic>> {
-    let mut diagnostic_list = Vec::new();
+pub fn exec(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Vec<Diagnostic> {
+    let mut diagnotics = Vec::new();
 
     let source_unit = db.source_unit(source_unit_id);
     let parse = db.parse(source_unit.root());
-    diagnostic_list.extend(parse.errors().iter().map(|err| {
-        Diagnostic::new(
+    diagnotics.extend(parse.errors().iter().map(|err| {
+        Diagnostic::new_lsp(
             FileRange::new(source_unit.root(), err.range),
             err.message.to_string(),
         )
     }));
 
     let index = db.index(source_unit_id);
-    diagnostic_list.extend(index.diagnostics().iter().cloned());
+    diagnotics.extend(index.diagnostics().iter().cloned());
 
-    let mut diagnostic_map = HashMap::new();
-    for file_id in source_unit.iter_files() {
-        diagnostic_map.insert(file_id, Vec::new());
+    if let Some(tblgen_result) = db.tblgen_parse_result(source_unit_id) {
+        diagnotics.extend(
+            tblgen_result
+                .diagnostics
+                .iter()
+                .cloned()
+                .map(Diagnostic::Tblgen),
+        );
     }
 
-    for diagnostic in diagnostic_list {
-        let file_id = diagnostic.location.file;
-        let diagnostics = diagnostic_map.entry(file_id).or_insert_with(Vec::new);
-        diagnostics.push(diagnostic);
-    }
-    diagnostic_map
+    diagnotics
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Diagnostic {
+pub enum Diagnostic {
+    Lsp(LspDiagnostic),
+    Tblgen(TblgenDiagnostic),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct LspDiagnostic {
     pub location: FileRange,
     pub message: String,
 }
 
 impl Diagnostic {
-    pub fn new(location: FileRange, message: impl Into<String>) -> Self {
-        Self {
+    pub fn new_lsp(location: FileRange, message: impl Into<String>) -> Self {
+        Self::Lsp(LspDiagnostic {
             location,
             message: message.into(),
-        }
+        })
     }
 }
 
@@ -62,8 +64,6 @@ mod tests {
     fn check(s: &str) -> Vec<Diagnostic> {
         let (db, f) = tests::single_file(s);
         super::exec(&db, f.source_unit_id())
-            .remove(&f.root_file())
-            .unwrap()
     }
 
     #[test]
