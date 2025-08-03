@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
-use ecow::{eco_format, EcoString};
+use ecow::{EcoString, eco_format};
 use syntax::{
-    parser::{TextRange, TextSize},
     SyntaxNode,
+    parser::{TextRange, TextSize},
 };
 
 use crate::{
     file_system::{FileId, FileRange, SourceUnit},
     handlers::diagnostics::Diagnostic,
-    symbol_map::{symbol::SymbolId, variable::VariableId, SymbolMap},
+    symbol_map::{SymbolMap, symbol::SymbolId, variable::VariableId},
 };
 
-use super::{scope::Scopes, Index, IndexDatabase};
+use super::{Index, IndexDatabase, scope::Scopes};
 
 pub struct IndexCtx<'a> {
     pub db: &'a dyn IndexDatabase,
@@ -72,12 +72,12 @@ impl<'a> IndexCtx<'a> {
     pub fn error_by_textrange(&mut self, range: TextRange, message: impl Into<String>) {
         let file = self.current_file_id();
         self.diagnostics
-            .push(Diagnostic::new(FileRange::new(file, range), message));
+            .push(Diagnostic::new_lsp(FileRange::new(file, range), message));
     }
 
     /// `range`で与えられた位置に`message`をエラーとして記録する。
     pub fn error_by_filerange(&mut self, range: FileRange, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::new(range, message));
+        self.diagnostics.push(Diagnostic::new_lsp(range, message));
     }
 
     /// `node`で与えられた位置に`message`をエラーとして記録する。

@@ -3,13 +3,15 @@ source: crates/ide/src/handlers/diagnostics.rs
 expression: "check(r#\"include \"not_exist.td\"\"#)"
 ---
 [
-    Diagnostic {
-        location: FileRange {
-            file: FileId(
-                0,
-            ),
-            range: 0..22,
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 0..22,
+            },
+            message: "include file not found: not_exist.td",
         },
-        message: "include file not found: not_exist.td",
-    },
+    ),
 ]

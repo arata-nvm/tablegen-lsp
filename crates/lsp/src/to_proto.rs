@@ -3,18 +3,19 @@ use ide::{
     file_system::{FileRange, FileSystem},
     handlers::{
         completion::{CompletionItem, CompletionItemKind},
+        diagnostics::LspDiagnostic,
         document_link::DocumentLink,
         document_symbol::DocumentSymbolKind,
         folding_range::FoldingRange,
         hover::Hover,
         inlay_hint::{InlayHint, InlayHintKind},
     },
+    interop,
 };
 use text_size::{TextRange, TextSize};
 
 use crate::server::ServerSnapshot;
 use crate::vfs::{UrlExt, Vfs};
-use ide::handlers::diagnostics::Diagnostic;
 use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
 
@@ -46,8 +47,36 @@ pub fn location(snap: &ServerSnapshot, file_range: FileRange) -> lsp_types::Loca
     )
 }
 
-pub fn diagnostic(line_index: &LineIndex, diag: Diagnostic) -> lsp_types::Diagnostic {
+pub fn diagnostic(line_index: &LineIndex, diag: LspDiagnostic) -> lsp_types::Diagnostic {
     lsp_types::Diagnostic::new_simple(range(line_index, diag.location.range), diag.message)
+}
+
+pub fn severity(kind: interop::DiagnosticKind) -> lsp_types::DiagnosticSeverity {
+    match kind {
+        interop::DiagnosticKind::Error => lsp_types::DiagnosticSeverity::ERROR,
+        interop::DiagnosticKind::Warning => lsp_types::DiagnosticSeverity::WARNING,
+        interop::DiagnosticKind::Remark => lsp_types::DiagnosticSeverity::INFORMATION,
+        interop::DiagnosticKind::Note => lsp_types::DiagnosticSeverity::HINT,
+        _ => unreachable!("unsupported diagnostic kind: {:?}", kind),
+    }
+}
+
+pub fn tblgen_diagnostic(diag: interop::TblgenDiagnostic) -> lsp_types::Diagnostic {
+    let pos = lsp_types::Position::new(
+        diag.line.try_into().expect("line out of range"),
+        diag.column.try_into().expect("column out of range"),
+    );
+    let range = lsp_types::Range::new(pos, pos);
+
+    lsp_types::Diagnostic::new(
+        range,
+        Some(severity(diag.kind)),
+        None,
+        None,
+        format!("[tblgen] {}", diag.message),
+        None,
+        None,
+    )
 }
 
 #[allow(deprecated)]

@@ -4,6 +4,7 @@ use syntax::Parse;
 
 use crate::file_system::{FileId, SourceUnit, SourceUnitId};
 use crate::index::IndexDatabaseStorage;
+use crate::interop::TblgenParseResult;
 use crate::line_index::LineIndex;
 
 #[salsa::database(SourceDatabaseStorage, IndexDatabaseStorage)]
@@ -29,6 +30,9 @@ pub trait SourceDatabase {
 
     #[salsa::input]
     fn source_unit(&self, source_unit_id: SourceUnitId) -> Arc<SourceUnit>;
+
+    #[salsa::input]
+    fn tblgen_parse_result(&self, source_unit_id: SourceUnitId) -> Option<Arc<TblgenParseResult>>;
 
     fn line_index(&self, file_id: FileId) -> Arc<LineIndex>;
 

@@ -3,11 +3,9 @@ source: crates/ide/src/handlers/diagnostics.rs
 expression: "(diags1, diags2)"
 ---
 (
-    {
-        FileId(
-            0,
-        ): [
-            Diagnostic {
+    [
+        Lsp(
+            LspDiagnostic {
                 location: FileRange {
                     file: FileId(
                         0,
@@ -16,11 +14,7 @@ expression: "(diags1, diags2)"
                 },
                 message: "expected ';' or '{' to start body",
             },
-        ],
-    },
-    {
-        FileId(
-            0,
-        ): [],
-    },
+        ),
+    ],
+    [],
 )

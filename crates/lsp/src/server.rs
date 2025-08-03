@@ -1,25 +1,28 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::ControlFlow;
+use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    notification, request, CompletionOptions, CompletionParams,
-    CompletionResponse, Diagnostic, DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentLink, DocumentLinkOptions,
-    DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, FoldingRange,
-    FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
-    HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InlayHint, InlayHintParams, Location,
-    MessageType, OneOf, PublishDiagnosticsParams, ReferenceParams, ServerCapabilities,
-    ServerInfo, ShowMessageParams, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    self, CompletionOptions, CompletionParams, CompletionResponse, Diagnostic,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DidSaveTextDocumentParams, DocumentLink, DocumentLinkOptions, DocumentLinkParams,
+    DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
+    FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
+    HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InlayHint,
+    InlayHintParams, Location, MessageType, OneOf, PublishDiagnosticsParams, ReferenceParams,
+    ServerCapabilities, ServerInfo, ShowMessageParams, TextDocumentSyncCapability,
+    TextDocumentSyncKind, Url, notification, request,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
-use futures::future::{ready, BoxFuture};
+use futures::future::{BoxFuture, ready};
+use ide::interop::{self, TblgenParseResult};
 use serde_json::Value;
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
-use ide::file_system::{FileId, FileSystem, SourceUnitId};
+use ide::file_system::{FileId, FilePath, FileSystem, SourceUnitId};
 
 use crate::config::Config;
 use crate::vfs::{UrlExt, Vfs};
@@ -43,6 +46,7 @@ pub struct ServerSnapshot {
 
 struct UpdateDiagnosticsEvent(i32, HashMap<FileId, Vec<Diagnostic>>);
 struct UpdateConfigEvent(Value);
+struct UpdateFlycheckEvent(SourceUnitId, TblgenParseResult);
 
 impl Server {
     pub fn new_router(client: ClientSocket) -> Router<Self> {
@@ -55,7 +59,7 @@ impl Server {
             .notification::<notification::Exit>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidOpenTextDocument>(Self::did_open)
             .notification::<notification::DidChangeTextDocument>(Self::did_change)
-            .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
+            .notification::<notification::DidSaveTextDocument>(Self::did_save)
             .notification::<notification::DidCloseTextDocument>(Self::did_close)
             .notification::<lsp_ext::SetSourceRoot>(Self::set_source_root)
             .notification::<lsp_ext::ClearSourceRoot>(Self::clear_source_root)
@@ -68,7 +72,8 @@ impl Server {
             .request::<request::DocumentLinkRequest, _>(Self::document_link)
             .request::<request::FoldingRangeRequest, _>(Self::folding_range)
             .event::<UpdateDiagnosticsEvent>(Self::update_diagnostics)
-            .event::<UpdateConfigEvent>(Self::update_config);
+            .event::<UpdateConfigEvent>(Self::update_config)
+            .event::<UpdateFlycheckEvent>(Self::update_flycheck);
         router
     }
 
@@ -305,6 +310,7 @@ impl LanguageServer for Server {
             self.load_source_unit(&params.text_document.uri, &params.text_document.text);
         self.opened_source_units.insert(source_unit_id);
         self.spawn_update_diagnostics();
+        self.spawn_flycheck();
         ControlFlow::Continue(())
     }
 
@@ -314,6 +320,12 @@ impl LanguageServer for Server {
             self.load_source_unit(&params.text_document.uri, &change.text);
             self.spawn_update_diagnostics();
         }
+        ControlFlow::Continue(())
+    }
+
+    fn did_save(&mut self, params: DidSaveTextDocumentParams) -> Self::NotifyResult {
+        tracing::info!("did_save: {params:?}");
+        self.spawn_flycheck();
         ControlFlow::Continue(())
     }
 
@@ -383,29 +395,66 @@ impl Server {
     fn spawn_update_diagnostics(&mut self) {
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
-        let opened_source_units = match self.root_source_unit {
-            Some(source_unit_id) => HashSet::from([source_unit_id]),
-            None => self.opened_source_units.clone(),
-        };
+        let opened_source_units = self.opened_source_units();
 
         self.spawn_with_snapshot((), move |snap, _| {
-            let mut diags = HashMap::new();
+            let mut lsp_diags = HashMap::new();
             for source_unit_id in opened_source_units {
-                for (file_id, diagnostics) in snap.analysis.diagnostics(source_unit_id) {
-                    let line_index = snap.analysis.line_index(file_id);
-                    let lsp_diags: Vec<Diagnostic> = diagnostics
-                        .into_iter()
-                        .map(|diag| to_proto::diagnostic(&line_index, diag))
-                        .collect();
-
-                    diags.entry(file_id).or_insert(Vec::new()).extend(lsp_diags);
+                for diag in snap.analysis.diagnostics(source_unit_id) {
+                    Self::append_diagnostic(&snap, &mut lsp_diags, diag);
                 }
             }
-
             client
-                .emit(UpdateDiagnosticsEvent(diag_version, diags))
+                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
         });
+    }
+
+    fn spawn_update_diagnostics_of(&mut self, source_unit_id: SourceUnitId) {
+        let diag_version = self.bump_diagnostic_version();
+        let client = self.client.clone();
+
+        self.spawn_with_snapshot((), move |snap, _| {
+            let mut lsp_diags = HashMap::new();
+            for diag in snap.analysis.diagnostics(source_unit_id) {
+                Self::append_diagnostic(&snap, &mut lsp_diags, diag);
+            }
+            client
+                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
+                .expect("failed to emit update diagnostics event");
+        });
+    }
+
+    fn append_diagnostic(
+        snap: &ServerSnapshot,
+        lsp_diags: &mut HashMap<FileId, Vec<lsp_types::Diagnostic>>,
+        diag: ide::handlers::diagnostics::Diagnostic,
+    ) {
+        match diag {
+            ide::handlers::diagnostics::Diagnostic::Lsp(diag) => {
+                let file_id = diag.location.file;
+                let line_index = snap.analysis.line_index(file_id);
+
+                let lsp_diag = to_proto::diagnostic(&line_index, diag);
+                lsp_diags
+                    .entry(file_id)
+                    .or_insert(Vec::new())
+                    .push(lsp_diag);
+            }
+            ide::handlers::diagnostics::Diagnostic::Tblgen(diag) => {
+                let file_path = FilePath::from(Path::new(&diag.filename));
+                let file_id = {
+                    let mut vfs = snap.vfs.write().unwrap();
+                    vfs.assign_or_get_file_id(file_path)
+                };
+
+                let lsp_diag = to_proto::tblgen_diagnostic(diag);
+                lsp_diags
+                    .entry(file_id)
+                    .or_insert(Vec::new())
+                    .push(lsp_diag);
+            }
+        }
     }
 
     fn bump_diagnostic_version(&mut self) -> i32 {
@@ -429,6 +478,42 @@ impl Server {
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
         }
+        ControlFlow::Continue(())
+    }
+
+    fn spawn_flycheck(&mut self) {
+        let opened_source_units = self.opened_source_units();
+        let client = self.client.clone();
+        let include_dirs = self.config.include_dirs.clone();
+
+        self.spawn_with_snapshot(include_dirs, move |snap, include_dirs| {
+            for source_unit_id in opened_source_units {
+                let source_unit = snap.analysis.source_unit(source_unit_id);
+                let vfs = snap.vfs.read().unwrap();
+                let root_file = vfs.path_for_file(&source_unit.root());
+                let result = match interop::parse_source_unit_with_tblgen(root_file, &include_dirs)
+                {
+                    Ok(result) => result,
+                    Err(err) => {
+                        tracing::warn!("failed to parse source unit: {err:?}");
+                        continue;
+                    }
+                };
+
+                client
+                    .emit(UpdateFlycheckEvent(source_unit_id, result))
+                    .expect("failed to emit updatet flycheck event");
+            }
+        });
+    }
+
+    fn update_flycheck(
+        &mut self,
+        UpdateFlycheckEvent(source_unit_id, result): UpdateFlycheckEvent,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        self.host
+            .set_tblgen_parse_result(source_unit_id, Arc::new(result));
+        self.spawn_update_diagnostics_of(source_unit_id);
         ControlFlow::Continue(())
     }
 
@@ -459,6 +544,13 @@ impl Server {
         self.host.set_file_content(file_id, text);
         self.host
             .load_source_unit(&mut *vfs, file_id, &self.config.include_dirs)
+    }
+
+    fn opened_source_units(&self) -> HashSet<SourceUnitId> {
+        match self.root_source_unit {
+            Some(source_unit_id) => HashSet::from([source_unit_id]),
+            None => self.opened_source_units.clone(),
+        }
     }
 
     fn current_source_unit(&mut self, uri: &Url) -> SourceUnitId {

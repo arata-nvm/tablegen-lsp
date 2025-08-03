@@ -3,13 +3,15 @@ source: crates/ide/src/handlers/diagnostics.rs
 expression: "check(\"class Foo { int a; } class Foo { int b; }\")"
 ---
 [
-    Diagnostic {
-        location: FileRange {
-            file: FileId(
-                0,
-            ),
-            range: 27..30,
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 27..30,
+            },
+            message: "Class 'Foo' already defined",
         },
-        message: "Class 'Foo' already defined",
-    },
+    ),
 ]

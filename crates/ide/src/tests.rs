@@ -43,6 +43,7 @@ impl TestDatabase {
         let id = SourceUnitId::from_root_file(f.root_file());
         let source_unit = file_system::collect_sources(&mut db, f, f.root_file(), &[]);
         db.set_source_unit(id, Arc::new(source_unit));
+        db.set_tblgen_parse_result(id, None);
 
         db
     }

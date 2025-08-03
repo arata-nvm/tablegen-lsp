@@ -5,7 +5,7 @@ use std::sync::Arc;
 use ecow::EcoString;
 use syntax::ast::AstNode;
 use syntax::parser::{TextRange, TextSize};
-use syntax::{ast, SyntaxNode, SyntaxNodePtr};
+use syntax::{SyntaxNode, SyntaxNodePtr, ast};
 
 use crate::db::SourceDatabase;
 
@@ -46,6 +46,10 @@ impl FilePath {
 
     pub fn parent(&self) -> Option<FilePath> {
         self.0.parent().map(FilePath::from)
+    }
+
+    pub fn to_str(&self) -> &str {
+        self.0.to_str().expect("Invalid UTF-8 in file path")
     }
 }
 
