@@ -436,10 +436,7 @@ impl Server {
                 let line_index = snap.analysis.line_index(file_id);
 
                 let lsp_diag = to_proto::diagnostic(&line_index, diag);
-                lsp_diags
-                    .entry(file_id)
-                    .or_insert(Vec::new())
-                    .push(lsp_diag);
+                lsp_diags.entry(file_id).or_default().push(lsp_diag);
             }
             ide::handlers::diagnostics::Diagnostic::Tblgen(diag) => {
                 let file_path = FilePath::from(Path::new(&diag.filename));
@@ -449,10 +446,7 @@ impl Server {
                 };
 
                 let lsp_diag = to_proto::tblgen_diagnostic(diag);
-                lsp_diags
-                    .entry(file_id)
-                    .or_insert(Vec::new())
-                    .push(lsp_diag);
+                lsp_diags.entry(file_id).or_default().push(lsp_diag);
             }
         }
     }

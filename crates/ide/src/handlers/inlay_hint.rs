@@ -7,7 +7,7 @@ use syntax::{
 use crate::{
     file_system::{FileRange, SourceUnitId},
     index::IndexDatabase,
-    symbol_map::{class::Class, record::RecordField, symbol::Symbol, SymbolMap},
+    symbol_map::{SymbolMap, class::Class, record::RecordField, symbol::Symbol},
 };
 
 #[derive(Debug)]
@@ -109,7 +109,7 @@ fn inlay_hint_class(
     for (arg_range, name) in arg_ranges.zip(template_arg_names) {
         hints.push(InlayHint::new(
             arg_range.start(),
-            format!("{}:", name),
+            format!("{name}:"),
             InlayHintKind::TemplateArg,
         ));
     }

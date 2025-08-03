@@ -1,6 +1,6 @@
 use syntax::{
-    ast::{self, AstNode},
     SyntaxNode,
+    ast::{self, AstNode},
 };
 
 use crate::symbol_map::class::ClassId;
@@ -264,7 +264,7 @@ impl CompletionContext {
                     if arg_snippet.is_empty() {
                         "".to_string()
                     } else {
-                        format!("<{}>", arg_snippet)
+                        format!("<{arg_snippet}>")
                     }
                 ),
                 "class",

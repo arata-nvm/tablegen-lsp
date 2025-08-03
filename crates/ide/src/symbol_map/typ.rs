@@ -1,8 +1,8 @@
 use ecow::EcoString;
 
 use super::{
-    record::{RecordFieldId, RecordId},
     SymbolMap,
+    record::{RecordFieldId, RecordId},
 };
 
 #[macro_export]
@@ -103,10 +103,10 @@ impl std::fmt::Display for Type {
             Self::String => write!(f, "string"),
             Self::Code => write!(f, "code"),
             Self::Dag => write!(f, "dag"),
-            Self::Bits(width) => write!(f, "bits<{}>", width),
-            Self::List(typ) => write!(f, "list<{}>", typ),
-            Self::Record(_, name) => write!(f, "{}", name),
-            Self::NotResolved(name) => write!(f, "{}", name),
+            Self::Bits(width) => write!(f, "bits<{width}>"),
+            Self::List(typ) => write!(f, "list<{typ}>"),
+            Self::Record(_, name) => write!(f, "{name}"),
+            Self::NotResolved(name) => write!(f, "{name}"),
             Self::Uninitialized => write!(f, "uninitialized"),
             Self::Unknown => write!(f, "unknown"),
             Self::Any => write!(f, "any"),
