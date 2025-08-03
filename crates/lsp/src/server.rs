@@ -1,18 +1,16 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::ops::ControlFlow;
-use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use async_lsp::lsp_types::{
-    self, CompletionOptions, CompletionParams, CompletionResponse, Diagnostic,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, DocumentLink, DocumentLinkOptions, DocumentLinkParams,
-    DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
-    FoldingRangeProviderCapability, GotoDefinitionParams, GotoDefinitionResponse, Hover,
-    HoverParams, HoverProviderCapability, InitializeParams, InitializeResult, InlayHint,
-    InlayHintParams, Location, MessageType, OneOf, PublishDiagnosticsParams, ReferenceParams,
-    ServerCapabilities, ServerInfo, ShowMessageParams, TextDocumentSyncCapability,
-    TextDocumentSyncKind, Url, notification, request,
+    CompletionOptions, CompletionParams, CompletionResponse, DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentLink,
+    DocumentLinkOptions, DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse,
+    FoldingRange, FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams,
+    GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
+    InitializeResult, InlayHint, InlayHintParams, Location, MessageType, OneOf,
+    PublishDiagnosticsParams, ReferenceParams, ServerCapabilities, ServerInfo, ShowMessageParams,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url, notification, request,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -22,9 +20,10 @@ use serde_json::Value;
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost};
-use ide::file_system::{FileId, FilePath, FileSystem, SourceUnitId};
+use ide::file_system::{FileSystem, SourceUnitId};
 
 use crate::config::Config;
+use crate::diagnostics::DiagnosticCollection;
 use crate::vfs::{UrlExt, Vfs};
 use crate::{from_proto, lsp_ext, to_proto};
 
@@ -44,7 +43,7 @@ pub struct ServerSnapshot {
     pub vfs: Arc<RwLock<Vfs>>,
 }
 
-struct UpdateDiagnosticsEvent(i32, HashMap<FileId, Vec<Diagnostic>>);
+struct UpdateDiagnosticsEvent(i32, DiagnosticCollection);
 struct UpdateConfigEvent(Value);
 struct UpdateFlycheckEvent(SourceUnitId, TblgenParseResult);
 
@@ -398,11 +397,11 @@ impl Server {
         let opened_source_units = self.opened_source_units();
 
         self.spawn_with_snapshot((), move |snap, _| {
-            let mut lsp_diags = HashMap::new();
+            let mut lsp_diags = DiagnosticCollection::default();
             for source_unit_id in opened_source_units {
-                for diag in snap.analysis.diagnostics(source_unit_id) {
-                    Self::append_diagnostic(&snap, &mut lsp_diags, diag);
-                }
+                let source_unit = snap.analysis.source_unit(source_unit_id);
+                lsp_diags.add_source_unit_files(&source_unit);
+                lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
             }
             client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
@@ -415,40 +414,14 @@ impl Server {
         let client = self.client.clone();
 
         self.spawn_with_snapshot((), move |snap, _| {
-            let mut lsp_diags = HashMap::new();
-            for diag in snap.analysis.diagnostics(source_unit_id) {
-                Self::append_diagnostic(&snap, &mut lsp_diags, diag);
-            }
+            let mut lsp_diags = DiagnosticCollection::default();
+            let source_unit = snap.analysis.source_unit(source_unit_id);
+            lsp_diags.add_source_unit_files(&source_unit);
+            lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
             client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
         });
-    }
-
-    fn append_diagnostic(
-        snap: &ServerSnapshot,
-        lsp_diags: &mut HashMap<FileId, Vec<lsp_types::Diagnostic>>,
-        diag: ide::handlers::diagnostics::Diagnostic,
-    ) {
-        match diag {
-            ide::handlers::diagnostics::Diagnostic::Lsp(diag) => {
-                let file_id = diag.location.file;
-                let line_index = snap.analysis.line_index(file_id);
-
-                let lsp_diag = to_proto::diagnostic(&line_index, diag);
-                lsp_diags.entry(file_id).or_default().push(lsp_diag);
-            }
-            ide::handlers::diagnostics::Diagnostic::Tblgen(diag) => {
-                let file_path = FilePath::from(Path::new(&diag.filename));
-                let file_id = {
-                    let mut vfs = snap.vfs.write().unwrap();
-                    vfs.assign_or_get_file_id(file_path)
-                };
-
-                let lsp_diag = to_proto::tblgen_diagnostic(diag);
-                lsp_diags.entry(file_id).or_default().push(lsp_diag);
-            }
-        }
     }
 
     fn bump_diagnostic_version(&mut self) -> i32 {
@@ -459,15 +432,15 @@ impl Server {
 
     fn update_diagnostics(
         &mut self,
-        UpdateDiagnosticsEvent(version, diagnostics): UpdateDiagnosticsEvent,
+        UpdateDiagnosticsEvent(version, lsp_diags): UpdateDiagnosticsEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_diagnostics: {version:?}");
-        for (file_id, lsp_diags) in diagnostics {
+        for (file_id, lsp_diags_for_file) in lsp_diags {
             let vfs = self.vfs.read().unwrap();
             let file_path = vfs.path_for_file(&file_id);
             let file_uri = UrlExt::from_file_path(file_path);
 
-            let params = PublishDiagnosticsParams::new(file_uri, lsp_diags, Some(version));
+            let params = PublishDiagnosticsParams::new(file_uri, lsp_diags_for_file, Some(version));
             self.client
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
@@ -505,8 +478,8 @@ impl Server {
         &mut self,
         UpdateFlycheckEvent(source_unit_id, result): UpdateFlycheckEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
-        self.host
-            .set_tblgen_parse_result(source_unit_id, Arc::new(result));
+        tracing::info!("update_flycheck: {source_unit_id:?}");
+        self.host.set_tblgen_parse_result(source_unit_id, result);
         self.spawn_update_diagnostics_of(source_unit_id);
         ControlFlow::Continue(())
     }
