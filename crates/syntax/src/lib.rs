@@ -1,5 +1,5 @@
-use rowan::ast::AstNode;
 use rowan::GreenNode;
+use rowan::ast::AstNode;
 
 use crate::error::SyntaxError;
 use crate::lexer::Lexer;

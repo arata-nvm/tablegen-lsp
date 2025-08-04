@@ -4,7 +4,7 @@ use ecow::EcoString;
 use unscanny::Scanner;
 
 use crate::token_stream::TokenStream;
-use crate::{token_kind::TokenKind, T};
+use crate::{T, token_kind::TokenKind};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -401,7 +401,7 @@ mod tests {
     #[test]
     fn bangoperator() {
         insta::assert_debug_snapshot!(tokenize(
-          "!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !getop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !setop !repr !match"
+            "!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !getop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !setop !repr !match"
         ));
     }
 

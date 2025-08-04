@@ -1,14 +1,14 @@
 use syntax::{ast, syntax_kind::SyntaxKind};
 
 use crate::{
+    TY,
     symbol_map::{
         typ::Type,
         variable::{Variable, VariableKind},
     },
-    TY,
 };
 
-use super::{context::IndexCtx, scope::ScopeKind, utils, Indexable};
+use super::{Indexable, context::IndexCtx, scope::ScopeKind, utils};
 // Optionを返すインターフェイスのために、Type::Unknownをデフォルトとする処理を誰が行うかが不明瞭
 // 型が解決できなかった場合にSome(Type::Unknown)を返すが、その呼び出し元でunwrap_or(Type::Unknown)を
 // 呼び出しているかもしれない

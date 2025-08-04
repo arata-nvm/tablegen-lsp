@@ -3,9 +3,9 @@ use std::ops::Range;
 
 use ecow::EcoString;
 
+use crate::T;
 use crate::token_kind::TokenKind;
 use crate::token_stream::TokenStream;
-use crate::T;
 
 #[derive(Debug)]
 pub struct PreProcessor<T: TokenStream> {
@@ -153,11 +153,11 @@ enum IfKind {
 mod tests {
     use ecow::EcoString;
 
+    use crate::T;
     use crate::lexer::Lexer;
     use crate::preprocessor::PreProcessor;
     use crate::token_kind::TokenKind;
     use crate::token_stream::TokenStream;
-    use crate::T;
 
     #[test]
     fn define_1() {

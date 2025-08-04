@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::file_system::FileRange;
 
-use super::{class::ClassId, record::RecordFieldId, SymbolMap};
+use super::{SymbolMap, class::ClassId, record::RecordFieldId};
 
 pub type DefId = Id<Def>;
 

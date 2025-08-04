@@ -1,12 +1,12 @@
+use syntax::SyntaxNode;
 use syntax::parser::TextRange;
 use syntax::syntax_kind::SyntaxKind;
-use syntax::SyntaxNode;
 
 use crate::file_system::{FilePosition, FileRange, SourceUnitId};
 use crate::index::IndexDatabase;
+use crate::symbol_map::SymbolMap;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
-use crate::symbol_map::SymbolMap;
 
 #[derive(Debug)]
 pub struct Hover {
@@ -136,11 +136,7 @@ fn extract_doc_comments(root: SyntaxNode, range: TextRange) -> Option<String> {
     }
 
     let doc = comments.into_iter().rev().collect::<Vec<_>>().join("\n");
-    if doc.is_empty() {
-        None
-    } else {
-        Some(doc)
-    }
+    if doc.is_empty() { None } else { Some(doc) }
 }
 
 #[cfg(test)]

@@ -1,10 +1,10 @@
 use rowan::Checkpoint;
 
 use crate::{
+    T,
     grammar::{delimited, r#type, value},
     parser::Parser,
     syntax_kind::SyntaxKind,
-    T,
 };
 
 pub(super) enum StatementListType {

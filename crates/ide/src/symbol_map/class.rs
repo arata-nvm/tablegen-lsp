@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::file_system::FileRange;
 
-use super::{record::RecordFieldId, template_arg::TemplateArgumentId, SymbolMap};
+use super::{SymbolMap, record::RecordFieldId, template_arg::TemplateArgumentId};
 
 pub type ClassId = Id<Class>;
 

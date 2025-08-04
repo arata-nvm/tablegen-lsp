@@ -4,10 +4,10 @@ use id_arena::Id;
 use crate::file_system::FileRange;
 
 use super::{
+    SymbolMap,
     class::{Class, ClassId},
     def::{Def, DefId},
     typ::Type,
-    SymbolMap,
 };
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

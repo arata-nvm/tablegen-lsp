@@ -1,4 +1,4 @@
-use crate::{grammar::value, parser::Parser, syntax_kind::SyntaxKind, token_kind::TokenKind, T};
+use crate::{T, grammar::value, parser::Parser, syntax_kind::SyntaxKind, token_kind::TokenKind};
 
 pub(super) const TYPE_FIRST_TOKENS: [TokenKind; 8] = [
     T![bit],

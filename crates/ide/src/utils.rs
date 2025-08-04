@@ -1,4 +1,4 @@
-use syntax::{parser::TextRange, SyntaxNode};
+use syntax::{SyntaxNode, parser::TextRange};
 
 pub fn range_excluding_trivia(node: &SyntaxNode) -> TextRange {
     let start = node.text_range().start();

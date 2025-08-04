@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use ecow::EcoString;
 
 use crate::symbol_map::{
+    SymbolMap,
     class::ClassId,
     def::DefId,
     defm::DefmId,
@@ -11,7 +12,6 @@ use crate::symbol_map::{
     record::RecordId,
     symbol::SymbolId,
     variable::{Variable, VariableId},
-    SymbolMap,
 };
 
 #[derive(Debug)]

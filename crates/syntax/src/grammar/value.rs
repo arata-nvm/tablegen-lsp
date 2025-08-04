@@ -1,11 +1,11 @@
 use crate::{
+    T,
     parser::{CompletedMarker, Parser},
     syntax_kind::SyntaxKind,
     token_kind::TokenKind,
-    T,
 };
 
-use super::{delimited, r#type, statement};
+use super::{delimited, statement, r#type};
 
 pub(super) const VALUE_START: [TokenKind; 67] = [
     TokenKind::IntVal,

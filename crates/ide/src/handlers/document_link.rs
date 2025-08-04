@@ -1,7 +1,7 @@
 use syntax::{
+    SyntaxNodePtr,
     ast::{self, AstNode},
     parser::TextRange,
-    SyntaxNodePtr,
 };
 
 use crate::{

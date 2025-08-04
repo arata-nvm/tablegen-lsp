@@ -3,7 +3,7 @@ pub use rowan::ast::AstNode;
 
 use crate::parser::TextRange;
 use crate::syntax_kind::SyntaxKind;
-use crate::{lexer, Language, SyntaxNode};
+use crate::{Language, SyntaxNode, lexer};
 
 macro_rules! asts {
     () => {};
@@ -238,6 +238,7 @@ asts! {
     };
     FieldLet {
         name: Identifier,
+        range_list: RangeList,
         value: Value,
     };
     Type [
@@ -461,7 +462,9 @@ mod tests {
 
     #[test]
     fn class() {
-        let node = parse::<Class>("class Foo<int A = 1> : Bar<A> { int A = 1; let B = 2; defvar C = 3; assert true, \"\"; };");
+        let node = parse::<Class>(
+            "class Foo<int A = 1> : Bar<A> { int A = 1; let B = 2; defvar C = 3; assert true, \"\"; };",
+        );
         assert!(node.name().is_some());
         assert!(node.template_arg_list().is_some());
         assert!(node.record_body().is_some());

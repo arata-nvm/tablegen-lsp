@@ -1,6 +1,6 @@
 use crate::{
-    grammar::statement::StatementListType, parser::Parser, syntax_kind::SyntaxKind,
-    token_kind::TokenKind, T,
+    T, grammar::statement::StatementListType, parser::Parser, syntax_kind::SyntaxKind,
+    token_kind::TokenKind,
 };
 
 pub mod statement;
@@ -36,8 +36,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::error::SyntaxError;
     use crate::SyntaxNode;
+    use crate::error::SyntaxError;
 
     fn parse(text: &str) -> (SyntaxNode, Vec<SyntaxError>) {
         let parse = crate::parse(text);

@@ -3,9 +3,9 @@ use syntax::parser::TextRange;
 
 use crate::file_system::{FileId, SourceUnitId};
 use crate::index::IndexDatabase;
+use crate::symbol_map::SymbolMap;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
-use crate::symbol_map::SymbolMap;
 
 pub fn exec(
     db: &dyn IndexDatabase,

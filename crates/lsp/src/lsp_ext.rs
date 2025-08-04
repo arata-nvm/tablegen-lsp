@@ -1,4 +1,4 @@
-use async_lsp::lsp_types::{notification::Notification, Url};
+use async_lsp::lsp_types::{Url, notification::Notification};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
