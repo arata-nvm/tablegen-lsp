@@ -1,0 +1,17 @@
+---
+source: crates/ide/src/handlers/diagnostics.rs
+expression: "check(r#\"foreach i = 1...\"fuga\" in def foo#i;\"#)"
+---
+[
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 16..22,
+            },
+            message: "expected integer value as end of range",
+        },
+    ),
+]

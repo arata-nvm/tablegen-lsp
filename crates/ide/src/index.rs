@@ -332,8 +332,50 @@ impl Indexable for ast::ForeachIteratorInit {
     type Output = Type;
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         match self {
-            // because RangeList and RangePiece have no items to index, we skip them
-            Self::RangeList(_) | Self::RangePiece(_) => Some(Type::Int),
+            Self::RangeList(range_list) => {
+                for piece in range_list.pieces() {
+                    if let Some(start) = piece.start() {
+                        start.index(ctx);
+                    }
+                    if let Some(end) = piece.end() {
+                        end.index(ctx);
+                    }
+                }
+                Some(TY![int])
+            }
+            Self::RangePiece(range_piece) => match (range_piece.start(), range_piece.end()) {
+                (Some(start), Some(end)) => {
+                    let start_typ = start.index(ctx)?;
+                    let end_typ = end.index(ctx)?;
+                    if start_typ == TY![int] && end_typ == TY![int] {
+                        Some(TY![int])
+                    } else if start_typ != TY![int] {
+                        ctx.error_by_syntax(start.syntax(), "expected integer or bitrange");
+                        None
+                    } else {
+                        // end_typ != TY![int]
+                        ctx.error_by_syntax(end.syntax(), "expected integer value as end of range");
+                        None
+                    }
+                }
+                (Some(start), None) => {
+                    let start_typ = start.index(ctx)?;
+                    if start_typ.is_list() {
+                        Some(
+                            start_typ
+                                .element_typ()
+                                .expect("list should have element type"),
+                        )
+                    } else {
+                        ctx.error_by_syntax(
+                            start.syntax(),
+                            format!("expected a list, got '{start_typ}'"),
+                        );
+                        None
+                    }
+                }
+                _ => None,
+            },
             Self::Value(value) => value.index(ctx).and_then(|it| it.element_typ()),
         }
     }

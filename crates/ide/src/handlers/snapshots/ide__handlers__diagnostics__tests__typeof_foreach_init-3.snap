@@ -1,0 +1,17 @@
+---
+source: crates/ide/src/handlers/diagnostics.rs
+expression: "check(r#\"foreach i = \"hoge\"...\"fuga\" in def foo#i;\"#)"
+---
+[
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 12..18,
+            },
+            message: "expected integer or bitrange",
+        },
+    ),
+]

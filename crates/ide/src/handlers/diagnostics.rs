@@ -101,4 +101,19 @@ mod tests {
             "class Foo<string suffix> { string Name = PREFIX_ # suffix; } "
         ));
     }
+
+    #[test]
+    fn typeof_foreach_init() {
+        assert!(check(r#"class Foo<int i>; foreach i = 1...3 in def : Foo<i>;"#).is_empty());
+        insta::assert_debug_snapshot!(check(r#"foreach i = "hoge"...3 in def foo#i;"#));
+        insta::assert_debug_snapshot!(check(r#"foreach i = 1..."fuga" in def foo#i;"#));
+        insta::assert_debug_snapshot!(check(r#"foreach i = "hoge"..."fuga" in def foo#i;"#));
+
+        assert!(check(r#"class Foo<int i>; foreach i = [1, 2] in def : Foo<i>;"#).is_empty());
+        insta::assert_debug_snapshot!(check(r#"foreach i = "hoge" in def foo#i;"#));
+
+        assert!(
+            check(r#"class Foo<string s>; foreach s = ["a", "b"] in def : Foo<s>;"#).is_empty()
+        );
+    }
 }
