@@ -91,4 +91,14 @@ mod tests {
     fn class_cyclic_inheritance() {
         insta::assert_debug_snapshot!(check("class Foo : Foo;"));
     }
+
+    #[test]
+    fn strconcat() {
+        insta::assert_debug_snapshot!(check(
+            "class Foo<string prefix> { string Name = prefix # _POSTFIX; } "
+        ));
+        insta::assert_debug_snapshot!(check(
+            "class Foo<string suffix> { string Name = PREFIX_ # suffix; } "
+        ));
+    }
 }

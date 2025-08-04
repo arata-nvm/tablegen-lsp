@@ -76,6 +76,17 @@ pub trait Indexable {
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output>;
 }
 
+trait IndexableValue {
+    type Output;
+    fn index(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output>;
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum IndexValueMode {
+    Expression,
+    Name,
+}
+
 impl Indexable for ast::SourceFile {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
@@ -735,10 +746,10 @@ impl Indexable for ast::Value {
         let mut inner_values = self.inner_values();
 
         let first_value = inner_values.next()?;
-        let first_value_typ = first_value.index(ctx);
+        let first_value_typ = first_value.index(ctx, IndexValueMode::Expression);
         let mut ret_typ = first_value_typ.clone();
         for inner_value in inner_values {
-            if let Some(inner_value_typ) = inner_value.index(ctx) {
+            if let Some(inner_value_typ) = inner_value.index(ctx, IndexValueMode::Name) {
                 if inner_value_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
                     ret_typ = Some(TY![string]);
                 } else if ret_typ != Some(TY![string]) && inner_value_typ.is_list() {
@@ -751,10 +762,10 @@ impl Indexable for ast::Value {
     }
 }
 
-impl Indexable for ast::InnerValue {
+impl IndexableValue for ast::InnerValue {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let mut lhs_typ = self.simple_value()?.index(ctx)?;
+    fn index(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
+        let mut lhs_typ = self.simple_value()?.index(ctx, mode)?;
         for suffix in self.suffixes() {
             lhs_typ = match suffix {
                 ast::ValueSuffix::RangeSuffix(_) => match lhs_typ {
@@ -787,9 +798,9 @@ impl Indexable for ast::InnerValue {
     }
 }
 
-impl Indexable for ast::SimpleValue {
+impl IndexableValue for ast::SimpleValue {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+    fn index(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
         match self {
             ast::SimpleValue::Integer(_) => Some(Type::Int),
             ast::SimpleValue::String(_) => Some(Type::String),
@@ -833,6 +844,8 @@ impl Indexable for ast::SimpleValue {
                 let Some(symbol_id) = ctx.resolve_id(&name) else {
                     return if ctx.tblgen_symtab_has_def(&name) {
                         Some(Type::Unknown)
+                    } else if mode == IndexValueMode::Name {
+                        Some(Type::String)
                     } else {
                         ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));
                         None
@@ -845,7 +858,7 @@ impl Indexable for ast::SimpleValue {
                 };
                 match ctx.symbol_map.symbol(symbol_id) {
                     Symbol::Class(_) => None,
-                    Symbol::Def(_) => None, // unreachable
+                    Symbol::Def(_) => unreachable!(),
                     Symbol::TemplateArgument(template_arg) => Some(template_arg.typ.clone()),
                     Symbol::RecordField(field) => Some(field.typ.clone()),
                     Symbol::Variable(variable) => Some(variable.typ.clone()),
