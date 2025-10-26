@@ -25,6 +25,12 @@ pub fn multiple_files(fixture: &str) -> (TestDatabase, Fixture) {
     (db, f)
 }
 
+pub fn load_single_file(path: &str) -> (TestDatabase, Fixture) {
+    let mut f = Fixture::load_single_file(path);
+    let db = TestDatabase::new(&mut f);
+    (db, f)
+}
+
 #[salsa::database(SourceDatabaseStorage, IndexDatabaseStorage)]
 #[derive(Default)]
 pub struct TestDatabase {
@@ -85,6 +91,16 @@ impl Fixture {
             this.insert_file(path, content);
         }
 
+        this
+    }
+
+    fn load_single_file(path: &str) -> Self {
+        let content = std::fs::read_to_string(path).expect("failed to read fixture file");
+
+        let mut this = Self::default();
+        let path = FilePath::from(Path::new(path));
+        let content = this.parse_file(&mut content.lines().peekable());
+        this.insert_file(path, content);
         this
     }
 

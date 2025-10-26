@@ -103,18 +103,15 @@ impl TblgenSymbolTable {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
-    use crate::file_system::FilePath;
+    use crate::{file_system::FileSystem, tests};
 
     #[test]
     fn foreach() {
-        let root_file = FilePath::from(Path::new("testdata/foreach.td"));
-        let result = super::parse_source_unit_with_tblgen(&root_file, &[]).expect("valid code");
-        assert!(result.diagnostics.is_empty());
-        assert!(!result.symbol_table.has_def("Foo"));
-        assert!(result.symbol_table.has_def("foo1"));
-        assert!(result.symbol_table.has_def("foo2"));
-        assert!(!result.symbol_table.has_def("foo"));
+        let (_, f) = tests::load_single_file("testdata/def.td");
+        let root_file_id = f.root_file();
+        let root_file_path = f.path_for_file(&root_file_id);
+        let result =
+            super::parse_source_unit_with_tblgen(root_file_path, &[], &f).expect("valid code");
+        insta::assert_debug_snapshot!(result.symbol_table.defs);
     }
 }
