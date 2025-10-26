@@ -112,6 +112,8 @@ mod tests {
         let root_file_path = f.path_for_file(&root_file_id);
         let result =
             super::parse_source_unit_with_tblgen(root_file_path, &[], &f).expect("valid code");
-        insta::assert_debug_snapshot!(result.symbol_table.defs);
+        let mut defs = result.symbol_table.defs.into_iter().collect::<Vec<_>>();
+        defs.sort_by_key(|(k, _)| k.position);
+        insta::assert_debug_snapshot!(defs);
     }
 }

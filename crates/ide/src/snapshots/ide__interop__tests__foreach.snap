@@ -1,47 +1,62 @@
 ---
 source: crates/ide/src/interop.rs
-expression: result.symbol_table.defs
+expression: defs
 ---
-{
-    FilePosition {
-        file: FileId(
-            0,
-        ),
-        position: 26,
-    }: [
-        "anonymous_0",
-    ],
-    FilePosition {
-        file: FileId(
-            0,
-        ),
-        position: 146,
-    }: [
-        "foo4",
-    ],
-    FilePosition {
-        file: FileId(
-            0,
-        ),
-        position: 16,
-    }: [
-        "foo",
-    ],
-    FilePosition {
-        file: FileId(
-            0,
-        ),
-        position: 64,
-    }: [
-        "foo1",
-        "foo2",
-    ],
-    FilePosition {
-        file: FileId(
-            0,
-        ),
-        position: 129,
-    }: [
-        "foo3",
-    ],
-}
+[
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 16,
+        },
+        [
+            "foo",
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 26,
+        },
+        [
+            "anonymous_0",
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 64,
+        },
+        [
+            "foo1",
+            "foo2",
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 129,
+        },
+        [
+            "foo3",
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 146,
+        },
+        [
+            "foo4",
+        ],
+    ),
+]
