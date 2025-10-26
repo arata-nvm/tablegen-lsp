@@ -1,0 +1,22 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(\"def : Bar;\")"
+---
+(
+    SourceFile@0..10
+      StatementList@0..10
+        Def@0..10
+          DefKw@0..3 "def"
+          Whitespace@3..4 " "
+          RecordBody@4..10
+            ParentClassList@4..9
+              Colon@4..5 ":"
+              Whitespace@5..6 " "
+              ClassRef@6..9
+                Identifier@6..9
+                  Id@6..9 "Bar"
+            Body@9..10
+              Semi@9..10 ";"
+    ,
+    [],
+)

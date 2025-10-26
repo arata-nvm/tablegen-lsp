@@ -74,6 +74,7 @@ mod tests {
         insta::assert_debug_snapshot!(parse("def Foo : Bar;"));
         insta::assert_debug_snapshot!(parse("def foo {}"));
         insta::assert_debug_snapshot!(parse("def NAME#;"));
+        insta::assert_debug_snapshot!(parse("def : Bar;"));
     }
 
     #[test]
