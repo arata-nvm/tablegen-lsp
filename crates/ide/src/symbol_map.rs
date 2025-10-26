@@ -258,12 +258,12 @@ impl SymbolMap {
 
 // mutable api
 impl SymbolMap {
-    pub fn add_class(&mut self, class: Class, is_global: bool) -> Result<ClassId, SymbolMapError> {
+    pub fn add_class(&mut self, class: Class) -> Result<ClassId, SymbolMapError> {
         let name = class.name.clone();
         let define_loc = class.define_loc;
         let id = self.alloc_or_replace_class(class)?;
         self.name_to_class.insert(name, id);
-        self.add_symbol_to_file(id, define_loc, is_global);
+        self.add_symbol_to_file(id, define_loc, true);
         Ok(id)
     }
 

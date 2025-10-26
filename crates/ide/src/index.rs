@@ -165,7 +165,7 @@ impl Indexable for ast::Class {
         let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
         let class = Class::new(name, define_loc);
 
-        let class_id = match ctx.symbol_map.add_class(class, true) {
+        let class_id = match ctx.symbol_map.add_class(class) {
             Ok(class_id) => class_id,
             Err(err) => {
                 ctx.error_by_filerange(define_loc, err.to_string());
