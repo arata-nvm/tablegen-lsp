@@ -1,5 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 
 use ecow::EcoString;
@@ -56,6 +57,14 @@ impl FilePath {
 impl From<&Path> for FilePath {
     fn from(value: &Path) -> Self {
         Self(value.to_path_buf())
+    }
+}
+
+impl FromStr for FilePath {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(PathBuf::from(s)))
     }
 }
 
@@ -129,6 +138,8 @@ impl SourceUnit {
 
 pub trait FileSystem {
     fn assign_or_get_file_id(&mut self, path: FilePath) -> FileId;
+
+    fn file_for_path(&self, path: &FilePath) -> Option<FileId>;
 
     fn path_for_file(&self, file_id: &FileId) -> &FilePath;
 
