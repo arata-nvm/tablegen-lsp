@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_lsp::lsp_types;
 use ide::{
-    file_system::{FileId, FilePosition, FileRange},
+    file_system::{FileId, FilePosition, FileRange, FileSystem},
     line_index::LineIndex,
 };
 use text_size::{TextRange, TextSize};
