@@ -458,14 +458,15 @@ impl Server {
                 let source_unit = snap.analysis.source_unit(source_unit_id);
                 let vfs = snap.vfs.read().unwrap();
                 let root_file = vfs.path_for_file(&source_unit.root());
-                let result = match interop::parse_source_unit_with_tblgen(root_file, &include_dirs)
-                {
-                    Ok(result) => result,
-                    Err(err) => {
-                        tracing::warn!("failed to parse source unit: {err:?}");
-                        continue;
-                    }
-                };
+
+                let result =
+                    match interop::parse_source_unit_with_tblgen(root_file, &include_dirs, &*vfs) {
+                        Ok(result) => result,
+                        Err(err) => {
+                            tracing::warn!("failed to parse source unit: {err:?}");
+                            continue;
+                        }
+                    };
 
                 client
                     .emit(UpdateFlycheckEvent(source_unit_id, result))

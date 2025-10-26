@@ -1,30 +1,17 @@
-use std::{collections::HashSet, str::Utf8Error};
+use std::str::FromStr;
+use std::{collections::HashMap, str::Utf8Error};
 
 use ecow::EcoString;
-use tblgen::TableGenParser;
 pub use tblgen::diagnostic::DiagnosticKind;
+use tblgen::error::SourceLoc;
+use tblgen::{RecordKeeper, TableGenParser};
 
-use crate::file_system::FilePath;
+use crate::file_system::{FilePath, FilePosition, FileSystem};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TblgenParseResult {
     pub diagnostics: Vec<TblgenDiagnostic>,
     pub symbol_table: TblgenSymbolTable,
-}
-
-#[derive(Debug, Default, Clone, Eq, PartialEq)]
-pub struct TblgenSymbolTable {
-    pub def_names: HashSet<EcoString>,
-}
-
-impl TblgenSymbolTable {
-    pub fn new(def_names: HashSet<EcoString>) -> Self {
-        TblgenSymbolTable { def_names }
-    }
-
-    pub fn has_def(&self, name: &str) -> bool {
-        self.def_names.contains(name)
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -39,6 +26,7 @@ pub struct TblgenDiagnostic {
 pub fn parse_source_unit_with_tblgen(
     root_file: &FilePath,
     include_dirs: &[FilePath],
+    fs: &impl FileSystem,
 ) -> Result<TblgenParseResult, Utf8Error> {
     let mut parser = TableGenParser::new().add_source_file(root_file.to_str());
     if let Some(parent) = root_file.parent() {
@@ -55,14 +43,7 @@ pub fn parse_source_unit_with_tblgen(
             .into_iter()
             .map(convert_diagnostic)
             .collect::<Result<_, _>>()?,
-        symbol_table: TblgenSymbolTable::new(
-            result
-                .record_keeper
-                .defs()
-                .filter_map(|(name, _)| name.ok())
-                .map(EcoString::from)
-                .collect(),
-        ),
+        symbol_table: TblgenSymbolTable::with_record_keeper(&result.record_keeper, fs),
     })
 }
 
@@ -78,6 +59,46 @@ fn convert_diagnostic(
         line: diag.line() - 1,
         column: diag.column(),
     })
+}
+
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
+pub struct TblgenSymbolTable {
+    pub defs: HashMap<FilePosition, Vec<EcoString>>,
+}
+
+impl TblgenSymbolTable {
+    pub fn with_record_keeper(record_keeper: &RecordKeeper, fs: &impl FileSystem) -> Self {
+        let mut defs = HashMap::new();
+        for (name, record) in record_keeper.defs() {
+            let (Ok(name), Some(tblgen_pos)) = (name, record.file_position(record_keeper)) else {
+                continue;
+            };
+
+            let tblgen_filepath = tblgen_pos.filepath();
+            let file_id = if let Ok(filepath) = tblgen_filepath.as_str()
+                && let Ok(filepath) = FilePath::from_str(filepath)
+                && let Some(file_id) = fs.file_for_path(&filepath)
+            {
+                file_id
+            } else {
+                continue;
+            };
+
+            let file_pos = FilePosition::new(file_id, tblgen_pos.pos().into());
+            defs.entry(file_pos)
+                .or_insert_with(Vec::new)
+                .push(EcoString::from(name));
+        }
+
+        TblgenSymbolTable { defs }
+    }
+
+    pub fn get_defs_at(&self, pos: &FilePosition) -> &[EcoString] {
+        match self.defs.get(pos) {
+            Some(defs) => defs,
+            None => &[],
+        }
+    }
 }
 
 #[cfg(test)]
