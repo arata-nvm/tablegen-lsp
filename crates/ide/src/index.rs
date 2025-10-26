@@ -15,7 +15,7 @@ use syntax::{
 use crate::{
     TY,
     db::SourceDatabase,
-    file_system::{FileRange, IncludeId, SourceUnitId},
+    file_system::{FilePosition, FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
     interop::TblgenSymbolTable,
     symbol_map::{
@@ -189,41 +189,84 @@ impl Indexable for ast::Class {
 impl Indexable for ast::Def {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let is_global = ctx.scopes.current_defset_id().is_none()
-            && ctx.scopes.current_multiclass_id().is_none();
-
-        let def_id = match self.name() {
-            Some(name_value) => {
-                let (name, define_loc) = index_name_value(name_value, ctx)?;
-                let def = Def::new(name, define_loc);
-                ctx.symbol_map.add_def(def, is_global)
-            }
-            None => {
-                let name = ctx.next_anonymous_def_name();
-                let def = Def::new(
-                    name,
-                    FileRange::new(ctx.current_file_id(), self.syntax().text_range()),
-                );
-                ctx.symbol_map.add_anonymous_def(def)
-            }
+        let Some((names, define_loc, is_anonymous)) = index_def_name(self, ctx) else {
+            return None;
         };
-
-        if let Some(defset_id) = ctx.scopes.current_defset_id() {
-            let defset = ctx.symbol_map.defset_mut(defset_id);
-            defset.add_def(def_id);
-        } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
-            let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
-            multiclass.add_def(def_id);
+        if names.is_empty() {
+            return None;
         }
 
-        ctx.scopes.push(ScopeKind::Def(def_id));
+        let mut names_iter = names.into_iter();
+
+        let is_global = !is_anonymous
+            && ctx.scopes.current_defset_id().is_none()
+            && ctx.scopes.current_multiclass_id().is_none();
+        let first_def = Def::new(names_iter.next().expect("names is not empty"), define_loc);
+        let first_def_id = ctx.symbol_map.add_def(first_def, is_global);
+
+        ctx.scopes.push(ScopeKind::Def(first_def_id));
         if let Some(record_body) = self.record_body() {
             record_body.index(ctx);
         }
         ctx.scopes.pop();
 
+        let mut def_ids = vec![first_def_id];
+        while let Some(name) = names_iter.next() {
+            let first_def = ctx.symbol_map.def(first_def_id);
+            let mut cloned_def = first_def.clone();
+            cloned_def.name = name;
+            let def_id = ctx.symbol_map.add_def(cloned_def, is_global);
+            def_ids.push(def_id);
+        }
+
+        if let Some(defset_id) = ctx.scopes.current_defset_id() {
+            let defset = ctx.symbol_map.defset_mut(defset_id);
+            defset.add_defs(def_ids);
+        } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
+            let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
+            multiclass.add_defs(def_ids);
+        }
+
         None
     }
+}
+
+fn index_def_name(def: &ast::Def, ctx: &mut IndexCtx) -> Option<(Vec<EcoString>, FileRange, bool)> {
+    let define_loc = if let Some(name_value) = def.name()
+        && let Some(inner_value) = name_value.inner_values().next()
+        && let Some(simple_value) = inner_value.simple_value()
+        && let ast::SimpleValue::Identifier(_) = simple_value
+    {
+        // e.g. def foo, def foo#i
+        name_value.syntax().text_range()
+    } else {
+        // e.g. def, def !strconcat(foo, bar)
+        def.syntax()
+            .first_token()
+            .expect("def should have Def keyword")
+            .text_range()
+    };
+
+    let define_loc_start = FilePosition::new(ctx.current_file_id(), define_loc.start());
+    let names = ctx.get_tblgen_def_names_at(&define_loc_start);
+    if names.is_empty() {
+        return if let Some(name_value) = def.name()
+            && name_value.inner_values().count() == 1
+            && let Some(inner_value) = name_value.inner_values().next()
+            && let Some(simple_value) = inner_value.simple_value()
+            && let ast::SimpleValue::Identifier(id) = simple_value
+        {
+            let (name, define_loc) = utils::identifier(&id, ctx)?;
+            return Some((vec![name], define_loc, false));
+        } else {
+            None
+        };
+    }
+
+    let names = names.iter().cloned().collect();
+    let define_loc = FileRange::new(ctx.current_file_id(), define_loc);
+    let is_anonymous = def.name().is_none();
+    Some((names, define_loc, is_anonymous))
 }
 
 fn index_name_value(value: ast::Value, ctx: &mut IndexCtx) -> Option<(EcoString, FileRange)> {
@@ -884,9 +927,7 @@ impl IndexableValue for ast::SimpleValue {
                     return Some(Type::String);
                 }
                 let Some(symbol_id) = ctx.resolve_id(&name) else {
-                    return if ctx.tblgen_symtab_has_def(&name) {
-                        Some(Type::Unknown)
-                    } else if mode == IndexValueMode::Name {
+                    return if mode == IndexValueMode::Name {
                         Some(Type::String)
                     } else {
                         ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));

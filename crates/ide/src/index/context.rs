@@ -7,7 +7,7 @@ use syntax::{
 };
 
 use crate::{
-    file_system::{FileId, FileRange, SourceUnit},
+    file_system::{FileId, FilePosition, FileRange, SourceUnit},
     handlers::diagnostics::Diagnostic,
     interop::TblgenSymbolTable,
     symbol_map::{SymbolMap, symbol::SymbolId, variable::VariableId},
@@ -74,8 +74,8 @@ impl<'a> IndexCtx<'a> {
         self.scopes.find_variable_in_current_scope(name)
     }
 
-    pub fn tblgen_symtab_has_def(&self, name: &EcoString) -> bool {
-        self.tblgen_symtab.has_def(name)
+    pub fn get_tblgen_def_names_at(&self, file_pos: &FilePosition) -> &[EcoString] {
+        self.tblgen_symtab.get_defs_at(file_pos)
     }
 
     /// `range`で与えられた位置に`message`をエラーとして記録する。

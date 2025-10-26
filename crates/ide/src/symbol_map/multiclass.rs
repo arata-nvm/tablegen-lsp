@@ -50,4 +50,8 @@ impl Multiclass {
     pub fn add_def(&mut self, def_id: DefId) {
         self.def_list.push(def_id);
     }
+
+    pub fn add_defs(&mut self, def_ids: Vec<DefId>) {
+        self.def_list.extend(def_ids);
+    }
 }
