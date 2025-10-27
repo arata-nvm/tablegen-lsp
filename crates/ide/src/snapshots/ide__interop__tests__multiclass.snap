@@ -1,0 +1,72 @@
+---
+source: crates/ide/src/interop.rs
+expression: defs
+---
+[
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 169,
+        },
+        [
+            TblgenDef {
+                name: "multiclass1_field1",
+                direct_super_classes: [
+                    "Field",
+                ],
+            },
+            TblgenDef {
+                name: "multiclass1_field2",
+                direct_super_classes: [
+                    "Field",
+                ],
+            },
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 201,
+        },
+        [
+            TblgenDef {
+                name: "multiclass2_field1",
+                direct_super_classes: [
+                    "Field",
+                ],
+            },
+            TblgenDef {
+                name: "multiclass2_field2",
+                direct_super_classes: [
+                    "Field",
+                ],
+            },
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 236,
+        },
+        [
+            TblgenDef {
+                name: "multiclass2_2_field1_field1",
+                direct_super_classes: [
+                    "Field",
+                ],
+            },
+            TblgenDef {
+                name: "multiclass2_2_field1_field2",
+                direct_super_classes: [
+                    "Field",
+                ],
+            },
+        ],
+    ),
+]

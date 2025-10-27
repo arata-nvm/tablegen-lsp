@@ -130,4 +130,16 @@ mod tests {
         defs.sort_by_key(|(k, _)| k.position);
         insta::assert_debug_snapshot!(defs);
     }
+
+    #[test]
+    fn multiclass() {
+        let (_, f) = tests::load_single_file("testdata/multiclass.td");
+        let root_file_id = f.root_file();
+        let root_file_path = f.path_for_file(&root_file_id);
+        let result =
+            super::parse_source_unit_with_tblgen(root_file_path, &[], &f).expect("valid code");
+        let mut defs = result.symbol_table.defs.into_iter().collect::<Vec<_>>();
+        defs.sort_by_key(|(k, _)| k.position);
+        insta::assert_debug_snapshot!(defs);
+    }
 }
