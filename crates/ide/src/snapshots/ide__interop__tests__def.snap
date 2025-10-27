@@ -1,0 +1,92 @@
+---
+source: crates/ide/src/interop.rs
+expression: defs
+---
+[
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 16,
+        },
+        [
+            TblgenDef {
+                name: "foo",
+                direct_super_classes: [
+                    "Foo",
+                ],
+            },
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 26,
+        },
+        [
+            TblgenDef {
+                name: "anonymous_0",
+                direct_super_classes: [
+                    "Foo",
+                ],
+            },
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 64,
+        },
+        [
+            TblgenDef {
+                name: "foo1",
+                direct_super_classes: [
+                    "Foo",
+                ],
+            },
+            TblgenDef {
+                name: "foo2",
+                direct_super_classes: [
+                    "Foo",
+                ],
+            },
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 129,
+        },
+        [
+            TblgenDef {
+                name: "foo3",
+                direct_super_classes: [
+                    "Foo",
+                ],
+            },
+        ],
+    ),
+    (
+        FilePosition {
+            file: FileId(
+                0,
+            ),
+            position: 146,
+        },
+        [
+            TblgenDef {
+                name: "foo4",
+                direct_super_classes: [
+                    "Foo",
+                ],
+            },
+        ],
+    ),
+]

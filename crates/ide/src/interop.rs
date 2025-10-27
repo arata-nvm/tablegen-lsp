@@ -106,7 +106,7 @@ mod tests {
     use crate::{file_system::FileSystem, tests};
 
     #[test]
-    fn foreach() {
+    fn def() {
         let (_, f) = tests::load_single_file("testdata/def.td");
         let root_file_id = f.root_file();
         let root_file_path = f.path_for_file(&root_file_id);
