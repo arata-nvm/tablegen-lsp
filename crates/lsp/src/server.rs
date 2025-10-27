@@ -101,10 +101,10 @@ impl LanguageServer for Server {
         tracing::info!("initialize: {params:?}");
 
         // TODO: It seems that did_change_configuration is not called, so we need to update the config here.
-        if let Some(options) = params.initialization_options {
-            if options.as_object().filter(|it| !it.is_empty()).is_some() {
-                let _ = self.update_config(UpdateConfigEvent(options));
-            }
+        if let Some(options) = params.initialization_options
+            && options.as_object().filter(|it| !it.is_empty()).is_some()
+        {
+            let _ = self.update_config(UpdateConfigEvent(options));
         }
 
         Box::pin(ready(Ok(InitializeResult {

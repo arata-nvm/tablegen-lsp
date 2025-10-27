@@ -189,9 +189,7 @@ impl Indexable for ast::Class {
 impl Indexable for ast::Def {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let Some((names, define_loc, is_anonymous)) = index_def_name(self, ctx) else {
-            return None;
-        };
+        let (names, define_loc, is_anonymous) = index_def_name(self, ctx)?;
         if names.is_empty() {
             return None;
         }
@@ -211,7 +209,7 @@ impl Indexable for ast::Def {
         ctx.scopes.pop();
 
         let mut def_ids = vec![first_def_id];
-        while let Some(name) = names_iter.next() {
+        for name in names_iter {
             let first_def = ctx.symbol_map.def(first_def_id);
             let mut cloned_def = first_def.clone();
             cloned_def.name = name;
@@ -263,7 +261,7 @@ fn index_def_name(def: &ast::Def, ctx: &mut IndexCtx) -> Option<(Vec<EcoString>,
         };
     }
 
-    let names = names.iter().cloned().collect();
+    let names = names.to_vec();
     let define_loc = FileRange::new(ctx.current_file_id(), define_loc);
     let is_anonymous = def.name().is_none();
     Some((names, define_loc, is_anonymous))
@@ -535,10 +533,10 @@ impl Indexable for ast::ParentClassList {
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         if let Some(record_id) = ctx.scopes.current_record_id() {
             for class_ref in self.classes() {
-                if let Some(class_id) = resolve_class_ref_as_class(&class_ref, ctx) {
-                    if let Err(e) = ctx.symbol_map.add_parent_to_record(record_id, class_id) {
-                        ctx.error_by_syntax(class_ref.syntax(), e.to_string());
-                    }
+                if let Some(class_id) = resolve_class_ref_as_class(&class_ref, ctx)
+                    && let Err(e) = ctx.symbol_map.add_parent_to_record(record_id, class_id)
+                {
+                    ctx.error_by_syntax(class_ref.syntax(), e.to_string());
                 }
             }
         } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
@@ -675,9 +673,10 @@ fn check_template_args(
             }
         };
 
-        if let Some((arg_name, arg_typ)) = arg_name_typ {
-            if !arg_value_typ.can_be_casted_to(&ctx.symbol_map, arg_typ) {
-                ctx.error_by_textrange(
+        if let Some((arg_name, arg_typ)) = arg_name_typ
+            && !arg_value_typ.can_be_casted_to(&ctx.symbol_map, arg_typ)
+        {
+            ctx.error_by_textrange(
     				arg_value_range,
     				format!(
     					"value specified for template argument '{arg_name}' is type of {arg_value_typ}; expected type {arg_typ}"
@@ -689,13 +688,13 @@ fn check_template_args(
 
     for unsolved_arg in unsolved_args {
         let arg = template_args.iter().find(|arg| arg.name == unsolved_arg);
-        if let Some(arg) = arg {
-            if !arg.has_default_value {
-                ctx.error_by_textrange(
-                    range,
-                    format!("value not specified for template argument '{unsolved_arg}'"),
-                );
-            }
+        if let Some(arg) = arg
+            && !arg.has_default_value
+        {
+            ctx.error_by_textrange(
+                range,
+                format!("value not specified for template argument '{unsolved_arg}'"),
+            );
         }
     }
 }

@@ -186,10 +186,10 @@ impl Scope {
             return Some(*var_id);
         }
 
-        if let ScopeKind::Foreach(var_name, var_id) = &self.kind {
-            if name == var_name {
-                return Some(*var_id);
-            }
+        if let ScopeKind::Foreach(var_name, var_id) = &self.kind
+            && name == var_name
+        {
+            return Some(*var_id);
         }
 
         None

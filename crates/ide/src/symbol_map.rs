@@ -92,14 +92,14 @@ impl SymbolMap {
         self.name_to_def.values().copied()
     }
 
-    pub fn record(&self, record_id: RecordId) -> Record {
+    pub fn record(&self, record_id: RecordId) -> Record<'_> {
         match record_id {
             RecordId::Class(class_id) => Record::Class(self.class(class_id)),
             RecordId::Def(def_id) => Record::Def(self.def(def_id)),
         }
     }
 
-    pub fn record_mut(&mut self, record_id: RecordId) -> RecordMut {
+    pub fn record_mut(&mut self, record_id: RecordId) -> RecordMut<'_> {
         match record_id {
             RecordId::Class(class_id) => RecordMut::Class(self.class_mut(class_id)),
             RecordId::Def(def_id) => RecordMut::Def(self.def_mut(def_id)),
@@ -187,7 +187,7 @@ impl SymbolMap {
         self.defm_list.get_mut(defm_id).expect("invalid defm id")
     }
 
-    pub fn symbol(&self, id: SymbolId) -> Symbol {
+    pub fn symbol(&self, id: SymbolId) -> Symbol<'_> {
         match id {
             SymbolId::ClassId(class_id) => Symbol::Class(self.class(class_id)),
             SymbolId::DefId(def_id) => Symbol::Def(self.def(def_id)),
@@ -206,7 +206,7 @@ impl SymbolMap {
         }
     }
 
-    pub fn symbol_mut(&mut self, id: SymbolId) -> SymbolMut {
+    pub fn symbol_mut(&mut self, id: SymbolId) -> SymbolMut<'_> {
         match id {
             SymbolId::ClassId(class_id) => SymbolMut::Class(self.class_mut(class_id)),
             SymbolId::DefId(def_id) => SymbolMut::Def(self.def_mut(def_id)),
@@ -247,7 +247,7 @@ impl SymbolMap {
         }))
     }
 
-    pub fn find_symbol_at(&self, pos: FilePosition) -> Option<Symbol> {
+    pub fn find_symbol_at(&self, pos: FilePosition) -> Option<Symbol<'_>> {
         let id = self
             .pos_to_symbol_map
             .get(&pos.file)
