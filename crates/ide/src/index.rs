@@ -246,8 +246,8 @@ fn index_def_name(def: &ast::Def, ctx: &mut IndexCtx) -> Option<(Vec<EcoString>,
     };
 
     let define_loc_start = FilePosition::new(ctx.current_file_id(), define_loc.start());
-    let names = ctx.get_tblgen_def_names_at(&define_loc_start);
-    if names.is_empty() {
+    let defs = ctx.get_tblgen_defs_at(&define_loc_start);
+    if defs.is_empty() {
         return if let Some(name_value) = def.name()
             && name_value.inner_values().count() == 1
             && let Some(inner_value) = name_value.inner_values().next()
@@ -261,7 +261,7 @@ fn index_def_name(def: &ast::Def, ctx: &mut IndexCtx) -> Option<(Vec<EcoString>,
         };
     }
 
-    let names = names.to_vec();
+    let names = defs.iter().map(|def| def.name.clone()).collect::<Vec<_>>();
     let define_loc = FileRange::new(ctx.current_file_id(), define_loc);
     let is_anonymous = def.name().is_none();
     Some((names, define_loc, is_anonymous))

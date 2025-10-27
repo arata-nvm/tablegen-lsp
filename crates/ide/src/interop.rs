@@ -63,7 +63,13 @@ fn convert_diagnostic(
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct TblgenSymbolTable {
-    pub defs: HashMap<FilePosition, Vec<EcoString>>,
+    pub defs: HashMap<FilePosition, Vec<TblgenDef>>,
+}
+
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
+pub struct TblgenDef {
+    pub name: EcoString,
+    pub direct_super_classes: Vec<EcoString>,
 }
 
 impl TblgenSymbolTable {
@@ -72,6 +78,16 @@ impl TblgenSymbolTable {
         for (name, record) in record_keeper.defs() {
             let (Ok(name), Some(tblgen_pos)) = (name, record.file_position(record_keeper)) else {
                 continue;
+            };
+
+            let direct_super_classes = record
+                .direct_super_classes()
+                .filter_map(|class| class.name().ok())
+                .map(EcoString::from)
+                .collect::<Vec<_>>();
+            let def = TblgenDef {
+                name: EcoString::from(name),
+                direct_super_classes,
             };
 
             let tblgen_filepath = tblgen_pos.filepath();
@@ -85,15 +101,13 @@ impl TblgenSymbolTable {
             };
 
             let file_pos = FilePosition::new(file_id, tblgen_pos.pos().into());
-            defs.entry(file_pos)
-                .or_insert_with(Vec::new)
-                .push(EcoString::from(name));
+            defs.entry(file_pos).or_insert_with(Vec::new).push(def);
         }
 
         TblgenSymbolTable { defs }
     }
 
-    pub fn get_defs_at(&self, pos: &FilePosition) -> &[EcoString] {
+    pub fn get_defs_at(&self, pos: &FilePosition) -> &[TblgenDef] {
         match self.defs.get(pos) {
             Some(defs) => defs,
             None => &[],

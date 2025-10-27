@@ -9,7 +9,7 @@ use syntax::{
 use crate::{
     file_system::{FileId, FilePosition, FileRange, SourceUnit},
     handlers::diagnostics::Diagnostic,
-    interop::TblgenSymbolTable,
+    interop::{TblgenDef, TblgenSymbolTable},
     symbol_map::{SymbolMap, symbol::SymbolId, variable::VariableId},
 };
 
@@ -74,7 +74,7 @@ impl<'a> IndexCtx<'a> {
         self.scopes.find_variable_in_current_scope(name)
     }
 
-    pub fn get_tblgen_def_names_at(&self, file_pos: &FilePosition) -> &[EcoString] {
+    pub fn get_tblgen_defs_at(&self, file_pos: &FilePosition) -> &[TblgenDef] {
         self.tblgen_symtab.get_defs_at(file_pos)
     }
 
