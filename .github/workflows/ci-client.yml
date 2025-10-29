@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
       - run: npm ci
         working-directory: ./vscode
       - run: npm run build
@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
       - run: npm ci
         working-directory: ./vscode
       - run: npm run lint:check
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
       - run: npm ci
         working-directory: ./vscode
       - run: npm run format:check
