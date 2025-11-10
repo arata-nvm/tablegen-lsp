@@ -3,8 +3,8 @@ use std::{collections::HashMap, str::Utf8Error};
 
 use ecow::EcoString;
 pub use tblgen::diagnostic::DiagnosticKind;
-use tblgen::error::SourceLoc;
-use tblgen::{RecordKeeper, TableGenParser};
+use tblgen::error::{LocPosition, SourceLoc};
+use tblgen::{Record, RecordKeeper, TableGenParser};
 
 use crate::file_system::{FilePath, FilePosition, FileSystem};
 
@@ -66,42 +66,54 @@ pub struct TblgenSymbolTable {
     pub defs: HashMap<FilePosition, Vec<TblgenDef>>,
 }
 
-#[derive(Debug, Default, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TblgenDef {
     pub name: EcoString,
-    pub direct_super_classes: Vec<EcoString>,
+    pub define_loc: FilePosition,
 }
 
 impl TblgenSymbolTable {
     pub fn with_record_keeper(record_keeper: &RecordKeeper, fs: &impl FileSystem) -> Self {
+        fn convert_tblgen_pos<'a>(
+            pos: LocPosition,
+            record: Record,
+            record_keeper: &RecordKeeper,
+            fs: &impl FileSystem,
+        ) -> Option<FilePosition> {
+            let tblgen_pos = record.file_position_with_pos(record_keeper, pos)?;
+            let tblgen_filepath = tblgen_pos.filepath();
+            let filepath_str = tblgen_filepath.as_str().ok()?;
+            let filepath = FilePath::from_str(filepath_str).ok()?;
+            let file_id = fs.file_for_path(&filepath)?;
+            Some(FilePosition::new(file_id, tblgen_pos.pos().into()))
+        }
+
         let mut defs = HashMap::new();
         for (name, record) in record_keeper.defs() {
-            let (Ok(name), Some(tblgen_pos)) = (name, record.file_position(record_keeper)) else {
+            let Ok(name) = name else {
                 continue;
             };
 
-            let direct_super_classes = record
-                .direct_super_classes()
-                .filter_map(|class| class.name().ok())
-                .map(EcoString::from)
-                .collect::<Vec<_>>();
+            let Some(define_loc_original) =
+                convert_tblgen_pos(LocPosition::Original, record, record_keeper, fs)
+            else {
+                continue;
+            };
+
+            let Some(define_loc_instantiated) =
+                convert_tblgen_pos(LocPosition::Instantiated, record, record_keeper, fs)
+            else {
+                continue;
+            };
+
             let def = TblgenDef {
                 name: EcoString::from(name),
-                direct_super_classes,
+                define_loc: define_loc_original,
             };
 
-            let tblgen_filepath = tblgen_pos.filepath();
-            let file_id = if let Ok(filepath) = tblgen_filepath.as_str()
-                && let Ok(filepath) = FilePath::from_str(filepath)
-                && let Some(file_id) = fs.file_for_path(&filepath)
-            {
-                file_id
-            } else {
-                continue;
-            };
-
-            let file_pos = FilePosition::new(file_id, tblgen_pos.pos().into());
-            defs.entry(file_pos).or_insert_with(Vec::new).push(def);
+            defs.entry(define_loc_instantiated)
+                .or_insert_with(Vec::new)
+                .push(def);
         }
 
         TblgenSymbolTable { defs }

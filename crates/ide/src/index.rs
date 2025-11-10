@@ -189,121 +189,249 @@ impl Indexable for ast::Class {
 impl Indexable for ast::Def {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (names, define_loc, is_anonymous) = index_def_name(self, ctx)?;
-        if names.is_empty() {
-            return None;
+        if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
+            index_multiclass_def(self, ctx, multiclass_id)
+        } else {
+            index_global_def(self, ctx)
         }
-
-        let mut names_iter = names.into_iter();
-
-        let is_global = !is_anonymous
-            && ctx.scopes.current_defset_id().is_none()
-            && ctx.scopes.current_multiclass_id().is_none();
-        let first_def = Def::new(names_iter.next().expect("names is not empty"), define_loc);
-        let first_def_id = ctx.symbol_map.add_def(first_def, is_global);
-
-        ctx.scopes.push(ScopeKind::Def(first_def_id));
-        if let Some(record_body) = self.record_body() {
-            record_body.index(ctx);
-        }
-        ctx.scopes.pop();
-
-        let mut def_ids = vec![first_def_id];
-        for name in names_iter {
-            let first_def = ctx.symbol_map.def(first_def_id);
-            let mut cloned_def = first_def.clone();
-            cloned_def.name = name;
-            let def_id = ctx.symbol_map.add_def(cloned_def, is_global);
-            def_ids.push(def_id);
-        }
-
-        if let Some(defset_id) = ctx.scopes.current_defset_id() {
-            let defset = ctx.symbol_map.defset_mut(defset_id);
-            defset.add_defs(def_ids);
-        } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
-            let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
-            multiclass.add_defs(def_ids);
-        }
-
-        None
     }
 }
 
-fn index_def_name(def: &ast::Def, ctx: &mut IndexCtx) -> Option<(Vec<EcoString>, FileRange, bool)> {
-    let define_loc = if let Some(name_value) = def.name()
-        && let Some(inner_value) = name_value.inner_values().next()
-        && let Some(simple_value) = inner_value.simple_value()
-        && let ast::SimpleValue::Identifier(_) = simple_value
-    {
-        // e.g. def foo, def foo#i
-        name_value.syntax().text_range()
-    } else {
-        // e.g. def, def !strconcat(foo, bar)
-        def.syntax()
-            .first_token()
-            .expect("def should have Def keyword")
-            .text_range()
-    };
+fn index_multiclass_def(
+    def: &ast::Def,
+    ctx: &mut IndexCtx,
+    multiclass_id: MulticlassId,
+) -> Option<()> {
+    let def_name_type = determine_def_type(def)?;
 
-    let define_loc_start = FilePosition::new(ctx.current_file_id(), define_loc.start());
-    let defs = ctx.get_tblgen_defs_at(&define_loc_start);
-    if defs.is_empty() {
-        return if let Some(name_value) = def.name()
-            && name_value.inner_values().count() == 1
-            && let Some(inner_value) = name_value.inner_values().next()
-            && let Some(simple_value) = inner_value.simple_value()
-            && let ast::SimpleValue::Identifier(id) = simple_value
-        {
-            let (name, define_loc) = utils::identifier(&id, ctx)?;
-            return Some((vec![name], define_loc, false));
-        } else {
-            None
+    let def_kw_loc = def
+        .syntax()
+        .first_token()
+        .expect("def should have Def keyword")
+        .text_range();
+    let tblgen_define_loc = match def_name_type {
+        DefNameType::Identifier(ref name_value, _)
+        | DefNameType::ValueStartWithIdentifier(ref name_value) => name_value.syntax().text_range(),
+        _ => def_kw_loc,
+    };
+    let tblgen_define_pos = FilePosition::new(ctx.current_file_id(), tblgen_define_loc.start());
+
+    let name = EcoString::from("placeholder_multiclass_def");
+    let define_loc = FileRange::new(ctx.current_file_id(), def_kw_loc);
+    let multiclass_def = Def::new(name, define_loc);
+    let def_id = ctx.symbol_map.add_def(multiclass_def, false);
+    ctx.add_multiclass_def(tblgen_define_pos, def_id);
+    tracing::debug!(
+        "NEKO registered multiclass def at {:?} {:?}",
+        tblgen_define_pos,
+        def_id
+    );
+
+    ctx.scopes.push(ScopeKind::Def(def_id));
+    if let Some(record_body) = def.record_body() {
+        record_body.index(ctx);
+    }
+    ctx.scopes.pop();
+
+    let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
+    multiclass.add_def(def_id);
+
+    None
+}
+
+fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) -> Option<()> {
+    let (def_names, define_loc, is_anonymous) = lookup_def_name(def, ctx)?;
+    if def_names.is_empty() {
+        return None;
+    }
+
+    let mut names_iter = def_names.into_iter();
+
+    let base_def = Def::new(
+        names_iter.next().expect("def_names is not empty"),
+        define_loc,
+    );
+    let base_def_id = ctx.symbol_map.add_def(base_def, !is_anonymous);
+
+    ctx.scopes.push(ScopeKind::Def(base_def_id));
+    if let Some(record_body) = def.record_body() {
+        record_body.index(ctx);
+    }
+    ctx.scopes.pop();
+
+    let mut def_ids = vec![base_def_id];
+    for name in names_iter {
+        let base_def = ctx.symbol_map.def(base_def_id);
+        let mut cloned_def = base_def.clone();
+        cloned_def.name = name;
+        let def_id = ctx.symbol_map.add_def(cloned_def, !is_anonymous);
+        def_ids.push(def_id);
+    }
+
+    if let Some(defset_id) = ctx.scopes.current_defset_id() {
+        let defset = ctx.symbol_map.defset_mut(defset_id);
+        defset.add_defs(def_ids);
+    } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
+        let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
+        multiclass.add_defs(def_ids);
+    }
+
+    None
+}
+
+fn lookup_def_name(
+    def: &ast::Def,
+    ctx: &mut IndexCtx,
+) -> Option<(Vec<EcoString>, FileRange, bool)> {
+    let def_name_type = determine_def_type(def)?;
+
+    let def_kw_loc = def
+        .syntax()
+        .first_token()
+        .expect("def should have Def keyword")
+        .text_range();
+    let tblgen_define_loc = match def_name_type {
+        DefNameType::Identifier(ref name_value, _)
+        | DefNameType::ValueStartWithIdentifier(ref name_value) => name_value.syntax().text_range(),
+        _ => def_kw_loc,
+    };
+    let tblgen_define_pos = FilePosition::new(ctx.current_file_id(), tblgen_define_loc.start());
+
+    let tblgen_defs = ctx.get_tblgen_defs_at(&tblgen_define_pos);
+    if tblgen_defs.is_empty() {
+        return match def_name_type {
+            DefNameType::Identifier(_, ref ident) => {
+                // fallback
+                let (name, define_loc) = utils::identifier(ident, ctx)?;
+                Some((vec![name], define_loc, false))
+            }
+            _ => {
+                tracing::info!("cannot find tblgen def for def at {:?}", tblgen_define_pos);
+                None
+            }
         };
     }
 
-    let names = defs.iter().map(|def| def.name.clone()).collect::<Vec<_>>();
-    let define_loc = FileRange::new(ctx.current_file_id(), define_loc);
-    let is_anonymous = def.name().is_none();
-    Some((names, define_loc, is_anonymous))
+    let def_names = tblgen_defs
+        .iter()
+        .map(|def| def.name.clone())
+        .collect::<Vec<_>>();
+    let define_loc = FileRange::new(ctx.current_file_id(), tblgen_define_loc);
+    let is_anonymous = matches!(def_name_type, DefNameType::Anonymous);
+    Some((def_names, define_loc, is_anonymous))
 }
 
-fn index_name_value(value: ast::Value, ctx: &mut IndexCtx) -> Option<(EcoString, FileRange)> {
-    let name = value.inner_values().next()?;
-    match name.simple_value()? {
-        ast::SimpleValue::Identifier(id) => utils::identifier(&id, ctx),
-        _ => None,
+#[derive(Debug)]
+enum DefNameType {
+    // def foo
+    Identifier(ast::Value, ast::Identifier),
+    // def foo#i
+    ValueStartWithIdentifier(ast::Value),
+    // def !strconcat(foo, bar)
+    Value,
+    // def
+    Anonymous,
+}
+
+fn determine_def_type(def: &ast::Def) -> Option<DefNameType> {
+    let Some(name_value) = def.name() else {
+        return Some(DefNameType::Anonymous);
+    };
+    let Some(inner_value) = name_value.inner_values().next() else {
+        return None;
+    };
+    let Some(simple_value) = inner_value.simple_value() else {
+        return None;
+    };
+    match simple_value {
+        ast::SimpleValue::Identifier(ident) => {
+            if name_value.inner_values().count() > 1 {
+                Some(DefNameType::ValueStartWithIdentifier(name_value))
+            } else {
+                Some(DefNameType::Identifier(name_value, ident))
+            }
+        }
+        _ => Some(DefNameType::Value),
     }
 }
 
 impl Indexable for ast::Defm {
     type Output = ();
     fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let defset_id = ctx.scopes.current_defset_id();
+        let defm_kw_loc = self
+            .syntax()
+            .first_token()
+            .expect("defm should have Defm keyword")
+            .text_range();
+        let define_loc = FileRange::new(ctx.current_file_id(), defm_kw_loc);
 
-        let defm_id = match self.name() {
-            Some(name_value) => {
-                let (name, define_loc) = index_name_value(name_value, ctx)?;
-                let defm = Defm::new(name, define_loc);
-                ctx.symbol_map.add_defm(defm, defset_id.is_none())
-            }
-            None => {
-                let name = ctx.next_anonymous_def_name();
-                let defm = Defm::new(
-                    name,
-                    FileRange::new(ctx.current_file_id(), self.syntax().text_range()),
-                );
-                ctx.symbol_map.add_anonymous_defm(defm)
-            }
-        };
-
-        ctx.scopes.push(ScopeKind::Defm(defm_id));
-        if let Some(parent_class_list) = self.parent_class_list() {
-            parent_class_list.index(ctx);
+        if ctx.scopes.current_multiclass_id().is_some() {
+            index_multiclass_defm(self, ctx, define_loc)
+        } else {
+            index_global_defm(self, ctx, define_loc)
         }
-        ctx.scopes.pop();
-
-        None
     }
+}
+
+fn index_multiclass_defm(
+    defm: &ast::Defm,
+    ctx: &mut IndexCtx,
+    define_loc: FileRange,
+) -> Option<()> {
+    tracing::debug!("NEKO in multiclass");
+    let multiclass_defm = Defm::new(EcoString::from("placeholder"), define_loc);
+    let defm_id = ctx
+        .symbol_map
+        .add_defm(multiclass_defm, defm.name().is_some());
+
+    ctx.scopes.push(ScopeKind::Defm(defm_id));
+    if let Some(parent_class_list) = defm.parent_class_list() {
+        parent_class_list.index(ctx);
+    }
+    ctx.scopes.pop();
+
+    None
+}
+
+fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) -> Option<()> {
+    let parent_class_list = defm.parent_class_list()?;
+    let superclass_locs = parent_class_list
+        .classes()
+        .map(|class| class.syntax().text_range().start());
+
+    let mut defs = Vec::new();
+    for super_class_loc in superclass_locs {
+        let super_class_pos = FilePosition::new(ctx.current_file_id(), super_class_loc);
+        defs.extend(ctx.get_tblgen_defs_at(&super_class_pos).iter().cloned());
+    }
+
+    tracing::debug!("NEKO defm/global");
+    if defs.is_empty() {
+        return None;
+    }
+
+    let mut def_ids = Vec::new();
+    for def in defs {
+        tracing::debug!("NEKO defm/def {:?}", def);
+        let Some(base_def_id) = ctx.get_multiclass_def_at(&def.define_loc) else {
+            continue;
+        };
+        let base_def = ctx.symbol_map.def(base_def_id);
+        tracing::debug!("NEKO defm/base_def {:?}", base_def);
+
+        let mut cloned_def = base_def.clone();
+        cloned_def.name = def.name;
+        cloned_def.define_loc = define_loc;
+        let def_id = ctx.symbol_map.add_def(cloned_def, defm.name().is_some());
+        def_ids.push(def_id);
+    }
+
+    if let Some(defset_id) = ctx.scopes.current_defset_id() {
+        let defset = ctx.symbol_map.defset_mut(defset_id);
+        defset.add_defs(def_ids);
+    }
+
+    None
 }
 
 impl Indexable for ast::Defset {
@@ -682,7 +810,6 @@ fn check_template_args(
     					"value specified for template argument '{arg_name}' is type of {arg_value_typ}; expected type {arg_typ}"
     				),
     			);
-            }
         }
     }
 
