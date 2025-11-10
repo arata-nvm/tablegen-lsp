@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use ecow::{EcoString, eco_format};
@@ -10,7 +11,7 @@ use crate::{
     file_system::{FileId, FilePosition, FileRange, SourceUnit},
     handlers::diagnostics::Diagnostic,
     interop::{TblgenDef, TblgenSymbolTable},
-    symbol_map::{SymbolMap, symbol::SymbolId, variable::VariableId},
+    symbol_map::{SymbolMap, def::DefId, symbol::SymbolId, variable::VariableId},
 };
 
 use super::{Index, IndexDatabase, scope::Scopes};
@@ -24,6 +25,7 @@ pub struct IndexCtx<'a> {
     pub scopes: Scopes,
     pub anonymous_def_index: u32,
     pub tblgen_symtab: Arc<TblgenSymbolTable>,
+    pub pos_to_multiclass_def_map: HashMap<FilePosition, DefId>,
 }
 
 impl<'a> IndexCtx<'a> {
@@ -42,6 +44,7 @@ impl<'a> IndexCtx<'a> {
             scopes: Scopes::default(),
             anonymous_def_index: 0,
             tblgen_symtab,
+            pos_to_multiclass_def_map: HashMap::new(),
         }
     }
 
@@ -76,6 +79,14 @@ impl<'a> IndexCtx<'a> {
 
     pub fn get_tblgen_defs_at(&self, file_pos: &FilePosition) -> &[TblgenDef] {
         self.tblgen_symtab.get_defs_at(file_pos)
+    }
+
+    pub fn add_multiclass_def(&mut self, def_kw_pos: FilePosition, def_id: DefId) {
+        self.pos_to_multiclass_def_map.insert(def_kw_pos, def_id);
+    }
+
+    pub fn get_multiclass_def_at(&self, def_kw_pos: &FilePosition) -> Option<DefId> {
+        self.pos_to_multiclass_def_map.get(def_kw_pos).copied()
     }
 
     /// `range`で与えられた位置に`message`をエラーとして記録する。

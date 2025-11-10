@@ -11,20 +11,13 @@ Some(
             kind: Multiclass,
             children: [
                 DocumentSymbol {
-                    name: "a",
+                    name: "placeholder_multiclass_def",
                     typ: "def",
-                    range: 25..26,
+                    range: 21..24,
                     kind: Def,
                     children: [],
                 },
             ],
-        },
-        DocumentSymbol {
-            name: "foo",
-            typ: "defm",
-            range: 35..38,
-            kind: Defm,
-            children: [],
         },
     ],
 )
