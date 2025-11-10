@@ -13,9 +13,12 @@ expression: defs
         [
             TblgenDef {
                 name: "foo",
-                direct_super_classes: [
-                    "Foo",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 16,
+                },
             },
         ],
     ),
@@ -29,9 +32,12 @@ expression: defs
         [
             TblgenDef {
                 name: "anonymous_0",
-                direct_super_classes: [
-                    "Foo",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 26,
+                },
             },
         ],
     ),
@@ -45,15 +51,21 @@ expression: defs
         [
             TblgenDef {
                 name: "foo1",
-                direct_super_classes: [
-                    "Foo",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 64,
+                },
             },
             TblgenDef {
                 name: "foo2",
-                direct_super_classes: [
-                    "Foo",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 64,
+                },
             },
         ],
     ),
@@ -67,9 +79,12 @@ expression: defs
         [
             TblgenDef {
                 name: "foo3",
-                direct_super_classes: [
-                    "Foo",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 129,
+                },
             },
         ],
     ),
@@ -83,9 +98,12 @@ expression: defs
         [
             TblgenDef {
                 name: "foo4",
-                direct_super_classes: [
-                    "Foo",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 146,
+                },
             },
         ],
     ),

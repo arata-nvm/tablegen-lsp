@@ -26,5 +26,12 @@ Some(
                 },
             ],
         },
+        DocumentSymbol {
+            name: "foo",
+            typ: "def",
+            range: 45..48,
+            kind: Def,
+            children: [],
+        },
     ],
 )

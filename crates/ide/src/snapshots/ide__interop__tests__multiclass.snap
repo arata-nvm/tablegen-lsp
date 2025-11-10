@@ -8,20 +8,44 @@ expression: defs
             file: FileId(
                 0,
             ),
-            position: 169,
+            position: 267,
         },
         [
             TblgenDef {
+                name: "anonymous_0",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 121,
+                },
+            },
+            TblgenDef {
+                name: "multiclass1",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 138,
+                },
+            },
+            TblgenDef {
                 name: "multiclass1_field1",
-                direct_super_classes: [
-                    "Field",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 47,
+                },
             },
             TblgenDef {
                 name: "multiclass1_field2",
-                direct_super_classes: [
-                    "Field",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 101,
+                },
             },
         ],
     ),
@@ -30,20 +54,44 @@ expression: defs
             file: FileId(
                 0,
             ),
-            position: 201,
+            position: 299,
         },
         [
             TblgenDef {
+                name: "anonymous_1",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 121,
+                },
+            },
+            TblgenDef {
+                name: "multiclass2",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 138,
+                },
+            },
+            TblgenDef {
                 name: "multiclass2_field1",
-                direct_super_classes: [
-                    "Field",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 47,
+                },
             },
             TblgenDef {
                 name: "multiclass2_field2",
-                direct_super_classes: [
-                    "Field",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 101,
+                },
             },
         ],
     ),
@@ -52,20 +100,80 @@ expression: defs
             file: FileId(
                 0,
             ),
-            position: 236,
+            position: 334,
         },
         [
             TblgenDef {
+                name: "anonymous_2",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 121,
+                },
+            },
+            TblgenDef {
+                name: "anonymous_3",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 121,
+                },
+            },
+            TblgenDef {
+                name: "multiclass2_2_field1",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 138,
+                },
+            },
+            TblgenDef {
                 name: "multiclass2_2_field1_field1",
-                direct_super_classes: [
-                    "Field",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 47,
+                },
             },
             TblgenDef {
                 name: "multiclass2_2_field1_field2",
-                direct_super_classes: [
-                    "Field",
-                ],
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 101,
+                },
+            },
+            TblgenDef {
+                name: "multiclass2_2_field2",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 138,
+                },
+            },
+            TblgenDef {
+                name: "multiclass2_2_field2_field1",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 47,
+                },
+            },
+            TblgenDef {
+                name: "multiclass2_2_field2_field2",
+                define_loc: FilePosition {
+                    file: FileId(
+                        0,
+                    ),
+                    position: 101,
+                },
             },
         ],
     ),
