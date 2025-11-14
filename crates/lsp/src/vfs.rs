@@ -28,7 +28,7 @@ impl FileSystem for Vfs {
             Some(file_id) => file_id,
             None => {
                 let file_id = self.alloc_file_id();
-                tracing::debug!("assign file id: {path:?} -> {file_id:?}",);
+                tracing::info!("assign file id: {path:?} -> {file_id:?}",);
                 self.file_set.insert(file_id, path);
                 file_id
             }

@@ -226,11 +226,6 @@ fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx, multiclass_id: Multi
     let multiclass_def = Def::new(name, define_loc);
     let def_id = ctx.symbol_map.add_def(multiclass_def, false);
     ctx.add_multiclass_def(tblgen_define_pos, def_id);
-    tracing::debug!(
-        "NEKO registered multiclass def at {:?} {:?}",
-        tblgen_define_pos,
-        def_id
-    );
 
     ctx.scopes.push(ScopeKind::Def(def_id));
     if let Some(record_body) = def.record_body() {
@@ -376,7 +371,6 @@ impl IndexStatement for ast::Defm {
 }
 
 fn index_multiclass_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) {
-    tracing::debug!("NEKO in multiclass");
     let multiclass_defm = Defm::new(EcoString::from("placeholder"), define_loc);
     let defm_id = ctx
         .symbol_map
@@ -403,19 +397,16 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
         defs.extend(ctx.get_tblgen_defs_at(&super_class_pos).iter().cloned());
     }
 
-    tracing::debug!("NEKO defm/global");
     if defs.is_empty() {
         return;
     }
 
     let mut def_ids = Vec::new();
     for def in defs {
-        tracing::debug!("NEKO defm/def {:?}", def);
         let Some(base_def_id) = ctx.get_multiclass_def_at(&def.define_loc) else {
             continue;
         };
         let base_def = ctx.symbol_map.def(base_def_id);
-        tracing::debug!("NEKO defm/base_def {:?}", base_def);
 
         let mut cloned_def = base_def.clone();
         cloned_def.name = def.name;
