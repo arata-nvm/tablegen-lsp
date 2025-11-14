@@ -10,9 +10,6 @@ use crate::{
 
 use super::{IndexExpression, context::IndexCtx, scope::ScopeKind, utils};
 
-// Optionを返すインターフェイスのために、Type::Unknownをデフォルトとする処理を誰が行うかが不明瞭
-// 型が解決できなかった場合にSome(Type::Unknown)を返すが、その呼び出し元でunwrap_or(Type::Unknown)を
-// 呼び出しているかもしれない
 impl IndexExpression for ast::BangOperator {
     type Output = Type;
 
