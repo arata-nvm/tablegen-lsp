@@ -5,22 +5,24 @@ expression: "check(r#\"\nclass Foo;\ndef foo : Foo {\n  int a\n};\n\"#)"
 Some(
     [
         DocumentSymbol {
-            name: "Foo",
-            typ: "class",
-            range: 6..9,
+            name: "class Foo",
+            typ: None,
+            range: 0..11,
             kind: Class,
             children: [],
         },
         DocumentSymbol {
-            name: "foo",
-            typ: "def",
-            range: 15..18,
+            name: "def foo",
+            typ: None,
+            range: 11..36,
             kind: Def,
             children: [
                 DocumentSymbol {
                     name: "a",
-                    typ: "int",
-                    range: 33..34,
+                    typ: Some(
+                        "int",
+                    ),
+                    range: 29..35,
                     kind: Field,
                     children: [],
                 },

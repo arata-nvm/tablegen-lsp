@@ -5,33 +5,26 @@ expression: "check(r#\"\nclass Foo;\ndefset list<Foo> foos = {\n    def foo: Foo
 Some(
     [
         DocumentSymbol {
-            name: "Foo",
-            typ: "class",
-            range: 6..9,
+            name: "class Foo",
+            typ: None,
+            range: 0..11,
             kind: Class,
             children: [],
         },
         DocumentSymbol {
-            name: "foos",
-            typ: "defset",
-            range: 28..32,
+            name: "defset foos",
+            typ: None,
+            range: 11..56,
             kind: Defset,
             children: [
                 DocumentSymbol {
-                    name: "foo",
-                    typ: "def",
-                    range: 45..48,
+                    name: "def foo",
+                    typ: None,
+                    range: 41..55,
                     kind: Def,
                     children: [],
                 },
             ],
-        },
-        DocumentSymbol {
-            name: "foo",
-            typ: "def",
-            range: 45..48,
-            kind: Def,
-            children: [],
         },
     ],
 )

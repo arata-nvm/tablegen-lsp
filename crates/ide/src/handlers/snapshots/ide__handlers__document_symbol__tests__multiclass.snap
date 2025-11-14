@@ -5,19 +5,26 @@ expression: "check(r#\"\nmulticlass Foo {\n    def a;\n}\ndefm foo: Foo;\n\"#)"
 Some(
     [
         DocumentSymbol {
-            name: "Foo",
-            typ: "multiclass",
-            range: 11..14,
+            name: "multiclass Foo",
+            typ: None,
+            range: 0..30,
             kind: Multiclass,
             children: [
                 DocumentSymbol {
-                    name: "placeholder_multiclass_def",
-                    typ: "def",
-                    range: 21..24,
+                    name: "def a",
+                    typ: None,
+                    range: 21..28,
                     kind: Def,
                     children: [],
                 },
             ],
+        },
+        DocumentSymbol {
+            name: "defm foo",
+            typ: None,
+            range: 30..44,
+            kind: Defm,
+            children: [],
         },
     ],
 )

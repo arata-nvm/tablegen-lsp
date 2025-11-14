@@ -88,12 +88,8 @@ impl Analysis {
         diagnostics::exec(&*self.db, source_unit_id)
     }
 
-    pub fn document_symbol(
-        &self,
-        source_unit_id: SourceUnitId,
-        file_id: FileId,
-    ) -> Option<Vec<DocumentSymbol>> {
-        document_symbol::exec(&*self.db, source_unit_id, file_id)
+    pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
+        document_symbol::exec(&*self.db, file_id)
     }
 
     pub fn goto_definition(

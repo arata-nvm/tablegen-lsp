@@ -265,10 +265,9 @@ impl LanguageServer for Server {
         params: DocumentSymbolParams,
     ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
         tracing::info!("document_symbol: {params:?}");
-        let source_unit_id = self.current_source_unit(&params.text_document.uri);
         let task = self.spawn_with_snapshot(params, move |snap, params| {
             let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(symbols) = snap.analysis.document_symbol(source_unit_id, file_id) else {
+            let Some(symbols) = snap.analysis.document_symbol(file_id) else {
                 return Ok(None);
             };
 

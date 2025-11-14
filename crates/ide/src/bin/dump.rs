@@ -61,7 +61,7 @@ pub fn main() {
             }
         }
         "doc-symbol" => {
-            let symbols = analysis.document_symbol(source_unit_id, file_id).unwrap();
+            let symbols = analysis.document_symbol(file_id).unwrap();
             for symbol in symbols {
                 println!("{symbol:?}");
             }

@@ -5,9 +5,9 @@ expression: symbols
 Some(
     [
         DocumentSymbol {
-            name: "Foo",
-            typ: "class",
-            range: 23..26,
+            name: "class Foo",
+            typ: None,
+            range: 17..28,
             kind: Class,
             children: [],
         },

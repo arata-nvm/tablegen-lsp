@@ -97,16 +97,16 @@ pub fn document_symbol(
     };
     lsp_types::DocumentSymbol {
         name: symbol.name.to_string(),
-        detail: Some(symbol.typ.to_string()),
+        detail: symbol.typ.map(|it| it.to_string()),
         kind: match symbol.kind {
             DocumentSymbolKind::Class => lsp_types::SymbolKind::CLASS,
-            DocumentSymbolKind::TemplateArgument => lsp_types::SymbolKind::PROPERTY,
             DocumentSymbolKind::Field => lsp_types::SymbolKind::FIELD,
             DocumentSymbolKind::Def => lsp_types::SymbolKind::VARIABLE,
             DocumentSymbolKind::Variable => lsp_types::SymbolKind::VARIABLE,
             DocumentSymbolKind::Defset => lsp_types::SymbolKind::VARIABLE,
             DocumentSymbolKind::Multiclass => lsp_types::SymbolKind::CLASS,
             DocumentSymbolKind::Defm => lsp_types::SymbolKind::VARIABLE,
+            DocumentSymbolKind::Let => lsp_types::SymbolKind::VARIABLE,
         },
         tags: None,
         deprecated: None,

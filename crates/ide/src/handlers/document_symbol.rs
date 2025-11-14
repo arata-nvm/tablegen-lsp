@@ -1,142 +1,239 @@
-use ecow::EcoString;
+use ecow::{EcoString, eco_format};
+use syntax::ast::{self, AstNode};
 use syntax::parser::TextRange;
 
-use crate::file_system::{FileId, SourceUnitId};
-use crate::index::IndexDatabase;
-use crate::symbol_map::SymbolMap;
-use crate::symbol_map::symbol::Symbol;
-use crate::symbol_map::variable::VariableKind;
+use crate::db::SourceDatabase;
+use crate::file_system::FileId;
 
-pub fn exec(
-    db: &dyn IndexDatabase,
-    source_unit_id: SourceUnitId,
-    file_id: FileId,
-) -> Option<Vec<DocumentSymbol>> {
-    let index = db.index(source_unit_id);
-    let symbol_map = index.symbol_map();
-
-    let Some(iter) = symbol_map.iter_symbols_in_file(file_id) else {
-        tracing::info!("no symbols found in file: {file_id:?}");
-        return Some(vec![]);
-    };
+pub fn exec(db: &dyn SourceDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
+    let parse = db.parse(file_id);
+    let source_file = ast::SourceFile::cast(parse.syntax_node())?;
+    let statement_list = source_file.statement_list()?;
 
     let mut symbols = Vec::new();
-    for symbol_id in iter {
-        let symbol = symbol_map.symbol(symbol_id);
-        if let Some(document_symbol) = symbol_to_document_symbol(symbol_map, symbol) {
+    for statement in statement_list.statements() {
+        if let Some(document_symbol) = statement_to_document_symbol(&statement) {
             symbols.push(document_symbol);
         }
     }
     Some(symbols)
 }
 
-fn symbol_to_document_symbol(symbol_map: &SymbolMap, symbol: Symbol) -> Option<DocumentSymbol> {
-    match symbol {
-        Symbol::Class(class) => {
-            let template_argument_list = class
-                .iter_template_arg()
-                .map(|id| symbol_map.template_arg(id))
-                .map(|arg| DocumentSymbol {
-                    name: arg.name.clone(),
-                    typ: arg.typ.to_string().into(),
-                    range: arg.define_loc.range,
-                    kind: DocumentSymbolKind::TemplateArgument,
-                    children: Vec::new(),
-                });
+fn statement_to_document_symbol(statement: &ast::Statement) -> Option<DocumentSymbol> {
+    match statement {
+        ast::Statement::Class(class) => {
+            let name = class.name()?.value()?;
+            let range = class.syntax().text_range();
 
-            let field_list = class
-                .iter_field()
-                .map(|id| symbol_map.record_field(id))
-                .map(|field| DocumentSymbol {
-                    name: field.name.clone(),
-                    typ: field.typ.to_string().into(),
-                    range: field.define_loc.range,
-                    kind: DocumentSymbolKind::Field,
-                    children: Vec::new(),
-                });
+            let mut children = Vec::new();
+            if let Some(body) = class.record_body().and_then(|it| it.body()) {
+                for item in body.items() {
+                    if let Some(child_symbol) = body_item_to_document_symbol(&item) {
+                        children.push(child_symbol);
+                    }
+                }
+            }
 
             Some(DocumentSymbol {
-                name: class.name.clone(),
-                typ: "class".into(),
-                range: class.define_loc.range,
+                name: eco_format!("class {}", name),
+                typ: None,
+                range,
                 kind: DocumentSymbolKind::Class,
-                children: template_argument_list.chain(field_list).collect(),
+                children,
             })
         }
-        Symbol::Def(def) => {
-            let field_list = def
-                .iter_field()
-                .map(|id| symbol_map.record_field(id))
-                .map(|field| DocumentSymbol {
-                    name: field.name.clone(),
-                    typ: field.typ.to_string().into(),
-                    range: field.define_loc.range,
-                    kind: DocumentSymbolKind::Field,
-                    children: Vec::new(),
-                });
+        ast::Statement::Def(def) => {
+            let name = node_to_string(def.name()?);
+            let range = def.syntax().text_range();
+
+            let mut children = Vec::new();
+            if let Some(body) = def.record_body().and_then(|it| it.body()) {
+                for item in body.items() {
+                    if let Some(child_symbol) = body_item_to_document_symbol(&item) {
+                        children.push(child_symbol);
+                    }
+                }
+            }
 
             Some(DocumentSymbol {
-                name: def.name.clone(),
-                typ: "def".into(),
-                range: def.define_loc.range,
+                name: eco_format!("def {name}"),
+                typ: None,
+                range,
                 kind: DocumentSymbolKind::Def,
-                children: field_list.collect(),
+                children,
             })
         }
-        Symbol::Defset(defset) => {
-            let def_list = defset
-                .def_list
-                .iter()
-                .map(|id| symbol_map.symbol((*id).into()))
-                .filter_map(|symbol| symbol_to_document_symbol(symbol_map, symbol));
+        ast::Statement::Defset(defset) => {
+            let name = node_to_string(defset.name()?);
+            let range = defset.syntax().text_range();
+
+            let mut children = Vec::new();
+
+            if let Some(statement_list) = defset.statement_list() {
+                for stmt in statement_list.statements() {
+                    if let Some(child_symbol) = statement_to_document_symbol(&stmt) {
+                        children.push(child_symbol);
+                    }
+                }
+            }
 
             Some(DocumentSymbol {
-                name: defset.name.clone(),
-                typ: "defset".into(),
-                range: defset.define_loc.range,
+                name: eco_format!("defset {name}"),
+                typ: None,
+                range,
                 kind: DocumentSymbolKind::Defset,
-                children: def_list.collect(),
+                children,
             })
         }
-        Symbol::Multiclass(multiclass) => {
-            let def_list = multiclass
-                .def_list
-                .iter()
-                .map(|id| symbol_map.symbol((*id).into()))
-                .filter_map(|symbol| symbol_to_document_symbol(symbol_map, symbol));
+        ast::Statement::MultiClass(multiclass) => {
+            let name = multiclass.name()?.value()?;
+            let range = multiclass.syntax().text_range();
+
+            let mut children = Vec::new();
+
+            if let Some(statement_list) = multiclass.statement_list() {
+                for stmt in statement_list.statements() {
+                    if let Some(child_symbol) = statement_to_document_symbol(&stmt) {
+                        children.push(child_symbol);
+                    }
+                }
+            }
 
             Some(DocumentSymbol {
-                name: multiclass.name.clone(),
-                typ: "multiclass".into(),
-                range: multiclass.define_loc.range,
+                name: eco_format!("multiclass {}", name),
+                typ: None,
+                range,
                 kind: DocumentSymbolKind::Multiclass,
-                children: def_list.collect(),
+                children,
             })
         }
-        Symbol::Defm(defm) => Some(DocumentSymbol {
-            name: defm.name.clone(),
-            typ: "defm".into(),
-            range: defm.define_loc.range,
-            kind: DocumentSymbolKind::Defm,
-            children: vec![],
-        }),
-        Symbol::Variable(variable) if variable.kind == VariableKind::Defvar => {
+        ast::Statement::Defm(defm) => {
+            let name = node_to_string(defm.name()?);
+            let range = defm.syntax().text_range();
+
             Some(DocumentSymbol {
-                name: variable.name.clone(),
-                typ: "defvar".into(),
-                range: variable.define_loc.range,
+                name: eco_format!("defm {name}"),
+                typ: None,
+                range,
+                kind: DocumentSymbolKind::Defm,
+                children: vec![],
+            })
+        }
+        ast::Statement::Defvar(defvar) => {
+            let name = defvar.name()?.value()?;
+            let range = defvar.syntax().text_range();
+
+            Some(DocumentSymbol {
+                name: eco_format!("defvar {name}"),
+                typ: None,
+                range,
                 kind: DocumentSymbolKind::Variable,
                 children: vec![],
+            })
+        }
+        ast::Statement::Let(let_stmt) => {
+            let let_list = let_stmt.let_list()?.syntax().text();
+            let range = let_stmt.syntax().text_range();
+
+            let mut children = Vec::new();
+
+            if let Some(statement_list) = let_stmt.statement_list() {
+                for stmt in statement_list.statements() {
+                    if let Some(child_symbol) = statement_to_document_symbol(&stmt) {
+                        children.push(child_symbol);
+                    }
+                }
+            }
+
+            Some(DocumentSymbol {
+                name: eco_format!("let {}", let_list),
+                typ: None,
+                range,
+                kind: DocumentSymbolKind::Let,
+                children,
             })
         }
         _ => None,
     }
 }
 
+fn body_item_to_document_symbol(item: &ast::BodyItem) -> Option<DocumentSymbol> {
+    match item {
+        ast::BodyItem::FieldDef(field) => {
+            let name = field.name()?.value()?;
+            let typ = field.r#type()?;
+            Some(DocumentSymbol {
+                name: name,
+                typ: Some(type_to_string(&typ)),
+                range: field.syntax().text_range(),
+                kind: DocumentSymbolKind::Field,
+                children: Vec::new(),
+            })
+        }
+        ast::BodyItem::FieldLet(field) => {
+            let name = field.name()?.value()?;
+            Some(DocumentSymbol {
+                name,
+                typ: None,
+                range: field.syntax().text_range(),
+                kind: DocumentSymbolKind::Field,
+                children: Vec::new(),
+            })
+        }
+        ast::BodyItem::Defvar(defvar) => {
+            let name = defvar.name()?.value()?;
+            Some(DocumentSymbol {
+                name: eco_format!("defvar {name}"),
+                typ: None,
+                range: defvar.syntax().text_range(),
+                kind: DocumentSymbolKind::Variable,
+                children: Vec::new(),
+            })
+        }
+        _ => None,
+    }
+}
+
+fn type_to_string(typ: &ast::Type) -> EcoString {
+    match typ {
+        ast::Type::BitType(_) => "bit".into(),
+        ast::Type::IntType(_) => "int".into(),
+        ast::Type::StringType(_) => "string".into(),
+        ast::Type::DagType(_) => "dag".into(),
+        ast::Type::CodeType(_) => "code".into(),
+        ast::Type::BitsType(bits) => {
+            if let Some(length) = bits.length() {
+                if let Some(value) = length.value() {
+                    return format!("bits<{}>", value).into();
+                }
+            }
+            "bits".into()
+        }
+        ast::Type::ListType(list) => {
+            if let Some(inner) = list.inner_type() {
+                return format!("list<{}>", type_to_string(&inner)).into();
+            }
+            "list".into()
+        }
+        ast::Type::ClassId(class_id) => {
+            if let Some(name) = class_id.name() {
+                if let Some(name_str) = name.value() {
+                    return name_str;
+                }
+            }
+            "?".into()
+        }
+    }
+}
+
+fn node_to_string(node: impl ast::AstNode) -> EcoString {
+    node.syntax().text().to_string().trim().into()
+}
+
 #[derive(Debug)]
 pub struct DocumentSymbol {
     pub name: EcoString,
-    pub typ: EcoString,
+    pub typ: Option<EcoString>,
     pub range: TextRange,
     pub kind: DocumentSymbolKind,
     pub children: Vec<DocumentSymbol>,
@@ -145,13 +242,13 @@ pub struct DocumentSymbol {
 #[derive(Debug)]
 pub enum DocumentSymbolKind {
     Class,
-    TemplateArgument,
     Field,
     Def,
     Variable,
     Defset,
     Multiclass,
     Defm,
+    Let,
 }
 
 #[cfg(test)]
@@ -162,7 +259,7 @@ mod tests {
 
     fn check(s: &str) -> Option<Vec<DocumentSymbol>> {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.source_unit_id(), f.root_file())
+        super::exec(&db, f.root_file())
     }
 
     #[test]
@@ -190,7 +287,7 @@ class Foo;
 class Bar;
             "#,
         );
-        let symbols = super::exec(&db, f.source_unit_id(), f.root_file());
+        let symbols = super::exec(&db, f.root_file());
         insta::assert_debug_snapshot!(symbols);
     }
 

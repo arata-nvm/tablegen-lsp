@@ -5,9 +5,9 @@ expression: "check(r#\"\ndefvar foo = 1;\n\"#)"
 Some(
     [
         DocumentSymbol {
-            name: "foo",
-            typ: "defvar",
-            range: 7..10,
+            name: "defvar foo",
+            typ: None,
+            range: 0..15,
             kind: Variable,
             children: [],
         },
