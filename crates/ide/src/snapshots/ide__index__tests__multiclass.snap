@@ -8,11 +8,34 @@ class BaseReg<> : {
 class Instruction<int opc, > : {
   int opcode;
 }
-multiclass SimpleMulticlass
-multiclass TemplatedMulticlass
-multiclass AnonymousMulticlass
-multiclass ParentMulticlass
-multiclass ChildMulticlass
-multiclass OuterMulticlass
-multiclass MulticlassWithDefvar
+multiclass SimpleMulticlass {
+def placeholder : BaseReg, {
+}
+def placeholder : BaseReg, {
+}
+multiclass TemplatedMulticlass {
+def placeholder : Instruction, {
+  string Name;
+}
+def placeholder : Instruction, {
+  string Name;
+}
+multiclass AnonymousMulticlass {
+def placeholder : BaseReg, {
+}
+def placeholder : BaseReg, {
+}
+def placeholder : BaseReg, {
+}
+multiclass ParentMulticlass {
+def placeholder : BaseReg, {
+}
+multiclass ChildMulticlass {
+def placeholder : BaseReg, {
+}
+multiclass OuterMulticlass {
+defm placeholder : ;
+multiclass MulticlassWithDefvar {
+def placeholder : Instruction, {
+}
 variable int doubled

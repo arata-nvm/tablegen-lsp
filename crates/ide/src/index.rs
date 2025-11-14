@@ -201,15 +201,15 @@ impl IndexStatement for ast::Class {
 // TODO: check if def is already defined
 impl IndexStatement for ast::Def {
     fn index_statement(&self, ctx: &mut IndexCtx) {
-        if let Some(_) = ctx.scopes.current_multiclass_id() {
-            index_multiclass_def(self, ctx);
+        if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
+            index_multiclass_def(self, ctx, multiclass_id);
         } else {
             index_global_def(self, ctx);
         }
     }
 }
 
-fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx) {
+fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx, multiclass_id: MulticlassId) {
     let Some(def_name_type) = determine_def_type(def) else {
         return;
     };
@@ -237,6 +237,9 @@ fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx) {
         record_body.index_statement(ctx);
     }
     ctx.scopes.pop();
+
+    let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
+    multiclass.add_def(def_id);
 }
 
 fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
@@ -357,15 +360,20 @@ impl IndexStatement for ast::Defm {
             .text_range();
         let define_loc = FileRange::new(ctx.current_file_id(), defm_kw_loc);
 
-        if ctx.scopes.current_multiclass_id().is_some() {
-            index_multiclass_defm(self, ctx, define_loc);
+        if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
+            index_multiclass_defm(self, ctx, define_loc, multiclass_id);
         } else {
             index_global_defm(self, ctx, define_loc);
         }
     }
 }
 
-fn index_multiclass_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) {
+fn index_multiclass_defm(
+    defm: &ast::Defm,
+    ctx: &mut IndexCtx,
+    define_loc: FileRange,
+    multiclass_id: MulticlassId,
+) {
     // FIXME: DefmIdが必要なため一時的にプレースホルダーを作成しているが、後に参照されてしまう可能性がある
     let multiclass_defm = Defm::new(EcoString::from(PLACEHOLDER_DEF_NAME), define_loc);
     let defm_id = ctx.symbol_map.add_temporary_defm(multiclass_defm);
@@ -375,6 +383,9 @@ fn index_multiclass_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileR
         parent_class_list.index_statement(ctx);
     }
     ctx.scopes.pop();
+
+    let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
+    multiclass.add_defm(defm_id);
 }
 
 fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) {
@@ -1218,7 +1229,7 @@ mod tests {
             })
             .cloned()
             .collect::<Vec<_>>();
-        lsp_diags.sort_by_key(|d| d.location.range.start());
+        lsp_diags.sort_by_key(|d| (d.location.range.start(), d.message.clone()));
 
         let mut tblgen_diags = diags
             .iter()
@@ -1228,7 +1239,7 @@ mod tests {
             })
             .cloned()
             .collect::<Vec<_>>();
-        tblgen_diags.sort_by_key(|d| (d.line, d.column));
+        tblgen_diags.sort_by_key(|d| (d.line, d.column, d.message.clone()));
 
         lsp_diags
             .into_iter()

@@ -8,11 +8,31 @@ class BaseReg<> : {
 class Instruction<int opc, > : {
   int opcode;
 }
-multiclass SimpleMulticlass
-multiclass TemplatedMulticlass
-multiclass AnonymousMulticlass
-multiclass ParentMulticlass
-multiclass ChildMulticlass
+multiclass SimpleMulticlass {
+def placeholder : BaseReg, {
+}
+def placeholder : BaseReg, {
+}
+multiclass TemplatedMulticlass {
+def placeholder : Instruction, {
+  string Name;
+}
+def placeholder : Instruction, {
+  string Name;
+}
+multiclass AnonymousMulticlass {
+def placeholder : BaseReg, {
+}
+def placeholder : BaseReg, {
+}
+def placeholder : BaseReg, {
+}
+multiclass ParentMulticlass {
+def placeholder : BaseReg, {
+}
+multiclass ChildMulticlass {
+def placeholder : BaseReg, {
+}
 def inst1_variant1 : BaseReg, {
 }
 def inst1_variant2 : BaseReg, {
@@ -23,12 +43,15 @@ def inst2_ri : Instruction, {
 def inst2_rr : Instruction, {
   string Name;
 }
-multiclass OuterMulticlass
+multiclass OuterMulticlass {
+defm placeholder : ;
 def outer_inst_inner_variant1 : BaseReg, {
 }
 def outer_inst_inner_variant2 : BaseReg, {
 }
-multiclass MulticlassWithDefvar
+multiclass MulticlassWithDefvar {
+def placeholder : Instruction, {
+}
 variable int doubled
 def computed_value : Instruction, {
 }

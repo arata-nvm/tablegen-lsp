@@ -51,7 +51,33 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
                     writeln!(output, "}}").unwrap();
                 }
                 Symbol::Multiclass(multiclass) => {
-                    writeln!(output, "multiclass {}", multiclass.name).unwrap();
+                    writeln!(output, "multiclass {} {{", multiclass.name).unwrap();
+                    for def_id in &multiclass.def_list {
+                        let def = symbol_map.def(*def_id);
+                        write!(output, "def {} : ", def.name).unwrap();
+                        for parent_id in &def.parent_list {
+                            let parent = symbol_map.class(*parent_id);
+                            write!(output, "{}, ", parent.name).unwrap();
+                        }
+                        writeln!(output, "{{").unwrap();
+
+                        for field_id in def.iter_field() {
+                            let field = symbol_map.record_field(field_id);
+                            writeln!(output, "  {} {};", field.typ, field.name).unwrap();
+                        }
+
+                        writeln!(output, "}}").unwrap();
+                    }
+
+                    for defm_id in &multiclass.defm_list {
+                        let defm = symbol_map.defm(*defm_id);
+                        write!(output, "defm {} : ", defm.name).unwrap();
+                        for parent_id in &defm.parent_list {
+                            let parent = symbol_map.multiclass(*parent_id);
+                            write!(output, "{}, ", parent.name).unwrap();
+                        }
+                        writeln!(output, ";").unwrap();
+                    }
                 }
                 Symbol::Defset(defset) => {
                     writeln!(output, "defset {} {}", defset.typ, defset.name).unwrap();

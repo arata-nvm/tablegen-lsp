@@ -97,7 +97,10 @@ def shadow_test2 : BaseClass, {
 }
 variable int condition
 variable int conditional_value
-multiclass MulticlassWithVar
+multiclass MulticlassWithVar {
+def placeholder : BaseClass, {
+  int value;
+}
 variable int offset
 def var_multiclass_inst : BaseClass, {
   int value;
