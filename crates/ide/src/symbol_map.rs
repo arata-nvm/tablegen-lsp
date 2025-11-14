@@ -291,7 +291,7 @@ impl SymbolMap {
         id
     }
 
-    pub fn add_anonymous_def(&mut self, def: Def) -> DefId {
+    pub fn add_temporary_def(&mut self, def: Def) -> DefId {
         self.def_list.alloc(def)
     }
 
@@ -341,7 +341,7 @@ impl SymbolMap {
         id
     }
 
-    pub fn add_anonymous_defm(&mut self, defm: Defm) -> DefmId {
+    pub fn add_temporary_defm(&mut self, defm: Defm) -> DefmId {
         self.defm_list.alloc(defm)
     }
 

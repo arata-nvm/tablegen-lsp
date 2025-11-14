@@ -71,6 +71,8 @@ fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Arc<Index> {
     Arc::new(ctx.finish())
 }
 
+const PLACEHOLDER_DEF_NAME: &str = "placeholder";
+
 pub trait IndexStatement {
     fn index_statement(&self, ctx: &mut IndexCtx);
 }
@@ -223,10 +225,10 @@ fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx) {
     };
     let tblgen_define_pos = FilePosition::new(ctx.current_file_id(), tblgen_define_loc.start());
 
-    let name = EcoString::from("placeholder_multiclass_def");
+    // FIME: DefIdが必要なため一時的にプレースホルダーを作成しているが、後に参照されてしまう可能性がある
     let define_loc = FileRange::new(ctx.current_file_id(), def_kw_loc);
-    let multiclass_def = Def::new(name, define_loc);
-    let def_id = ctx.symbol_map.add_def(multiclass_def, false);
+    let multiclass_def = Def::new(EcoString::from(PLACEHOLDER_DEF_NAME), define_loc);
+    let def_id = ctx.symbol_map.add_temporary_def(multiclass_def);
     ctx.add_multiclass_def(tblgen_define_pos, def_id);
 
     ctx.scopes.push(ScopeKind::Def(def_id));
@@ -363,10 +365,9 @@ impl IndexStatement for ast::Defm {
 }
 
 fn index_multiclass_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) {
-    let multiclass_defm = Defm::new(EcoString::from("placeholder"), define_loc);
-    let defm_id = ctx
-        .symbol_map
-        .add_defm(multiclass_defm, defm.name().is_some());
+    // FIXME: DefmIdが必要なため一時的にプレースホルダーを作成しているが、後に参照されてしまう可能性がある
+    let multiclass_defm = Defm::new(EcoString::from(PLACEHOLDER_DEF_NAME), define_loc);
+    let defm_id = ctx.symbol_map.add_temporary_defm(multiclass_defm);
 
     ctx.scopes.push(ScopeKind::Defm(defm_id));
     if let Some(parent_class_list) = defm.parent_class_list() {
