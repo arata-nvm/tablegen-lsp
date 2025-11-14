@@ -1,0 +1,122 @@
+---
+source: crates/ide/src/index.rs
+expression: dump_symbol_map(index.symbol_map())
+---
+class BaseClass<> : {
+  int value;
+}
+variable int simple_var
+variable string string_var
+variable list<int> list_var
+def my_def : BaseClass, {
+  int value;
+}
+variable my_def record_var
+variable int i
+def range_def0 : BaseClass, {
+  int value;
+}
+def range_def1 : BaseClass, {
+  int value;
+}
+def range_def2 : BaseClass, {
+  int value;
+}
+def range_def3 : BaseClass, {
+  int value;
+}
+def range_def4 : BaseClass, {
+  int value;
+}
+variable int item
+variable int local_var
+def list_def10 : BaseClass, {
+  int value;
+}
+def list_def20 : BaseClass, {
+  int value;
+}
+def list_def30 : BaseClass, {
+  int value;
+}
+variable int x
+variable int y
+def nested_def1_1 : BaseClass, {
+  int value;
+}
+def nested_def1_2 : BaseClass, {
+  int value;
+}
+def nested_def1_3 : BaseClass, {
+  int value;
+}
+def nested_def2_1 : BaseClass, {
+  int value;
+}
+def nested_def2_2 : BaseClass, {
+  int value;
+}
+def nested_def2_3 : BaseClass, {
+  int value;
+}
+def nested_def3_1 : BaseClass, {
+  int value;
+}
+def nested_def3_2 : BaseClass, {
+  int value;
+}
+def nested_def3_3 : BaseClass, {
+  int value;
+}
+variable int outer_var
+variable int i
+variable int inner_var
+def scope_test1 : BaseClass, {
+  int value;
+}
+def scope_test2 : BaseClass, {
+  int value;
+}
+class TemplateClass<int x, > : {
+  int param;
+}
+variable int computed_value
+def template_with_var : TemplateClass, {
+}
+variable string concat_result
+variable int add_result
+variable list<int> list_concat
+variable int shadowed
+variable int i
+variable int shadowed
+def shadow_test1 : BaseClass, {
+  int value;
+}
+def shadow_test2 : BaseClass, {
+  int value;
+}
+variable int condition
+variable int conditional_value
+multiclass MulticlassWithVar
+variable int offset
+def var_multiclass_inst : BaseClass, {
+  int value;
+}
+defset list<BaseClass> foreach_set
+variable int i
+def set_item1 : BaseClass, {
+  int value;
+}
+def set_item2 : BaseClass, {
+  int value;
+}
+def set_item3 : BaseClass, {
+  int value;
+}
+variable list<bit> filter_list
+variable bit x
+variable int foldl_list
+variable int acc
+variable int var
+variable list<int> foreach_list
+variable int x

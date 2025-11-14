@@ -1,0 +1,46 @@
+---
+source: crates/ide/src/index.rs
+expression: dump_symbol_map(index.symbol_map())
+---
+class BaseClass<> : {
+  int value;
+}
+class TemplatedClass<int x, > : {
+  int param;
+}
+def simple_def : {
+}
+def def_with_parent : BaseClass, {
+}
+def def_with_fields : BaseClass, {
+  string name;
+  bit flag;
+}
+def def_with_override : BaseClass, {
+  int value;
+}
+class Mixin1<> : {
+}
+class Mixin2<> : {
+}
+def multi_parent : Mixin1, Mixin2, {
+}
+def templated_def : TemplatedClass, {
+}
+variable int i
+def loop_def1 : BaseClass, {
+  int value;
+}
+def loop_def2 : BaseClass, {
+  int value;
+}
+def loop_def3 : BaseClass, {
+  int value;
+}
+defset list<BaseClass> my_set
+def set_member1 : BaseClass, {
+}
+def set_member2 : BaseClass, {
+}
+def PREFIX_MIDDLE_SUFFIX : BaseClass, {
+}

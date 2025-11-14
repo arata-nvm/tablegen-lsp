@@ -1,0 +1,60 @@
+---
+source: crates/ide/src/index.rs
+expression: dump_symbol_map(index.symbol_map())
+---
+def undefined_class_ref : {
+}
+class HasField<> : {
+  int existing_field;
+}
+def bad_field_let : HasField, {
+}
+class TypeMismatch<> : {
+  int int_field;
+  string string_field;
+  list<int> int_list;
+}
+class DuplicateTest<> : {
+}
+class DuplicateTest<> : {
+}
+def duplicate_def : {
+}
+def duplicate_def : {
+}
+class CyclicA<> : {
+}
+class CyclicB<> : CyclicC, {
+}
+class CyclicC<> : CyclicB, {
+}
+class CyclicC<> : CyclicB, {
+}
+class RequiresArgs<int x, string y, > : {
+  int value;
+  string name;
+}
+def missing_args : RequiresArgs, {
+}
+def partial_args : RequiresArgs, {
+}
+def too_many_args : RequiresArgs, {
+}
+class Base<> : {
+}
+class Derived<> : Base, {
+}
+class Unrelated<> : {
+}
+class FieldIncompat<> : {
+  Derived derived_field1;
+  Derived derived_field2;
+}
+class InvalidBits<> : {
+}
+class NamedArgs<int x, int y, > : {
+}
+def dup_named : NamedArgs, {
+}
+def unknown_named : NamedArgs, {
+}

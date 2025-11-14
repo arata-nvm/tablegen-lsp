@@ -8,6 +8,7 @@ use crate::{
         self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem, SourceUnitId,
     },
     index::IndexDatabaseStorage,
+    interop,
 };
 
 const DEFAULT_FILE_PATH: &str = "/main.td";
@@ -28,6 +29,12 @@ pub fn multiple_files(fixture: &str) -> (TestDatabase, Fixture) {
 pub fn load_single_file(path: &str) -> (TestDatabase, Fixture) {
     let mut f = Fixture::load_single_file(path);
     let db = TestDatabase::new(&mut f);
+    (db, f)
+}
+
+pub fn load_single_file_with_tblgen(path: &str) -> (TestDatabase, Fixture) {
+    let mut f = Fixture::load_single_file(path);
+    let db = TestDatabase::new_with_tblgen(&mut f);
     (db, f)
 }
 
@@ -52,6 +59,19 @@ impl TestDatabase {
         db.set_tblgen_diagnostics(id, None);
         db.set_tblgen_symbol_table(id, None);
 
+        db
+    }
+
+    fn new_with_tblgen(f: &mut Fixture) -> Self {
+        let mut db = Self::new(f);
+        let root_file_id = f.root_file();
+        let root_file_path = f.path_for_file(&root_file_id);
+
+        let result = interop::parse_source_unit_with_tblgen(root_file_path, &[], f)
+            .expect("failed to parse source unit with tblgen");
+        let source_unit_id = SourceUnitId::from_root_file(root_file_id);
+        db.set_tblgen_diagnostics(source_unit_id, Some(Arc::new(result.diagnostics)));
+        db.set_tblgen_symbol_table(source_unit_id, Some(Arc::new(result.symbol_table)));
         db
     }
 }

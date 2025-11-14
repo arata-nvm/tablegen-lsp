@@ -1,0 +1,34 @@
+---
+source: crates/ide/src/index.rs
+expression: dump_symbol_map(index.symbol_map())
+---
+class BaseReg<> : {
+  int id;
+}
+class Instruction<int opc, > : {
+  int opcode;
+}
+multiclass SimpleMulticlass
+multiclass TemplatedMulticlass
+multiclass AnonymousMulticlass
+multiclass ParentMulticlass
+multiclass ChildMulticlass
+def inst1_variant1 : BaseReg, {
+}
+def inst1_variant2 : BaseReg, {
+}
+def inst2_ri : Instruction, {
+  string Name;
+}
+def inst2_rr : Instruction, {
+  string Name;
+}
+multiclass OuterMulticlass
+def outer_inst_inner_variant1 : BaseReg, {
+}
+def outer_inst_inner_variant2 : BaseReg, {
+}
+multiclass MulticlassWithDefvar
+variable int doubled
+def computed_value : Instruction, {
+}

@@ -1,0 +1,204 @@
+---
+source: crates/ide/src/index.rs
+expression: index.diagnostics()
+---
+[
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 92..106,
+            },
+            message: "class not found: UndefinedClass",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 194..212,
+            },
+            message: "symbol not found: undefined_variable",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 348..366,
+            },
+            message: "cannot access field: nonexistent_field",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 402..429,
+            },
+            message: "field 'nonexistent_field' not found in record",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 505..517,
+            },
+            message: "field 'int_field' of type 'int' is incompatible with type 'string'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 543..544,
+            },
+            message: "field 'string_field' of type 'string' is incompatible with type 'int'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 569..589,
+            },
+            message: "field 'int_list' of type 'list<int>' is incompatible with type 'list<string>'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 894..901,
+            },
+            message: "Class 'CyclicA' has cyclic inheritance",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1182..1194,
+            },
+            message: "value not specified for template argument 'y'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1182..1194,
+            },
+            message: "value not specified for template argument 'x'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1237..1253,
+            },
+            message: "value not specified for template argument 'y'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1298..1319,
+            },
+            message: "too many arguments: 3",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1497..1503,
+            },
+            message: "field 'derived_field1' of type 'Derived' is incompatible with type 'Base'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1532..1543,
+            },
+            message: "field 'derived_field2' of type 'Derived' is incompatible with type 'Unrelated'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1826..1829,
+            },
+            message: "the name of named argument should be a valid identifier",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1831..1834,
+            },
+            message: "the name of named argument should be a valid identifier",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1932..1935,
+            },
+            message: "the name of named argument should be a valid identifier",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1922..1936,
+            },
+            message: "value not specified for template argument 'y'",
+        },
+    ),
+]

@@ -1,0 +1,72 @@
+---
+source: crates/ide/src/index.rs
+expression: dump_symbol_map(index.symbol_map())
+---
+class BasicTypes<> : {
+  bit bit_field;
+  int int_field;
+  string string_field;
+  code code_field;
+  dag dag_field;
+}
+class BitsTypes<> : {
+  bits<8> byte_field;
+  bits<16> word_field;
+  bits<32> dword_field;
+}
+class ListTypes<> : {
+  list<int> int_list;
+  list<string> string_list;
+  list<bit> bit_list;
+}
+class NestedListTypes<> : {
+  list<list<int>> matrix;
+}
+class RecordType<> : {
+}
+class HasRecordType<> : {
+  RecordType record_field;
+}
+class TypedTemplate<int i, string s, bit b, > : {
+  int int_param;
+  string string_param;
+  bit bit_param;
+}
+def correct_types : TypedTemplate, {
+}
+class FieldTypeCompat<> : {
+  int int_field;
+  string string_field;
+  bit bit_field;
+}
+def field_compat_test : FieldTypeCompat, {
+  int int_field;
+  string string_field;
+  bit bit_field;
+}
+class ListElementTypes<> : {
+  list<int> numbers;
+  list<string> strings;
+}
+class BitsOps<> : {
+  bits<8> value;
+  bit single_bit;
+  bits<4> nibble;
+}
+class Base<> : {
+}
+class Derived<> : Base, {
+}
+class TypeCasting<> : {
+  Base base_field;
+}
+def derived_instance : Derived, {
+}
+def cast_test : TypeCasting, {
+  Base base_field;
+}
+class ListTemplate<list<int> values, > : {
+  list<int> data;
+}
+def list_template_inst : ListTemplate, {
+}

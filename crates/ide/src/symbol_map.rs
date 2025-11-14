@@ -254,6 +254,10 @@ impl SymbolMap {
             .and_then(|map| map.values_overlap(pos.position).next().cloned())?;
         Some(self.symbol(id))
     }
+
+    pub fn iter_file(&self) -> impl Iterator<Item = FileId> + '_ {
+        self.file_to_symbol_list.keys().copied()
+    }
 }
 
 // mutable api
