@@ -337,12 +337,8 @@ fn determine_def_type(def: &ast::Def) -> Option<DefNameType> {
     let Some(name_value) = def.name() else {
         return Some(DefNameType::Anonymous);
     };
-    let Some(inner_value) = name_value.inner_values().next() else {
-        return None;
-    };
-    let Some(simple_value) = inner_value.simple_value() else {
-        return None;
-    };
+    let inner_value = name_value.inner_values().next()?;
+    let simple_value = inner_value.simple_value()?;
     match simple_value {
         ast::SimpleValue::Identifier(ident) => {
             if name_value.inner_values().count() > 1 {

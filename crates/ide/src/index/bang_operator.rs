@@ -152,7 +152,7 @@ impl IndexExpression for ast::BangOperator {
                 let variable =
                     Variable::new(var_name, var_typ, VariableKind::XForeach, var_define_loc);
                 ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
-                predicate.index_expression(ctx);
+                let _ = predicate.index_expression(ctx);
                 ctx.scopes.pop();
 
                 Some(list_typ)
@@ -226,7 +226,7 @@ impl IndexExpression for ast::BangOperator {
                 let variable_var =
                     Variable::new(var_name, list_elm_typ, VariableKind::XFoldl, var_define_loc);
                 ctx.scopes.add_variable(&mut ctx.symbol_map, variable_var);
-                expr.index_expression(ctx);
+                let _ = expr.index_expression(ctx);
                 ctx.scopes.pop();
 
                 Some(init_typ)

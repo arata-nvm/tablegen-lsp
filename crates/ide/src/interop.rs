@@ -74,7 +74,7 @@ pub struct TblgenDef {
 
 impl TblgenSymbolTable {
     pub fn with_record_keeper(record_keeper: &RecordKeeper, fs: &impl FileSystem) -> Self {
-        fn convert_tblgen_pos<'a>(
+        fn convert_tblgen_pos(
             pos: LocPosition,
             record: Record,
             record_keeper: &RecordKeeper,
