@@ -198,15 +198,15 @@ impl IndexStatement for ast::Class {
 // TODO: check if def is already defined
 impl IndexStatement for ast::Def {
     fn index_statement(&self, ctx: &mut IndexCtx) {
-        if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
-            index_multiclass_def(self, ctx, multiclass_id);
+        if let Some(_) = ctx.scopes.current_multiclass_id() {
+            index_multiclass_def(self, ctx);
         } else {
             index_global_def(self, ctx);
         }
     }
 }
 
-fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx, multiclass_id: MulticlassId) {
+fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx) {
     let Some(def_name_type) = determine_def_type(def) else {
         return;
     };
@@ -234,9 +234,6 @@ fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx, multiclass_id: Multi
         record_body.index_statement(ctx);
     }
     ctx.scopes.pop();
-
-    let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
-    multiclass.add_def(def_id);
 }
 
 fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
@@ -273,9 +270,6 @@ fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
     if let Some(defset_id) = ctx.scopes.current_defset_id() {
         let defset = ctx.symbol_map.defset_mut(defset_id);
         defset.add_defs(def_ids);
-    } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
-        let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
-        multiclass.add_defs(def_ids);
     }
 }
 
