@@ -77,11 +77,13 @@ pub trait IndexStatement {
 
 pub trait IndexExpression {
     type Output;
+    #[must_use]
     fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output>;
 }
 
 trait IndexValue {
     type Output;
+    #[must_use]
     fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output>;
 }
 
@@ -155,10 +157,10 @@ impl IndexStatement for ast::Include {
 impl IndexStatement for ast::Assert {
     fn index_statement(&self, ctx: &mut IndexCtx) {
         if let Some(message) = self.message() {
-            message.index_expression(ctx);
+            let _ = message.index_expression(ctx);
         }
         if let Some(condition) = self.condition() {
-            condition.index_expression(ctx);
+            let _ = condition.index_expression(ctx);
         }
     }
 }
@@ -462,7 +464,7 @@ impl IndexStatement for ast::Defvar {
 impl IndexStatement for ast::Dump {
     fn index_statement(&self, ctx: &mut IndexCtx) {
         if let Some(value) = self.value() {
-            value.index_expression(ctx);
+            let _ = value.index_expression(ctx);
         }
     }
 }
@@ -505,10 +507,10 @@ impl IndexExpression for ast::ForeachIteratorInit {
             Self::RangeList(range_list) => {
                 for piece in range_list.pieces() {
                     if let Some(start) = piece.start() {
-                        start.index_expression(ctx);
+                        let _ = start.index_expression(ctx);
                     }
                     if let Some(end) = piece.end() {
-                        end.index_expression(ctx);
+                        let _ = end.index_expression(ctx);
                     }
                 }
                 Some(TY![int])
@@ -554,7 +556,7 @@ impl IndexExpression for ast::ForeachIteratorInit {
 impl IndexStatement for ast::If {
     fn index_statement(&self, ctx: &mut IndexCtx) {
         if let Some(condition) = self.condition() {
-            condition.index_expression(ctx);
+            let _ = condition.index_expression(ctx);
         }
         if let Some(then_body) = self.then_body() {
             then_body.index_statement(ctx);
@@ -587,7 +589,7 @@ impl IndexStatement for ast::LetList {
 impl IndexStatement for ast::LetItem {
     fn index_statement(&self, ctx: &mut IndexCtx) {
         if let Some(value) = self.value() {
-            value.index_expression(ctx);
+            let _ = value.index_expression(ctx);
         }
     }
 }
@@ -651,7 +653,7 @@ impl IndexStatement for ast::TemplateArgDecl {
         }
 
         if let Some(value) = self.value() {
-            value.index_expression(ctx);
+            let _ = value.index_expression(ctx);
         }
     }
 }
@@ -1050,7 +1052,7 @@ impl IndexValue for ast::SimpleValue {
             ast::SimpleValue::Uninitialized(_) => Some(Type::Uninitialized),
             ast::SimpleValue::Bits(bits) => {
                 for value in bits.value_list()?.values() {
-                    value.index_expression(ctx);
+                    let _ = value.index_expression(ctx);
                 }
                 Some(Type::Bits(bits.value_list()?.values().count()))
             }
@@ -1068,11 +1070,11 @@ impl IndexValue for ast::SimpleValue {
             }
             ast::SimpleValue::Dag(dag) => {
                 if let Some(value) = dag.operator().and_then(|it| it.value()) {
-                    value.index_expression(ctx);
+                    let _ = value.index_expression(ctx);
                 }
                 if let Some(arg_list) = dag.arg_list() {
                     for value in arg_list.args().filter_map(|it| it.value()) {
-                        value.index_expression(ctx);
+                        let _ = value.index_expression(ctx);
                     }
                 }
                 Some(Type::Dag)
@@ -1136,10 +1138,10 @@ impl IndexValue for ast::SimpleValue {
             ast::SimpleValue::CondOperator(cond_operator) => {
                 for clause in cond_operator.clauses() {
                     if let Some(condition) = clause.condition() {
-                        condition.index_expression(ctx);
+                        let _ = condition.index_expression(ctx);
                     }
                     if let Some(value) = clause.value() {
-                        value.index_expression(ctx);
+                        let _ = value.index_expression(ctx);
                     }
                 }
                 None
