@@ -67,18 +67,22 @@ fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Arc<Index> {
     };
 
     let mut ctx = IndexCtx::new(db, source_unit, symtab);
-    source_file.index(&mut ctx);
+    source_file.index_statement(&mut ctx);
     Arc::new(ctx.finish())
 }
 
-pub trait Indexable {
-    type Output;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output>;
+pub trait IndexStatement {
+    fn index_statement(&self, ctx: &mut IndexCtx);
 }
 
-trait IndexableValue {
+pub trait IndexExpression {
     type Output;
-    fn index(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output>;
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output>;
+}
+
+trait IndexValue {
+    type Output;
+    fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -87,122 +91,123 @@ pub enum IndexValueMode {
     Name,
 }
 
-impl Indexable for ast::SourceFile {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.statement_list()?.index(ctx);
-        None
+impl IndexStatement for ast::SourceFile {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(statement_list) = self.statement_list() {
+            statement_list.index_statement(ctx);
+        }
     }
 }
 
-impl Indexable for ast::StatementList {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::StatementList {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         for statement in self.statements() {
-            statement.index(ctx);
+            statement.index_statement(ctx);
         }
-        None
     }
 }
 
-impl Indexable for ast::Statement {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::Statement {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         match self {
-            ast::Statement::Include(include) => include.index(ctx),
-            ast::Statement::Assert(assert) => assert.index(ctx),
-            ast::Statement::Class(class) => class.index(ctx),
-            ast::Statement::Def(def) => def.index(ctx),
-            ast::Statement::Defm(defm) => defm.index(ctx),
-            ast::Statement::Defset(defset) => defset.index(ctx),
-            ast::Statement::Defvar(defvar) => defvar.index(ctx),
-            ast::Statement::Dump(dump) => dump.index(ctx),
-            ast::Statement::Foreach(foreach) => foreach.index(ctx),
-            ast::Statement::If(r#if) => r#if.index(ctx),
-            ast::Statement::Let(r#let) => r#let.index(ctx),
-            ast::Statement::MultiClass(multiclass) => multiclass.index(ctx),
+            ast::Statement::Include(include) => include.index_statement(ctx),
+            ast::Statement::Assert(assert) => assert.index_statement(ctx),
+            ast::Statement::Class(class) => class.index_statement(ctx),
+            ast::Statement::Def(def) => def.index_statement(ctx),
+            ast::Statement::Defm(defm) => defm.index_statement(ctx),
+            ast::Statement::Defset(defset) => defset.index_statement(ctx),
+            ast::Statement::Defvar(defvar) => defvar.index_statement(ctx),
+            ast::Statement::Dump(dump) => dump.index_statement(ctx),
+            ast::Statement::Foreach(foreach) => foreach.index_statement(ctx),
+            ast::Statement::If(r#if) => r#if.index_statement(ctx),
+            ast::Statement::Let(r#let) => r#let.index_statement(ctx),
+            ast::Statement::MultiClass(multiclass) => multiclass.index_statement(ctx),
         }
     }
 }
 
-impl Indexable for ast::Include {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::Include {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         let file_id = ctx.current_file_id();
-        let include_map = ctx.source_unit.include_map(&file_id)?;
+        let Some(include_map) = ctx.source_unit.include_map(&file_id) else {
+            tracing::warn!("include map not found for file_id {:?}", file_id);
+            return;
+        };
 
         let include_id = IncludeId(SyntaxNodePtr::new(self.syntax()));
         let Some(include_file_id) = include_map.get(&include_id).copied() else {
             let path = self.path().map(|it| it.value()).unwrap_or_default();
             ctx.error_by_syntax(self.syntax(), format!("include file not found: {path}"));
-            return None;
+            return;
         };
 
         let parse = ctx.db.parse(include_file_id);
-        let source_file = ast::SourceFile::cast(parse.syntax_node())?;
+        let Some(source_file) = ast::SourceFile::cast(parse.syntax_node()) else {
+            return;
+        };
 
         ctx.push_file(include_file_id);
-        source_file.index(ctx);
+        source_file.index_statement(ctx);
         ctx.pop_file();
-
-        None
     }
 }
 
-impl Indexable for ast::Assert {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.message()?.index(ctx);
-        self.condition()?.index(ctx);
-        None
+impl IndexStatement for ast::Assert {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(message) = self.message() {
+            message.index_expression(ctx);
+        }
+        if let Some(condition) = self.condition() {
+            condition.index_expression(ctx);
+        }
     }
 }
 
 // TODO: check if class is already defined
-impl Indexable for ast::Class {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
+impl IndexStatement for ast::Class {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        let Some(name_node) = self.name() else {
+            return;
+        };
+        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+            return;
+        };
         let class = Class::new(name, define_loc);
 
         let class_id = match ctx.symbol_map.add_class(class) {
             Ok(class_id) => class_id,
             Err(err) => {
                 ctx.error_by_filerange(define_loc, err.to_string());
-                return None;
+                return;
             }
         };
+
         ctx.scopes.push(ScopeKind::Class(class_id));
         if let Some(list) = self.template_arg_list() {
-            list.index(ctx);
+            list.index_statement(ctx);
         }
         if let Some(body) = self.record_body() {
-            body.index(ctx);
+            body.index_statement(ctx);
         }
         ctx.scopes.pop();
-
-        None
     }
 }
 
 // TODO: check if def is already defined
-impl Indexable for ast::Def {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::Def {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
-            index_multiclass_def(self, ctx, multiclass_id)
+            index_multiclass_def(self, ctx, multiclass_id);
         } else {
-            index_global_def(self, ctx)
+            index_global_def(self, ctx);
         }
     }
 }
 
-fn index_multiclass_def(
-    def: &ast::Def,
-    ctx: &mut IndexCtx,
-    multiclass_id: MulticlassId,
-) -> Option<()> {
-    let def_name_type = determine_def_type(def)?;
+fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx, multiclass_id: MulticlassId) {
+    let Some(def_name_type) = determine_def_type(def) else {
+        return;
+    };
 
     let def_kw_loc = def
         .syntax()
@@ -229,20 +234,20 @@ fn index_multiclass_def(
 
     ctx.scopes.push(ScopeKind::Def(def_id));
     if let Some(record_body) = def.record_body() {
-        record_body.index(ctx);
+        record_body.index_statement(ctx);
     }
     ctx.scopes.pop();
 
     let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
     multiclass.add_def(def_id);
-
-    None
 }
 
-fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) -> Option<()> {
-    let (def_names, define_loc, is_anonymous) = lookup_def_name(def, ctx)?;
+fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
+    let Some((def_names, define_loc, is_anonymous)) = lookup_def_name(def, ctx) else {
+        return;
+    };
     if def_names.is_empty() {
-        return None;
+        return;
     }
 
     let mut names_iter = def_names.into_iter();
@@ -255,7 +260,7 @@ fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) -> Option<()> {
 
     ctx.scopes.push(ScopeKind::Def(base_def_id));
     if let Some(record_body) = def.record_body() {
-        record_body.index(ctx);
+        record_body.index_statement(ctx);
     }
     ctx.scopes.pop();
 
@@ -275,8 +280,6 @@ fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) -> Option<()> {
         let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
         multiclass.add_defs(def_ids);
     }
-
-    None
 }
 
 fn lookup_def_name(
@@ -355,9 +358,8 @@ fn determine_def_type(def: &ast::Def) -> Option<DefNameType> {
     }
 }
 
-impl Indexable for ast::Defm {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::Defm {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         let defm_kw_loc = self
             .syntax()
             .first_token()
@@ -366,18 +368,14 @@ impl Indexable for ast::Defm {
         let define_loc = FileRange::new(ctx.current_file_id(), defm_kw_loc);
 
         if ctx.scopes.current_multiclass_id().is_some() {
-            index_multiclass_defm(self, ctx, define_loc)
+            index_multiclass_defm(self, ctx, define_loc);
         } else {
-            index_global_defm(self, ctx, define_loc)
+            index_global_defm(self, ctx, define_loc);
         }
     }
 }
 
-fn index_multiclass_defm(
-    defm: &ast::Defm,
-    ctx: &mut IndexCtx,
-    define_loc: FileRange,
-) -> Option<()> {
+fn index_multiclass_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) {
     tracing::debug!("NEKO in multiclass");
     let multiclass_defm = Defm::new(EcoString::from("placeholder"), define_loc);
     let defm_id = ctx
@@ -386,15 +384,15 @@ fn index_multiclass_defm(
 
     ctx.scopes.push(ScopeKind::Defm(defm_id));
     if let Some(parent_class_list) = defm.parent_class_list() {
-        parent_class_list.index(ctx);
+        parent_class_list.index_statement(ctx);
     }
     ctx.scopes.pop();
-
-    None
 }
 
-fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) -> Option<()> {
-    let parent_class_list = defm.parent_class_list()?;
+fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange) {
+    let Some(parent_class_list) = defm.parent_class_list() else {
+        return;
+    };
     let superclass_locs = parent_class_list
         .classes()
         .map(|class| class.syntax().text_range().start());
@@ -407,7 +405,7 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
 
     tracing::debug!("NEKO defm/global");
     if defs.is_empty() {
-        return None;
+        return;
     }
 
     let mut def_ids = Vec::new();
@@ -430,92 +428,104 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
         let defset = ctx.symbol_map.defset_mut(defset_id);
         defset.add_defs(def_ids);
     }
-
-    None
 }
 
-impl Indexable for ast::Defset {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
-        let typ = self.r#type()?.index(ctx)?;
+impl IndexStatement for ast::Defset {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        let Some(name_node) = self.name() else {
+            return;
+        };
+        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+            return;
+        };
+        let Some(typ) = self.r#type().and_then(|t| t.index_expression(ctx)) else {
+            return;
+        };
         let defset = Defset::new(name, typ, define_loc);
         let defset_id = ctx.symbol_map.add_defset(defset);
 
         ctx.scopes.push(ScopeKind::Defset(defset_id));
         if let Some(statement_list) = self.statement_list() {
-            statement_list.index(ctx);
+            statement_list.index_statement(ctx);
         }
         ctx.scopes.pop();
-
-        None
     }
 }
 
-impl Indexable for ast::Defvar {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
-        let typ = self.value()?.index(ctx)?;
+impl IndexStatement for ast::Defvar {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        let Some(name_node) = self.name() else {
+            return;
+        };
+        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+            return;
+        };
+        let Some(typ) = self.value().and_then(|v| v.index_expression(ctx)) else {
+            return;
+        };
         let variable = Variable::new(name, typ, VariableKind::Defvar, define_loc);
         ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
-        None
     }
 }
 
-impl Indexable for ast::Dump {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.value()?.index(ctx);
-        None
+impl IndexStatement for ast::Dump {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(value) = self.value() {
+            value.index_expression(ctx);
+        }
     }
 }
 
-impl Indexable for ast::Foreach {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, variable_id) = self.iterator()?.index(ctx)?;
+impl IndexStatement for ast::Foreach {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        let Some(iterator) = self.iterator() else {
+            return;
+        };
+        let Some((name, variable_id)) = index_declaration(&iterator, ctx) else {
+            return;
+        };
+
         ctx.scopes.push(ScopeKind::Foreach(name, variable_id));
         if let Some(body) = self.body() {
-            body.index(ctx);
+            body.index_statement(ctx);
         }
         ctx.scopes.pop();
-        None
     }
 }
 
-impl Indexable for ast::ForeachIterator {
-    type Output = (EcoString, VariableId);
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
-        let typ = self.init()?.index(ctx)?;
+fn index_declaration(
+    this: &ast::ForeachIterator,
+    ctx: &mut IndexCtx,
+) -> Option<(EcoString, VariableId)> {
+    let (name, define_loc) = utils::identifier(&this.name()?, ctx)?;
+    let typ = this.init()?.index_expression(ctx)?;
 
-        let variable = Variable::new(name.clone(), typ, VariableKind::Foreach, define_loc);
-        let variable_id = ctx.symbol_map.add_variable(variable);
+    let variable = Variable::new(name.clone(), typ, VariableKind::Foreach, define_loc);
+    let variable_id = ctx.symbol_map.add_variable(variable);
 
-        Some((name, variable_id))
-    }
+    Some((name, variable_id))
 }
 
-impl Indexable for ast::ForeachIteratorInit {
+impl IndexExpression for ast::ForeachIteratorInit {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         match self {
             Self::RangeList(range_list) => {
                 for piece in range_list.pieces() {
                     if let Some(start) = piece.start() {
-                        start.index(ctx);
+                        start.index_expression(ctx);
                     }
                     if let Some(end) = piece.end() {
-                        end.index(ctx);
+                        end.index_expression(ctx);
                     }
                 }
                 Some(TY![int])
             }
             Self::RangePiece(range_piece) => match (range_piece.start(), range_piece.end()) {
                 (Some(start), Some(end)) => {
-                    let start_typ = start.index(ctx)?;
-                    let end_typ = end.index(ctx)?;
+                    let start_typ = start.index_expression(ctx)?;
+                    let end_typ = end.index_expression(ctx)?;
                     if start_typ == TY![int] && end_typ == TY![int] {
                         Some(TY![int])
                     } else if start_typ != TY![int] {
@@ -528,7 +538,7 @@ impl Indexable for ast::ForeachIteratorInit {
                     }
                 }
                 (Some(start), None) => {
-                    let start_typ = start.index(ctx)?;
+                    let start_typ = start.index_expression(ctx)?;
                     if start_typ.is_list() {
                         Some(
                             start_typ
@@ -545,86 +555,96 @@ impl Indexable for ast::ForeachIteratorInit {
                 }
                 _ => None,
             },
-            Self::Value(value) => value.index(ctx).and_then(|it| it.element_typ()),
+            Self::Value(value) => value.index_expression(ctx).and_then(|it| it.element_typ()),
         }
     }
 }
 
-impl Indexable for ast::If {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.condition()?.index(ctx);
-        self.then_body()?.index(ctx);
-        self.else_body()?.index(ctx);
-        None
+impl IndexStatement for ast::If {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(condition) = self.condition() {
+            condition.index_expression(ctx);
+        }
+        if let Some(then_body) = self.then_body() {
+            then_body.index_statement(ctx);
+        }
+        if let Some(else_body) = self.else_body() {
+            else_body.index_statement(ctx);
+        }
     }
 }
 
-impl Indexable for ast::Let {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.let_list()?.index(ctx);
-        self.statement_list()?.index(ctx);
-        None
+impl IndexStatement for ast::Let {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(let_list) = self.let_list() {
+            let_list.index_statement(ctx);
+        }
+        if let Some(statement_list) = self.statement_list() {
+            statement_list.index_statement(ctx);
+        }
     }
 }
 
-impl Indexable for ast::LetList {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::LetList {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         for let_item in self.items() {
-            let_item.index(ctx);
+            let_item.index_statement(ctx);
         }
-        None
     }
 }
 
-impl Indexable for ast::LetItem {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.value()?.index(ctx);
-        None
+impl IndexStatement for ast::LetItem {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(value) = self.value() {
+            value.index_expression(ctx);
+        }
     }
 }
 
-impl Indexable for ast::MultiClass {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
+impl IndexStatement for ast::MultiClass {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        let Some(name_node) = self.name() else {
+            return;
+        };
+        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+            return;
+        };
         let multiclass = Multiclass::new(name, define_loc);
         let multiclass_id = ctx.symbol_map.add_multiclass(multiclass);
 
         ctx.scopes.push(ScopeKind::Multiclass(multiclass_id));
         if let Some(template_arg_list) = self.template_arg_list() {
-            template_arg_list.index(ctx);
+            template_arg_list.index_statement(ctx);
         }
         if let Some(parent_class_list) = self.parent_class_list() {
-            parent_class_list.index(ctx);
+            parent_class_list.index_statement(ctx);
         }
         if let Some(statement_list) = self.statement_list() {
-            statement_list.index(ctx);
+            statement_list.index_statement(ctx);
         }
         ctx.scopes.pop();
-
-        None
     }
 }
 
-impl Indexable for ast::TemplateArgList {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::TemplateArgList {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         for template_arg in self.args() {
-            template_arg.index(ctx);
+            template_arg.index_statement(ctx);
         }
-        None
     }
 }
 
-impl Indexable for ast::TemplateArgDecl {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
-        let typ = self.r#type()?.index(ctx)?;
+impl IndexStatement for ast::TemplateArgDecl {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        let Some(name_node) = self.name() else {
+            return;
+        };
+        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+            return;
+        };
+        let Some(typ) = self.r#type().and_then(|it| it.index_expression(ctx)) else {
+            return;
+        };
         let has_default_value = self.value().is_some();
         let template_arg = TemplateArgument::new(name.clone(), typ, has_default_value, define_loc);
         let template_arg_id = ctx.symbol_map.add_template_argument(template_arg);
@@ -636,29 +656,28 @@ impl Indexable for ast::TemplateArgDecl {
             let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
             multiclass.add_template_arg(name, template_arg_id);
         } else {
-            panic!("template arg decl outside of record or multiclass");
+            tracing::warn!("template arg decl outside of record or multiclass");
         }
 
         if let Some(value) = self.value() {
-            value.index(ctx);
+            value.index_expression(ctx);
         }
-
-        None
     }
 }
 
-impl Indexable for ast::RecordBody {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        self.parent_class_list()?.index(ctx);
-        self.body()?.index(ctx);
-        None
+impl IndexStatement for ast::RecordBody {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(parent_class_list) = self.parent_class_list() {
+            parent_class_list.index_statement(ctx);
+        }
+        if let Some(body) = self.body() {
+            body.index_statement(ctx);
+        }
     }
 }
 
-impl Indexable for ast::ParentClassList {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::ParentClassList {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         if let Some(record_id) = ctx.scopes.current_record_id() {
             for class_ref in self.classes() {
                 if let Some(class_id) = resolve_class_ref_as_class(&class_ref, ctx)
@@ -684,9 +703,8 @@ impl Indexable for ast::ParentClassList {
                 }
             }
         } else {
-            panic!("parent class list outside of record or multiclass");
+            tracing::warn!("parent class list outside of record or multiclass");
         }
-        None
     }
 }
 
@@ -707,7 +725,7 @@ fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> 
 
     let arg_values = class_ref
         .arg_value_list()
-        .and_then(|it| it.index(ctx))
+        .and_then(|it| it.index_expression(ctx))
         .unwrap_or_default();
 
     check_template_args(
@@ -740,7 +758,7 @@ fn resolve_class_ref_as_multiclass(
 
     let arg_values = class_ref
         .arg_value_list()
-        .and_then(|it| it.index(ctx))
+        .and_then(|it| it.index_expression(ctx))
         .unwrap_or_default();
 
     check_template_args(
@@ -826,23 +844,25 @@ fn check_template_args(
     }
 }
 
-impl Indexable for ast::ArgValueList {
+impl IndexExpression for ast::ArgValueList {
     type Output = Vec<Option<(Option<EcoString>, Type, TextRange)>>;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         let result = self
             .arg_values()
-            .map(|arg_value| arg_value.index(ctx))
+            .map(|arg_value| arg_value.index_expression(ctx))
             .collect();
         Some(result)
     }
 }
 
-impl Indexable for ast::ArgValue {
+impl IndexExpression for ast::ArgValue {
     type Output = (Option<EcoString>, Type, TextRange);
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         match self {
             ast::ArgValue::PositionalArgValue(positional) => {
-                let typ = positional.value()?.index(ctx)?;
+                let typ = positional.value()?.index_expression(ctx)?;
                 Some((None, typ, positional.syntax().text_range()))
             }
             ast::ArgValue::NamedArgValue(named) => {
@@ -855,70 +875,80 @@ impl Indexable for ast::ArgValue {
                     );
                     return None;
                 };
-                let typ = named.value()?.index(ctx)?;
+                let typ = named.value()?.index_expression(ctx)?;
                 Some((Some(name.value()), typ, named.syntax().text_range()))
             }
         }
     }
 }
 
-impl Indexable for ast::Body {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::Body {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         for item in self.items() {
-            item.index(ctx);
+            item.index_statement(ctx);
         }
-        None
     }
 }
 
-impl Indexable for ast::BodyItem {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::BodyItem {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         match self {
-            ast::BodyItem::FieldDef(field_def) => field_def.index(ctx),
-            ast::BodyItem::FieldLet(field_let) => field_let.index(ctx),
-            ast::BodyItem::Assert(assert) => assert.index(ctx),
-            ast::BodyItem::Defvar(defvar) => defvar.index(ctx),
-            ast::BodyItem::Dump(dump) => dump.index(ctx),
+            ast::BodyItem::FieldDef(field_def) => field_def.index_statement(ctx),
+            ast::BodyItem::FieldLet(field_let) => field_let.index_statement(ctx),
+            ast::BodyItem::Assert(assert) => assert.index_statement(ctx),
+            ast::BodyItem::Defvar(defvar) => defvar.index_statement(ctx),
+            ast::BodyItem::Dump(dump) => dump.index_statement(ctx),
         }
     }
 }
 
 // TODO: check if field is already defined
-impl Indexable for ast::FieldDef {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+impl IndexStatement for ast::FieldDef {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
         let record_id = ctx
             .scopes
             .current_record_id()
             .expect("field def outside of record");
 
-        let (name, define_loc) = utils::identifier(&self.name()?, ctx)?;
-        let typ = self.r#type()?.index(ctx)?;
+        let Some(name_node) = self.name() else {
+            return;
+        };
+        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+            return;
+        };
+        let Some(typ) = self.r#type().and_then(|t| t.index_expression(ctx)) else {
+            return;
+        };
         let field = RecordField::new(name.clone(), typ.clone(), record_id, define_loc);
         let field_id = ctx.symbol_map.add_record_field(field);
 
         let mut record = ctx.symbol_map.record_mut(record_id);
         record.add_record_field(name.clone(), field_id);
 
-        let value_typ = self.value()?.index(ctx)?;
+        let Some(value) = self.value() else {
+            return;
+        };
+        let Some(value_typ) = value.index_expression(ctx) else {
+            return;
+        };
         if !value_typ.can_be_casted_to(&ctx.symbol_map, &typ) {
             ctx.error_by_syntax(
-                self.value()?.syntax(),
+                value.syntax(),
                 format!("field '{name}' of type '{typ}' is incompatible with type '{value_typ}'",),
             );
         }
-
-        None
     }
 }
 
 // TODO: check if field is already defined
-impl Indexable for ast::FieldLet {
-    type Output = ();
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
-        let (name, reference_loc) = utils::identifier(&self.name()?, ctx)?;
+impl IndexStatement for ast::FieldLet {
+    fn index_statement(&self, ctx: &mut IndexCtx) {
+        let Some(name_node) = self.name() else {
+            return;
+        };
+        let Some((name, reference_loc)) = utils::identifier(&name_node, ctx) else {
+            return;
+        };
 
         let record_id = ctx
             .scopes
@@ -926,7 +956,10 @@ impl Indexable for ast::FieldLet {
             .expect("field let outside of record");
         let record = ctx.symbol_map.record(record_id);
 
-        let field_id = record.find_field(&ctx.symbol_map, &name)?;
+        let Some(field_id) = record.find_field(&ctx.symbol_map, &name) else {
+            ctx.error_by_syntax(self.syntax(), format!("field '{name}' not found in record"));
+            return;
+        };
         let field = ctx.symbol_map.record_field(field_id);
         let field_typ = field.typ.clone();
 
@@ -937,30 +970,34 @@ impl Indexable for ast::FieldLet {
         record.add_record_field(name.clone(), new_field_id);
         ctx.symbol_map.add_reference(field_id, reference_loc);
 
-        let value_typ = self.value()?.index(ctx)?;
+        let Some(value) = self.value() else {
+            return;
+        };
+        let Some(value_typ) = value.index_expression(ctx) else {
+            return;
+        };
         if !value_typ.can_be_casted_to(&ctx.symbol_map, &field_typ) {
             ctx.error_by_syntax(
-                self.value()?.syntax(),
+                value.syntax(),
                 format!(
                     "field '{name}' of type '{field_typ}' is incompatible with type '{value_typ}'",
                 ),
             );
         }
-
-        None
     }
 }
 
-impl Indexable for ast::Value {
+impl IndexExpression for ast::Value {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         let mut inner_values = self.inner_values();
 
         let first_value = inner_values.next()?;
-        let first_value_typ = first_value.index(ctx, IndexValueMode::Expression);
+        let first_value_typ = first_value.index_value(ctx, IndexValueMode::Expression);
         let mut ret_typ = first_value_typ.clone();
         for inner_value in inner_values {
-            if let Some(inner_value_typ) = inner_value.index(ctx, IndexValueMode::Name) {
+            if let Some(inner_value_typ) = inner_value.index_value(ctx, IndexValueMode::Name) {
                 if inner_value_typ.can_be_casted_to(&ctx.symbol_map, &TY![string]) {
                     ret_typ = Some(TY![string]);
                 } else if ret_typ != Some(TY![string]) && inner_value_typ.is_list() {
@@ -973,10 +1010,11 @@ impl Indexable for ast::Value {
     }
 }
 
-impl IndexableValue for ast::InnerValue {
+impl IndexValue for ast::InnerValue {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
-        let mut lhs_typ = self.simple_value()?.index(ctx, mode)?;
+
+    fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
+        let mut lhs_typ = self.simple_value()?.index_value(ctx, mode)?;
         for suffix in self.suffixes() {
             lhs_typ = match suffix {
                 ast::ValueSuffix::RangeSuffix(_) => match lhs_typ {
@@ -1009,9 +1047,10 @@ impl IndexableValue for ast::InnerValue {
     }
 }
 
-impl IndexableValue for ast::SimpleValue {
+impl IndexValue for ast::SimpleValue {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
+
+    fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
         match self {
             ast::SimpleValue::Integer(_) => Some(Type::Int),
             ast::SimpleValue::String(_) => Some(Type::String),
@@ -1020,7 +1059,7 @@ impl IndexableValue for ast::SimpleValue {
             ast::SimpleValue::Uninitialized(_) => Some(Type::Uninitialized),
             ast::SimpleValue::Bits(bits) => {
                 for value in bits.value_list()?.values() {
-                    value.index(ctx);
+                    value.index_expression(ctx);
                 }
                 Some(Type::Bits(bits.value_list()?.values().count()))
             }
@@ -1028,7 +1067,7 @@ impl IndexableValue for ast::SimpleValue {
                 let value_list = list.value_list()?;
                 let value_types: Vec<_> = value_list
                     .values()
-                    .filter_map(|value| value.index(ctx))
+                    .filter_map(|value| value.index_expression(ctx))
                     .collect();
                 value_types
                     .into_iter()
@@ -1038,11 +1077,11 @@ impl IndexableValue for ast::SimpleValue {
             }
             ast::SimpleValue::Dag(dag) => {
                 if let Some(value) = dag.operator().and_then(|it| it.value()) {
-                    value.index(ctx);
+                    value.index_expression(ctx);
                 }
                 if let Some(arg_list) = dag.arg_list() {
                     for value in arg_list.args().filter_map(|it| it.value()) {
-                        value.index(ctx);
+                        value.index_expression(ctx);
                     }
                 }
                 Some(Type::Dag)
@@ -1090,7 +1129,7 @@ impl IndexableValue for ast::SimpleValue {
 
                 let arg_values = class_value
                     .arg_value_list()
-                    .and_then(|it| it.index(ctx))
+                    .and_then(|it| it.index_expression(ctx))
                     .unwrap_or_default();
 
                 check_template_args(
@@ -1102,14 +1141,14 @@ impl IndexableValue for ast::SimpleValue {
 
                 Some(Type::Record(class_id.into(), name))
             }
-            ast::SimpleValue::BangOperator(bang_operator) => bang_operator.index(ctx),
+            ast::SimpleValue::BangOperator(bang_operator) => bang_operator.index_expression(ctx),
             ast::SimpleValue::CondOperator(cond_operator) => {
                 for clause in cond_operator.clauses() {
                     if let Some(condition) = clause.condition() {
-                        condition.index(ctx);
+                        condition.index_expression(ctx);
                     }
                     if let Some(value) = clause.value() {
-                        value.index(ctx);
+                        value.index_expression(ctx);
                     }
                 }
                 None
@@ -1118,9 +1157,10 @@ impl IndexableValue for ast::SimpleValue {
     }
 }
 
-impl Indexable for ast::Type {
+impl IndexExpression for ast::Type {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         match self {
             ast::Type::BitType(_) => Some(Type::Bit),
             ast::Type::IntType(_) => Some(Type::Int),
@@ -1128,11 +1168,11 @@ impl Indexable for ast::Type {
             ast::Type::CodeType(_) => Some(Type::Code),
             ast::Type::DagType(_) => Some(Type::Dag),
             ast::Type::BitsType(bits) => {
-                let len = bits.length()?.index(ctx)?;
+                let len = bits.length()?.index_expression(ctx)?;
                 Some(Type::Bits(len.try_into().ok()?))
             }
             ast::Type::ListType(list) => {
-                let elm_typ = list.inner_type()?.index(ctx)?;
+                let elm_typ = list.inner_type()?.index_expression(ctx)?;
                 Some(Type::List(Box::new(elm_typ)))
             }
             ast::Type::ClassId(class_id) => {
@@ -1152,9 +1192,10 @@ impl Indexable for ast::Type {
     }
 }
 
-impl Indexable for ast::Integer {
+impl IndexExpression for ast::Integer {
     type Output = i64;
-    fn index(&self, _: &mut IndexCtx) -> Option<Self::Output> {
+
+    fn index_expression(&self, _: &mut IndexCtx) -> Option<Self::Output> {
         self.value()
     }
 }

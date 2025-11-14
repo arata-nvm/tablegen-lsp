@@ -8,13 +8,15 @@ use crate::{
     },
 };
 
-use super::{Indexable, context::IndexCtx, scope::ScopeKind, utils};
+use super::{IndexExpression, context::IndexCtx, scope::ScopeKind, utils};
+
 // Optionを返すインターフェイスのために、Type::Unknownをデフォルトとする処理を誰が行うかが不明瞭
 // 型が解決できなかった場合にSome(Type::Unknown)を返すが、その呼び出し元でunwrap_or(Type::Unknown)を
 // 呼び出しているかもしれない
-impl Indexable for ast::BangOperator {
+impl IndexExpression for ast::BangOperator {
     type Output = Type;
-    fn index(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         // BangOperatorの種類をenumで表現したい
         match self.kind()? {
             SyntaxKind::XAdd
@@ -139,7 +141,7 @@ impl Indexable for ast::BangOperator {
                 let list = values.get(1)?;
                 let predicate = values.get(2)?;
 
-                let list_typ = list.index(ctx)?;
+                let list_typ = list.index_expression(ctx)?;
                 let var_typ = list_typ.element_typ()?;
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
@@ -153,7 +155,7 @@ impl Indexable for ast::BangOperator {
                 let variable =
                     Variable::new(var_name, var_typ, VariableKind::XForeach, var_define_loc);
                 ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
-                predicate.index(ctx);
+                predicate.index_expression(ctx);
                 ctx.scopes.pop();
 
                 Some(list_typ)
@@ -199,8 +201,8 @@ impl Indexable for ast::BangOperator {
                 let var = values.get(3)?;
                 let expr = values.get(4)?;
 
-                let init_typ = init.index(ctx)?;
-                let list_typ = list.index(ctx)?;
+                let init_typ = init.index_expression(ctx)?;
+                let list_typ = list.index_expression(ctx)?;
                 let list_elm_typ = list_typ.element_typ()?;
 
                 let (acc_name, acc_define_loc) = match acc.inner_values().next()?.simple_value() {
@@ -227,7 +229,7 @@ impl Indexable for ast::BangOperator {
                 let variable_var =
                     Variable::new(var_name, list_elm_typ, VariableKind::XFoldl, var_define_loc);
                 ctx.scopes.add_variable(&mut ctx.symbol_map, variable_var);
-                expr.index(ctx);
+                expr.index_expression(ctx);
                 ctx.scopes.pop();
 
                 Some(init_typ)
@@ -240,7 +242,7 @@ impl Indexable for ast::BangOperator {
                 let sequence = values.get(1)?;
                 let expr = values.get(2)?;
 
-                let sequence_typ = sequence.index(ctx)?;
+                let sequence_typ = sequence.index_expression(ctx)?;
                 let var_typ = sequence_typ.element_typ()?;
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
@@ -254,7 +256,7 @@ impl Indexable for ast::BangOperator {
                 let variable =
                     Variable::new(var_name, var_typ, VariableKind::XForeach, var_define_loc);
                 ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
-                let expr_typ = expr.index(ctx);
+                let expr_typ = expr.index_expression(ctx);
                 ctx.scopes.pop();
 
                 let expr_typ = expr_typ.unwrap_or(Type::Unknown);
@@ -326,7 +328,7 @@ impl Indexable for ast::BangOperator {
                 Some(TY![string])
             }
             SyntaxKind::XGetDagOp => {
-                let typ = self.r#type().and_then(|it| it.index(ctx));
+                let typ = self.r#type().and_then(|it| it.index_expression(ctx));
                 let values = common::expect_values(ctx, self, 1..=1);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
@@ -827,14 +829,14 @@ mod common {
         parser::TextRange,
     };
 
-    use crate::{index::Indexable, symbol_map::typ::Type};
+    use crate::{index::IndexExpression, symbol_map::typ::Type};
 
     pub(super) fn expect_type_annotation(
         ctx: &mut super::IndexCtx,
         node: &ast::BangOperator,
     ) -> Option<Type> {
         match node.r#type() {
-            Some(typ) => typ.index(ctx),
+            Some(typ) => typ.index_expression(ctx),
             None => {
                 ctx.error_by_syntax(node.syntax(), "expected type annotation");
                 None
@@ -891,7 +893,7 @@ mod common {
     ) -> Vec<(TextRange, Option<Type>)> {
         values
             .into_iter()
-            .map(|value| (value.syntax().text_range(), value.index(ctx)))
+            .map(|value| (value.syntax().text_range(), value.index_expression(ctx)))
             .collect()
     }
 
@@ -901,7 +903,7 @@ mod common {
         expected: &Type,
     ) {
         for value in values {
-            let Some(value_type) = value.index(ctx) else {
+            let Some(value_type) = value.index_expression(ctx) else {
                 continue;
             };
 
