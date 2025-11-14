@@ -1,6 +1,6 @@
 ---
 source: crates/ide/src/index.rs
-expression: index.diagnostics()
+expression: dump_diagnostics(index.diagnostics())
 ---
 [
     Lsp(
@@ -99,7 +99,7 @@ expression: index.diagnostics()
                 ),
                 range: 1182..1194,
             },
-            message: "value not specified for template argument 'y'",
+            message: "value not specified for template argument 'x'",
         },
     ),
     Lsp(
@@ -110,7 +110,7 @@ expression: index.diagnostics()
                 ),
                 range: 1182..1194,
             },
-            message: "value not specified for template argument 'x'",
+            message: "value not specified for template argument 'y'",
         },
     ),
     Lsp(
@@ -185,9 +185,9 @@ expression: index.diagnostics()
                 file: FileId(
                     0,
                 ),
-                range: 1932..1935,
+                range: 1922..1936,
             },
-            message: "the name of named argument should be a valid identifier",
+            message: "value not specified for template argument 'y'",
         },
     ),
     Lsp(
@@ -196,9 +196,9 @@ expression: index.diagnostics()
                 file: FileId(
                     0,
                 ),
-                range: 1922..1936,
+                range: 1932..1935,
             },
-            message: "value not specified for template argument 'y'",
+            message: "the name of named argument should be a valid identifier",
         },
     ),
 ]
