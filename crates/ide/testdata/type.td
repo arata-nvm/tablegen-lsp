@@ -89,3 +89,20 @@ class ListTemplate<list<int> values> {
 }
 
 def list_template_inst : ListTemplate<[1, 2, 3]>;
+
+// List concatenation with inheritance
+class listconcat_base;
+class listconcat_derived1 : listconcat_base;
+class listconcat_derived2 : listconcat_base;
+def listconcat_derived1_val: listconcat_derived1;
+def listconcat_derived2_val: listconcat_derived2;
+// FIXME: `expected list<listconcat_derived1_val>, found list<listconcat_derived2_val>`のエラーが出る
+defvar listconcat = !listconcat([listconcat_derived1_val], [listconcat_derived2_val]);
+
+// Bits assignment with different sizes
+class BitOps2 {
+  bits<4> value = 1;
+  bits<16> value2;
+  // FIXME: `field 'value2' of type 'bits<16>' is incompatible with type 'bits<4>'`のエラーが出る
+  let value2{4-0} = value;
+}
