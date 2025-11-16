@@ -30,7 +30,6 @@ class TypeMismatch {
 // === Duplicate Definition Errors ===
 
 class DuplicateTest;
-// FIXME: 定義されてしまう
 class DuplicateTest;  // Duplicate class
 
 def duplicate_def;

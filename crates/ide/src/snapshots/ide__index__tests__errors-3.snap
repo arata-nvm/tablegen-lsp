@@ -16,8 +16,6 @@ class TypeMismatch<> : {
 }
 class DuplicateTest<> : {
 }
-class DuplicateTest<> : {
-}
 def duplicate_def : {
 }
 def duplicate_def : {
@@ -25,8 +23,6 @@ def duplicate_def : {
 class CyclicA<> : {
 }
 class CyclicB<> : CyclicC, {
-}
-class CyclicC<> : CyclicB, {
 }
 class CyclicC<> : CyclicB, {
 }

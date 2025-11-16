@@ -263,27 +263,26 @@ impl SymbolMap {
 // mutable api
 impl SymbolMap {
     pub fn add_class(&mut self, class: Class) -> Result<ClassId, SymbolMapError> {
-        let name = class.name.clone();
-        let define_loc = class.define_loc;
-        let id = self.alloc_or_replace_class(class)?;
-        self.name_to_class.insert(name, id);
-        self.add_symbol_to_file(id, define_loc, true);
-        Ok(id)
-    }
+        match self.name_to_class.get(&class.name) {
+            Some(&class_id) => {
+                let existing_class = self.class(class_id);
+                if !existing_class.is_empty() {
+                    return Err(SymbolMapError::ClassAlreadyDefined(class.name.clone()));
+                }
 
-    fn alloc_or_replace_class(&mut self, class: Class) -> Result<ClassId, SymbolMapError> {
-        let Some(class_id) = self.name_to_class.get(&class.name).copied() else {
-            return Ok(self.class_list.alloc(class));
-        };
-
-        let existing_class = self.class(class_id);
-        if !existing_class.is_empty() {
-            return Err(SymbolMapError::ClassAlreadyDefined(class.name.clone()));
+                let class_mut = self.class_mut(class_id);
+                let _ = std::mem::replace(class_mut, class);
+                Ok(class_id)
+            }
+            None => {
+                let name = class.name.clone();
+                let define_loc = class.define_loc;
+                let id = self.class_list.alloc(class);
+                self.name_to_class.insert(name, id);
+                self.add_symbol_to_file(id, define_loc, true);
+                Ok(id)
+            }
         }
-
-        let class_mut = self.class_mut(class_id);
-        let _ = std::mem::replace(class_mut, class);
-        Ok(class_id)
     }
 
     pub fn add_def(&mut self, def: Def, is_global: bool) -> DefId {
