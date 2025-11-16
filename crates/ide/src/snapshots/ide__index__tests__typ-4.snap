@@ -31,9 +31,31 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2507..2512,
+                range: 2408..2416,
             },
-            message: "field 'value2' of type 'bits<16>' is incompatible with type 'bits<4>'",
+            message: "duplicate bit index 3",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2440..2441,
+            },
+            message: "cannot set bit index 8 for bits<4>",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2494..2495,
+            },
+            message: "type 'string' is not bits type",
         },
     ),
 ]

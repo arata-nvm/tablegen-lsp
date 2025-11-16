@@ -957,7 +957,7 @@ impl IndexStatement for ast::FieldLet {
             return;
         };
         let field = ctx.symbol_map.record_field(field_id);
-        let field_typ = field.typ.clone();
+        let mut field_typ = field.typ.clone();
 
         let new_field = RecordField::new(name.clone(), field_typ.clone(), record_id, reference_loc);
         let new_field_id = ctx.symbol_map.add_record_field(new_field);
@@ -972,6 +972,18 @@ impl IndexStatement for ast::FieldLet {
         let Some(value_typ) = value.index_expression(ctx) else {
             return;
         };
+
+        if let Some(range_list) = self.range_list()
+            && let Some(bits) = get_bit_list_in_range_list(&range_list)
+        {
+            match field_typ.with_bits(bits) {
+                Ok(typ) => field_typ = typ,
+                Err(err) => {
+                    ctx.error_by_syntax(range_list.syntax(), err.to_string());
+                }
+            }
+        }
+
         if !value_typ.can_be_casted_to(&ctx.symbol_map, &field_typ) {
             ctx.error_by_syntax(
                 value.syntax(),
@@ -981,6 +993,56 @@ impl IndexStatement for ast::FieldLet {
             );
         }
     }
+}
+
+fn get_bit_list_in_range_list(range_list: &ast::RangeList) -> Option<Vec<usize>> {
+    let mut bits = Vec::new();
+    for piece in range_list.pieces() {
+        let piece_bits = get_bit_list_in_range_piece(&piece)?;
+        bits.extend(piece_bits);
+    }
+    Some(bits)
+}
+
+fn get_bit_list_in_range_piece(range_piece: &ast::RangePiece) -> Option<Vec<usize>> {
+    match (range_piece.start(), range_piece.end()) {
+        (Some(start), Some(end)) => {
+            let start = value_as_integer(start)?;
+            let end = value_as_integer(end)?;
+            if start <= end {
+                Some((start..=end).map(|v| v as usize).collect())
+            } else {
+                Some((end..=start).map(|v| v as usize).collect())
+            }
+        }
+        (Some(start), None) => {
+            let bit = value_as_integer(start)?;
+            Some(vec![bit as usize])
+        }
+        _ => None,
+    }
+}
+
+// ValueがIntegerの場合、その値を返す
+fn value_as_integer(value: ast::Value) -> Option<i64> {
+    let mut inner_values_iter = value.inner_values();
+    let Some(inner_value) = inner_values_iter.next() else {
+        return None;
+    };
+
+    if inner_values_iter.next().is_some() {
+        return None;
+    }
+
+    if inner_value.suffixes().count() > 0 {
+        return None;
+    }
+
+    let Some(ast::SimpleValue::Integer(integer)) = inner_value.simple_value() else {
+        return None;
+    };
+
+    integer.value()
 }
 
 impl IndexExpression for ast::Value {
@@ -1164,7 +1226,7 @@ impl IndexExpression for ast::Type {
             ast::Type::CodeType(_) => Some(Type::Code),
             ast::Type::DagType(_) => Some(Type::Dag),
             ast::Type::BitsType(bits) => {
-                let len = bits.length()?.index_expression(ctx)?;
+                let len = bits.length()?.value()?;
                 Some(Type::Bits(len.try_into().ok()?))
             }
             ast::Type::ListType(list) => {
@@ -1185,14 +1247,6 @@ impl IndexExpression for ast::Type {
                 }
             }
         }
-    }
-}
-
-impl IndexExpression for ast::Integer {
-    type Output = i64;
-
-    fn index_expression(&self, _: &mut IndexCtx) -> Option<Self::Output> {
-        self.value()
     }
 }
 

@@ -99,10 +99,13 @@ def listconcat_derived2_val: listconcat_derived2;
 // FIXME: `expected list<listconcat_derived1_val>, found list<listconcat_derived2_val>`のエラーが出る
 defvar listconcat = !listconcat([listconcat_derived1_val], [listconcat_derived2_val]);
 
-// Bits assignment with different sizes
-class BitOps2 {
-  bits<4> value = 1;
-  bits<16> value2;
-  // FIXME: `field 'value2' of type 'bits<16>' is incompatible with type 'bits<4>'`のエラーが出る
-  let value2{4-0} = value;
+// Range list type checking
+class RangeListTest {
+  bits<4> bits_field = 0;
+  let bits_field{3...0} = 1;
+  let bits_field{3...0, 3} = 1;
+  let bits_field{8} = 1;
+
+  string str_field = "hoge";
+  let str_field{0} = "fuga";
 }

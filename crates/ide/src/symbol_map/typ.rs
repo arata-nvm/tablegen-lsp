@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use ecow::EcoString;
 
 use super::{
@@ -32,6 +34,16 @@ pub enum Type {
     Uninitialized,
     Unknown,
     Any, // for empty list
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TypeError {
+    #[error("type '{0}' is not bits type")]
+    IsNotBitsType(Type),
+    #[error("cannot set bit index {0} for bits<{1}>")]
+    CannotSetBitIndex(usize, usize),
+    #[error("duplicate bit index {0}")]
+    DuplicateBitIndex(usize),
 }
 
 impl Type {
@@ -93,6 +105,26 @@ impl Type {
     pub fn is_record(&self) -> bool {
         matches!(self, Self::Record(_, _) | Self::Uninitialized)
     }
+
+    pub fn with_bits(&self, bits: Vec<usize>) -> Result<Self, TypeError> {
+        let Self::Bits(old_width) = self else {
+            return Err(TypeError::IsNotBitsType(self.clone()));
+        };
+
+        let mut used = HashSet::new();
+        for bit in bits {
+            if bit >= *old_width {
+                return Err(TypeError::CannotSetBitIndex(bit, *old_width));
+            }
+
+            if !used.insert(bit) {
+                return Err(TypeError::DuplicateBitIndex(bit));
+            }
+            used.insert(bit);
+        }
+
+        return Ok(Self::Bits(used.len()));
+    }
 }
 
 impl std::fmt::Display for Type {
@@ -111,5 +143,23 @@ impl std::fmt::Display for Type {
             Self::Unknown => write!(f, "unknown"),
             Self::Any => write!(f, "any"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::symbol_map::typ::Type;
+
+    #[test]
+    fn bits_width() {
+        let ty = Type::Bits(4);
+        assert!(ty.with_bits(vec![0]).is_ok());
+        assert!(ty.with_bits(vec![0, 1, 2, 3]).is_ok());
+        assert!(ty.with_bits(vec![4]).is_err());
+        assert!(ty.with_bits(vec![0, 1, 2, 3, 4]).is_err());
+        assert!(ty.with_bits(vec![0, 0]).is_err());
+
+        let ty = Type::String;
+        assert!(ty.with_bits(vec![0]).is_err());
     }
 }
