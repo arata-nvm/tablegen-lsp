@@ -399,8 +399,9 @@ impl SymbolMap {
         parent_id: ClassId,
     ) -> Result<(), SymbolMapError> {
         if let RecordId::Class(class_id) = record_id {
-            let class = self.class(class_id);
-            if class_id == parent_id || class.is_subclass_of(self, parent_id) {
+            let parent = self.class(parent_id);
+            if class_id == parent_id || parent.is_subclass_of(self, class_id) {
+                let class = self.class(parent_id);
                 return Err(SymbolMapError::ClassCyclicInheritance(class.name.clone()));
             }
         }

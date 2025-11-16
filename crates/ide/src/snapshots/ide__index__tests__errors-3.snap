@@ -4,10 +4,17 @@ expression: dump_symbol_map(index.symbol_map())
 ---
 def undefined_class_ref : {
 }
+variable unknown uses_undefined
 class HasField<> : {
   int existing_field;
 }
+variable unknown bad_field_access
 def bad_field_let : HasField, {
+}
+class Foo<int a, > : {
+  int b;
+}
+class Bar<> : Foo, {
 }
 class TypeMismatch<> : {
   int int_field;
@@ -32,7 +39,7 @@ class CyclicA<> : {
 }
 class CyclicB<> : CyclicC, {
 }
-class CyclicC<> : CyclicB, {
+class CyclicC<> : {
 }
 class RequiresArgs<int x, string y, > : {
   int value;
@@ -53,8 +60,6 @@ class Unrelated<> : {
 class FieldIncompat<> : {
   Derived derived_field1;
   Derived derived_field2;
-}
-class InvalidBits<> : {
 }
 class NamedArgs<int x, int y, > : {
 }

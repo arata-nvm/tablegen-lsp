@@ -67,6 +67,7 @@ impl Type {
     pub fn can_be_casted_to(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
         match (self, other) {
             (Self::Uninitialized, _) | (_, Self::Uninitialized) => true,
+            (Self::Unknown, _) | (_, Self::Unknown) => true,
             (Self::Any, _) | (_, Self::Any) => true,
             // 0,1以外の値の場合はエラーを出す必要がある
             (Self::Int, Self::Bit) | (Self::Bit, Self::Int) => true,

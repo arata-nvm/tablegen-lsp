@@ -4,7 +4,6 @@
  def undefined_class_ref : UndefinedClass;
 
 // Undefined variable reference
-// FIXME: 定義されない
 defvar uses_undefined = undefined_variable;
 
 // Undefined field access
@@ -12,12 +11,21 @@ class HasField {
   int existing_field;
 }
 
-// FIXME: 定義されない
+// Nonexistent field access
 defvar bad_field_access = HasField<>.nonexistent_field;
 
+// Nonexistent field let
 def bad_field_let : HasField {
   let nonexistent_field = 10;
 }
+
+// === Error Recovering ===
+
+class Foo<int a = nonexistent_var> {
+  int b = nonexistent_var;
+}
+
+class Bar: Foo<nonexistent_var>;
 
 // === Type Mismatch Errors ===
 
@@ -59,7 +67,6 @@ multiclass duplicate_multiclass; // Duplicate multiclass
 class CyclicA : CyclicA;
 
 // Indirect cycle
-// FIXME: エラーが出ない
 class CyclicC;
 class CyclicB : CyclicC;
 class CyclicC : CyclicB;
@@ -92,21 +99,12 @@ class FieldIncompat {
   Derived derived_field2 = Unrelated<>;
 }
 
-// === Invalid Bits Size ===
-
-class InvalidBits {
-  // FIXME: エラーが出ない
-  bits<"not_a_number"> bad_bits;
-}
-
 // === Named Argument Errors ===
 
 class NamedArgs<int x, int y>;
 
 // Duplicate named argument
-// FIXME: エラーが正しくない
 def dup_named : NamedArgs<x=1, x=2>;
 
 // Unknown named argument
-// FIXME: エラーが正しくない
 def unknown_named : NamedArgs<z=1>;

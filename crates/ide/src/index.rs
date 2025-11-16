@@ -480,9 +480,10 @@ impl IndexStatement for ast::Defvar {
         let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
             return;
         };
-        let Some(typ) = self.value().and_then(|v| v.index_expression(ctx)) else {
-            return;
-        };
+        let typ = self
+            .value()
+            .and_then(|v| v.index_expression(ctx))
+            .unwrap_or(Type::Unknown);
 
         let variable = Variable::new(name, typ, VariableKind::Defvar, define_loc);
         if let Err(err) = ctx.scopes.add_variable(&mut ctx.symbol_map, variable) {
@@ -861,7 +862,7 @@ fn check_template_args(
                 } else {
                     ctx.error_by_textrange(
                         arg_value_range,
-                        format!("argument '{arg_value_name}' doesn't exist"),
+                        format!("template argument '{arg_value_name}' doesn't exist"),
                     );
                     None
                 }
@@ -911,11 +912,14 @@ impl IndexExpression for ast::ArgValue {
     fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         match self {
             ast::ArgValue::PositionalArgValue(positional) => {
-                let typ = positional.value()?.index_expression(ctx)?;
+                let typ = positional
+                    .value()?
+                    .index_expression(ctx)
+                    .unwrap_or(Type::Unknown);
                 Some((None, typ, positional.syntax().text_range()))
             }
             ast::ArgValue::NamedArgValue(named) => {
-                let ast::SimpleValue::String(name) =
+                let ast::SimpleValue::Identifier(name) =
                     named.name()?.inner_values().next()?.simple_value()?
                 else {
                     ctx.error_by_syntax(
@@ -924,8 +928,11 @@ impl IndexExpression for ast::ArgValue {
                     );
                     return None;
                 };
-                let typ = named.value()?.index_expression(ctx)?;
-                Some((Some(name.value()), typ, named.syntax().text_range()))
+                let typ = named
+                    .value()?
+                    .index_expression(ctx)
+                    .unwrap_or(Type::Unknown);
+                Some((Some(name.value()?), typ, named.syntax().text_range()))
             }
         }
     }
