@@ -80,7 +80,7 @@ def listconcat_derived1_val : listconcat_derived1, {
 }
 def listconcat_derived2_val : listconcat_derived2, {
 }
-variable list<listconcat_base> listconcat
+variable list<listconcat_derived1_val> listconcat
 class BitOps2<> : {
   bits<4> value;
   bits<16> value2;

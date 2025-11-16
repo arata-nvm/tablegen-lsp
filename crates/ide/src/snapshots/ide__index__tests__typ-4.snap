@@ -20,6 +20,17 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
+                range: 2257..2282,
+            },
+            message: "expected list<listconcat_derived1_val>, found list<listconcat_derived2_val>",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
                 range: 2507..2512,
             },
             message: "field 'value2' of type 'bits<16>' is incompatible with type 'bits<4>'",
