@@ -4,10 +4,17 @@ expression: dump_symbol_map(index.symbol_map())
 ---
 def undefined_class_ref : {
 }
+variable unknown uses_undefined
 class HasField<> : {
   int existing_field;
 }
+variable unknown bad_field_access
 def bad_field_let : HasField, {
+}
+class Foo<int a, > : {
+  int b;
+}
+class Bar<> : Foo, {
 }
 class TypeMismatch<> : {
   int int_field;

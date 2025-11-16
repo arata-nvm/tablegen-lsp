@@ -4,7 +4,6 @@
  def undefined_class_ref : UndefinedClass;
 
 // Undefined variable reference
-// FIXME: 定義されない
 defvar uses_undefined = undefined_variable;
 
 // Undefined field access
@@ -12,12 +11,21 @@ class HasField {
   int existing_field;
 }
 
-// FIXME: 定義されない
+// Nonexistent field access
 defvar bad_field_access = HasField<>.nonexistent_field;
 
+// Nonexistent field let
 def bad_field_let : HasField {
   let nonexistent_field = 10;
 }
+
+// === Error Recovering ===
+
+class Foo<int a = nonexistent_var> {
+  int b = nonexistent_var;
+}
+
+class Bar: Foo<nonexistent_var>;
 
 // === Type Mismatch Errors ===
 
