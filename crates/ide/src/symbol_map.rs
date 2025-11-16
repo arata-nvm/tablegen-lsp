@@ -52,9 +52,15 @@ pub struct SymbolMap {
 
 #[derive(Debug, Error)]
 pub enum SymbolMapError {
-    #[error("Class '{0}' already defined")]
+    #[error("class '{0}' already defined")]
     ClassAlreadyDefined(EcoString),
-    #[error("Class '{0}' has cyclic inheritance")]
+    #[error("def '{0}' already defined")]
+    DefAlreadyDefined(EcoString),
+    #[error("defset '{0}' already defined")]
+    DefsetAlreadyDefined(EcoString),
+    #[error("multiclass '{0}' already defined")]
+    MulticlassAlreadyDefined(EcoString),
+    #[error("class '{0}' has cyclic inheritance")]
     ClassCyclicInheritance(EcoString),
 }
 
@@ -285,13 +291,16 @@ impl SymbolMap {
         }
     }
 
-    pub fn add_def(&mut self, def: Def, is_global: bool) -> DefId {
+    pub fn add_def(&mut self, def: Def, is_global: bool) -> Result<DefId, SymbolMapError> {
+        if self.name_to_def.contains_key(&def.name) {
+            return Err(SymbolMapError::DefAlreadyDefined(def.name.clone()));
+        }
         let name = def.name.clone();
         let define_loc = def.define_loc;
         let id = self.def_list.alloc(def);
         self.name_to_def.insert(name, id);
         self.add_symbol_to_file(id, define_loc, is_global);
-        id
+        Ok(id)
     }
 
     pub fn add_temporary_def(&mut self, def: Def) -> DefId {
@@ -319,22 +328,33 @@ impl SymbolMap {
         id
     }
 
-    pub fn add_defset(&mut self, defset: Defset) -> DefsetId {
+    pub fn add_defset(&mut self, defset: Defset) -> Result<DefsetId, SymbolMapError> {
+        if self.name_to_defset.contains_key(&defset.name) {
+            return Err(SymbolMapError::DefsetAlreadyDefined(defset.name.clone()));
+        }
         let name = defset.name.clone();
         let define_loc = defset.define_loc;
         let id = self.defset_list.alloc(defset);
         self.name_to_defset.insert(name, id);
         self.add_symbol_to_file(id, define_loc, true);
-        id
+        Ok(id)
     }
 
-    pub fn add_multiclass(&mut self, multiclass: Multiclass) -> MulticlassId {
+    pub fn add_multiclass(
+        &mut self,
+        multiclass: Multiclass,
+    ) -> Result<MulticlassId, SymbolMapError> {
+        if self.name_to_multiclass.contains_key(&multiclass.name) {
+            return Err(SymbolMapError::MulticlassAlreadyDefined(
+                multiclass.name.clone(),
+            ));
+        }
         let name = multiclass.name.clone();
         let define_loc = multiclass.define_loc;
         let id = self.multiclass_list.alloc(multiclass);
         self.name_to_multiclass.insert(name, id);
         self.add_symbol_to_file(id, define_loc, true);
-        id
+        Ok(id)
     }
 
     pub fn add_defm(&mut self, defm: Defm, is_global: bool) -> DefmId {

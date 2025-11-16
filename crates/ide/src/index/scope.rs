@@ -27,6 +27,12 @@ impl Default for Scopes {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ScopeError {
+    #[error("variable '{0}' is already defined in the current scope")]
+    VariableAlreadyDefined(EcoString),
+}
+
 impl Scopes {
     pub fn push(&mut self, kind: ScopeKind) {
         self.scopes.push(Scope::new(kind));
@@ -34,6 +40,10 @@ impl Scopes {
 
     pub fn pop(&mut self) -> Scope {
         self.scopes.pop().expect("scope is empty")
+    }
+
+    pub fn is_global_scope(&self) -> bool {
+        self.scopes.len() == 1
     }
 
     pub fn current_class_id(&self) -> Option<ClassId> {
@@ -63,11 +73,25 @@ impl Scopes {
         self.scopes.iter().rev().find_map(|scope| scope.defm_id())
     }
 
-    pub fn add_variable(&mut self, symbol_map: &mut SymbolMap, variable: Variable) {
+    pub fn add_variable(
+        &mut self,
+        symbol_map: &mut SymbolMap,
+        variable: Variable,
+    ) -> Result<(), ScopeError> {
+        let found_in_global =
+            self.is_global_scope() && symbol_map.find_def(&variable.name).is_some();
+        let found_in_current_scope = self
+            .find_variable_in_current_scope(&variable.name)
+            .is_some();
+        if found_in_global || found_in_current_scope {
+            return Err(ScopeError::VariableAlreadyDefined(variable.name.clone()));
+        }
+
         let name = variable.name.clone();
         let id = symbol_map.add_variable(variable);
         let current_scope = self.scopes.last_mut().expect("scope is empty");
         current_scope.name_to_variable.insert(name, id);
+        Ok(())
     }
 
     pub fn find_local(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<SymbolId> {
@@ -121,9 +145,9 @@ pub enum ScopeKind {
     Defset(DefsetId),
     Multiclass(MulticlassId),
     Defm(DefmId),
-    XFilter,
-    XFoldl,
-    XForeach,
+    XFilter(EcoString, VariableId),
+    XFoldl(EcoString, VariableId, EcoString, VariableId),
+    XForeach(EcoString, VariableId),
 }
 
 impl Scope {
@@ -186,12 +210,24 @@ impl Scope {
             return Some(*var_id);
         }
 
-        if let ScopeKind::Foreach(var_name, var_id) = &self.kind
-            && name == var_name
-        {
-            return Some(*var_id);
+        match self.kind {
+            ScopeKind::Foreach(ref var_name, var_id)
+            | ScopeKind::XFilter(ref var_name, var_id)
+            | ScopeKind::XForeach(ref var_name, var_id)
+                if name == var_name =>
+            {
+                Some(var_id)
+            }
+            ScopeKind::XFoldl(ref var_name1, var_id1, ref var_name2, var_id2) => {
+                if name == var_name1 {
+                    Some(var_id1)
+                } else if name == var_name2 {
+                    Some(var_id2)
+                } else {
+                    None
+                }
+            }
+            _ => None,
         }
-
-        None
     }
 }

@@ -86,9 +86,9 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 894..901,
+                range: 724..737,
             },
-            message: "Class 'CyclicA' has cyclic inheritance",
+            message: "def 'duplicate_def' already defined",
         },
     ),
     Lsp(
@@ -97,7 +97,84 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1182..1194,
+                range: 798..799,
+            },
+            message: "template argument 'x' is already defined",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 873..874,
+            },
+            message: "field 'x' is already defined in record",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 932..945,
+            },
+            message: "variable 'duplicate_var' is already defined in the current scope",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 981..994,
+            },
+            message: "variable 'duplicate_def' is already defined in the current scope",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1119..1135,
+            },
+            message: "defset 'duplicate_defset' already defined",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1207..1227,
+            },
+            message: "multiclass 'duplicate_multiclass' already defined",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1324..1331,
+            },
+            message: "class 'CyclicA' has cyclic inheritance",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1612..1624,
             },
             message: "value not specified for template argument 'x'",
         },
@@ -108,7 +185,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1182..1194,
+                range: 1612..1624,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -119,7 +196,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1237..1253,
+                range: 1667..1683,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -130,7 +207,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1298..1319,
+                range: 1728..1749,
             },
             message: "too many arguments: 3",
         },
@@ -141,7 +218,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1497..1503,
+                range: 1927..1933,
             },
             message: "field 'derived_field1' of type 'Derived' is incompatible with type 'Base'",
         },
@@ -152,7 +229,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1532..1543,
+                range: 1962..1973,
             },
             message: "field 'derived_field2' of type 'Derived' is incompatible with type 'Unrelated'",
         },
@@ -163,7 +240,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1826..1829,
+                range: 2256..2259,
             },
             message: "the name of named argument should be a valid identifier",
         },
@@ -174,7 +251,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1831..1834,
+                range: 2261..2264,
             },
             message: "the name of named argument should be a valid identifier",
         },
@@ -185,7 +262,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1922..1936,
+                range: 2352..2366,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -196,7 +273,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1932..1935,
+                range: 2362..2365,
             },
             message: "the name of named argument should be a valid identifier",
         },

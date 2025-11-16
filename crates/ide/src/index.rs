@@ -256,7 +256,13 @@ fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
         names_iter.next().expect("def_names is not empty"),
         define_loc,
     );
-    let base_def_id = ctx.symbol_map.add_def(base_def, !is_anonymous);
+    let base_def_id = match ctx.symbol_map.add_def(base_def, !is_anonymous) {
+        Ok(def_id) => def_id,
+        Err(err) => {
+            ctx.error_by_filerange(define_loc, err.to_string());
+            return;
+        }
+    };
 
     ctx.scopes.push(ScopeKind::Def(base_def_id));
     if let Some(record_body) = def.record_body() {
@@ -269,7 +275,13 @@ fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
         let base_def = ctx.symbol_map.def(base_def_id);
         let mut cloned_def = base_def.clone();
         cloned_def.name = name;
-        let def_id = ctx.symbol_map.add_def(cloned_def, !is_anonymous);
+        let def_id = match ctx.symbol_map.add_def(cloned_def, !is_anonymous) {
+            Ok(def_id) => def_id,
+            Err(err) => {
+                ctx.error_by_filerange(define_loc, err.to_string());
+                continue;
+            }
+        };
         def_ids.push(def_id);
     }
 
@@ -416,7 +428,13 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
         let mut cloned_def = base_def.clone();
         cloned_def.name = def.name;
         cloned_def.define_loc = define_loc;
-        let def_id = ctx.symbol_map.add_def(cloned_def, defm.name().is_some());
+        let def_id = match ctx.symbol_map.add_def(cloned_def, defm.name().is_some()) {
+            Ok(def_id) => def_id,
+            Err(err) => {
+                ctx.error_by_filerange(define_loc, err.to_string());
+                continue;
+            }
+        };
         def_ids.push(def_id);
     }
 
@@ -438,7 +456,13 @@ impl IndexStatement for ast::Defset {
             return;
         };
         let defset = Defset::new(name, typ, define_loc);
-        let defset_id = ctx.symbol_map.add_defset(defset);
+        let defset_id = match ctx.symbol_map.add_defset(defset) {
+            Ok(defset_id) => defset_id,
+            Err(err) => {
+                ctx.error_by_filerange(define_loc, err.to_string());
+                return;
+            }
+        };
 
         ctx.scopes.push(ScopeKind::Defset(defset_id));
         if let Some(statement_list) = self.statement_list() {
@@ -459,8 +483,11 @@ impl IndexStatement for ast::Defvar {
         let Some(typ) = self.value().and_then(|v| v.index_expression(ctx)) else {
             return;
         };
+
         let variable = Variable::new(name, typ, VariableKind::Defvar, define_loc);
-        ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
+        if let Err(err) = ctx.scopes.add_variable(&mut ctx.symbol_map, variable) {
+            ctx.error_by_filerange(define_loc, err.to_string());
+        }
     }
 }
 
@@ -606,7 +633,13 @@ impl IndexStatement for ast::MultiClass {
             return;
         };
         let multiclass = Multiclass::new(name, define_loc);
-        let multiclass_id = ctx.symbol_map.add_multiclass(multiclass);
+        let multiclass_id = match ctx.symbol_map.add_multiclass(multiclass) {
+            Ok(multiclass_id) => multiclass_id,
+            Err(err) => {
+                ctx.error_by_filerange(define_loc, err.to_string());
+                return;
+            }
+        };
 
         ctx.scopes.push(ScopeKind::Multiclass(multiclass_id));
         if let Some(template_arg_list) = self.template_arg_list() {
@@ -641,10 +674,34 @@ impl IndexStatement for ast::TemplateArgDecl {
         let Some(typ) = self.r#type().and_then(|it| it.index_expression(ctx)) else {
             return;
         };
-        let has_default_value = self.value().is_some();
+        let has_default_value = match self.value() {
+            Some(value) => {
+                let _ = value.index_expression(ctx);
+                true
+            }
+            None => false,
+        };
+
+        let is_dup = if let Some(class_id) = ctx.scopes.current_class_id() {
+            let class = ctx.symbol_map.class(class_id);
+            class.find_template_arg(&name).is_some()
+        } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
+            let multiclass = ctx.symbol_map.multiclass(multiclass_id);
+            multiclass.find_template_arg(&name).is_some()
+        } else {
+            tracing::warn!("template arg decl outside of record or multiclass");
+            false
+        };
+        if is_dup {
+            ctx.error_by_filerange(
+                define_loc,
+                format!("template argument '{name}' is already defined"),
+            );
+            return;
+        }
+
         let template_arg = TemplateArgument::new(name.clone(), typ, has_default_value, define_loc);
         let template_arg_id = ctx.symbol_map.add_template_argument(template_arg);
-
         if let Some(class_id) = ctx.scopes.current_class_id() {
             let class = ctx.symbol_map.class_mut(class_id);
             class.add_template_arg(name, template_arg_id);
@@ -653,10 +710,6 @@ impl IndexStatement for ast::TemplateArgDecl {
             multiclass.add_template_arg(name, template_arg_id);
         } else {
             tracing::warn!("template arg decl outside of record or multiclass");
-        }
-
-        if let Some(value) = self.value() {
-            let _ = value.index_expression(ctx);
         }
     }
 }
@@ -898,13 +951,12 @@ impl IndexStatement for ast::BodyItem {
     }
 }
 
-// TODO: check if field is already defined
 impl IndexStatement for ast::FieldDef {
     fn index_statement(&self, ctx: &mut IndexCtx) {
-        let record_id = ctx
-            .scopes
-            .current_record_id()
-            .expect("field def outside of record");
+        let Some(record_id) = ctx.scopes.current_record_id() else {
+            tracing::warn!("field def outside of record");
+            return;
+        };
 
         let Some(name_node) = self.name() else {
             return;
@@ -915,9 +967,18 @@ impl IndexStatement for ast::FieldDef {
         let Some(typ) = self.r#type().and_then(|t| t.index_expression(ctx)) else {
             return;
         };
+
+        let record = ctx.symbol_map.record(record_id);
+        if record.find_field(&ctx.symbol_map, &name).is_some() {
+            ctx.error_by_filerange(
+                define_loc,
+                format!("field '{name}' is already defined in record"),
+            );
+            return;
+        }
+
         let field = RecordField::new(name.clone(), typ.clone(), record_id, define_loc);
         let field_id = ctx.symbol_map.add_record_field(field);
-
         let mut record = ctx.symbol_map.record_mut(record_id);
         record.add_record_field(name.clone(), field_id);
 
@@ -936,7 +997,6 @@ impl IndexStatement for ast::FieldDef {
     }
 }
 
-// TODO: check if field is already defined
 impl IndexStatement for ast::FieldLet {
     fn index_statement(&self, ctx: &mut IndexCtx) {
         let Some(name_node) = self.name() else {

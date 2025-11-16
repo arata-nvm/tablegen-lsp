@@ -148,10 +148,14 @@ impl IndexExpression for ast::BangOperator {
                     _ => return None,
                 };
 
-                ctx.scopes.push(ScopeKind::XFilter);
-                let variable =
-                    Variable::new(var_name, var_typ, VariableKind::XForeach, var_define_loc);
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
+                let var = Variable::new(
+                    var_name.clone(),
+                    var_typ,
+                    VariableKind::XForeach,
+                    var_define_loc,
+                );
+                let var_id = ctx.symbol_map.add_variable(var);
+                ctx.scopes.push(ScopeKind::XFilter(var_name, var_id));
                 let _ = predicate.index_expression(ctx);
                 ctx.scopes.pop();
 
@@ -215,17 +219,24 @@ impl IndexExpression for ast::BangOperator {
                     _ => return None,
                 };
 
-                ctx.scopes.push(ScopeKind::XFoldl);
-                let variable_acc = Variable::new(
-                    acc_name,
+                let var_acc = Variable::new(
+                    acc_name.clone(),
                     init_typ.clone(),
                     VariableKind::XFoldl,
                     acc_define_loc,
                 );
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable_acc);
-                let variable_var =
-                    Variable::new(var_name, list_elm_typ, VariableKind::XFoldl, var_define_loc);
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable_var);
+                let var_acc_id = ctx.symbol_map.add_variable(var_acc);
+                let var_var = Variable::new(
+                    var_name.clone(),
+                    list_elm_typ,
+                    VariableKind::XFoldl,
+                    var_define_loc,
+                );
+                let var_var_id = ctx.symbol_map.add_variable(var_var);
+
+                ctx.scopes.push(ScopeKind::XFoldl(
+                    acc_name, var_acc_id, var_name, var_var_id,
+                ));
                 let _ = expr.index_expression(ctx);
                 ctx.scopes.pop();
 
@@ -249,10 +260,14 @@ impl IndexExpression for ast::BangOperator {
                     _ => return None,
                 };
 
-                ctx.scopes.push(ScopeKind::XForeach);
-                let variable =
-                    Variable::new(var_name, var_typ, VariableKind::XForeach, var_define_loc);
-                ctx.scopes.add_variable(&mut ctx.symbol_map, variable);
+                let var = Variable::new(
+                    var_name.clone(),
+                    var_typ,
+                    VariableKind::XForeach,
+                    var_define_loc,
+                );
+                let var_id = ctx.symbol_map.add_variable(var);
+                ctx.scopes.push(ScopeKind::XForeach(var_name, var_id));
                 let expr_typ = expr.index_expression(ctx);
                 ctx.scopes.pop();
 

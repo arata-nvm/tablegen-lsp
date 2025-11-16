@@ -11,7 +11,7 @@ expression: "check(\"class Foo : Foo;\")"
                 ),
                 range: 12..15,
             },
-            message: "Class 'Foo' has cyclic inheritance",
+            message: "class 'Foo' has cyclic inheritance",
         },
     ),
 ]

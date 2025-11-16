@@ -192,11 +192,15 @@ mod tests {
 
         let mut base_def = Def::new("base_val".into(), FileRange::detached());
         base_def.add_parent(base_class_id);
-        let base_def_id = symbol_map.add_def(base_def, false);
+        let base_def_id = symbol_map
+            .add_def(base_def, false)
+            .expect("failed to add def");
 
         let mut derived_def = Def::new("derived_val".into(), FileRange::detached());
         derived_def.add_parent(derived_class_id);
-        let derived_def_id = symbol_map.add_def(derived_def, false);
+        let derived_def_id = symbol_map
+            .add_def(derived_def, false)
+            .expect("failed to add def");
 
         let base_class_ty = Type::Record(RecordId::Class(base_class_id), "base".into());
         let derived_class_ty = Type::Record(RecordId::Class(derived_class_id), "derived".into());

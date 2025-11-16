@@ -14,12 +14,20 @@ class TypeMismatch<> : {
   string string_field;
   list<int> int_list;
 }
-class DuplicateTest<> : {
+class duplicate_class<> : {
 }
 def duplicate_def : {
 }
-def duplicate_def : {
+class duplicate_template_arg<int x, > : {
 }
+class duplicate_field<> : {
+  int x;
+}
+variable int duplicate_var
+class for_dup_test<> : {
+}
+defset list<for_dup_test> duplicate_defset
+multiclass duplicate_multiclass {
 class CyclicA<> : {
 }
 class CyclicB<> : CyclicC, {

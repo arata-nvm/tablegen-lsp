@@ -29,12 +29,29 @@ class TypeMismatch {
 
 // === Duplicate Definition Errors ===
 
-class DuplicateTest;
-class DuplicateTest;  // Duplicate class
+class duplicate_class;
+class duplicate_class;  // Duplicate class
 
 def duplicate_def;
-// FIXME: 定義されてしまう
 def duplicate_def;  // Duplicate def
+
+class duplicate_template_arg<int x, int x>; // Duplicate template argument
+
+class duplicate_field {
+  int x;
+  int x; // Duplicate field
+}
+
+defvar duplicate_var = 10;
+defvar duplicate_var = 10; // Duplicate variable
+defvar duplicate_def = 10; // Duplicate variable
+
+class for_dup_test;
+defset list<for_dup_test> duplicate_defset = {};
+defset list<for_dup_test> duplicate_defset = {}; // Duplicate defset
+
+multiclass duplicate_multiclass;
+multiclass duplicate_multiclass; // Duplicate multiclass
 
 // === Cyclic Inheritance Errors ===
 

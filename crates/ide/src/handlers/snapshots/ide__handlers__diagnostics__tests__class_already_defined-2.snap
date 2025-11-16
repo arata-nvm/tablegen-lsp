@@ -11,7 +11,7 @@ expression: "check(\"class Foo { int a; } class Foo { int b; }\")"
                 ),
                 range: 27..30,
             },
-            message: "Class 'Foo' already defined",
+            message: "class 'Foo' already defined",
         },
     ),
 ]
