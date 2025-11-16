@@ -30,10 +30,10 @@ pub enum Type {
     Bits(usize),
     List(Box<Type>),
     Record(RecordId, EcoString),
-    NotResolved(EcoString),
     Uninitialized,
-    Unknown,
-    Any, // for empty list
+    Unknown,                 // for error recovery
+    NamedUnknown(EcoString), // for error recovery
+    Any,                     // for empty list
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -66,9 +66,8 @@ impl Type {
 
     pub fn can_be_casted_to(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
         match (self, other) {
-            (Self::Uninitialized, _) | (_, Self::Uninitialized) => true,
-            (Self::Unknown, _) | (_, Self::Unknown) => true,
-            (Self::Any, _) | (_, Self::Any) => true,
+            (Self::Uninitialized | Self::Unknown | Self::NamedUnknown(_) | Self::Any, _)
+            | (_, Self::Uninitialized | Self::Unknown | Self::NamedUnknown(_) | Self::Any) => true,
             // 0,1以外の値の場合はエラーを出す必要がある
             (Self::Int, Self::Bit) | (Self::Bit, Self::Int) => true,
             // 指定されたビット幅でIntを表現できない場合はエラーを出す必要がある
@@ -148,9 +147,9 @@ impl std::fmt::Display for Type {
             Self::Bits(width) => write!(f, "bits<{width}>"),
             Self::List(typ) => write!(f, "list<{typ}>"),
             Self::Record(_, name) => write!(f, "{name}"),
-            Self::NotResolved(name) => write!(f, "{name}"),
             Self::Uninitialized => write!(f, "uninitialized"),
             Self::Unknown => write!(f, "unknown"),
+            Self::NamedUnknown(name) => write!(f, "{name}"),
             Self::Any => write!(f, "any"),
         }
     }

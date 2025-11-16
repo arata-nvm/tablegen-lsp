@@ -1309,7 +1309,7 @@ impl IndexExpression for ast::Type {
                     }
                     None => {
                         ctx.error_by_filerange(reference_loc, format!("class not found: {name}"));
-                        Some(Type::NotResolved(name))
+                        Some(Type::NamedUnknown(name))
                     }
                 }
             }
