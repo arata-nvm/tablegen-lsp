@@ -207,7 +207,18 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1737..1749,
+                range: 1533..1540,
+            },
+            message: "class 'CyclicB' has cyclic inheritance",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 1705..1717,
             },
             message: "value not specified for template argument 'x'",
         },
@@ -218,7 +229,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1737..1749,
+                range: 1705..1717,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -229,7 +240,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1792..1808,
+                range: 1760..1776,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -240,7 +251,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1853..1874,
+                range: 1821..1842,
             },
             message: "too many arguments: 3",
         },
@@ -251,7 +262,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2052..2058,
+                range: 2020..2026,
             },
             message: "field 'derived_field1' of type 'Derived' is incompatible with type 'Base'",
         },
@@ -262,7 +273,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2087..2098,
+                range: 2055..2066,
             },
             message: "field 'derived_field2' of type 'Derived' is incompatible with type 'Unrelated'",
         },
@@ -273,7 +284,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2381..2384,
+                range: 2349..2352,
             },
             message: "the name of named argument should be a valid identifier",
         },
@@ -284,7 +295,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2386..2389,
+                range: 2354..2357,
             },
             message: "the name of named argument should be a valid identifier",
         },
@@ -295,7 +306,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2477..2491,
+                range: 2445..2459,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -306,7 +317,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2487..2490,
+                range: 2455..2458,
             },
             message: "the name of named argument should be a valid identifier",
         },

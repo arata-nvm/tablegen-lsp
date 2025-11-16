@@ -39,7 +39,7 @@ class CyclicA<> : {
 }
 class CyclicB<> : CyclicC, {
 }
-class CyclicC<> : CyclicB, {
+class CyclicC<> : {
 }
 class RequiresArgs<int x, string y, > : {
   int value;

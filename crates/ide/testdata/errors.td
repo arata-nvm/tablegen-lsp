@@ -67,7 +67,6 @@ multiclass duplicate_multiclass; // Duplicate multiclass
 class CyclicA : CyclicA;
 
 // Indirect cycle
-// FIXME: エラーが出ない
 class CyclicC;
 class CyclicB : CyclicC;
 class CyclicC : CyclicB;
