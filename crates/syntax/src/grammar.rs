@@ -180,6 +180,7 @@ mod tests {
         insta::assert_debug_snapshot!(parse(
             "class Foo<bit A, int B, string C, dag D, bits<32> E, list<int> F, Bar G>;"
         ));
+        insta::assert_debug_snapshot!(parse(r#"class Foo<bits<"not_int"> x>;"#));
     }
 
     #[test]

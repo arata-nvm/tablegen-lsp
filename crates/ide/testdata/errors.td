@@ -99,13 +99,6 @@ class FieldIncompat {
   Derived derived_field2 = Unrelated<>;
 }
 
-// === Invalid Bits Size ===
-
-class InvalidBits {
-  // FIXME: エラーが出ない
-  bits<"not_a_number"> bad_bits;
-}
-
 // === Named Argument Errors ===
 
 class NamedArgs<int x, int y>;

@@ -61,8 +61,6 @@ class FieldIncompat<> : {
   Derived derived_field1;
   Derived derived_field2;
 }
-class InvalidBits<> : {
-}
 class NamedArgs<int x, int y, > : {
 }
 def dup_named : NamedArgs, {

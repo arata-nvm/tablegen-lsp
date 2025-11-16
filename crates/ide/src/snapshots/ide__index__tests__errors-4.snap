@@ -284,7 +284,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2349..2352,
+                range: 2229..2232,
             },
             message: "the name of named argument should be a valid identifier",
         },
@@ -295,7 +295,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2354..2357,
+                range: 2234..2237,
             },
             message: "the name of named argument should be a valid identifier",
         },
@@ -306,7 +306,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2445..2459,
+                range: 2325..2339,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -317,7 +317,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2455..2458,
+                range: 2335..2338,
             },
             message: "the name of named argument should be a valid identifier",
         },

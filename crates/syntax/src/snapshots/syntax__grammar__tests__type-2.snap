@@ -1,0 +1,66 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(r#\"class Foo<bits<\"not_int\"> x>;\"#)"
+---
+(
+    SourceFile@0..29
+      StatementList@0..29
+        Class@0..15
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..9
+            Id@6..9 "Foo"
+          TemplateArgList@9..15
+            Less@9..10 "<"
+            TemplateArgDecl@10..15
+              BitsType@10..15
+                BitsKw@10..14 "bits"
+                Less@14..15 "<"
+                Integer@15..15
+              Identifier@15..15
+          RecordBody@15..15
+            ParentClassList@15..15
+            Body@15..15
+        Error@15..24
+          StrVal@15..24 "\"not_int\""
+        Error@24..26
+          Greater@24..25 ">"
+          Whitespace@25..26 " "
+        Error@26..27
+          Id@26..27 "x"
+        Error@27..28
+          Greater@27..28 ">"
+        Error@28..29
+          Semi@28..29 ";"
+    ,
+    [
+        SyntaxError {
+            range: 15..24,
+            message: "expected integer in bits<n> type",
+        },
+        SyntaxError {
+            range: 15..24,
+            message: "expected identifier in declaration",
+        },
+        SyntaxError {
+            range: 15..24,
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
+        },
+        SyntaxError {
+            range: 24..25,
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
+        },
+        SyntaxError {
+            range: 26..27,
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
+        },
+        SyntaxError {
+            range: 27..28,
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
+        },
+        SyntaxError {
+            range: 28..29,
+            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
+        },
+    ],
+)
