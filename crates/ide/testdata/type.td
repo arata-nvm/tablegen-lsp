@@ -92,12 +92,10 @@ def list_template_inst : ListTemplate<[1, 2, 3]>;
 
 // List concatenation with inheritance
 class listconcat_base;
-class listconcat_derived1 : listconcat_base;
-class listconcat_derived2 : listconcat_base;
-def listconcat_derived1_val: listconcat_derived1;
-def listconcat_derived2_val: listconcat_derived2;
-// FIXME: `expected list<listconcat_derived1_val>, found list<listconcat_derived2_val>`のエラーが出る
-defvar listconcat = !listconcat([listconcat_derived1_val], [listconcat_derived2_val]);
+class listconcat_derived : listconcat_base;
+def listconcat_base_val: listconcat_base;
+def listconcat_derived_val: listconcat_derived;
+defvar listconcat = !listconcat([listconcat_base_val], [listconcat_derived_val]);
 
 // Range list type checking
 class RangeListTest {

@@ -20,18 +20,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2257..2282,
-            },
-            message: "expected list<listconcat_derived1_val>, found list<listconcat_derived2_val>",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2408..2416,
+                range: 2238..2246,
             },
             message: "duplicate bit index 3",
         },
@@ -42,7 +31,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2440..2441,
+                range: 2270..2271,
             },
             message: "cannot set bit index 8 for bits<4>",
         },
@@ -53,7 +42,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2494..2495,
+                range: 2324..2325,
             },
             message: "type 'string' is not bits type",
         },

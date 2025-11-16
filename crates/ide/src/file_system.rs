@@ -35,6 +35,14 @@ impl FileRange {
     pub fn new(file: FileId, range: TextRange) -> Self {
         Self { file, range }
     }
+
+    #[cfg(test)]
+    pub fn detached() -> Self {
+        Self {
+            file: FileId(0),
+            range: TextRange::empty(TextSize::from(0)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

@@ -80,14 +80,23 @@ impl Type {
                 if self_record_id == other_record_id {
                     return true;
                 }
-                match other_record_id {
-                    // class, class || def, class
-                    RecordId::Class(other_class_id) => {
+                match (self_record_id, other_record_id) {
+                    (_, RecordId::Class(other_class_id)) => {
                         let self_record = symbol_map.record(*self_record_id);
                         self_record.is_subclass_of(symbol_map, *other_class_id)
                     }
-                    // class, def || def, def
-                    RecordId::Def(_) => false,
+                    (RecordId::Class(_), RecordId::Def(_)) => false,
+                    (RecordId::Def(self_def_id), RecordId::Def(other_def_id)) => {
+                        let self_def = symbol_map.def(*self_def_id);
+                        let other_def = symbol_map.def(*other_def_id);
+                        self_def.parent_list.iter().all(|self_parent_id| {
+                            let self_parent = symbol_map.class(*self_parent_id);
+                            other_def.parent_list.iter().any(|other_parent_id| {
+                                self_parent_id == other_parent_id
+                                    || self_parent.is_subclass_of(symbol_map, *other_parent_id)
+                            })
+                        })
+                    }
                 }
             }
             _ => self == other,
@@ -148,7 +157,10 @@ impl std::fmt::Display for Type {
 
 #[cfg(test)]
 mod tests {
-    use crate::symbol_map::typ::Type;
+    use crate::{
+        file_system::FileRange,
+        symbol_map::{SymbolMap, class::Class, def::Def, record::RecordId, typ::Type},
+    };
 
     #[test]
     fn bits_width() {
@@ -161,5 +173,54 @@ mod tests {
 
         let ty = Type::String;
         assert!(ty.with_bits(vec![0]).is_err());
+    }
+
+    #[test]
+    fn record() {
+        let mut symbol_map = SymbolMap::default();
+
+        let base_class = Class::new("base".into(), FileRange::detached());
+        let base_class_id = symbol_map
+            .add_class(base_class)
+            .expect("failed to add class");
+
+        let mut derived_class = Class::new("derived".into(), FileRange::detached());
+        derived_class.add_parent(base_class_id);
+        let derived_class_id = symbol_map
+            .add_class(derived_class)
+            .expect("failed to add class");
+
+        let mut base_def = Def::new("base_val".into(), FileRange::detached());
+        base_def.add_parent(base_class_id);
+        let base_def_id = symbol_map.add_def(base_def, false);
+
+        let mut derived_def = Def::new("derived_val".into(), FileRange::detached());
+        derived_def.add_parent(derived_class_id);
+        let derived_def_id = symbol_map.add_def(derived_def, false);
+
+        let base_class_ty = Type::Record(RecordId::Class(base_class_id), "base".into());
+        let derived_class_ty = Type::Record(RecordId::Class(derived_class_id), "derived".into());
+        let base_def_ty = Type::Record(RecordId::Def(base_def_id), "base_val".into());
+        let derived_def_ty = Type::Record(RecordId::Def(derived_def_id), "derived_val".into());
+
+        assert!(base_class_ty.can_be_casted_to(&symbol_map, &base_class_ty));
+        assert!(!base_class_ty.can_be_casted_to(&symbol_map, &base_def_ty));
+        assert!(base_def_ty.can_be_casted_to(&symbol_map, &base_def_ty));
+        assert!(base_def_ty.can_be_casted_to(&symbol_map, &base_class_ty));
+
+        assert!(derived_class_ty.can_be_casted_to(&symbol_map, &derived_class_ty));
+        assert!(!derived_class_ty.can_be_casted_to(&symbol_map, &base_def_ty));
+        assert!(derived_def_ty.can_be_casted_to(&symbol_map, &derived_def_ty));
+        assert!(derived_def_ty.can_be_casted_to(&symbol_map, &derived_class_ty));
+
+        assert!(!base_class_ty.can_be_casted_to(&symbol_map, &derived_class_ty));
+        assert!(!base_class_ty.can_be_casted_to(&symbol_map, &derived_def_ty));
+        assert!(!base_def_ty.can_be_casted_to(&symbol_map, &derived_class_ty));
+        assert!(!base_def_ty.can_be_casted_to(&symbol_map, &derived_def_ty));
+
+        assert!(derived_class_ty.can_be_casted_to(&symbol_map, &base_class_ty));
+        assert!(!derived_class_ty.can_be_casted_to(&symbol_map, &base_def_ty));
+        assert!(derived_def_ty.can_be_casted_to(&symbol_map, &base_class_ty));
+        assert!(derived_def_ty.can_be_casted_to(&symbol_map, &base_def_ty));
     }
 }

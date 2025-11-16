@@ -72,15 +72,13 @@ def list_template_inst : ListTemplate, {
 }
 class listconcat_base<> : {
 }
-class listconcat_derived1<> : listconcat_base, {
+class listconcat_derived<> : listconcat_base, {
 }
-class listconcat_derived2<> : listconcat_base, {
+def listconcat_base_val : listconcat_base, {
 }
-def listconcat_derived1_val : listconcat_derived1, {
+def listconcat_derived_val : listconcat_derived, {
 }
-def listconcat_derived2_val : listconcat_derived2, {
-}
-variable list<listconcat_derived1_val> listconcat
+variable list<listconcat_base_val> listconcat
 class RangeListTest<> : {
   bits<4> bits_field;
   string str_field;
