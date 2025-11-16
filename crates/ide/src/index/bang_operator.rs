@@ -1,4 +1,7 @@
-use syntax::{ast, syntax_kind::SyntaxKind};
+use syntax::{
+    ast::{self, AstNode},
+    syntax_kind::SyntaxKind,
+};
 
 use crate::{
     TY,
@@ -37,7 +40,7 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![int])
             }
             SyntaxKind::XCast => {
-                let typ = common::expect_type_annotation(ctx, self).unwrap_or(Type::Unknown);
+                let typ = common::expect_type_annotation(ctx, self).unwrap_or(Type::unknown());
                 let values = common::expect_values(ctx, self, 1..=1);
                 common::index_values(ctx, values);
                 Some(typ)
@@ -139,7 +142,12 @@ impl IndexExpression for ast::BangOperator {
                 let predicate = values.get(2)?;
 
                 let list_typ = list.index_expression(ctx)?;
-                let var_typ = list_typ.element_typ()?;
+                let var_typ = if let Some(elm_typ) = list_typ.list_element_type() {
+                    elm_typ.clone()
+                } else {
+                    ctx.error_by_syntax(list.syntax(), format!("expected list, found {list_typ}"));
+                    Type::unknown()
+                };
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
@@ -204,7 +212,12 @@ impl IndexExpression for ast::BangOperator {
 
                 let init_typ = init.index_expression(ctx)?;
                 let list_typ = list.index_expression(ctx)?;
-                let list_elm_typ = list_typ.element_typ()?;
+                let list_elm_typ = if let Some(elm_typ) = list_typ.list_element_type() {
+                    elm_typ.clone()
+                } else {
+                    ctx.error_by_syntax(list.syntax(), format!("expected list, found {list_typ}"));
+                    Type::unknown()
+                };
 
                 let (acc_name, acc_define_loc) = match acc.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
@@ -251,7 +264,15 @@ impl IndexExpression for ast::BangOperator {
                 let expr = values.get(2)?;
 
                 let sequence_typ = sequence.index_expression(ctx)?;
-                let var_typ = sequence_typ.element_typ()?;
+                let var_typ = if let Some(elm_typ) = sequence_typ.list_element_type() {
+                    elm_typ.clone()
+                } else {
+                    ctx.error_by_syntax(
+                        sequence.syntax(),
+                        format!("expected list, found {sequence_typ}"),
+                    );
+                    Type::unknown()
+                };
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
@@ -271,8 +292,8 @@ impl IndexExpression for ast::BangOperator {
                 let expr_typ = expr.index_expression(ctx);
                 ctx.scopes.pop();
 
-                let expr_typ = expr_typ.unwrap_or(Type::Unknown);
-                Some(Type::List(Box::new(expr_typ)))
+                let expr_typ = expr_typ.unwrap_or(Type::unknown());
+                Some(Type::list(expr_typ))
             }
             SyntaxKind::XGe | SyntaxKind::XGt | SyntaxKind::XLe | SyntaxKind::XLt => {
                 common::unexpect_type_annotation(ctx, self);
@@ -318,7 +339,7 @@ impl IndexExpression for ast::BangOperator {
                     );
                 }
 
-                Some(typ.unwrap_or(Type::Unknown))
+                Some(typ.unwrap_or(Type::unknown()))
             }
             SyntaxKind::XGetDagName => {
                 common::unexpect_type_annotation(ctx, self);
@@ -350,7 +371,7 @@ impl IndexExpression for ast::BangOperator {
                     ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
                 }
 
-                Some(typ.unwrap_or(Type::Unknown))
+                Some(typ.unwrap_or(Type::unknown()))
             }
             SyntaxKind::XHead => {
                 common::unexpect_type_annotation(ctx, self);
@@ -358,15 +379,12 @@ impl IndexExpression for ast::BangOperator {
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let (list_range, list_typ) = value_types.next()?;
-                match list_typ? {
-                    Type::List(elm_typ) => Some(*elm_typ.clone()),
-                    list_typ => {
-                        ctx.error_by_textrange(
-                            list_range,
-                            format!("expected list, found {list_typ}"),
-                        );
-                        Some(Type::Unknown)
-                    }
+                let list_typ = list_typ?;
+                if let Some(elm_typ) = list_typ.list_element_type() {
+                    return Some(elm_typ.clone());
+                } else {
+                    ctx.error_by_textrange(list_range, format!("expected list, found {list_typ}"));
+                    Some(Type::unknown())
                 }
             }
             SyntaxKind::XIf => {
@@ -385,10 +403,10 @@ impl IndexExpression for ast::BangOperator {
                 }
 
                 let Some((_, Some(then_typ))) = value_types.next() else {
-                    return Some(Type::Unknown);
+                    return Some(Type::unknown());
                 };
                 let Some((else_range, Some(else_typ))) = value_types.next() else {
-                    return Some(Type::Unknown);
+                    return Some(Type::unknown());
                 };
 
                 if then_typ.can_be_casted_to(&ctx.symbol_map, &else_typ) {
@@ -398,7 +416,7 @@ impl IndexExpression for ast::BangOperator {
                         else_range,
                         format!("inconsistent types {then_typ} and {else_typ} for !if"),
                     );
-                    Some(Type::Unknown)
+                    Some(Type::unknown())
                 }
             }
             SyntaxKind::XInitialized => {
@@ -421,7 +439,7 @@ impl IndexExpression for ast::BangOperator {
                     );
                 }
 
-                typ.map(|it| Type::List(Box::new(it)))
+                typ.map(Type::list)
             }
             SyntaxKind::XInterleave => {
                 common::unexpect_type_annotation(ctx, self);
@@ -429,20 +447,23 @@ impl IndexExpression for ast::BangOperator {
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((list_range, Some(list_type))) = value_types.next() {
-                    match list_type {
-                        Type::List(elm_typ)
-                            if matches!(
-                                *elm_typ.clone(),
-                                Type::Any | Type::String | Type::Int | Type::Bits(_) | Type::Bit
-                            ) => {}
-                        _ => {
-                            ctx.error_by_textrange(
-                                list_range,
-                                format!(
-                                    "expected list of string, int, bits, or bit; found {list_type}"
-                                ),
-                            );
-                        }
+                    let is_not_acceptable_typ = |elm_typ: &Type| {
+                        elm_typ.can_be_casted_to(&ctx.symbol_map, &TY![string])
+                            || elm_typ.can_be_casted_to(&ctx.symbol_map, &TY![int])
+                            || elm_typ.is_bits()
+                            || elm_typ.can_be_casted_to(&ctx.symbol_map, &TY![bit])
+                    };
+                    if list_type
+                        .list_element_type()
+                        .map(|elm_typ| is_not_acceptable_typ(&elm_typ))
+                        .unwrap_or(true)
+                    {
+                        ctx.error_by_textrange(
+                            list_range,
+                            format!(
+                                "expected list of string, int, bits, or bit; found {list_type}"
+                            ),
+                        );
                     }
                 }
 
@@ -477,7 +498,7 @@ impl IndexExpression for ast::BangOperator {
                         list1_range,
                         format!("expected list, found {list1_type}"),
                     );
-                    return Some(Type::Unknown);
+                    return Some(Type::unknown());
                 }
 
                 for (range, typ) in value_types {
@@ -503,15 +524,15 @@ impl IndexExpression for ast::BangOperator {
                     return None;
                 };
 
-                if let Type::List(inner_type) = list_type {
-                    if let Type::List(_) = *inner_type {
-                        Some(*inner_type.clone())
+                if let Some(elm_typ) = list_type.list_element_type() {
+                    if elm_typ.is_list() {
+                        Some(elm_typ.clone())
                     } else {
-                        Some(Type::List(inner_type.clone()))
+                        Some(Type::list(elm_typ.clone()))
                     }
                 } else {
                     ctx.error_by_textrange(list_range, format!("expected list, found {list_type}"));
-                    Some(Type::Unknown)
+                    Some(Type::unknown())
                 }
             }
             SyntaxKind::XListRemove => {
@@ -528,7 +549,7 @@ impl IndexExpression for ast::BangOperator {
                         list1_range,
                         format!("expected list, found {list1_type}"),
                     );
-                    return Some(Type::Unknown);
+                    return Some(Type::unknown());
                 }
 
                 let (list2_range, list2_type) = value_types.next()?;
@@ -558,7 +579,7 @@ impl IndexExpression for ast::BangOperator {
                     ctx.error_by_textrange(count_range, format!("expected int, found {count_typ}"));
                 }
 
-                Some(Type::List(Box::new(value_type.clone())))
+                Some(Type::list(value_type.clone()))
             }
             SyntaxKind::XLog2 => {
                 common::unexpect_type_annotation(ctx, self);
@@ -750,7 +771,7 @@ impl IndexExpression for ast::BangOperator {
                         value_range,
                         format!("expected string or record, found {value_typ}"),
                     );
-                    return Some(Type::Unknown);
+                    return Some(Type::unknown());
                 }
 
                 let target_typ = target_typ?;
@@ -811,7 +832,7 @@ impl IndexExpression for ast::BangOperator {
 
                     ctx.error_by_textrange(list_range, format!("expected list, found {list_typ}"));
                 }
-                Some(Type::Unknown)
+                Some(Type::unknown())
             }
             SyntaxKind::XToLower | SyntaxKind::XToUpper => {
                 common::unexpect_type_annotation(ctx, self);
@@ -827,7 +848,7 @@ impl IndexExpression for ast::BangOperator {
             }
             _ => {
                 tracing::warn!("unexpected syntax kind: {:?}", self.kind());
-                Some(Type::Unknown)
+                Some(Type::unknown())
             }
         }
     }

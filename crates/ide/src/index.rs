@@ -483,7 +483,7 @@ impl IndexStatement for ast::Defvar {
         let typ = self
             .value()
             .and_then(|v| v.index_expression(ctx))
-            .unwrap_or(Type::Unknown);
+            .unwrap_or(Type::unknown());
 
         let variable = Variable::new(name, typ, VariableKind::Defvar, define_loc);
         if let Err(err) = ctx.scopes.add_variable(&mut ctx.symbol_map, variable) {
@@ -563,12 +563,8 @@ impl IndexExpression for ast::ForeachIteratorInit {
                 }
                 (Some(start), None) => {
                     let start_typ = start.index_expression(ctx)?;
-                    if start_typ.is_list() {
-                        Some(
-                            start_typ
-                                .element_typ()
-                                .expect("list should have element type"),
-                        )
+                    if let Some(elm_typ) = start_typ.list_element_type() {
+                        Some(elm_typ.clone())
                     } else {
                         ctx.error_by_syntax(
                             start.syntax(),
@@ -579,7 +575,9 @@ impl IndexExpression for ast::ForeachIteratorInit {
                 }
                 _ => None,
             },
-            Self::Value(value) => value.index_expression(ctx).and_then(|it| it.element_typ()),
+            Self::Value(value) => value
+                .index_expression(ctx)
+                .and_then(|it| it.list_element_type().cloned()),
         }
     }
 }
@@ -915,7 +913,7 @@ impl IndexExpression for ast::ArgValue {
                 let typ = positional
                     .value()?
                     .index_expression(ctx)
-                    .unwrap_or(Type::Unknown);
+                    .unwrap_or(Type::unknown());
                 Some((None, typ, positional.syntax().text_range()))
             }
             ast::ArgValue::NamedArgValue(named) => {
@@ -931,7 +929,7 @@ impl IndexExpression for ast::ArgValue {
                 let typ = named
                     .value()?
                     .index_expression(ctx)
-                    .unwrap_or(Type::Unknown);
+                    .unwrap_or(Type::unknown());
                 Some((Some(name.value()?), typ, named.syntax().text_range()))
             }
         }
@@ -1043,7 +1041,7 @@ impl IndexStatement for ast::FieldLet {
         if let Some(range_list) = self.range_list()
             && let Some(bits) = get_bit_list_in_range_list(&range_list)
         {
-            match field_typ.with_bits(bits) {
+            match field_typ.bits_with_selected_indices(bits) {
                 Ok(typ) => field_typ = typ,
                 Err(err) => {
                     ctx.error_by_syntax(range_list.syntax(), err.to_string());
@@ -1142,20 +1140,23 @@ impl IndexValue for ast::InnerValue {
         let mut lhs_typ = self.simple_value()?.index_value(ctx, mode)?;
         for suffix in self.suffixes() {
             lhs_typ = match suffix {
-                ast::ValueSuffix::RangeSuffix(_) => match lhs_typ {
-                    Type::Bits(_) => Some(Type::Bit),
-                    _ => None,
-                },
+                ast::ValueSuffix::RangeSuffix(_) => {
+                    if lhs_typ.is_bits() {
+                        Some(TY![bit])
+                    } else {
+                        None
+                    }
+                }
                 ast::ValueSuffix::SliceSuffix(slice_suffix) => {
                     if slice_suffix.is_single_element() {
-                        lhs_typ.element_typ()
+                        lhs_typ.list_element_type().cloned()
                     } else {
                         Some(lhs_typ)
                     }
                 }
                 ast::ValueSuffix::FieldSuffix(field_suffix) => {
                     let (name, reference_loc) = utils::identifier(&field_suffix.name()?, ctx)?;
-                    let Some(field_id) = lhs_typ.find_field(&ctx.symbol_map, &name) else {
+                    let Some(field_id) = lhs_typ.record_find_field(&ctx.symbol_map, &name) else {
                         ctx.error_by_syntax(
                             field_suffix.syntax(),
                             format!("cannot access field: {name}"),
@@ -1177,16 +1178,16 @@ impl IndexValue for ast::SimpleValue {
 
     fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
         match self {
-            ast::SimpleValue::Integer(_) => Some(Type::Int),
-            ast::SimpleValue::String(_) => Some(Type::String),
-            ast::SimpleValue::Code(_) => Some(Type::Code),
-            ast::SimpleValue::Boolean(_) => Some(Type::Bit),
-            ast::SimpleValue::Uninitialized(_) => Some(Type::Uninitialized),
+            ast::SimpleValue::Integer(_) => Some(TY![int]),
+            ast::SimpleValue::String(_) => Some(TY![string]),
+            ast::SimpleValue::Code(_) => Some(TY![code]),
+            ast::SimpleValue::Boolean(_) => Some(TY![bit]),
+            ast::SimpleValue::Uninitialized(_) => Some(TY![?]),
             ast::SimpleValue::Bits(bits) => {
                 for value in bits.value_list()?.values() {
                     let _ = value.index_expression(ctx);
                 }
-                Some(Type::Bits(bits.value_list()?.values().count()))
+                Some(Type::bits(bits.value_list()?.values().count()))
             }
             ast::SimpleValue::List(list) => {
                 let value_list = list.value_list()?;
@@ -1197,8 +1198,8 @@ impl IndexValue for ast::SimpleValue {
                 value_types
                     .into_iter()
                     .next()
-                    .map(|typ| Type::List(Box::new(typ)))
-                    .or(Some(Type::List(Box::new(Type::Any))))
+                    .map(Type::list)
+                    .or(Some(Type::list_any()))
             }
             ast::SimpleValue::Dag(dag) => {
                 if let Some(value) = dag.operator().and_then(|it| it.value()) {
@@ -1209,16 +1210,16 @@ impl IndexValue for ast::SimpleValue {
                         let _ = value.index_expression(ctx);
                     }
                 }
-                Some(Type::Dag)
+                Some(TY![dag])
             }
             ast::SimpleValue::Identifier(identifier) => {
                 let (name, reference_loc) = utils::identifier(identifier, ctx)?;
                 if name == "NAME" {
-                    return Some(Type::String);
+                    return Some(TY![string]);
                 }
                 let Some(symbol_id) = ctx.resolve_id(&name) else {
                     return if mode == IndexValueMode::Name {
-                        Some(Type::String)
+                        Some(TY![string])
                     } else {
                         ctx.error_by_filerange(reference_loc, format!("symbol not found: {name}"));
                         None
@@ -1227,7 +1228,7 @@ impl IndexValue for ast::SimpleValue {
                 ctx.symbol_map.add_reference(symbol_id, reference_loc);
 
                 if let SymbolId::DefId(def_id) = symbol_id {
-                    return Some(Type::Record(def_id.into(), name));
+                    return Some(Type::record(def_id.into(), name));
                 };
                 match ctx.symbol_map.symbol(symbol_id) {
                     Symbol::Class(_) => None,
@@ -1264,7 +1265,7 @@ impl IndexValue for ast::SimpleValue {
                     class_value.syntax().text_range(),
                 );
 
-                Some(Type::Record(class_id.into(), name))
+                Some(Type::record(class_id.into(), name))
             }
             ast::SimpleValue::BangOperator(bang_operator) => bang_operator.index_expression(ctx),
             ast::SimpleValue::CondOperator(cond_operator) => {
@@ -1287,29 +1288,29 @@ impl IndexExpression for ast::Type {
 
     fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
         match self {
-            ast::Type::BitType(_) => Some(Type::Bit),
-            ast::Type::IntType(_) => Some(Type::Int),
-            ast::Type::StringType(_) => Some(Type::String),
-            ast::Type::CodeType(_) => Some(Type::Code),
-            ast::Type::DagType(_) => Some(Type::Dag),
+            ast::Type::BitType(_) => Some(TY![bit]),
+            ast::Type::IntType(_) => Some(TY![int]),
+            ast::Type::StringType(_) => Some(TY![string]),
+            ast::Type::CodeType(_) => Some(TY![code]),
+            ast::Type::DagType(_) => Some(TY![dag]),
             ast::Type::BitsType(bits) => {
                 let len = bits.length()?.value()?;
-                Some(Type::Bits(len.try_into().ok()?))
+                Some(Type::bits(len.try_into().ok()?))
             }
             ast::Type::ListType(list) => {
                 let elm_typ = list.inner_type()?.index_expression(ctx)?;
-                Some(Type::List(Box::new(elm_typ)))
+                Some(Type::list(elm_typ))
             }
             ast::Type::ClassId(class_id) => {
                 let (name, reference_loc) = utils::identifier(&class_id.name()?, ctx)?;
                 match ctx.symbol_map.find_class(&name) {
                     Some(class_id) => {
                         ctx.symbol_map.add_reference(class_id, reference_loc);
-                        Some(Type::Record(class_id.into(), name))
+                        Some(Type::record(class_id.into(), name))
                     }
                     None => {
                         ctx.error_by_filerange(reference_loc, format!("class not found: {name}"));
-                        Some(Type::NamedUnknown(name))
+                        Some(Type::named_unknown(name))
                     }
                 }
             }

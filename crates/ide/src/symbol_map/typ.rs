@@ -9,31 +9,64 @@ use super::{
 
 #[macro_export]
 macro_rules! TY {
-    [bit] => {$crate::symbol_map::typ::Type::Bit};
-    [int] => {$crate::symbol_map::typ::Type::Int};
-    [string] => {$crate::symbol_map::typ::Type::String};
-    [code] => {$crate::symbol_map::typ::Type::Code};
-    [dag] => {$crate::symbol_map::typ::Type::Dag};
-    [bits<$len:tt>] => {$crate::symbol_map::typ::Type::Bits($len)};
-    [list<$elm_typ:tt>] => {$crate::symbol_map::typ::Type::List(Box::new(TY!($elm_typ)))};
-    [?] => {$crate::symbol_map::typ::Type::Uninitialized};
+    [bit] => {$crate::symbol_map::typ::Type::bit()};
+    [int] => {$crate::symbol_map::typ::Type::int()};
+    [string] => {$crate::symbol_map::typ::Type::string()};
+    [code] => {$crate::symbol_map::typ::Type::code()};
+    [dag] => {$crate::symbol_map::typ::Type::dag()};
+    [bits<$len:tt>] => {$crate::symbol_map::typ::Type::bits($len)};
+    [list<any>] => {$crate::symbol_map::typ::Type::list_any()};
+    [list<$elm_typ:tt>] => {$crate::symbol_map::typ::Type::list(TY![$elm_typ])};
+    [?] => {$crate::symbol_map::typ::Type::uninitialized()};
 }
 
 // TODO: Eq and isa may cause confusion
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Type {
-    Bit,
-    Int,
-    String,
-    Code,
-    Dag,
-    Bits(usize),
-    List(Box<Type>),
-    Record(RecordId, EcoString),
-    Uninitialized,
-    Unknown,                 // for error recovery
-    NamedUnknown(EcoString), // for error recovery
-    Any,                     // for empty list
+    Bit {
+        _priv: (),
+    },
+    Int {
+        _priv: (),
+    },
+    String {
+        _priv: (),
+    },
+    Code {
+        _priv: (),
+    },
+    Dag {
+        _priv: (),
+    },
+    Bits {
+        len: usize,
+        _priv: (),
+    },
+    List {
+        elm: Box<Type>,
+        _priv: (),
+    },
+    Record {
+        id: RecordId,
+        name: EcoString,
+        _priv: (),
+    },
+    Uninitialized {
+        _priv: (),
+    },
+    // for error recovery
+    Unknown {
+        _priv: (),
+    },
+    // for error recovery
+    NamedUnknown {
+        _priv: (),
+        name: EcoString,
+    },
+    // for empty list
+    Any {
+        _priv: (),
+    },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -47,16 +80,106 @@ pub enum TypeError {
 }
 
 impl Type {
-    pub fn element_typ(&self) -> Option<Type> {
+    pub fn bit() -> Self {
+        Self::Bit { _priv: () }
+    }
+
+    pub fn int() -> Self {
+        Self::Int { _priv: () }
+    }
+
+    pub fn string() -> Self {
+        Self::String { _priv: () }
+    }
+
+    pub fn code() -> Self {
+        Self::Code { _priv: () }
+    }
+
+    pub fn dag() -> Self {
+        Self::Dag { _priv: () }
+    }
+
+    pub fn bits(len: usize) -> Self {
+        Self::Bits { len, _priv: () }
+    }
+
+    pub fn list(elm: Type) -> Self {
+        Self::List {
+            elm: Box::new(elm),
+            _priv: (),
+        }
+    }
+
+    pub fn list_any() -> Self {
+        Self::list(Self::Any { _priv: () })
+    }
+
+    pub fn record(id: RecordId, name: EcoString) -> Self {
+        Self::Record {
+            id,
+            name,
+            _priv: (),
+        }
+    }
+
+    pub fn uninitialized() -> Self {
+        Self::Uninitialized { _priv: () }
+    }
+
+    pub fn unknown() -> Self {
+        Self::Unknown { _priv: () }
+    }
+
+    pub fn named_unknown(name: EcoString) -> Self {
+        Self::NamedUnknown { name, _priv: () }
+    }
+}
+
+impl Type {
+    pub fn is_bits(&self) -> bool {
+        matches!(
+            self,
+            Self::Bits { len: _, _priv: _ } | Self::Uninitialized { _priv: _ }
+        )
+    }
+
+    pub fn is_list(&self) -> bool {
+        matches!(
+            self,
+            Self::List { elm: _, _priv: _ } | Self::Uninitialized { _priv: _ }
+        )
+    }
+
+    pub fn is_record(&self) -> bool {
+        matches!(
+            self,
+            Self::Record {
+                id: _,
+                name: _,
+                _priv: _
+            } | Self::Uninitialized { _priv: _ }
+        )
+    }
+
+    pub fn list_element_type(&self) -> Option<&Type> {
         match self {
-            Self::Bits(_) => Some(Self::Bit),
-            Self::List(elm_typ) => Some(*elm_typ.clone()),
+            Self::List { elm, _priv: _ } => Some(elm),
             _ => None,
         }
     }
 
-    pub fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
-        let Self::Record(record_id, _) = self else {
+    pub fn record_find_field(
+        &self,
+        symbol_map: &SymbolMap,
+        name: &EcoString,
+    ) -> Option<RecordFieldId> {
+        let Self::Record {
+            id: record_id,
+            name: _,
+            _priv: _,
+        } = self
+        else {
             return None;
         };
 
@@ -64,19 +187,75 @@ impl Type {
         record.find_field(symbol_map, name)
     }
 
+    pub fn bits_with_selected_indices(&self, bits: Vec<usize>) -> Result<Self, TypeError> {
+        let Self::Bits {
+            len: old_width,
+            _priv: _,
+        } = self
+        else {
+            return Err(TypeError::IsNotBitsType(self.clone()));
+        };
+
+        let mut used = HashSet::new();
+        for bit in bits {
+            if bit >= *old_width {
+                return Err(TypeError::CannotSetBitIndex(bit, *old_width));
+            }
+
+            if !used.insert(bit) {
+                return Err(TypeError::DuplicateBitIndex(bit));
+            }
+        }
+
+        return Ok(Self::bits(used.len()));
+    }
+
     pub fn can_be_casted_to(&self, symbol_map: &SymbolMap, other: &Type) -> bool {
         match (self, other) {
-            (Self::Uninitialized | Self::Unknown | Self::NamedUnknown(_) | Self::Any, _)
-            | (_, Self::Uninitialized | Self::Unknown | Self::NamedUnknown(_) | Self::Any) => true,
+            (
+                Self::Uninitialized { _priv: _ }
+                | Self::Unknown { _priv: _ }
+                | Self::NamedUnknown { _priv: _, .. }
+                | Self::Any { _priv: _ },
+                _,
+            )
+            | (
+                _,
+                Self::Uninitialized { _priv: _ }
+                | Self::Unknown { _priv: _ }
+                | Self::NamedUnknown { _priv: _, .. }
+                | Self::Any { _priv: _ },
+            ) => true,
             // 0,1以外の値の場合はエラーを出す必要がある
-            (Self::Int, Self::Bit) | (Self::Bit, Self::Int) => true,
+            (Self::Int { _priv: _ }, Self::Bit { _priv: _ })
+            | (Self::Bit { _priv: _ }, Self::Int { _priv: _ }) => true,
             // 指定されたビット幅でIntを表現できない場合はエラーを出す必要がある
-            (Self::Int, Self::Bits(_)) | (Self::Bits(_), Self::Int) => true,
-            (Self::String, Self::Code) | (Self::Code, Self::String) => true,
-            (Self::List(self_elm_typ), Self::List(other_elm_typ)) => {
-                self_elm_typ.can_be_casted_to(symbol_map, other_elm_typ)
-            }
-            (Self::Record(self_record_id, _), Self::Record(other_record_id, _)) => {
+            (Self::Int { _priv: _ }, Self::Bits { len: _, _priv: _ })
+            | (Self::Bits { len: _, _priv: _ }, Self::Int { _priv: _ }) => true,
+            (Self::String { _priv: _ }, Self::Code { _priv: _ })
+            | (Self::Code { _priv: _ }, Self::String { _priv: _ }) => true,
+            (
+                Self::List {
+                    elm: self_elm_typ,
+                    _priv: _,
+                },
+                Self::List {
+                    elm: other_elm_typ,
+                    _priv: _,
+                },
+            ) => self_elm_typ.can_be_casted_to(symbol_map, other_elm_typ),
+            (
+                Self::Record {
+                    id: self_record_id,
+                    name: _,
+                    _priv: _,
+                },
+                Self::Record {
+                    id: other_record_id,
+                    name: _,
+                    _priv: _,
+                },
+            ) => {
                 if self_record_id == other_record_id {
                     return true;
                 }
@@ -102,55 +281,30 @@ impl Type {
             _ => self == other,
         }
     }
-
-    pub fn is_bits(&self) -> bool {
-        matches!(self, Self::Bits(_) | Self::Uninitialized)
-    }
-
-    pub fn is_list(&self) -> bool {
-        matches!(self, Self::List(_) | Self::Uninitialized)
-    }
-
-    pub fn is_record(&self) -> bool {
-        matches!(self, Self::Record(_, _) | Self::Uninitialized)
-    }
-
-    pub fn with_bits(&self, bits: Vec<usize>) -> Result<Self, TypeError> {
-        let Self::Bits(old_width) = self else {
-            return Err(TypeError::IsNotBitsType(self.clone()));
-        };
-
-        let mut used = HashSet::new();
-        for bit in bits {
-            if bit >= *old_width {
-                return Err(TypeError::CannotSetBitIndex(bit, *old_width));
-            }
-
-            if !used.insert(bit) {
-                return Err(TypeError::DuplicateBitIndex(bit));
-            }
-            used.insert(bit);
-        }
-
-        return Ok(Self::Bits(used.len()));
-    }
 }
 
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Bit => write!(f, "bit"),
-            Self::Int => write!(f, "int"),
-            Self::String => write!(f, "string"),
-            Self::Code => write!(f, "code"),
-            Self::Dag => write!(f, "dag"),
-            Self::Bits(width) => write!(f, "bits<{width}>"),
-            Self::List(typ) => write!(f, "list<{typ}>"),
-            Self::Record(_, name) => write!(f, "{name}"),
-            Self::Uninitialized => write!(f, "uninitialized"),
-            Self::Unknown => write!(f, "unknown"),
-            Self::NamedUnknown(name) => write!(f, "{name}"),
-            Self::Any => write!(f, "any"),
+            Self::Bit { _priv: _ } => write!(f, "bit"),
+            Self::Int { _priv: _ } => write!(f, "int"),
+            Self::String { _priv: _ } => write!(f, "string"),
+            Self::Code { _priv: _ } => write!(f, "code"),
+            Self::Dag { _priv: _ } => write!(f, "dag"),
+            Self::Bits {
+                len: width,
+                _priv: _,
+            } => write!(f, "bits<{width}>"),
+            Self::List { elm: typ, _priv: _ } => write!(f, "list<{typ}>"),
+            Self::Record {
+                id: _,
+                name,
+                _priv: _,
+            } => write!(f, "{name}"),
+            Self::Uninitialized { _priv: _ } => write!(f, "uninitialized"),
+            Self::Unknown { _priv: _ } => write!(f, "unknown"),
+            Self::NamedUnknown { name, _priv: _ } => write!(f, "{name}"),
+            Self::Any { _priv: _ } => write!(f, "any"),
         }
     }
 }
@@ -164,15 +318,15 @@ mod tests {
 
     #[test]
     fn bits_width() {
-        let ty = Type::Bits(4);
-        assert!(ty.with_bits(vec![0]).is_ok());
-        assert!(ty.with_bits(vec![0, 1, 2, 3]).is_ok());
-        assert!(ty.with_bits(vec![4]).is_err());
-        assert!(ty.with_bits(vec![0, 1, 2, 3, 4]).is_err());
-        assert!(ty.with_bits(vec![0, 0]).is_err());
+        let ty = Type::bits(4);
+        assert!(ty.bits_with_selected_indices(vec![0]).is_ok());
+        assert!(ty.bits_with_selected_indices(vec![0, 1, 2, 3]).is_ok());
+        assert!(ty.bits_with_selected_indices(vec![4]).is_err());
+        assert!(ty.bits_with_selected_indices(vec![0, 1, 2, 3, 4]).is_err());
+        assert!(ty.bits_with_selected_indices(vec![0, 0]).is_err());
 
-        let ty = Type::String;
-        assert!(ty.with_bits(vec![0]).is_err());
+        let ty = Type::string();
+        assert!(ty.bits_with_selected_indices(vec![0]).is_err());
     }
 
     #[test]
@@ -202,10 +356,10 @@ mod tests {
             .add_def(derived_def, false)
             .expect("failed to add def");
 
-        let base_class_ty = Type::Record(RecordId::Class(base_class_id), "base".into());
-        let derived_class_ty = Type::Record(RecordId::Class(derived_class_id), "derived".into());
-        let base_def_ty = Type::Record(RecordId::Def(base_def_id), "base_val".into());
-        let derived_def_ty = Type::Record(RecordId::Def(derived_def_id), "derived_val".into());
+        let base_class_ty = Type::record(RecordId::Class(base_class_id), "base".into());
+        let derived_class_ty = Type::record(RecordId::Class(derived_class_id), "derived".into());
+        let base_def_ty = Type::record(RecordId::Def(base_def_id), "base_val".into());
+        let derived_def_ty = Type::record(RecordId::Def(derived_def_id), "derived_val".into());
 
         assert!(base_class_ty.can_be_casted_to(&symbol_map, &base_class_ty));
         assert!(!base_class_ty.can_be_casted_to(&symbol_map, &base_def_ty));
