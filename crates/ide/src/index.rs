@@ -862,7 +862,7 @@ fn check_template_args(
                 } else {
                     ctx.error_by_textrange(
                         arg_value_range,
-                        format!("argument '{arg_value_name}' doesn't exist"),
+                        format!("template argument '{arg_value_name}' doesn't exist"),
                     );
                     None
                 }
@@ -919,7 +919,7 @@ impl IndexExpression for ast::ArgValue {
                 Some((None, typ, positional.syntax().text_range()))
             }
             ast::ArgValue::NamedArgValue(named) => {
-                let ast::SimpleValue::String(name) =
+                let ast::SimpleValue::Identifier(name) =
                     named.name()?.inner_values().next()?.simple_value()?
                 else {
                     ctx.error_by_syntax(
@@ -932,7 +932,7 @@ impl IndexExpression for ast::ArgValue {
                     .value()?
                     .index_expression(ctx)
                     .unwrap_or(Type::Unknown);
-                Some((Some(name.value()), typ, named.syntax().text_range()))
+                Some((Some(name.value()?), typ, named.syntax().text_range()))
             }
         }
     }

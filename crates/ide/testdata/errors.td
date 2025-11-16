@@ -104,9 +104,7 @@ class FieldIncompat {
 class NamedArgs<int x, int y>;
 
 // Duplicate named argument
-// FIXME: エラーが正しくない
 def dup_named : NamedArgs<x=1, x=2>;
 
 // Unknown named argument
-// FIXME: エラーが正しくない
 def unknown_named : NamedArgs<z=1>;

@@ -284,29 +284,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2229..2232,
-            },
-            message: "the name of named argument should be a valid identifier",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2234..2237,
-            },
-            message: "the name of named argument should be a valid identifier",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2325..2339,
+                range: 2181..2200,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -317,9 +295,42 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2335..2338,
+                range: 2196..2199,
             },
-            message: "the name of named argument should be a valid identifier",
+            message: "we can only specify the template argument 'x' once",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2249..2263,
+            },
+            message: "value not specified for template argument 'x'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2249..2263,
+            },
+            message: "value not specified for template argument 'y'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2259..2262,
+            },
+            message: "template argument 'z' doesn't exist",
         },
     ),
 ]
