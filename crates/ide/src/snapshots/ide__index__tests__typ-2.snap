@@ -9,17 +9,6 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1424..1434,
-            },
-            message: "field 'nibble' of type 'bits<4>' is incompatible with type 'bit'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
                 range: 2238..2246,
             },
             message: "duplicate bit index 3",

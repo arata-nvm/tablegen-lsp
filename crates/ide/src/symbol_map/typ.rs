@@ -232,6 +232,8 @@ impl Type {
             // 指定されたビット幅でIntを表現できない場合はエラーを出す必要がある
             (Self::Int { _priv: _ }, Self::Bits { len: _, _priv: _ })
             | (Self::Bits { len: _, _priv: _ }, Self::Int { _priv: _ }) => true,
+            (Self::Bit { _priv: _ }, Self::Bits { len: 1, _priv: _ })
+            | (Self::Bits { len: 1, _priv: _ }, Self::Bit { _priv: _ }) => true,
             (Self::String { _priv: _ }, Self::Code { _priv: _ })
             | (Self::Code { _priv: _ }, Self::String { _priv: _ }) => true,
             (
