@@ -142,11 +142,12 @@ impl IndexExpression for ast::BangOperator {
                 let predicate = values.get(2)?;
 
                 let list_typ = list.index_expression(ctx)?;
-                let var_typ = if let Some(elm_typ) = list_typ.list_element_type() {
-                    elm_typ.clone()
-                } else {
-                    ctx.error_by_syntax(list.syntax(), format!("expected list, found {list_typ}"));
-                    Type::unknown()
+                let var_typ = match list_typ.list_element_type() {
+                    Ok(elm_typ) => elm_typ,
+                    Err(err) => {
+                        ctx.error_by_syntax(list.syntax(), err.to_string());
+                        Type::unknown()
+                    }
                 };
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
@@ -212,11 +213,12 @@ impl IndexExpression for ast::BangOperator {
 
                 let init_typ = init.index_expression(ctx)?;
                 let list_typ = list.index_expression(ctx)?;
-                let list_elm_typ = if let Some(elm_typ) = list_typ.list_element_type() {
-                    elm_typ.clone()
-                } else {
-                    ctx.error_by_syntax(list.syntax(), format!("expected list, found {list_typ}"));
-                    Type::unknown()
+                let list_elm_typ = match list_typ.list_element_type() {
+                    Ok(elm_typ) => elm_typ,
+                    Err(err) => {
+                        ctx.error_by_syntax(list.syntax(), err.to_string());
+                        Type::unknown()
+                    }
                 };
 
                 let (acc_name, acc_define_loc) = match acc.inner_values().next()?.simple_value() {
@@ -264,14 +266,12 @@ impl IndexExpression for ast::BangOperator {
                 let expr = values.get(2)?;
 
                 let sequence_typ = sequence.index_expression(ctx)?;
-                let var_typ = if let Some(elm_typ) = sequence_typ.list_element_type() {
-                    elm_typ.clone()
-                } else {
-                    ctx.error_by_syntax(
-                        sequence.syntax(),
-                        format!("expected list, found {sequence_typ}"),
-                    );
-                    Type::unknown()
+                let var_typ = match sequence_typ.list_element_type() {
+                    Ok(elm_typ) => elm_typ,
+                    Err(err) => {
+                        ctx.error_by_syntax(sequence.syntax(), err.to_string());
+                        Type::unknown()
+                    }
                 };
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
@@ -380,11 +380,12 @@ impl IndexExpression for ast::BangOperator {
 
                 let (list_range, list_typ) = value_types.next()?;
                 let list_typ = list_typ?;
-                if let Some(elm_typ) = list_typ.list_element_type() {
-                    return Some(elm_typ.clone());
-                } else {
-                    ctx.error_by_textrange(list_range, format!("expected list, found {list_typ}"));
-                    Some(Type::unknown())
+                match list_typ.list_element_type() {
+                    Ok(elm_typ) => Some(elm_typ),
+                    Err(err) => {
+                        ctx.error_by_textrange(list_range, err.to_string());
+                        Some(Type::unknown())
+                    }
                 }
             }
             SyntaxKind::XIf => {
@@ -524,15 +525,13 @@ impl IndexExpression for ast::BangOperator {
                     return None;
                 };
 
-                if let Some(elm_typ) = list_type.list_element_type() {
-                    if elm_typ.is_list() {
-                        Some(elm_typ.clone())
-                    } else {
-                        Some(Type::list(elm_typ.clone()))
+                match list_type.list_element_type() {
+                    Ok(elm_typ) if elm_typ.is_list() => Some(elm_typ),
+                    Ok(elm_typ) => Some(Type::list(elm_typ)),
+                    Err(err) => {
+                        ctx.error_by_textrange(list_range, err.to_string());
+                        Some(Type::unknown())
                     }
-                } else {
-                    ctx.error_by_textrange(list_range, format!("expected list, found {list_type}"));
-                    Some(Type::unknown())
                 }
             }
             SyntaxKind::XListRemove => {

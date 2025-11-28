@@ -83,3 +83,11 @@ class RangeListTest<> : {
   bits<4> bits_field;
   string str_field;
 }
+class SuffixTypeTest<> : {
+  bits<4> bits_field;
+  bit range_suffix_1;
+  bits<2> range_suffix_2;
+  list<int> int_list;
+  int slice_suffix_1;
+  list<int> slice_suffix_2;
+}

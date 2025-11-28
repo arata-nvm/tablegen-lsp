@@ -107,3 +107,14 @@ class RangeListTest {
   string str_field = "hoge";
   let str_field{0} = "fuga";
 }
+
+// Suffix type checking
+class SuffixTypeTest {
+  bits<4> bits_field = 0xA;
+  bit range_suffix_1 = bits_field{0};
+  bits<2> range_suffix_2 = bits_field{3...2};
+
+  list<int> int_list = [1, 2, 3];
+  int slice_suffix_1 = int_list[0];
+  list<int> slice_suffix_2 = int_list[0...2];
+}

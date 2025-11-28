@@ -67,3 +67,5 @@ def dup_named : NamedArgs, {
 }
 def unknown_named : NamedArgs, {
 }
+variable unknown bad_range_suffix
+variable unknown bad_slice_suffix

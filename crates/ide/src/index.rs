@@ -563,21 +563,26 @@ impl IndexExpression for ast::ForeachIteratorInit {
                 }
                 (Some(start), None) => {
                     let start_typ = start.index_expression(ctx)?;
-                    if let Some(elm_typ) = start_typ.list_element_type() {
-                        Some(elm_typ.clone())
-                    } else {
-                        ctx.error_by_syntax(
-                            start.syntax(),
-                            format!("expected a list, got '{start_typ}'"),
-                        );
-                        None
+                    match start_typ.list_element_type() {
+                        Ok(elm_typ) => Some(elm_typ.clone()),
+                        Err(err) => {
+                            ctx.error_by_syntax(start.syntax(), err.to_string());
+                            None
+                        }
                     }
                 }
                 _ => None,
             },
-            Self::Value(value) => value
-                .index_expression(ctx)
-                .and_then(|it| it.list_element_type().cloned()),
+            Self::Value(value) => {
+                let value_typ = value.index_expression(ctx)?;
+                match value_typ.list_element_type() {
+                    Ok(elm_typ) => Some(elm_typ.clone()),
+                    Err(err) => {
+                        ctx.error_by_syntax(value.syntax(), err.to_string());
+                        None
+                    }
+                }
+            }
         }
     }
 }
@@ -1140,18 +1145,32 @@ impl IndexValue for ast::InnerValue {
         let mut lhs_typ = self.simple_value()?.index_value(ctx, mode)?;
         for suffix in self.suffixes() {
             lhs_typ = match suffix {
-                ast::ValueSuffix::RangeSuffix(_) => {
-                    if lhs_typ.is_bits() {
-                        Some(TY![bit])
-                    } else {
-                        None
+                ast::ValueSuffix::RangeSuffix(range_suffix) => {
+                    let _ = range_suffix.index_value(ctx, mode);
+                    let range_list = range_suffix.range_list()?;
+                    match get_bit_list_in_range_list(&range_list) {
+                        Some(bits) => match lhs_typ.bits_with_selected_indices(bits) {
+                            Ok(typ) => typ,
+                            Err(err) => {
+                                ctx.error_by_syntax(range_suffix.syntax(), err.to_string());
+                                return None;
+                            }
+                        },
+                        None => TY![bit],
                     }
                 }
                 ast::ValueSuffix::SliceSuffix(slice_suffix) => {
+                    let _ = slice_suffix.index_value(ctx, mode);
                     if slice_suffix.is_single_element() {
-                        lhs_typ.list_element_type().cloned()
+                        match lhs_typ.list_element_type() {
+                            Ok(elm_typ) => elm_typ.clone(),
+                            Err(err) => {
+                                ctx.error_by_syntax(slice_suffix.syntax(), err.to_string());
+                                return None;
+                            }
+                        }
                     } else {
-                        Some(lhs_typ)
+                        lhs_typ
                     }
                 }
                 ast::ValueSuffix::FieldSuffix(field_suffix) => {
@@ -1165,11 +1184,45 @@ impl IndexValue for ast::InnerValue {
                     };
                     ctx.symbol_map.add_reference(field_id, reference_loc);
                     let field = ctx.symbol_map.record_field(field_id);
-                    Some(field.typ.clone())
+                    field.typ.clone()
                 }
-            }?;
+            };
         }
         Some(lhs_typ)
+    }
+}
+
+impl IndexValue for ast::RangeSuffix {
+    type Output = ();
+
+    fn index_value(&self, ctx: &mut IndexCtx, _: IndexValueMode) -> Option<Self::Output> {
+        let range_list = self.range_list()?;
+        for piece in range_list.pieces() {
+            if let Some(start) = piece.start() {
+                let _ = start.index_expression(ctx);
+            }
+            if let Some(end) = piece.end() {
+                let _ = end.index_expression(ctx);
+            }
+        }
+        Some(())
+    }
+}
+
+impl IndexValue for ast::SliceSuffix {
+    type Output = ();
+
+    fn index_value(&self, ctx: &mut IndexCtx, _: IndexValueMode) -> Option<Self::Output> {
+        let element_list = self.element_list()?;
+        for elm in element_list.elements() {
+            if let Some(start) = elm.start() {
+                let _ = start.index_expression(ctx);
+            }
+            if let Some(end) = elm.end() {
+                let _ = end.index_expression(ctx);
+            }
+        }
+        Some(())
     }
 }
 

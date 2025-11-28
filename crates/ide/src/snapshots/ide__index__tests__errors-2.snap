@@ -333,4 +333,26 @@ expression: dump_diagnostics(index.diagnostics())
             message: "template argument 'z' doesn't exist",
         },
     ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2324..2327,
+            },
+            message: "type 'string' is not bits type",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2361..2364,
+            },
+            message: "expected a list, got 'string'",
+        },
+    ),
 ]

@@ -77,6 +77,8 @@ pub enum TypeError {
     CannotSetBitIndex(usize, usize),
     #[error("duplicate bit index {0}")]
     DuplicateBitIndex(usize),
+    #[error("expected a list, got '{0}'")]
+    ExpectedListType(Type),
 }
 
 impl Type {
@@ -162,10 +164,10 @@ impl Type {
         )
     }
 
-    pub fn list_element_type(&self) -> Option<&Type> {
+    pub fn list_element_type(&self) -> Result<Type, TypeError> {
         match self {
-            Self::List { elm, _priv: _ } => Some(elm),
-            _ => None,
+            Self::List { elm, _priv: _ } => Ok(*elm.clone()),
+            _ => Err(TypeError::IsNotListType(self.clone())),
         }
     }
 
