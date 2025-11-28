@@ -33,7 +33,7 @@ expression: dump_diagnostics(index.diagnostics())
                 ),
                 range: 2324..2325,
             },
-            message: "type 'string' is not bits type",
+            message: "expected bits type, got 'string'",
         },
     ),
 ]

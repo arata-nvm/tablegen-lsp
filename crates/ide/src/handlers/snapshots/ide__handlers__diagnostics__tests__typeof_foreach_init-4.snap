@@ -11,7 +11,7 @@ expression: "check(r#\"foreach i = \"hoge\" in def foo#i;\"#)"
                 ),
                 range: 12..18,
             },
-            message: "expected a list, got 'string'",
+            message: "expected list type, got 'string'",
         },
     ),
 ]

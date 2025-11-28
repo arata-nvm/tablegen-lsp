@@ -71,13 +71,13 @@ pub enum Type {
 
 #[derive(Debug, thiserror::Error)]
 pub enum TypeError {
-    #[error("type '{0}' is not bits type")]
-    IsNotBitsType(Type),
+    #[error("expected bits type, got '{0}'")]
+    ExpectedBitsType(Type),
     #[error("cannot set bit index {0} for bits<{1}>")]
     CannotSetBitIndex(usize, usize),
     #[error("duplicate bit index {0}")]
     DuplicateBitIndex(usize),
-    #[error("expected a list, got '{0}'")]
+    #[error("expected list type, got '{0}'")]
     ExpectedListType(Type),
 }
 
@@ -167,7 +167,7 @@ impl Type {
     pub fn list_element_type(&self) -> Result<Type, TypeError> {
         match self {
             Self::List { elm, _priv: _ } => Ok(*elm.clone()),
-            _ => Err(TypeError::IsNotListType(self.clone())),
+            _ => Err(TypeError::ExpectedListType(self.clone())),
         }
     }
 
@@ -195,7 +195,7 @@ impl Type {
             _priv: _,
         } = self
         else {
-            return Err(TypeError::IsNotBitsType(self.clone()));
+            return Err(TypeError::ExpectedBitsType(self.clone()));
         };
 
         let mut used = HashSet::new();

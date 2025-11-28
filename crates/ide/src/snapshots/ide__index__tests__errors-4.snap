@@ -341,7 +341,7 @@ expression: dump_diagnostics(index.diagnostics())
                 ),
                 range: 2324..2327,
             },
-            message: "type 'string' is not bits type",
+            message: "expected bits type, got 'string'",
         },
     ),
     Lsp(
@@ -352,7 +352,7 @@ expression: dump_diagnostics(index.diagnostics())
                 ),
                 range: 2361..2364,
             },
-            message: "expected a list, got 'string'",
+            message: "expected list type, got 'string'",
         },
     ),
 ]
