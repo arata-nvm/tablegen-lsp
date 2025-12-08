@@ -90,12 +90,25 @@ class ListTemplate<list<int> values> {
 
 def list_template_inst : ListTemplate<[1, 2, 3]>;
 
-// List concatenation with inheritance
-class listconcat_base;
-class listconcat_derived : listconcat_base;
-def listconcat_base_val: listconcat_base;
-def listconcat_derived_val: listconcat_derived;
-defvar listconcat = !listconcat([listconcat_base_val], [listconcat_derived_val]);
+// Resolving common base type
+class base;
+class derived1 : base;
+class derived2 : base;
+def base_val;
+def derived1_val : derived1;
+def derived2_val : derived2;
+
+defvar if1 = !if(false, base_val, base_val);
+defvar if2 = !if(false, base_val, derived1_val); // FIXME
+defvar if3 = !if(false, derived1_val, base_val); // FIXME
+defvar if4 = !if(false, derived1_val, derived2_val);
+defvar if5 = !if(false, derived2_val, derived1_val);
+
+defvar listconcat1 = !listconcat([base_val], [base_val]);
+defvar listconcat2 = !listconcat([base_val], [derived1_val]); // FIXME
+defvar listconcat3 = !listconcat([derived1_val], [base_val]); // FIXME
+defvar listconcat4 = !listconcat([derived1_val], [derived2_val]);
+defvar listconcat5 = !listconcat([derived2_val], [derived1_val]);
 
 // Range list type checking
 class RangeListTest {
