@@ -380,6 +380,7 @@ asts! {
     };
     List {
         value_list: ValueList,
+        r#type: Type,
     };
     ValueList {
         values: [Value],
@@ -781,6 +782,12 @@ mod tests {
             panic!();
         };
         assert!(list.value_list().is_some());
+
+        let SimpleValue::List(list) = parse_simple_value("[1, 2, 3, 4]<int>") else {
+            panic!();
+        };
+        assert!(list.value_list().is_some());
+        assert!(list.r#type().is_some());
 
         // dag
         let SimpleValue::Dag(dag) = parse_simple_value("(add:$op 1, 2)") else {

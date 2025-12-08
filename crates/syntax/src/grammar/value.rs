@@ -323,7 +323,7 @@ pub(super) fn bits(p: &mut Parser) -> CompletedMarker {
     CompletedMarker::Success
 }
 
-// List ::= "[" ValueList "]"
+// List ::= "[" ValueList "]" ( "<" Type ">" )?
 pub(super) fn list(p: &mut Parser) -> CompletedMarker {
     p.start_node(SyntaxKind::List);
     value_list(p, T!['['], T![']']);
