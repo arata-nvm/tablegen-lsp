@@ -168,7 +168,6 @@ impl IndexStatement for ast::Assert {
     }
 }
 
-// TODO: check if class is already defined
 impl IndexStatement for ast::Class {
     fn index_statement(&self, ctx: &mut IndexCtx) {
         let Some(name_node) = self.name() else {
@@ -198,7 +197,6 @@ impl IndexStatement for ast::Class {
     }
 }
 
-// TODO: check if def is already defined
 impl IndexStatement for ast::Def {
     fn index_statement(&self, ctx: &mut IndexCtx) {
         if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {

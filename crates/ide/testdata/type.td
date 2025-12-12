@@ -65,7 +65,6 @@ class ListElementTypes {
 class BitsOps {
   bits<8> value = 0xFF;
   bit single_bit = value{0};  // Bit extraction
-  // FIXME: `field 'nibble' of type 'bits<4>' is incompatible with type 'bit'`のエラーが出る
   bits<4> nibble = value{3-0}; // Slice
 }
 
