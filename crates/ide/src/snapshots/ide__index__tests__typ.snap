@@ -76,22 +76,43 @@ class derived1<> : base, {
 }
 class derived2<> : base, {
 }
-def base_val : {
+def base_val : base, {
 }
 def derived1_val : derived1, {
 }
 def derived2_val : derived2, {
 }
 variable base_val if1
-variable base_val if2
-variable unknown if3
-variable unknown if4
-variable unknown if5
+variable base if2
+variable base if3
+variable base if4
+variable base if5
 variable list<base_val> listconcat1
-variable list<base_val> listconcat2
-variable list<derived1_val> listconcat3
-variable list<derived1_val> listconcat4
-variable list<derived2_val> listconcat5
+variable list<base> listconcat2
+variable list<base> listconcat3
+variable list<base> listconcat4
+variable list<base> listconcat5
+class base1<> : {
+}
+class base2<> : {
+}
+class base3<> : {
+}
+class derived12<> : base1, base2, {
+}
+class derived23<> : base2, base3, {
+}
+class derived123<> : base1, base2, base3, {
+}
+def derived12_val : derived12, {
+}
+def derived23_val : derived23, {
+}
+def derived123_val : derived123, {
+}
+variable {base2, base1} if_multi1
+variable {base3, base2} if_multi2
+variable base2 if_multi3
 class RangeListTest<> : {
   bits<4> bits_field;
   string str_field;

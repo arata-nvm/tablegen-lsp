@@ -9,73 +9,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2139..2147,
-            },
-            message: "inconsistent types derived1_val and base_val for !if",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2197..2209,
-            },
-            message: "inconsistent types derived1_val and derived2_val for !if",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2250..2262,
-            },
-            message: "inconsistent types derived2_val and derived1_val for !if",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2369..2383,
-            },
-            message: "expected list<base_val>, found list<derived1_val>",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2515..2529,
-            },
-            message: "expected list<derived1_val>, found list<derived2_val>",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2581..2595,
-            },
-            message: "expected list<derived2_val>, found list<derived1_val>",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2721..2729,
+                range: 3105..3113,
             },
             message: "duplicate bit index 3",
         },
@@ -86,7 +20,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2753..2754,
+                range: 3137..3138,
             },
             message: "cannot set bit index 8 for bits<4>",
         },
@@ -97,7 +31,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2807..2808,
+                range: 3191..3192,
             },
             message: "expected bits type, got 'string'",
         },

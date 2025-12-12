@@ -94,21 +94,34 @@ def list_template_inst : ListTemplate<[1, 2, 3]>;
 class base;
 class derived1 : base;
 class derived2 : base;
-def base_val;
+def base_val : base;
 def derived1_val : derived1;
 def derived2_val : derived2;
 
 defvar if1 = !if(false, base_val, base_val);
-defvar if2 = !if(false, base_val, derived1_val); // FIXME
-defvar if3 = !if(false, derived1_val, base_val); // FIXME
+defvar if2 = !if(false, base_val, derived1_val);
+defvar if3 = !if(false, derived1_val, base_val);
 defvar if4 = !if(false, derived1_val, derived2_val);
 defvar if5 = !if(false, derived2_val, derived1_val);
 
 defvar listconcat1 = !listconcat([base_val], [base_val]);
-defvar listconcat2 = !listconcat([base_val], [derived1_val]); // FIXME
-defvar listconcat3 = !listconcat([derived1_val], [base_val]); // FIXME
+defvar listconcat2 = !listconcat([base_val], [derived1_val]);
+defvar listconcat3 = !listconcat([derived1_val], [base_val]);
 defvar listconcat4 = !listconcat([derived1_val], [derived2_val]);
 defvar listconcat5 = !listconcat([derived2_val], [derived1_val]);
+
+class base1;
+class base2;
+class base3;
+class derived12: base1, base2;
+class derived23: base2, base3;
+class derived123: base1, base2, base3;
+def derived12_val : derived12;
+def derived23_val : derived23;
+def derived123_val : derived123;
+defvar if_multi1 = !if(false, derived12_val, derived123_val);
+defvar if_multi2 = !if(false, derived23_val, derived123_val);
+defvar if_multi3 = !if(false, if_multi1, if_multi2);
 
 // Range list type checking
 class RangeListTest {

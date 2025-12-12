@@ -76,14 +76,10 @@ impl Class {
             return true;
         }
 
-        for parent_id in &self.parent_list {
-            let parent = symbol_map.class(*parent_id);
-            if parent.is_subclass_of(symbol_map, other_id) {
-                return true;
-            }
-        }
-
-        false
+        self.parent_list
+            .iter()
+            .map(|parent_id| symbol_map.class(*parent_id))
+            .any(|parent| parent.is_subclass_of(symbol_map, other_id))
     }
 
     pub fn is_empty(&self) -> bool {

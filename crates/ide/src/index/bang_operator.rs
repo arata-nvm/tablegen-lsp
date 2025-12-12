@@ -410,8 +410,8 @@ impl IndexExpression for ast::BangOperator {
                     return Some(Type::unknown());
                 };
 
-                if then_typ.can_be_casted_to(&ctx.symbol_map, &else_typ) {
-                    Some(then_typ)
+                if let Some(ret_typ) = then_typ.resolve_with(&ctx.symbol_map, &else_typ) {
+                    Some(ret_typ)
                 } else {
                     ctx.error_by_textrange(
                         else_range,
@@ -502,19 +502,22 @@ impl IndexExpression for ast::BangOperator {
                     return Some(Type::unknown());
                 }
 
+                let mut ret_typ = list1_type;
                 for (range, typ) in value_types {
                     let Some(typ) = typ else {
                         continue;
                     };
-                    if !typ.can_be_casted_to(&ctx.symbol_map, &list1_type) {
-                        ctx.error_by_textrange(
-                            range,
-                            format!("expected {list1_type}, found {typ}"),
-                        );
+
+                    if let Some(typ) = ret_typ.resolve_with(&mut ctx.symbol_map, &typ) {
+                        ret_typ = typ;
+                    } else {
+                        ctx.error_by_textrange(range, format!("expected {ret_typ}, found {typ}"));
+                        ret_typ = Type::unknown();
+                        break;
                     }
                 }
 
-                Some(list1_type.clone())
+                Some(ret_typ)
             }
             SyntaxKind::XListFlatten => {
                 common::unexpect_type_annotation(ctx, self);

@@ -55,6 +55,13 @@ impl<'a> Record<'a> {
             Self::Def(def) => def.is_subclass_of(symbol_map, other_id),
         }
     }
+
+    pub fn parents(&self) -> &[ClassId] {
+        match self {
+            Self::Class(class) => &class.parent_list,
+            Self::Def(def) => &def.parent_list,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
