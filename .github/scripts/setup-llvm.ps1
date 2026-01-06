@@ -1,3 +1,4 @@
+Set-PSDebug -Trace 1
 $ErrorActionPreference = "Stop"
 
 $LLVMVersion = Get-Content -Path (Join-Path $PSScriptRoot "../LLVM_VERSION") -TotalCount 1 | ForEach-Object { $_.Trim() }

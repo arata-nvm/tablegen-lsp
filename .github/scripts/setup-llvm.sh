@@ -11,13 +11,13 @@ arch=$(uname -m)
 filename=""
 if [ "$os" = "Linux" ]; then
     if [ "$arch" = "x86_64" ]; then
-        filename="LLVM-${llvm_version}-Linux-X64"
+        filename="LLVM-${llvm_version}-Linux-X64.tar.xz"
     elif [ "$arch" = "aarch64" ]; then
-        filename="LLVM-${llvm_version}-Linux-ARM64"
+        filename="LLVM-${llvm_version}-Linux-ARM64.tar.xz"
     fi
 elif [ "$os" = "Darwin" ]; then
     if [ "$arch" = "arm64" ]; then
-        filename="LLVM-${llvm_version}-macOS-ARM64"
+        filename="LLVM-${llvm_version}-macOS-ARM64.tar.xz"
     fi
 fi
 
@@ -30,7 +30,7 @@ llvm_prefix="${RUNNER_TEMP}/llvm-download"
 mkdir "$llvm_prefix"
 cd "$llvm_prefix"
 
-curl -LO "${base_url}/${filename}.tar.xz"
+curl -LO "${base_url}/${filename}"
 tar -xf "$filename" --strip-components 1
 
 llvm_version_suffix=$(echo "$llvm_version" | awk -F. '{print $1"0"}')
