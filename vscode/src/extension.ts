@@ -132,14 +132,10 @@ function getServer(): string {
             switch (arch()) {
                 case "arm64":
                     return path.join(serverDir, `tablegen-lsp-${version}-aarch64-apple-darwin`);
-                case "x64":
-                    return path.join(serverDir, `tablegen-lsp-${version}-x86_64-apple-darwin`);
             }
             break;
         case "linux":
             switch (arch()) {
-                case "arm":
-                    return path.join(serverDir, `tablegen-lsp-${version}-armv7-unknown-linux-gnueabihf`);
                 case "arm64":
                     return path.join(serverDir, `tablegen-lsp-${version}-aarch64-unknown-linux-gnu`);
                 case "x64":
