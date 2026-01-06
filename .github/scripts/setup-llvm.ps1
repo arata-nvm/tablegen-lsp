@@ -8,9 +8,9 @@ $Arch = $env:PROCESSOR_ARCHITECTURE
 $Filename = ""
 
 if ($Arch -eq "AMD64") {
-    $Filename = "clang+llvm-${LLVMVersion}-aarch64-pc-windows-msvc.tar.xz"
-} elseif ($Arch -eq "ARM64") {
     $Filename = "clang+llvm-${LLVMVersion}-x86_64-pc-windows-msvc.tar.xz"
+} elseif ($Arch -eq "ARM64") {
+    $Filename = "clang+llvm-${LLVMVersion}-aarch64-pc-windows-msvc.tar.xz"
 } else {
     Write-Error "Unsupported architecture: $Arch"
     exit 1
