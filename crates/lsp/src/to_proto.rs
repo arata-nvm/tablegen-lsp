@@ -15,7 +15,7 @@ use ide::{
 use text_size::{TextRange, TextSize};
 
 use crate::server::ServerSnapshot;
-use crate::vfs::{UrlExt, Vfs};
+use crate::vfs::UrlExt;
 use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
 
@@ -37,12 +37,11 @@ pub fn range(line_index: &LineIndex, range: TextRange) -> lsp_types::Range {
 }
 
 pub fn location(snap: &ServerSnapshot, file_range: FileRange) -> lsp_types::Location {
-    let vfs = &snap.vfs.read().unwrap();
     let line_index = snap.analysis.line_index(file_range.file);
-    let path = vfs.path_for_file(&file_range.file);
+    let path = snap.vfs.path_for_file(&file_range.file);
 
     lsp_types::Location::new(
-        UrlExt::from_file_path(path),
+        UrlExt::from_file_path(&path),
         range(&line_index, file_range.range),
     )
 }
@@ -168,14 +167,15 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
     lsp_item
 }
 
-pub fn document_link(
-    vfs: &Vfs,
+pub fn document_link<FS: FileSystem>(
+    vfs: &FS,
     line_index: &LineIndex,
     link: DocumentLink,
 ) -> lsp_types::DocumentLink {
+    let file_path = vfs.path_for_file(&link.target);
     lsp_types::DocumentLink {
         range: range(line_index, link.range),
-        target: Some(UrlExt::from_file_path(vfs.path_for_file(&link.target))),
+        target: Some(UrlExt::from_file_path(&file_path)),
         tooltip: None,
         data: None,
     }

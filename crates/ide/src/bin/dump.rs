@@ -123,7 +123,7 @@ impl FileSystem for Vfs {
         self.file_set.file_for_path(path)
     }
 
-    fn path_for_file(&self, file_id: &FileId) -> &FilePath {
+    fn path_for_file(&self, file_id: &FileId) -> FilePath {
         self.file_set.path_for_file(file_id)
     }
 

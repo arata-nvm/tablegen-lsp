@@ -31,10 +31,8 @@ impl DiagnosticCollection {
             }
             ide::handlers::diagnostics::Diagnostic::Tblgen(diag) => {
                 let file_path = FilePath::from(Path::new(&diag.filename));
-                let file_id = {
-                    let mut vfs = snap.vfs.write().unwrap();
-                    vfs.assign_or_get_file_id(file_path)
-                };
+                let mut vfs = snap.vfs.clone();
+                let file_id = vfs.assign_or_get_file_id(file_path);
 
                 let lsp_diag = to_proto::tblgen_diagnostic(diag);
                 self.diagnostics.entry(file_id).or_default().push(lsp_diag);

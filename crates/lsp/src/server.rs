@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::ops::ControlFlow;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use async_lsp::lsp_types::{
     CompletionOptions, CompletionParams, CompletionResponse, DidChangeTextDocumentParams,
@@ -24,12 +24,12 @@ use ide::file_system::{FileSystem, SourceUnitId};
 
 use crate::config::Config;
 use crate::diagnostics::DiagnosticCollection;
-use crate::vfs::{UrlExt, Vfs};
+use crate::vfs::{SharedFs, UrlExt, Vfs};
 use crate::{from_proto, lsp_ext, to_proto};
 
 pub struct Server {
     host: AnalysisHost,
-    vfs: Arc<RwLock<Vfs>>,
+    vfs: SharedFs<Vfs>,
     client: ClientSocket,
     config: Arc<Config>,
 
@@ -40,7 +40,7 @@ pub struct Server {
 
 pub struct ServerSnapshot {
     pub analysis: Analysis,
-    pub vfs: Arc<RwLock<Vfs>>,
+    pub vfs: SharedFs<Vfs>,
 }
 
 struct UpdateDiagnosticsEvent(i32, DiagnosticCollection);
@@ -79,7 +79,7 @@ impl Server {
     fn new(client: ClientSocket) -> Self {
         Self {
             host: AnalysisHost::new(),
-            vfs: Arc::new(RwLock::new(Vfs::new())),
+            vfs: SharedFs::new(Vfs::new()),
             client,
             config: Arc::new(Config::default()),
             diagnostic_version: 0,
@@ -292,10 +292,9 @@ impl LanguageServer for Server {
                 return Ok(None);
             };
 
-            let vfs = snap.vfs.read().unwrap();
             let lsp_links = links
                 .into_iter()
-                .map(|it| to_proto::document_link(&vfs, &line_index, it))
+                .map(|it| to_proto::document_link(&snap.vfs, &line_index, it))
                 .collect();
             Ok(Some(lsp_links))
         });
@@ -331,8 +330,7 @@ impl LanguageServer for Server {
         tracing::info!("did_close: {params:?}");
         {
             let path = UrlExt::to_file_path(&params.text_document.uri);
-            let vfs = self.vfs.read().unwrap();
-            let Some(file_id) = vfs.file_for_path(&path) else {
+            let Some(file_id) = self.vfs.file_for_path(&path) else {
                 tracing::warn!("cannot find file id: {path:?}");
                 return ControlFlow::Continue(());
             };
@@ -353,8 +351,7 @@ impl Server {
         tracing::info!("set_source_root: {params:?}");
         let content = {
             let path = UrlExt::to_file_path(&params.uri);
-            let vfs = self.vfs.read().unwrap();
-            let Some(content) = vfs.read_content(&path) else {
+            let Some(content) = self.vfs.read_content(&path) else {
                 tracing::warn!("failed to read file: {path:?}");
                 return ControlFlow::Continue(());
             };
@@ -385,7 +382,7 @@ impl Server {
     ) -> task::JoinHandle<T> {
         let snap = ServerSnapshot {
             analysis: self.host.analysis(),
-            vfs: Arc::clone(&self.vfs),
+            vfs: self.vfs.clone(),
         };
         task::spawn_blocking(move || f(snap, params))
     }
@@ -435,9 +432,8 @@ impl Server {
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_diagnostics: {version:?}");
         for (file_id, lsp_diags_for_file) in lsp_diags {
-            let vfs = self.vfs.read().unwrap();
-            let file_path = vfs.path_for_file(&file_id);
-            let file_uri = UrlExt::from_file_path(file_path);
+            let file_path = self.vfs.path_for_file(&file_id);
+            let file_uri = UrlExt::from_file_path(&file_path);
 
             let params = PublishDiagnosticsParams::new(file_uri, lsp_diags_for_file, Some(version));
             self.client
@@ -452,14 +448,14 @@ impl Server {
         let client = self.client.clone();
         let include_dirs = self.config.include_dirs.clone();
 
+        let vfs = self.vfs.clone();
         self.spawn_with_snapshot(include_dirs, move |snap, include_dirs| {
             for source_unit_id in opened_source_units {
                 let source_unit = snap.analysis.source_unit(source_unit_id);
-                let vfs = snap.vfs.read().unwrap();
                 let root_file = vfs.path_for_file(&source_unit.root());
 
                 let result =
-                    match interop::parse_source_unit_with_tblgen(root_file, &include_dirs, &*vfs) {
+                    match interop::parse_source_unit_with_tblgen(&root_file, &include_dirs, &vfs) {
                         Ok(result) => result,
                         Err(err) => {
                             tracing::warn!("failed to parse source unit: {err:?}");
@@ -505,12 +501,11 @@ impl Server {
 
     fn load_source_unit(&mut self, uri: &Url, text: &str) -> SourceUnitId {
         let path = UrlExt::to_file_path(uri);
-        let mut vfs = self.vfs.write().unwrap();
-        let file_id = vfs.assign_or_get_file_id(path);
+        let file_id = self.vfs.assign_or_get_file_id(path);
         let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
         self.host
-            .load_source_unit(&mut *vfs, file_id, &self.config.include_dirs)
+            .load_source_unit(&mut self.vfs, file_id, &self.config.include_dirs)
     }
 
     fn opened_source_units(&self) -> HashSet<SourceUnitId> {
@@ -525,8 +520,7 @@ impl Server {
             Some(source_unit_id) => source_unit_id,
             None => {
                 let path = UrlExt::to_file_path(uri);
-                let mut vfs = self.vfs.write().unwrap();
-                let file_id = vfs.assign_or_get_file_id(path);
+                let file_id = self.vfs.assign_or_get_file_id(path);
                 SourceUnitId::from_root_file(file_id)
             }
         }

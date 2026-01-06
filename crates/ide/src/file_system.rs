@@ -106,8 +106,8 @@ impl FileSet {
         self.path_to_id.get(path).copied()
     }
 
-    pub fn path_for_file(&self, file_id: &FileId) -> &FilePath {
-        &self.id_to_path[file_id]
+    pub fn path_for_file(&self, file_id: &FileId) -> FilePath {
+        self.id_to_path[file_id].clone()
     }
 
     pub fn iter_files(&self) -> impl Iterator<Item = FileId> + '_ {
@@ -149,7 +149,7 @@ pub trait FileSystem {
 
     fn file_for_path(&self, path: &FilePath) -> Option<FileId>;
 
-    fn path_for_file(&self, file_id: &FileId) -> &FilePath;
+    fn path_for_file(&self, file_id: &FileId) -> FilePath;
 
     fn read_content(&self, file_path: &FilePath) -> Option<String>;
 }

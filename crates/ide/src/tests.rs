@@ -67,7 +67,7 @@ impl TestDatabase {
         let root_file_id = f.root_file();
         let root_file_path = f.path_for_file(&root_file_id);
 
-        let result = interop::parse_source_unit_with_tblgen(root_file_path, &[], f)
+        let result = interop::parse_source_unit_with_tblgen(&root_file_path, &[], f)
             .expect("failed to parse source unit with tblgen");
         let source_unit_id = SourceUnitId::from_root_file(root_file_id);
         db.set_tblgen_diagnostics(source_unit_id, Some(Arc::new(result.diagnostics)));
@@ -186,7 +186,7 @@ impl Fixture {
 
     pub fn file_content(&self, id: &FileId) -> String {
         let path = self.file_set.path_for_file(id);
-        self.file_contents[path].clone()
+        self.file_contents[&path].clone()
     }
 
     pub fn source_unit_id(&self) -> SourceUnitId {
@@ -229,7 +229,7 @@ impl FileSystem for Fixture {
         self.file_set.file_for_path(path)
     }
 
-    fn path_for_file(&self, file_id: &FileId) -> &FilePath {
+    fn path_for_file(&self, file_id: &FileId) -> FilePath {
         self.file_set.path_for_file(file_id)
     }
 
