@@ -35,7 +35,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: homebrew/actions/setup-homebrew@master
-      - run: crates/tblgen-rs-alt/tools/setup.sh
+      - run: .github/scripts/setup-llvm.sh
       - name: Build
         run: cargo check --verbose --locked
 
