@@ -20,7 +20,7 @@ impl RecordData {
         match self {
             Self::DefinedRecord(record_id) => {
                 let record = symbol_map.record(*record_id);
-                record.parents().into_iter().copied().collect()
+                record.parents().to_vec()
             }
             Self::AnonymousClass(parents) => parents.clone(),
         }
@@ -32,16 +32,13 @@ impl RecordData {
             self_parent_ids: &[ClassId],
             other_parent_ids: &[ClassId],
         ) -> bool {
-            other_parent_ids
-                .iter()
-                .map(|other_parent_id| *other_parent_id)
-                .all(|other_parent_id| {
-                    self_parent_ids.iter().any(|self_parent_id| {
-                        let self_parent = symbol_map.class(*self_parent_id);
-                        other_parent_id == *self_parent_id
-                            || self_parent.is_subclass_of(symbol_map, other_parent_id)
-                    })
+            other_parent_ids.iter().copied().all(|other_parent_id| {
+                self_parent_ids.iter().any(|self_parent_id| {
+                    let self_parent = symbol_map.class(*self_parent_id);
+                    other_parent_id == *self_parent_id
+                        || self_parent.is_subclass_of(symbol_map, other_parent_id)
                 })
+            })
         }
 
         use RecordData::*;
@@ -57,7 +54,7 @@ impl RecordData {
             }
             (DefinedRecord(self_record_id), AnonymousClass(other_parent_ids)) => {
                 let self_record = symbol_map.record(*self_record_id);
-                is_subclass_of_inner(symbol_map, &self_record.parents(), other_parent_ids)
+                is_subclass_of_inner(symbol_map, self_record.parents(), other_parent_ids)
             }
             (AnonymousClass(self_parent_ids), AnonymousClass(other_parent_ids)) => {
                 is_subclass_of_inner(symbol_map, self_parent_ids, other_parent_ids)
@@ -280,7 +277,7 @@ impl Type {
             }
         }
 
-        return Ok(Self::bits(used.len()));
+        Ok(Self::bits(used.len()))
     }
 
     pub fn resolve_with(&self, symbol_map: &SymbolMap, other: &Type) -> Option<Type> {
@@ -450,7 +447,7 @@ impl Type {
                     name: _,
                     _priv: _,
                 },
-            ) => self_data.is_subclass_of(symbol_map, &other_data),
+            ) => self_data.is_subclass_of(symbol_map, other_data),
             _ => self == other,
         }
     }

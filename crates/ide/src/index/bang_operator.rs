@@ -508,7 +508,7 @@ impl IndexExpression for ast::BangOperator {
                         continue;
                     };
 
-                    if let Some(typ) = ret_typ.resolve_with(&mut ctx.symbol_map, &typ) {
+                    if let Some(typ) = ret_typ.resolve_with(&ctx.symbol_map, &typ) {
                         ret_typ = typ;
                     } else {
                         ctx.error_by_textrange(range, format!("expected {ret_typ}, found {typ}"));

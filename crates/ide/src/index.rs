@@ -1094,9 +1094,7 @@ fn get_bit_list_in_range_piece(range_piece: &ast::RangePiece) -> Option<Vec<usiz
 // ValueがIntegerの場合、その値を返す
 fn value_as_integer(value: ast::Value) -> Option<i64> {
     let mut inner_values_iter = value.inner_values();
-    let Some(inner_value) = inner_values_iter.next() else {
-        return None;
-    };
+    let inner_value = inner_values_iter.next()?;
 
     if inner_values_iter.next().is_some() {
         return None;

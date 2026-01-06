@@ -163,7 +163,7 @@ fn body_item_to_document_symbol(item: &ast::BodyItem) -> Option<DocumentSymbol> 
             let name = field.name()?.value()?;
             let typ = field.r#type()?;
             Some(DocumentSymbol {
-                name: name,
+                name,
                 typ: Some(type_to_string(&typ)),
                 range: field.syntax().text_range(),
                 kind: DocumentSymbolKind::Field,
@@ -202,10 +202,10 @@ fn type_to_string(typ: &ast::Type) -> EcoString {
         ast::Type::DagType(_) => "dag".into(),
         ast::Type::CodeType(_) => "code".into(),
         ast::Type::BitsType(bits) => {
-            if let Some(length) = bits.length() {
-                if let Some(value) = length.value() {
-                    return format!("bits<{}>", value).into();
-                }
+            if let Some(length) = bits.length()
+                && let Some(value) = length.value()
+            {
+                return format!("bits<{}>", value).into();
             }
             "bits".into()
         }
@@ -216,10 +216,10 @@ fn type_to_string(typ: &ast::Type) -> EcoString {
             "list".into()
         }
         ast::Type::ClassId(class_id) => {
-            if let Some(name) = class_id.name() {
-                if let Some(name_str) = name.value() {
-                    return name_str;
-                }
+            if let Some(name) = class_id.name()
+                && let Some(name_str) = name.value()
+            {
+                return name_str;
             }
             "?".into()
         }
