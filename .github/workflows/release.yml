@@ -53,22 +53,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
-            strip: x86_64-linux-gnu-strip
             llvm-arch: X64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
-            strip: aarch64-linux-gnu-strip
             llvm-arch: ARM64
           - os: macos-latest
             target: aarch64-apple-darwin
-            extension: ""
             llvm-arch: ARM64
-          - os: windows-latest
+          - os: windows-2025
             target: x86_64-pc-windows-msvc
             llvm-arch: X64
-          - os: windows-latest
+          - os: windows-11-arm
             target: aarch64-pc-windows-msvc
             llvm-arch: ARM64
 
@@ -83,17 +80,6 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      - name: Install cross
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        shell: bash
-        run: |
-          dir="$RUNNER_TEMP/cross-download"
-          mkdir "$dir"
-          cd "$dir"
-          curl -LO "https://github.com/cross-rs/cross/releases/download/${CROSS_VERSION}/cross-x86_64-unknown-linux-gnu.tar.gz"
-          tar xf cross-x86_64-unknown-linux-gnu.tar.gz
-          echo "$dir" >> $GITHUB_PATH
-
       - name: Install LLVM (ubuntu)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: .github/scripts/setup-llvm.sh
@@ -102,7 +88,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         shell: bash
         run: |
-          cross build --release --target ${{ matrix.target }} --verbose
+          cargo build --release --target ${{ matrix.target }} --verbose
           bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}"
           mv target/${{ matrix.target }}/release/lsp ${bin}
           echo "BIN=${bin}" >> $GITHUB_ENV

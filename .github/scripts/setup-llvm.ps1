@@ -8,18 +8,20 @@ $Arch = $env:PROCESSOR_ARCHITECTURE
 $Filename = ""
 
 if ($Arch -eq "AMD64") {
-    $Filename = "LLVM-${LLVMVersion}-win64.exe"
+    $Filename = "clang+llvm-${LLVMVersion}-aarch64-pc-windows-msvc.tar.xz"
 } elseif ($Arch -eq "ARM64") {
-    $Filename = "LLVM-${LLVMVersion}-woa64.exe"
+    $Filename = "clang+llvm-${LLVMVersion}-x86_64-pc-windows-msvc.tar.xz"
 } else {
     Write-Error "Unsupported architecture: $Arch"
     exit 1
 }
 
 $LLVMPrefix = Join-Path $env:RUNNER_TEMP "llvm-download"
+New-Item -ItemType Directory -Force -Path $LLVMPrefix | Out-Null
+Set-Location -Path $LLVMPrefix
 
 Invoke-WebRequest -Uri "${BaseUrl}/${Filename}" -OutFile $Filename
-Start-Process -FilePath $Filename -ArgumentList "/S", "/D=$LLVMPrefix" -Wait -NoNewWindow
+tar -xf $Filename --strip-components 1
 
 $LLVMVersionSuffix = $LLVMVersion.Split('.')[0] + "0"
 "TABLEGEN_${LLVMVersionSuffix}_PREFIX=${LLVMPrefix}" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
