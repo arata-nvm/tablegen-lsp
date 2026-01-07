@@ -1,0 +1,98 @@
+name: Build LLVM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-llvm:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-linux-gnu
+            arch: X64
+            os_name: Linux
+          - os: ubuntu-24.04-arm
+            target: aarch64-linux-gnu
+            arch: ARM64
+            os_name: Linux
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            arch: ARM64
+            os_name: macOS
+          - os: windows-2025
+            target: x86_64-pc-windows-msvc
+            arch: x86_64
+            os_name: Windows
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            arch: aarch64
+            os_name: Windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read LLVM version
+        id: llvm_version
+        shell: bash
+        run: |
+          version=$(cat .github/LLVM_VERSION | tr -d '\r\n')
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Download LLVM Source
+        shell: bash
+        run: |
+          version="${{ steps.llvm_version.outputs.version }}"
+          curl -LO "https://github.com/llvm/llvm-project/releases/download/llvmorg-${version}/llvm-project-${version}.src.tar.xz"
+          mkdir llvm-project
+          tar -xf "llvm-project-${version}.src.tar.xz" -C llvm-project --strip-components 1
+
+      - name: Configure
+        shell: bash
+        run: |
+          cd llvm-project
+          cmake -S llvm -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+            -DLLVM_ENABLE_PROJECTS="" \
+            -DLLVM_TARGETS_TO_BUILD="" \
+            -DLLVM_INCLUDE_EXAMPLES=OFF \
+            -DLLVM_INCLUDE_DOCS=OFF \
+            -DLLVM_INCLUDE_BENCHMARKS=OFF \
+            -DLLVM_INCLUDE_TESTS=OFF \
+            -DLLVM_ENABLE_PLUGINS=OFF \
+            -DLLVM_ENABLE_ZLIB=OFF \
+            -DLLVM_ENABLE_LIBXML2=OFF
+
+      - name: Build
+        shell: bash
+        run: |
+          cd llvm-project
+          cmake --build build
+
+      - name: Install
+        shell: bash
+        run: |
+          cd llvm-project
+          cmake --install build
+
+      - name: Package
+        shell: bash
+        run: |
+          cd llvm-project/install
+          version="${{ steps.llvm_version.outputs.version }}"
+          filename="LLVM-${version}-${{ runner.os }}-${{ runner.arch }}.tar.xz"
+          tar -cJf "../${filename}" *
+          echo "ASSET_PATH=$(realpath ../${filename})" >> $GITHUB_ENV
+
+      - name: Create Release and Upload Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="llvm-${{ steps.llvm_version.outputs.version }}"
+          gh release create "$tag" --title "LLVM ${{ steps.llvm_version.outputs.version }}" || true
+          gh release upload "$tag" "${{ env.ASSET_PATH }}" --clobber
