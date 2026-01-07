@@ -58,7 +58,14 @@ jobs:
         shell: bash
         run: |
           cd llvm-project
-          cmake -S llvm -B build -G Ninja \
+          
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            generator="Visual Studio 17 2022"
+          else
+            generator="Ninja"
+          fi
+
+          cmake -S llvm -B build -G "$generator" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
             -DLLVM_ENABLE_PROJECTS="" \
@@ -69,19 +76,22 @@ jobs:
             -DLLVM_INCLUDE_TESTS=OFF \
             -DLLVM_ENABLE_PLUGINS=OFF \
             -DLLVM_ENABLE_ZLIB=OFF \
-            -DLLVM_ENABLE_LIBXML2=OFF
+            -DLLVM_ENABLE_ZSTD=OFF \
+            -DLLVM_ENABLE_LIBXML2=OFF \
+            -DLLVM_ENABLE_CURL=OFF \
+            -DLLVM_ENABLE_HTTPLIB=OFF
 
       - name: Build
         shell: bash
         run: |
           cd llvm-project
-          cmake --build build
+          cmake --build build --config Release
 
       - name: Install
         shell: bash
         run: |
           cd llvm-project
-          cmake --install build
+          cmake --install build --config Release
 
       - name: Package
         shell: bash
