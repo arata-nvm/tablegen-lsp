@@ -3,6 +3,9 @@ name: Build LLVM
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-llvm:
     runs-on: ${{ matrix.os }}
