@@ -4,7 +4,7 @@ set -euxo pipefail
 script_dir=$(dirname "$(readlink -f "$0")")
 llvm_version=$(cat "${script_dir}/../LLVM_VERSION" | tr -d '\r\n')
 
-base_url="https://github.com/llvm/llvm-project/releases/download/llvmorg-${llvm_version}"
+base_url="https://github.com/arata-nvm/tablegen-lsp/releases/download/llvm-${llvm_version}"
 os=$(uname -s)
 arch=$(uname -m)
 
@@ -18,6 +18,12 @@ if [ "$os" = "Linux" ]; then
 elif [ "$os" = "Darwin" ]; then
     if [ "$arch" = "arm64" ]; then
         filename="LLVM-${llvm_version}-macOS-ARM64.tar.xz"
+    fi
+elif [[ "$os" == MINGW* ]] || [[ "$os" == MSYS* ]]; then
+    if [ "$arch" = "x86_64" ]; then
+        filename="clang+llvm-${llvm_version}-x86_64-pc-windows-msvc.tar.xz"
+    elif [ "$arch" = "aarch64" ]; then
+        filename="clang+llvm-${llvm_version}-aarch64-pc-windows-msvc.tar.xz"
     fi
 fi
 

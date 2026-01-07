@@ -103,7 +103,8 @@ jobs:
 
       - name: Install LLVM (windows)
         if: runner.os == 'Windows'
-        run: .github/scripts/setup-llvm.ps1
+        shell: bash
+        run: .github/scripts/setup-llvm.sh
 
       - name: Build release binary (windows)
         if: runner.os == 'Windows'
