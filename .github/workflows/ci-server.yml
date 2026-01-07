@@ -34,7 +34,7 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - uses: dtolnay/rust-toolchain@stable
-      - run: .github/scripts/setup-llvm.sh
+      - uses: ./.github/actions/setup-llvm
       - name: Build
         run: cargo check --verbose --locked
 
@@ -54,6 +54,6 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - uses: dtolnay/rust-toolchain@stable
-      - run: .github/scripts/setup-llvm.sh
+      - uses: ./.github/actions/setup-llvm
       - name: Run tests
         run: cargo test --verbose --locked
