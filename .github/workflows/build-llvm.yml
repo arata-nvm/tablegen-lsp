@@ -48,7 +48,8 @@ jobs:
           version="${{ steps.llvm_version.outputs.version }}"
           curl -LO "https://github.com/llvm/llvm-project/releases/download/llvmorg-${version}/llvm-project-${version}.src.tar.xz"
           mkdir llvm-project
-          tar -xf "llvm-project-${version}.src.tar.xz" -C llvm-project --strip-components 1
+          # Ignore errors since it fails on Windows
+          tar -xf "llvm-project-${version}.src.tar.xz" -C llvm-project --strip-components 1 || true
 
       - name: Configure
         shell: bash
