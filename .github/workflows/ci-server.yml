@@ -19,7 +19,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -36,7 +36,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: ./.github/actions/setup-llvm
       - name: Build
-        run: cargo check --verbose --locked
+        run: cargo build --verbose --locked
+      - name: Check dependencies
+        run: |
+          chmod +x ci/list-elf-needed.sh
+          diff -u ci/linux-x86_64-ubuntu24.04-lsp.dt-needed.txt <(ci/list-elf-needed.sh target/debug/lsp)
 
   test:
     runs-on: ubuntu-latest
