@@ -1,0 +1,24 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(\"defvar x = 10; defvar y = x$\")"
+---
+[
+    CompletionItem {
+        label: "false",
+        insert_text_snippet: None,
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "true",
+        insert_text_snippet: None,
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "x",
+        insert_text_snippet: None,
+        detail: "",
+        kind: Variable,
+    },
+]

@@ -161,6 +161,7 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
         CompletionItemKind::Def => lsp_types::CompletionItemKind::VARIABLE,
         CompletionItemKind::Defset => lsp_types::CompletionItemKind::VARIABLE,
         CompletionItemKind::Multiclass => lsp_types::CompletionItemKind::CLASS,
+        CompletionItemKind::Variable => lsp_types::CompletionItemKind::VARIABLE,
     });
     if let Some(insert_text_snippet) = item.insert_text_snippet {
         lsp_item.insert_text_format = Some(lsp_types::InsertTextFormat::SNIPPET);

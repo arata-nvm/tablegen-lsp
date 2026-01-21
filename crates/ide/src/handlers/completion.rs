@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use ecow::EcoString;
 use syntax::{
     SyntaxNode,
     ast::{self, AstNode},
@@ -9,7 +10,7 @@ use crate::symbol_map::class::ClassId;
 use crate::{
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
-    symbol_map::{SymbolMap, record::RecordFieldId},
+    symbol_map::{SymbolMap, record::RecordFieldId, typ::Type},
 };
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -59,6 +60,7 @@ pub enum CompletionItemKind {
     Def,
     Defset,
     Multiclass,
+    Variable,
 }
 
 pub fn exec(
@@ -110,6 +112,10 @@ pub fn exec(
         ctx.complete_primitive_values();
         ctx.complete_defs(symbol_map);
         ctx.complete_defsets(symbol_map);
+
+        let variables = collect_variables_from_ancestors(&node_at_pos);
+        ctx.complete_variables(symbol_map, variables);
+
         if let Some(class) = node_at_pos.ancestor::<ast::Class>() {
             (|| -> Option<()> {
                 let class_name = class.name()?;
@@ -413,6 +419,21 @@ impl CompletionContext {
             ));
         }
     }
+
+    fn complete_variables(
+        &mut self,
+        _symbol_map: &SymbolMap,
+        variables: Vec<(EcoString, Option<Type>)>,
+    ) {
+        for (name, typ) in variables {
+            let detail = typ.map(|t| t.to_string()).unwrap_or_default();
+            self.items.push(CompletionItem::new_simple(
+                name,
+                detail,
+                CompletionItemKind::Variable,
+            ));
+        }
+    }
 }
 
 fn collect_class_fields(
@@ -427,6 +448,68 @@ fn collect_class_fields(
     for parent_id in &class.parent_list {
         collect_class_fields(symbol_map, *parent_id, found_fields);
     }
+}
+
+fn collect_variables_from_ancestors(node: &SyntaxNode) -> Vec<(EcoString, Option<Type>)> {
+    let mut variables = Vec::new();
+    let mut seen_names = HashSet::new();
+
+    // foreach can be nested, so we need to collect variables from each scope
+    for ancestor in node.ancestors() {
+        if let Some(foreach) = ast::Foreach::cast(ancestor.clone()) {
+            if let Some(iterator) = foreach.iterator() {
+                if let Some(name) = iterator.name().and_then(|n| n.value()) {
+                    if seen_names.insert(name.clone()) {
+                        variables.push((name, None));
+                    }
+                }
+            }
+        }
+    }
+
+    // collect defvar from record bodies (class/def)
+    for ancestor in node.ancestors() {
+        if let Some(body) = ast::Body::cast(ancestor.clone()) {
+            for item in body.items() {
+                if let ast::BodyItem::Defvar(defvar) = item {
+                    if let Some(name) = defvar.name().and_then(|n| n.value()) {
+                        let defvar_range = defvar.syntax().text_range();
+                        let node_range = node.text_range();
+                        if defvar_range.end() <= node_range.start() {
+                            if seen_names.insert(name.clone()) {
+                                variables.push((name, None));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Stop at the first Body we encounter (current record body scope)
+            break;
+        }
+    }
+
+    // statement lists also can be nested, collect defvar from them too
+    for ancestor in node.ancestors() {
+        if let Some(stmt_list) = ast::StatementList::cast(ancestor.clone()) {
+            for stmt in stmt_list.statements() {
+                if let ast::Statement::Defvar(defvar) = stmt {
+                    if let Some(name) = defvar.name().and_then(|n| n.value()) {
+                        // Only add if it's defined before the current position
+                        let defvar_range = defvar.syntax().text_range();
+                        let node_range = node.text_range();
+                        if defvar_range.end() <= node_range.start() {
+                            if seen_names.insert(name.clone()) {
+                                variables.push((name, None));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    variables
 }
 
 #[cfg(test)]
@@ -503,5 +586,15 @@ mod tests {
         insta::assert_debug_snapshot!(check(
             "multiclass Base<int x>; multiclass Derived<int y>; defm test : B$"
         ));
+    }
+
+    #[test]
+    fn variables() {
+        insta::assert_debug_snapshot!(check("defvar x = 10; defvar y = x$"));
+        insta::assert_debug_snapshot!(check("foreach i = 0...4 in { defvar x = i$ }"));
+        insta::assert_debug_snapshot!(check(
+            "defvar outer = 1; foreach i = 0...2 in { defvar inner = outer$ }"
+        ));
+        insta::assert_debug_snapshot!(check("class Foo { defvar hoge = 1; int x = h$"));
     }
 }
