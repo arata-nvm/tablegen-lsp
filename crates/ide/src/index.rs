@@ -146,6 +146,12 @@ impl IndexStatement for ast::Include {
             return;
         };
 
+        if ctx.file_trace.contains(&include_file_id) {
+            let path = self.path().map(|it| it.value()).unwrap_or_default();
+            ctx.error_by_syntax(self.syntax(), format!("circular include detected: {path}"));
+            return;
+        }
+
         let parse = ctx.db.parse(include_file_id);
         let Some(source_file) = ast::SourceFile::cast(parse.syntax_node()) else {
             return;
@@ -1494,6 +1500,23 @@ mod tests {
         let (db, f) = tests::load_single_file_with_tblgen("testdata/errors.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
+        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+    }
+
+    #[test]
+    fn circular_include() {
+        let (db, f) = tests::multiple_files(
+            r#"
+; file1.td
+include "file2.td"
+class Foo;
+
+; file2.td
+include "file1.td"
+class Bar;
+            "#,
+        );
+        let index = db.index(f.source_unit_id());
         insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
     }
 }
