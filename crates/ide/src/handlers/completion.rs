@@ -130,7 +130,7 @@ impl CompletionContext {
     }
 
     fn complete_toplevel_keywords(&mut self) {
-        const TOPLEVEL_KEYWORDS: [&str; 12] = [
+        const TOPLEVEL_KEYWORDS: [&str; 13] = [
             "assert",
             "class",
             "def",
@@ -138,6 +138,7 @@ impl CompletionContext {
             "foreach",
             "defm",
             "defset",
+            "deftype",
             "defvar",
             "if",
             "include",

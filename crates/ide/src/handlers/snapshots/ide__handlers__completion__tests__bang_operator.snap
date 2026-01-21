@@ -64,6 +64,12 @@ expression: "check_trigger(\"!$\", \"!\")"
         kind: Keyword,
     },
     CompletionItem {
+        label: "deftype",
+        insert_text_snippet: None,
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
         label: "defvar",
         insert_text_snippet: None,
         detail: "",
