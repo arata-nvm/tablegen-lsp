@@ -141,10 +141,32 @@ pub fn exec(
     if node_at_pos.ancestor_within::<ast::ClassRef>(2).is_some()
         || node_at_pos.ancestor_within::<ast::ClassId>(2).is_some()
     {
-        if node_at_pos.ancestor::<ast::Defm>().is_some() {
-            ctx.complete_multiclasses(symbol_map);
+        // exclude already inherited classes in parent class list
+        let exclude = if let Some(parent_list) = node_at_pos.ancestor::<ast::ParentClassList>() {
+            let mut exclude = HashSet::new();
+            // exclude already inherited classes
+            for class_ref in parent_list.classes() {
+                if let Some(name) = class_ref.name().and_then(|n| n.value()) {
+                    exclude.insert(name);
+                }
+            }
+
+            // exclude the class itself
+            if let Some(class) = node_at_pos.ancestor::<ast::Class>() {
+                if let Some(name) = class.name().and_then(|n| n.value()) {
+                    exclude.insert(name);
+                }
+            }
+
+            exclude
         } else {
-            ctx.complete_classes(symbol_map);
+            HashSet::new()
+        };
+
+        if node_at_pos.ancestor::<ast::Defm>().is_some() {
+            ctx.complete_multiclasses(symbol_map, &exclude);
+        } else {
+            ctx.complete_classes(symbol_map, &exclude);
         }
     }
     if node_at_pos.ancestor_within::<ast::Type>(2).is_some() {
@@ -312,9 +334,12 @@ impl CompletionContext {
         }
     }
 
-    fn complete_classes(&mut self, symbol_map: &SymbolMap) {
+    fn complete_classes(&mut self, symbol_map: &SymbolMap, exclude: &HashSet<EcoString>) {
         for class_id in symbol_map.iter_class() {
             let class = symbol_map.class(class_id);
+            if exclude.contains(&class.name) {
+                continue;
+            }
             let arg_snippet = class
                 .iter_template_arg()
                 .enumerate()
@@ -338,9 +363,12 @@ impl CompletionContext {
         }
     }
 
-    fn complete_multiclasses(&mut self, symbol_map: &SymbolMap) {
+    fn complete_multiclasses(&mut self, symbol_map: &SymbolMap, exclude: &HashSet<EcoString>) {
         for multiclass_id in symbol_map.iter_multiclass() {
             let multiclass = symbol_map.multiclass(multiclass_id);
+            if exclude.contains(&multiclass.name) {
+                continue;
+            }
             let arg_snippet = multiclass
                 .iter_template_arg()
                 .enumerate()
@@ -547,7 +575,10 @@ mod tests {
     #[test]
     fn r#type() {
         insta::assert_debug_snapshot!(check("class Foo<i$"));
-        insta::assert_debug_snapshot!(check("class Foo<int a>; class Bar : Foo$;"));
+        insta::assert_debug_snapshot!(check("class Foo<int a>; class Bar : F$;"));
+        insta::assert_debug_snapshot!(check(
+            "class Base1; class Base2; class Derived : Base1, B$;"
+        ));
     }
 
     #[test]

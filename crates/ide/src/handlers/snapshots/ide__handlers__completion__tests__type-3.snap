@@ -1,12 +1,12 @@
 ---
 source: crates/ide/src/handlers/completion.rs
-expression: "check(\"class Foo<int a>; class Bar : F$;\")"
+expression: "check(\"class Base1; class Base2; class Derived : Base1, B$;\")"
 ---
 [
     CompletionItem {
-        label: "Foo",
+        label: "Base2",
         insert_text_snippet: Some(
-            "Foo<${1}>$0",
+            "Base2$0",
         ),
         detail: "class",
         kind: Class,
