@@ -81,7 +81,7 @@ pub fn exec(
         return Some(ctx.finish());
     }
 
-    if let Some(field_let) = find::<ast::FieldLet>(&node_at_pos) {
+    if let Some(field_let) = node_at_pos.ancestor::<ast::FieldLet>() {
         (|| -> Option<()> {
             let name = field_let.name()?;
             let name_range = name.range()?;
@@ -89,7 +89,7 @@ pub fn exec(
                 return None;
             }
 
-            if let Some(class_stmt) = find::<ast::Class>(&node_at_pos) {
+            if let Some(class_stmt) = node_at_pos.ancestor::<ast::Class>() {
                 let class_name = class_stmt.name()?.value()?;
                 if let Some(class_id) = symbol_map.find_class(&class_name) {
                     ctx.complete_record_fields(symbol_map, class_id);
@@ -99,14 +99,17 @@ pub fn exec(
             Some(())
         })();
     }
-    if within::<ast::StatementList>(&node_at_pos, 2).is_some() {
+    if node_at_pos
+        .ancestor_within::<ast::StatementList>(2)
+        .is_some()
+    {
         ctx.complete_toplevel_keywords();
     }
-    if within::<ast::InnerValue>(&node_at_pos, 2).is_some() {
+    if node_at_pos.ancestor_within::<ast::InnerValue>(2).is_some() {
         ctx.complete_primitive_values();
         ctx.complete_defs(symbol_map);
         ctx.complete_defsets(symbol_map);
-        if let Some(class) = find::<ast::Class>(&node_at_pos) {
+        if let Some(class) = node_at_pos.ancestor::<ast::Class>() {
             (|| -> Option<()> {
                 let class_name = class.name()?;
                 let class_name = class_name.value()?;
@@ -116,27 +119,38 @@ pub fn exec(
             })();
         }
     }
-    if within::<ast::ClassRef>(&node_at_pos, 2).is_some()
-        || within::<ast::ClassId>(&node_at_pos, 2).is_some()
+    if node_at_pos.ancestor_within::<ast::ClassRef>(2).is_some()
+        || node_at_pos.ancestor_within::<ast::ClassId>(2).is_some()
     {
         ctx.complete_classes(symbol_map);
     }
-    if within::<ast::Type>(&node_at_pos, 2).is_some() {
+    if node_at_pos.ancestor_within::<ast::Type>(2).is_some() {
         ctx.complete_primitive_types();
     }
 
     Some(ctx.finish())
 }
 
-fn find<N: AstNode<Language = syntax::Language>>(node: &SyntaxNode) -> Option<N> {
-    node.ancestors().find_map(N::cast)
+trait SyntaxNodeExt {
+    fn ancestor<N: AstNode<Language = syntax::Language>>(&self) -> Option<N>;
+
+    fn ancestor_within<N: AstNode<Language = syntax::Language>>(
+        &self,
+        max_depth: usize,
+    ) -> Option<N>;
 }
 
-fn within<N: AstNode<Language = syntax::Language>>(
-    node: &SyntaxNode,
-    max_depth: usize,
-) -> Option<N> {
-    node.ancestors().take(max_depth).find_map(N::cast)
+impl SyntaxNodeExt for SyntaxNode {
+    fn ancestor<N: AstNode<Language = syntax::Language>>(&self) -> Option<N> {
+        self.ancestors().find_map(N::cast)
+    }
+
+    fn ancestor_within<N: AstNode<Language = syntax::Language>>(
+        &self,
+        max_depth: usize,
+    ) -> Option<N> {
+        self.ancestors().take(max_depth).find_map(N::cast)
+    }
 }
 
 fn contains_inclusive(range: syntax::parser::TextRange, pos: syntax::parser::TextSize) -> bool {
