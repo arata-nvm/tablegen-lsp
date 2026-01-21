@@ -157,6 +157,7 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
         CompletionItemKind::Type => lsp_types::CompletionItemKind::CLASS,
         CompletionItemKind::Class => lsp_types::CompletionItemKind::CLASS,
         CompletionItemKind::TemplateArgument => lsp_types::CompletionItemKind::PROPERTY,
+        CompletionItemKind::Field => lsp_types::CompletionItemKind::FIELD,
         CompletionItemKind::Def => lsp_types::CompletionItemKind::VARIABLE,
         CompletionItemKind::Defset => lsp_types::CompletionItemKind::VARIABLE,
     });

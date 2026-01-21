@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use syntax::{
     SyntaxNode,
     ast::{self, AstNode},
@@ -7,7 +9,7 @@ use crate::symbol_map::class::ClassId;
 use crate::{
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
-    symbol_map::SymbolMap,
+    symbol_map::{SymbolMap, record::RecordFieldId},
 };
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -53,6 +55,7 @@ pub enum CompletionItemKind {
     Type,
     Class,
     TemplateArgument,
+    Field,
     Def,
     Defset,
 }
@@ -76,6 +79,24 @@ pub fn exec(
         ctx.complete_bang_operators();
     }
 
+    if let Some(field_let) = find::<ast::FieldLet>(&node_at_pos) {
+        (|| -> Option<()> {
+            let name = field_let.name()?;
+            let name_range = name.range()?;
+            if !contains_inclusive(name_range, pos.position) {
+                return None;
+            }
+
+            if let Some(class_stmt) = find::<ast::Class>(&node_at_pos) {
+                let class_name = class_stmt.name()?.value()?;
+                if let Some(class_id) = symbol_map.find_class(&class_name) {
+                    ctx.complete_record_fields(symbol_map, class_id);
+                }
+            }
+
+            Some(())
+        })();
+    }
     if within::<ast::StatementList>(&node_at_pos, 2).is_some() {
         ctx.complete_toplevel_keywords();
     }
@@ -114,6 +135,10 @@ fn within<N: AstNode<Language = syntax::Language>>(
     max_depth: usize,
 ) -> Option<N> {
     node.ancestors().take(max_depth).find_map(N::cast)
+}
+
+fn contains_inclusive(range: syntax::parser::TextRange, pos: syntax::parser::TextSize) -> bool {
+    range.start() <= pos && pos <= range.end()
 }
 
 struct CompletionContext {
@@ -286,6 +311,20 @@ impl CompletionContext {
         }
     }
 
+    fn complete_record_fields(&mut self, symbol_map: &SymbolMap, class_id: ClassId) {
+        let mut found_fields = HashSet::new();
+        collect_class_fields(symbol_map, class_id, &mut found_fields);
+
+        for field_id in found_fields {
+            let field = symbol_map.record_field(field_id);
+            self.items.push(CompletionItem::new_simple(
+                field.name.clone(),
+                field.typ.to_string(),
+                CompletionItemKind::Field,
+            ));
+        }
+    }
+
     fn complete_defs(&mut self, symbol_map: &SymbolMap) {
         for def_id in symbol_map.iter_def() {
             let def = symbol_map.def(def_id);
@@ -306,6 +345,20 @@ impl CompletionContext {
                 CompletionItemKind::Defset,
             ));
         }
+    }
+}
+
+fn collect_class_fields(
+    symbol_map: &SymbolMap,
+    class_id: ClassId,
+    found_fields: &mut HashSet<RecordFieldId>,
+) {
+    let class = symbol_map.class(class_id);
+    for field_id in class.iter_field() {
+        found_fields.insert(field_id);
+    }
+    for parent_id in &class.parent_list {
+        collect_class_fields(symbol_map, *parent_id, found_fields);
     }
 }
 
@@ -359,5 +412,13 @@ mod tests {
     #[test]
     fn bang_operator() {
         insta::assert_debug_snapshot!(check_trigger("!$", "!"));
+    }
+
+    #[test]
+    fn field_let() {
+        insta::assert_debug_snapshot!(check("class Foo { int Bar; let B$"));
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int Bar; int Baz; } class Foo2 : Foo { let B$"
+        ));
     }
 }
