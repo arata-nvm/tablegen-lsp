@@ -92,7 +92,7 @@ pub fn exec(
             if let Some(class_stmt) = node_at_pos.ancestor::<ast::Class>() {
                 let class_name = class_stmt.name()?.value()?;
                 if let Some(class_id) = symbol_map.find_class(&class_name) {
-                    ctx.complete_record_fields(symbol_map, class_id);
+                    ctx.complete_record_fields(symbol_map, class_id, None);
                 }
             }
 
@@ -115,6 +115,18 @@ pub fn exec(
                 let class_name = class_name.value()?;
                 let class_id = symbol_map.find_class(&class_name)?;
                 ctx.complete_template_arguments(symbol_map, class_id);
+
+                let exclude_name = node_at_pos
+                    .ancestor::<ast::FieldDef>()
+                    .and_then(|fd| fd.name())
+                    .and_then(|n| n.value())
+                    .or_else(|| {
+                        node_at_pos
+                            .ancestor::<ast::FieldLet>()
+                            .and_then(|fl| fl.name())
+                            .and_then(|n| n.value())
+                    });
+                ctx.complete_record_fields(symbol_map, class_id, exclude_name.as_deref());
                 None
             })();
         }
@@ -327,12 +339,20 @@ impl CompletionContext {
         }
     }
 
-    fn complete_record_fields(&mut self, symbol_map: &SymbolMap, class_id: ClassId) {
+    fn complete_record_fields(
+        &mut self,
+        symbol_map: &SymbolMap,
+        class_id: ClassId,
+        exclude_field_name: Option<&str>,
+    ) {
         let mut found_fields = HashSet::new();
         collect_class_fields(symbol_map, class_id, &mut found_fields);
 
         for field_id in found_fields {
             let field = symbol_map.record_field(field_id);
+            if exclude_field_name.is_some_and(|name| name == field.name.as_str()) {
+                continue;
+            }
             self.items.push(CompletionItem::new_simple(
                 field.name.clone(),
                 field.typ.to_string(),
@@ -435,6 +455,14 @@ mod tests {
         insta::assert_debug_snapshot!(check("class Foo { int Bar; let B$"));
         insta::assert_debug_snapshot!(check(
             "class Foo { int Bar; int Baz; } class Foo2 : Foo { let B$"
+        ));
+    }
+
+    #[test]
+    fn class_field() {
+        insta::assert_debug_snapshot!(check("class Foo { int field1; int field2 = f$"));
+        insta::assert_debug_snapshot!(check(
+            "class Base { int base_field; } class Derived : Base { int derived_field = b$"
         ));
     }
 }
