@@ -16,19 +16,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         kind: Keyword,
     },
     CompletionItem {
-        label: "assert",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
         label: "cast",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "class",
         insert_text_snippet: None,
         detail: "",
         kind: Keyword,
@@ -46,43 +34,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         kind: Keyword,
     },
     CompletionItem {
-        label: "def",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "defm",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "defset",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "deftype",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "defvar",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
         label: "div",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "dump",
         insert_text_snippet: None,
         detail: "",
         kind: Keyword,
@@ -119,12 +71,6 @@ expression: "check_trigger(\"!$\", \"!\")"
     },
     CompletionItem {
         label: "foldl",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "foreach",
         insert_text_snippet: None,
         detail: "",
         kind: Keyword,
@@ -178,18 +124,6 @@ expression: "check_trigger(\"!$\", \"!\")"
         kind: Keyword,
     },
     CompletionItem {
-        label: "if",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "include",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
         label: "interleave",
         insert_text_snippet: None,
         detail: "",
@@ -203,12 +137,6 @@ expression: "check_trigger(\"!$\", \"!\")"
     },
     CompletionItem {
         label: "le",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "let",
         insert_text_snippet: None,
         detail: "",
         kind: Keyword,
@@ -245,12 +173,6 @@ expression: "check_trigger(\"!$\", \"!\")"
     },
     CompletionItem {
         label: "mul",
-        insert_text_snippet: None,
-        detail: "",
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "multiclass",
         insert_text_snippet: None,
         detail: "",
         kind: Keyword,

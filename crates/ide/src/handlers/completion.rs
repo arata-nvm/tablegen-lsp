@@ -75,8 +75,10 @@ pub fn exec(
     let node_at_pos = token_at_pos.parent()?;
 
     let mut ctx = CompletionContext::new();
+
     if trigger_char == Some("!".into()) {
         ctx.complete_bang_operators();
+        return Some(ctx.finish());
     }
 
     if let Some(field_let) = find::<ast::FieldLet>(&node_at_pos) {
