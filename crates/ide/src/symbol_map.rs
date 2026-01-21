@@ -185,6 +185,10 @@ impl SymbolMap {
         self.name_to_multiclass.get(name).copied()
     }
 
+    pub fn iter_multiclass(&self) -> impl Iterator<Item = MulticlassId> + '_ {
+        self.name_to_multiclass.values().copied()
+    }
+
     pub fn defm(&self, defm_id: DefmId) -> &Defm {
         self.defm_list.get(defm_id).expect("invalid defm id")
     }

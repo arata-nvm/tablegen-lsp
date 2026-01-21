@@ -58,6 +58,7 @@ pub enum CompletionItemKind {
     Field,
     Def,
     Defset,
+    Multiclass,
 }
 
 pub fn exec(
@@ -134,7 +135,11 @@ pub fn exec(
     if node_at_pos.ancestor_within::<ast::ClassRef>(2).is_some()
         || node_at_pos.ancestor_within::<ast::ClassId>(2).is_some()
     {
-        ctx.complete_classes(symbol_map);
+        if node_at_pos.ancestor::<ast::Defm>().is_some() {
+            ctx.complete_multiclasses(symbol_map);
+        } else {
+            ctx.complete_classes(symbol_map);
+        }
     }
     if node_at_pos.ancestor_within::<ast::Type>(2).is_some() {
         ctx.complete_primitive_types();
@@ -327,6 +332,32 @@ impl CompletionContext {
         }
     }
 
+    fn complete_multiclasses(&mut self, symbol_map: &SymbolMap) {
+        for multiclass_id in symbol_map.iter_multiclass() {
+            let multiclass = symbol_map.multiclass(multiclass_id);
+            let arg_snippet = multiclass
+                .iter_template_arg()
+                .enumerate()
+                .map(|(i, _)| format!("${{{}}}", i + 1))
+                .collect::<Vec<_>>()
+                .join(", ");
+            self.items.push(CompletionItem::new_snippet(
+                multiclass.name.clone(),
+                format!(
+                    "{}{}$0",
+                    multiclass.name,
+                    if arg_snippet.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!("<{arg_snippet}>")
+                    }
+                ),
+                "multiclass",
+                CompletionItemKind::Multiclass,
+            ));
+        }
+    }
+
     fn complete_template_arguments(&mut self, symbol_map: &SymbolMap, class_id: ClassId) {
         let class = symbol_map.class(class_id);
         for arg_id in class.iter_template_arg() {
@@ -463,6 +494,14 @@ mod tests {
         insta::assert_debug_snapshot!(check("class Foo { int field1; int field2 = f$"));
         insta::assert_debug_snapshot!(check(
             "class Base { int base_field; } class Derived : Base { int derived_field = b$"
+        ));
+    }
+
+    #[test]
+    fn multiclass() {
+        insta::assert_debug_snapshot!(check("multiclass Foo; defm bar : F$"));
+        insta::assert_debug_snapshot!(check(
+            "multiclass Base<int x>; multiclass Derived<int y>; defm test : B$"
         ));
     }
 }

@@ -1,0 +1,14 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(\"multiclass Foo; defm bar : F$\")"
+---
+[
+    CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo$0",
+        ),
+        detail: "multiclass",
+        kind: Multiclass,
+    },
+]
