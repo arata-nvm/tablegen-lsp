@@ -4,7 +4,7 @@ use syntax::{
     ast::{self, AstNode},
 };
 
-use crate::symbol_map::{class::ClassId, record::RecordId};
+use crate::symbol_map::{class::ClassId, def::DefId, record::RecordId, symbol::SymbolId};
 use crate::{
     bang_operator,
     file_system::{FilePosition, SourceUnitId},
@@ -12,7 +12,7 @@ use crate::{
     symbol_map::{SymbolMap, record::AsRecordData, typ::Type},
     utils,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct CompletionItem {
@@ -74,51 +74,46 @@ pub fn exec(
         return Some(ctx.finish());
     }
 
-    if node_at_pos.ancestor::<ast::FieldSuffix>().is_some() {
-        (|| -> Option<()> {
-            let inner_value = node_at_pos.ancestor::<ast::InnerValue>()?;
-            let suffixes = inner_value.suffixes().collect::<Vec<_>>();
-            let typ = if suffixes.len() < 2 {
-                // hoge.|
-                let simple_value = inner_value.simple_value()?;
-                let ptr = SyntaxNodePtr::new(simple_value.syntax());
-                resolved_types.get(&ptr)?
-            } else {
-                // hoge.fuga.| or hoge.fuga.piyo.|
-                let suffix = suffixes.get(suffixes.len() - 2)?;
-                let ptr = SyntaxNodePtr::new(suffix.syntax());
-                resolved_types.get(&ptr)?
-            };
-            let record_ids = typ.record_to_ids()?;
-            ctx.complete_record_fields(symbol_map, &record_ids, None);
-            Some(())
-        })();
-        return Some(ctx.finish());
-    }
-    if let Some(field_let) = node_at_pos.ancestor::<ast::FieldLet>() {
-        (|| -> Option<()> {
-            let name = field_let.name()?;
-            let name_range = name.range()?;
-            if !contains_inclusive(name_range, pos.position) {
-                return None;
-            }
-
-            if let Some(class_stmt) = node_at_pos.ancestor::<ast::Class>() {
-                let class_name = class_stmt.name()?.value()?;
-                if let Some(class_id) = symbol_map.find_class(&class_name) {
-                    ctx.complete_record_fields(symbol_map, &[class_id.into()], None);
-                }
-            }
-
-            Some(())
-        })();
-    }
     if node_at_pos
         .ancestor_within::<ast::StatementList>(2)
         .is_some()
     {
         ctx.complete_toplevel_keywords();
+        return Some(ctx.finish());
     }
+
+    if node_at_pos.ancestor_within::<ast::Type>(2).is_some() {
+        ctx.complete_primitive_types();
+        ctx.complete_classes(symbol_map, &HashSet::new());
+        return Some(ctx.finish());
+    }
+
+    if node_at_pos.ancestor_within::<ast::ClassRef>(2).is_some() {
+        let exclude = find_class_names_to_exclude(&node_at_pos).unwrap_or_default();
+        if node_at_pos.ancestor::<ast::Defm>().is_some() {
+            ctx.complete_multiclasses(symbol_map, &exclude);
+        } else {
+            ctx.complete_classes(symbol_map, &exclude);
+        }
+        return Some(ctx.finish());
+    }
+
+    if let Some(_) = node_at_pos.ancestor::<ast::FieldLet>() {
+        (|| -> Option<()> {
+            let class_id = find_class(&node_at_pos, symbol_map)?;
+            ctx.complete_record_fields(symbol_map, &[class_id.into()], None);
+            Some(())
+        })();
+        return Some(ctx.finish());
+    }
+
+    if node_at_pos.ancestor::<ast::FieldSuffix>().is_some() {
+        let typ = find_typ_of_field_suffix(&node_at_pos, resolved_types)?;
+        let record_ids = typ.record_to_ids()?;
+        ctx.complete_record_fields(symbol_map, &record_ids, None);
+        return Some(ctx.finish());
+    }
+
     if node_at_pos.ancestor_within::<ast::InnerValue>(2).is_some() {
         ctx.complete_primitive_values();
         ctx.complete_defs(symbol_map);
@@ -127,64 +122,102 @@ pub fn exec(
         let variables = collect_variables_from_ancestors(&node_at_pos);
         ctx.complete_variables(symbol_map, variables);
 
-        if let Some(class) = node_at_pos.ancestor::<ast::Class>() {
-            (|| -> Option<()> {
-                let class_name = class.name()?;
-                let class_name = class_name.value()?;
-                let class_id = symbol_map.find_class(&class_name)?;
-                ctx.complete_template_arguments(symbol_map, class_id);
+        if let Some(class_id) = find_class(&node_at_pos, symbol_map) {
+            ctx.complete_template_arguments(symbol_map, class_id);
 
-                let exclude_name = node_at_pos
-                    .ancestor::<ast::FieldDef>()
-                    .and_then(|fd| fd.name())
-                    .and_then(|n| n.value())
-                    .or_else(|| {
-                        node_at_pos
-                            .ancestor::<ast::FieldLet>()
-                            .and_then(|fl| fl.name())
-                            .and_then(|n| n.value())
-                    });
-                ctx.complete_record_fields(symbol_map, &[class_id.into()], exclude_name.as_deref());
-                None
-            })();
+            let exclude = find_field_name_to_exclude(&node_at_pos);
+            ctx.complete_record_fields(symbol_map, &[class_id.into()], exclude);
         }
-    }
-    if node_at_pos.ancestor_within::<ast::ClassRef>(2).is_some()
-        || node_at_pos.ancestor_within::<ast::ClassId>(2).is_some()
-    {
-        // exclude already inherited classes in parent class list
-        let exclude = if let Some(parent_list) = node_at_pos.ancestor::<ast::ParentClassList>() {
-            let mut exclude = HashSet::new();
-            // exclude already inherited classes
-            for class_ref in parent_list.classes() {
-                if let Some(name) = class_ref.name().and_then(|n| n.value()) {
-                    exclude.insert(name);
-                }
-            }
 
-            // exclude the class itself
-            if let Some(class) = node_at_pos.ancestor::<ast::Class>() {
-                if let Some(name) = class.name().and_then(|n| n.value()) {
-                    exclude.insert(name);
-                }
-            }
-
-            exclude
-        } else {
-            HashSet::new()
-        };
-
-        if node_at_pos.ancestor::<ast::Defm>().is_some() {
-            ctx.complete_multiclasses(symbol_map, &exclude);
-        } else {
-            ctx.complete_classes(symbol_map, &exclude);
+        if let Some(def_id) = find_def(pos, &node_at_pos, symbol_map) {
+            ctx.complete_record_fields(symbol_map, &[def_id.into()], None);
         }
-    }
-    if node_at_pos.ancestor_within::<ast::Type>(2).is_some() {
-        ctx.complete_primitive_types();
+
+        return Some(ctx.finish());
     }
 
     Some(ctx.finish())
+}
+
+fn find_class(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<ClassId> {
+    let class_stmt = node.ancestor::<ast::Class>()?;
+    let class_name = class_stmt.name()?.value()?;
+    let class_id = symbol_map.find_class(&class_name)?;
+    Some(class_id)
+}
+
+fn find_def(pos: FilePosition, node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<DefId> {
+    let def_stmt = node.ancestor::<ast::Def>()?;
+    let def_name_pos = def_stmt.syntax().text_range().start();
+    let symbol_id = symbol_map.find_symbol_at(FilePosition::new(pos.file, def_name_pos))?;
+    match symbol_id {
+        SymbolId::DefId(def_id) => Some(def_id),
+        _ => None,
+    }
+}
+
+fn find_class_names_to_exclude(node: &SyntaxNode) -> Option<HashSet<EcoString>> {
+    let parent_class_list = node.ancestor::<ast::ParentClassList>()?;
+
+    let mut exclude = HashSet::new();
+
+    // the class/multiclass itself
+    // e.g. class Hoge : Fuga, Piyo, | -> {Hoge}
+    if let Some(class) = node.ancestor::<ast::Class>()
+        && let Some(name) = class.name().and_then(|n| n.value())
+    {
+        exclude.insert(name);
+    }
+    if let Some(multiclass) = node.ancestor::<ast::MultiClass>()
+        && let Some(name) = multiclass.name().and_then(|n| n.value())
+    {
+        exclude.insert(name);
+    }
+
+    // already inherited classes/multiclasses
+    // e.g. class Hoge : Fuga, Piyo, | -> {Fuga, Piyo}
+    for class_ref in parent_class_list.classes() {
+        if let Some(name) = class_ref.name().and_then(|n| n.value()) {
+            exclude.insert(name);
+        }
+    }
+
+    Some(exclude)
+}
+
+fn find_field_name_to_exclude(node: &SyntaxNode) -> Option<EcoString> {
+    if let Some(field_def) = node.ancestor::<ast::FieldDef>()
+        && let Some(name) = field_def.name().and_then(|n| n.value())
+    {
+        return Some(name);
+    }
+
+    if let Some(field_let) = node.ancestor::<ast::FieldLet>()
+        && let Some(name) = field_let.name().and_then(|n| n.value())
+    {
+        return Some(name);
+    }
+
+    None
+}
+
+fn find_typ_of_field_suffix<'typ>(
+    node: &SyntaxNode,
+    resolved_types: &'typ HashMap<SyntaxNodePtr, Type>,
+) -> Option<&'typ Type> {
+    let inner_value = node.ancestor::<ast::InnerValue>()?;
+    let suffixes = inner_value.suffixes().collect::<Vec<_>>();
+    if suffixes.len() < 2 {
+        // hoge.|
+        let simple_value = inner_value.simple_value()?;
+        let ptr = SyntaxNodePtr::new(simple_value.syntax());
+        resolved_types.get(&ptr)
+    } else {
+        // hoge.fuga.| or hoge.fuga.piyo.|
+        let suffix = suffixes.get(suffixes.len() - 2)?;
+        let ptr = SyntaxNodePtr::new(suffix.syntax());
+        resolved_types.get(&ptr)
+    }
 }
 
 trait SyntaxNodeExt {
@@ -207,10 +240,6 @@ impl SyntaxNodeExt for SyntaxNode {
     ) -> Option<N> {
         self.ancestors().take(max_depth).find_map(N::cast)
     }
-}
-
-fn contains_inclusive(range: syntax::parser::TextRange, pos: syntax::parser::TextSize) -> bool {
-    range.start() <= pos && pos <= range.end()
 }
 
 struct CompletionContext<'a> {
@@ -405,13 +434,15 @@ impl<'a> CompletionContext<'a> {
         &mut self,
         symbol_map: &SymbolMap,
         record_ids: &[RecordId],
-        exclude_field_name: Option<&str>,
+        exclude_field_name: Option<EcoString>,
     ) {
         for record_id in record_ids {
             let record = symbol_map.record(*record_id);
             for field_id in record.iter_field(symbol_map) {
                 let field = symbol_map.record_field(field_id);
-                if exclude_field_name.is_some_and(|name| name == field.name.as_str()) {
+                if let Some(ref exclude_field_name) = exclude_field_name
+                    && exclude_field_name == &field.name
+                {
                     continue;
                 }
 
@@ -577,6 +608,8 @@ mod tests {
     #[test]
     fn r#type() {
         insta::assert_debug_snapshot!(check("class Foo<i$"));
+        insta::assert_debug_snapshot!(check("class Foo; class Bar<F$"));
+
         insta::assert_debug_snapshot!(check("class Foo<int a>; class Bar : F$;"));
         insta::assert_debug_snapshot!(check(
             "class Base1; class Base2; class Derived : Base1, B$;"
@@ -589,6 +622,11 @@ mod tests {
         insta::assert_debug_snapshot!(check("def foo; defvar tmp = f$"));
         insta::assert_debug_snapshot!(check(
             "class Foo; defset list<Foo> foo = {} defvar tmp = f$"
+        ));
+
+        insta::assert_debug_snapshot!(check("class Foo { int field1; int field2 = f$",));
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int field1; } class Bar : Foo { int field2 = f$",
         ));
     }
 

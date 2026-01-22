@@ -1,15 +1,77 @@
 ---
 source: crates/ide/src/handlers/completion.rs
-expression: "check(\"class Foo<int a>; class Bar : F$;\")"
+expression: "check(\"class Foo; class Bar<F$\")"
 ---
 [
     CompletionItem {
-        label: "Foo",
+        label: "Bar",
         insert_text_snippet: Some(
-            "Foo<${1}>$0",
+            "Bar$0",
         ),
         detail: "class",
         documentation: None,
         kind: Class,
+    },
+    CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo$0",
+        ),
+        detail: "class",
+        documentation: None,
+        kind: Class,
+    },
+    CompletionItem {
+        label: "bit",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Type,
+    },
+    CompletionItem {
+        label: "bits",
+        insert_text_snippet: Some(
+            "bits<$1> $0",
+        ),
+        detail: "",
+        documentation: None,
+        kind: Type,
+    },
+    CompletionItem {
+        label: "code",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Type,
+    },
+    CompletionItem {
+        label: "dag",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Type,
+    },
+    CompletionItem {
+        label: "int",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Type,
+    },
+    CompletionItem {
+        label: "list",
+        insert_text_snippet: Some(
+            "list<$1> $0",
+        ),
+        detail: "",
+        documentation: None,
+        kind: Type,
+    },
+    CompletionItem {
+        label: "string",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Type,
     },
 ]
