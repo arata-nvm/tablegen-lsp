@@ -8,7 +8,7 @@ use super::{
     defm::{Defm, DefmId},
     defset::{Defset, DefsetId},
     multiclass::{Multiclass, MulticlassId},
-    record::{RecordField, RecordFieldId},
+    record::{AsRecordData, RecordField, RecordFieldId},
     template_arg::{TemplateArgument, TemplateArgumentId},
     variable::{Variable, VariableId},
 };
@@ -146,8 +146,8 @@ pub enum Symbol<'a> {
 impl<'a> Symbol<'a> {
     pub fn name(&self) -> &EcoString {
         match self {
-            Self::Class(class) => &class.name,
-            Self::Def(def) => &def.name,
+            Self::Class(class) => class.name(),
+            Self::Def(def) => def.name(),
             Self::TemplateArgument(template_argument) => &template_argument.name,
             Self::RecordField(record_field) => &record_field.name,
             Self::Variable(variable) => &variable.name,
@@ -159,8 +159,8 @@ impl<'a> Symbol<'a> {
 
     pub fn define_loc(&self) -> &FileRange {
         match self {
-            Self::Class(class) => &class.define_loc,
-            Self::Def(def) => &def.define_loc,
+            Self::Class(class) => class.define_loc(),
+            Self::Def(def) => def.define_loc(),
             Self::TemplateArgument(template_argument) => &template_argument.define_loc,
             Self::RecordField(record_field) => &record_field.define_loc,
             Self::Variable(variable) => &variable.define_loc,
@@ -172,8 +172,8 @@ impl<'a> Symbol<'a> {
 
     pub fn reference_locs(&self) -> &[FileRange] {
         match self {
-            Self::Class(class) => &class.reference_locs,
-            Self::Def(def) => &def.reference_locs,
+            Self::Class(class) => class.reference_locs(),
+            Self::Def(def) => def.reference_locs(),
             Self::TemplateArgument(template_argument) => &template_argument.reference_locs,
             Self::RecordField(record_field) => &record_field.reference_locs,
             Self::Variable(variable) => &variable.reference_locs,
@@ -199,8 +199,8 @@ pub enum SymbolMut<'a> {
 impl<'a> SymbolMut<'a> {
     pub fn add_reference(&mut self, reference_loc: FileRange) {
         match self {
-            Self::Class(class) => class.reference_locs.push(reference_loc),
-            Self::Def(def) => def.reference_locs.push(reference_loc),
+            Self::Class(class) => class.add_reference_loc(reference_loc),
+            Self::Def(def) => def.add_reference_loc(reference_loc),
             Self::TemplateArgument(template_argument) => {
                 template_argument.reference_locs.push(reference_loc)
             }

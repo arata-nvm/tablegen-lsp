@@ -4,30 +4,24 @@ use indexmap::IndexMap;
 
 use crate::file_system::FileRange;
 
-use super::{SymbolMap, record::RecordFieldId, template_arg::TemplateArgumentId};
+use super::{
+    record::{AsRecordData, RecordData},
+    template_arg::TemplateArgumentId,
+};
 
 pub type ClassId = Id<Class>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Class {
-    pub name: EcoString,
-    pub name_to_template_arg: IndexMap<EcoString, TemplateArgumentId>,
-    pub name_to_record_field: IndexMap<EcoString, RecordFieldId>,
-    pub parent_list: Vec<ClassId>,
-
-    pub define_loc: FileRange,
-    pub reference_locs: Vec<FileRange>,
+    inner: RecordData,
+    name_to_template_arg: IndexMap<EcoString, TemplateArgumentId>,
 }
 
 impl Class {
     pub fn new(name: EcoString, define_loc: FileRange) -> Self {
         Self {
-            name,
+            inner: RecordData::new(name, define_loc),
             name_to_template_arg: IndexMap::new(),
-            name_to_record_field: IndexMap::new(),
-            parent_list: Vec::new(),
-            define_loc,
-            reference_locs: Vec::new(),
         }
     }
 
@@ -43,48 +37,19 @@ impl Class {
         self.name_to_template_arg.get(name).copied()
     }
 
-    pub fn add_record_field(&mut self, name: EcoString, record_field_id: RecordFieldId) {
-        self.name_to_record_field.insert(name, record_field_id);
-    }
-
-    pub fn iter_field(&self) -> impl Iterator<Item = RecordFieldId> + '_ {
-        self.name_to_record_field.values().copied()
-    }
-
-    pub fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
-        if let Some(field_id) = self.name_to_record_field.get(name) {
-            return Some(*field_id);
-        }
-
-        for parent_id in &self.parent_list {
-            let parent = symbol_map.class(*parent_id);
-            if let Some(field_id) = parent.find_field(symbol_map, name) {
-                return Some(field_id);
-            }
-        }
-
-        None
-    }
-
-    /// callers must ensure that the parent is not already inherited
-    pub(super) fn add_parent(&mut self, parent_id: ClassId) {
-        self.parent_list.push(parent_id);
-    }
-
-    pub fn is_subclass_of(&self, symbol_map: &SymbolMap, other_id: ClassId) -> bool {
-        if self.parent_list.contains(&other_id) {
-            return true;
-        }
-
-        self.parent_list
-            .iter()
-            .map(|parent_id| symbol_map.class(*parent_id))
-            .any(|parent| parent.is_subclass_of(symbol_map, other_id))
-    }
-
     pub fn is_empty(&self) -> bool {
         self.name_to_template_arg.is_empty()
-            && self.name_to_record_field.is_empty()
-            && self.parent_list.is_empty()
+            && self.iter_field().count() == 0
+            && self.parent_classes().is_empty()
+    }
+}
+
+impl AsRecordData for Class {
+    fn record_data(&self) -> &RecordData {
+        &self.inner
+    }
+
+    fn record_data_mut(&mut self) -> &mut RecordData {
+        &mut self.inner
     }
 }

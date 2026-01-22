@@ -6,7 +6,7 @@ use crate::symbol_map::class::ClassId;
 
 use super::{
     SymbolMap,
-    record::{RecordFieldId, RecordId},
+    record::{AsRecordData, RecordFieldId, RecordId},
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -373,7 +373,7 @@ impl Type {
 
             if !found {
                 let self_parent = symbol_map.class(self_parent_id);
-                self_parent_stack.extend(&self_parent.parent_list);
+                self_parent_stack.extend(self_parent.parent_classes());
             }
         }
 
@@ -383,12 +383,12 @@ impl Type {
             0 => None,
             1 => Some(Type::record(
                 RecordId::Class(common_parents[0]),
-                symbol_map.class(common_parents[0]).name.clone(),
+                symbol_map.class(common_parents[0]).name().clone(),
             )),
             _ => {
                 let name = common_parents
                     .iter()
-                    .map(|class_id| symbol_map.class(*class_id).name.clone())
+                    .map(|class_id| symbol_map.class(*class_id).name().clone())
                     .collect::<Vec<_>>()
                     .join(", ");
                 Some(Type::Record {
@@ -487,7 +487,7 @@ mod tests {
             SymbolMap,
             class::Class,
             def::Def,
-            record::RecordId,
+            record::{AsRecordData, RecordId},
             typ::{RecordData, Type},
         },
     };

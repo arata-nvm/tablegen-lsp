@@ -10,7 +10,11 @@ use crate::symbol_map::class::ClassId;
 use crate::{
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
-    symbol_map::{SymbolMap, record::RecordFieldId, typ::Type},
+    symbol_map::{
+        SymbolMap,
+        record::{AsRecordData, RecordFieldId},
+        typ::Type,
+    },
 };
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -337,7 +341,7 @@ impl CompletionContext {
     fn complete_classes(&mut self, symbol_map: &SymbolMap, exclude: &HashSet<EcoString>) {
         for class_id in symbol_map.iter_class() {
             let class = symbol_map.class(class_id);
-            if exclude.contains(&class.name) {
+            if exclude.contains(class.name()) {
                 continue;
             }
             let arg_snippet = class
@@ -347,10 +351,10 @@ impl CompletionContext {
                 .collect::<Vec<_>>()
                 .join(", ");
             self.items.push(CompletionItem::new_snippet(
-                class.name.clone(),
+                class.name().clone(),
                 format!(
                     "{}{}$0",
-                    class.name,
+                    class.name(),
                     if arg_snippet.is_empty() {
                         "".to_string()
                     } else {
@@ -430,7 +434,7 @@ impl CompletionContext {
         for def_id in symbol_map.iter_def() {
             let def = symbol_map.def(def_id);
             self.items.push(CompletionItem::new_simple(
-                def.name.clone(),
+                def.name().clone(),
                 "def",
                 CompletionItemKind::Def,
             ));
@@ -473,7 +477,7 @@ fn collect_class_fields(
     for field_id in class.iter_field() {
         found_fields.insert(field_id);
     }
-    for parent_id in &class.parent_list {
+    for parent_id in class.parent_classes() {
         collect_class_fields(symbol_map, *parent_id, found_fields);
     }
 }

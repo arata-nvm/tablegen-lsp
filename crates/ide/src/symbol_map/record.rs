@@ -1,5 +1,6 @@
 use ecow::EcoString;
 use id_arena::Id;
+use indexmap::IndexMap;
 
 use crate::file_system::FileRange;
 
@@ -9,6 +10,111 @@ use super::{
     def::{Def, DefId},
     typ::Type,
 };
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RecordData {
+    name: EcoString,
+    name_to_record_field: IndexMap<EcoString, RecordFieldId>,
+    parent_classes: Vec<ClassId>,
+    define_loc: FileRange,
+    reference_locs: Vec<FileRange>,
+}
+
+impl RecordData {
+    pub fn new(name: EcoString, define_loc: FileRange) -> Self {
+        Self {
+            name,
+            name_to_record_field: IndexMap::new(),
+            parent_classes: Vec::new(),
+            define_loc,
+            reference_locs: Vec::new(),
+        }
+    }
+
+    pub fn clone_with(&self, name: EcoString, define_loc: FileRange) -> Self {
+        Self {
+            name,
+            name_to_record_field: self.name_to_record_field.clone(),
+            parent_classes: self.parent_classes.clone(),
+            define_loc,
+            reference_locs: self.reference_locs.clone(),
+        }
+    }
+}
+
+pub trait AsRecordData {
+    fn record_data(&self) -> &RecordData;
+    fn record_data_mut(&mut self) -> &mut RecordData;
+
+    fn name(&self) -> &EcoString {
+        &self.record_data().name
+    }
+
+    fn define_loc(&self) -> &FileRange {
+        &self.record_data().define_loc
+    }
+
+    fn reference_locs(&self) -> &[FileRange] {
+        &self.record_data().reference_locs
+    }
+
+    fn parent_classes(&self) -> &[ClassId] {
+        &self.record_data().parent_classes
+    }
+
+    fn add_reference_loc(&mut self, reference_loc: FileRange) {
+        self.record_data_mut().reference_locs.push(reference_loc);
+    }
+
+    fn add_record_field(&mut self, name: EcoString, record_field_id: RecordFieldId) {
+        self.record_data_mut()
+            .name_to_record_field
+            .insert(name, record_field_id);
+    }
+
+    fn iter_field(&self) -> impl Iterator<Item = RecordFieldId> + '_ {
+        self.record_data().name_to_record_field.values().copied()
+    }
+
+    fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
+        let RecordData {
+            name_to_record_field,
+            parent_classes,
+            ..
+        } = self.record_data();
+
+        if let Some(field_id) = name_to_record_field.get(name) {
+            return Some(*field_id);
+        }
+
+        for parent_id in parent_classes {
+            let parent = symbol_map.class(*parent_id);
+            if let Some(field_id) = <Class as AsRecordData>::find_field(parent, symbol_map, name) {
+                return Some(field_id);
+            }
+        }
+
+        None
+    }
+
+    /// callers must ensure that the parent is not already inherited
+    fn add_parent(&mut self, parent_id: ClassId) {
+        self.record_data_mut().parent_classes.push(parent_id);
+    }
+
+    fn is_subclass_of(&self, symbol_map: &SymbolMap, other_id: ClassId) -> bool {
+        let RecordData { parent_classes, .. } = self.record_data();
+
+        if parent_classes.contains(&other_id) {
+            return true;
+        }
+
+        parent_classes
+            .iter()
+            .map(|parent_id| symbol_map.class(*parent_id))
+            .any(|parent| parent.is_subclass_of(symbol_map, other_id))
+    }
+}
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum RecordId {
@@ -37,8 +143,8 @@ pub enum Record<'a> {
 impl<'a> Record<'a> {
     pub fn name(&self) -> &EcoString {
         match self {
-            Self::Class(class) => &class.name,
-            Self::Def(def) => &def.name,
+            Self::Class(class) => class.name(),
+            Self::Def(def) => def.name(),
         }
     }
 
@@ -58,8 +164,8 @@ impl<'a> Record<'a> {
 
     pub fn parents(&self) -> &[ClassId] {
         match self {
-            Self::Class(class) => &class.parent_list,
-            Self::Def(def) => &def.parent_list,
+            Self::Class(class) => class.parent_classes(),
+            Self::Def(def) => def.parent_classes(),
         }
     }
 }

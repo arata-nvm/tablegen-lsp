@@ -9,7 +9,7 @@ use crate::symbol_map::{
     defm::DefmId,
     defset::DefsetId,
     multiclass::MulticlassId,
-    record::RecordId,
+    record::{AsRecordData, RecordId},
     symbol::SymbolId,
     variable::{Variable, VariableId},
 };

@@ -1,4 +1,4 @@
-use crate::symbol_map::{SymbolMap, symbol::Symbol};
+use crate::symbol_map::{SymbolMap, record::AsRecordData, symbol::Symbol};
 use std::fmt::Write;
 
 pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
@@ -16,15 +16,15 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
             let symbol = symbol_map.symbol(symbol_id);
             match symbol {
                 Symbol::Class(class) => {
-                    write!(output, "class {}<", class.name).unwrap();
+                    write!(output, "class {}<", class.name()).unwrap();
                     for template_arg_id in class.iter_template_arg() {
                         let template_arg = symbol_map.template_arg(template_arg_id);
                         write!(output, "{} {}, ", template_arg.typ, template_arg.name).unwrap();
                     }
                     write!(output, "> : ").unwrap();
-                    for parent_id in &class.parent_list {
+                    for parent_id in class.parent_classes() {
                         let parent = symbol_map.class(*parent_id);
-                        write!(output, "{}, ", parent.name).unwrap();
+                        write!(output, "{}, ", parent.name()).unwrap();
                     }
                     writeln!(output, "{{").unwrap();
 
@@ -36,10 +36,10 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
                     writeln!(output, "}}").unwrap();
                 }
                 Symbol::Def(def) => {
-                    write!(output, "def {} : ", def.name).unwrap();
-                    for parent_id in &def.parent_list {
+                    write!(output, "def {} : ", def.name()).unwrap();
+                    for parent_id in def.parent_classes() {
                         let parent = symbol_map.class(*parent_id);
-                        write!(output, "{}, ", parent.name).unwrap();
+                        write!(output, "{}, ", parent.name()).unwrap();
                     }
                     writeln!(output, "{{").unwrap();
 
@@ -54,10 +54,10 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
                     writeln!(output, "multiclass {} {{", multiclass.name).unwrap();
                     for def_id in &multiclass.def_list {
                         let def = symbol_map.def(*def_id);
-                        write!(output, "def {} : ", def.name).unwrap();
-                        for parent_id in &def.parent_list {
+                        write!(output, "def {} : ", def.name()).unwrap();
+                        for parent_id in def.parent_classes() {
                             let parent = symbol_map.class(*parent_id);
-                            write!(output, "{}, ", parent.name).unwrap();
+                            write!(output, "{}, ", parent.name()).unwrap();
                         }
                         writeln!(output, "{{").unwrap();
 

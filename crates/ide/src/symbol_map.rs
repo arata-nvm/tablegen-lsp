@@ -8,6 +8,7 @@ use defm::{Defm, DefmId};
 use defset::{Defset, DefsetId};
 use ecow::EcoString;
 use id_arena::Arena;
+use record::AsRecordData;
 
 use multiclass::{Multiclass, MulticlassId};
 use record::{Record, RecordField, RecordFieldId, RecordId, RecordMut};
@@ -273,11 +274,11 @@ impl SymbolMap {
 // mutable api
 impl SymbolMap {
     pub fn add_class(&mut self, class: Class) -> Result<ClassId, SymbolMapError> {
-        match self.name_to_class.get(&class.name) {
+        match self.name_to_class.get(class.name()) {
             Some(&class_id) => {
                 let existing_class = self.class(class_id);
                 if !existing_class.is_empty() {
-                    return Err(SymbolMapError::ClassAlreadyDefined(class.name.clone()));
+                    return Err(SymbolMapError::ClassAlreadyDefined(class.name().clone()));
                 }
 
                 let class_mut = self.class_mut(class_id);
@@ -285,8 +286,8 @@ impl SymbolMap {
                 Ok(class_id)
             }
             None => {
-                let name = class.name.clone();
-                let define_loc = class.define_loc;
+                let name = class.name().clone();
+                let define_loc = class.define_loc().clone();
                 let id = self.class_list.alloc(class);
                 self.name_to_class.insert(name, id);
                 self.add_symbol_to_file(id, define_loc, true);
@@ -296,11 +297,11 @@ impl SymbolMap {
     }
 
     pub fn add_def(&mut self, def: Def, is_global: bool) -> Result<DefId, SymbolMapError> {
-        if self.name_to_def.contains_key(&def.name) {
-            return Err(SymbolMapError::DefAlreadyDefined(def.name.clone()));
+        if self.name_to_def.contains_key(def.name()) {
+            return Err(SymbolMapError::DefAlreadyDefined(def.name().clone()));
         }
-        let name = def.name.clone();
-        let define_loc = def.define_loc;
+        let name = def.name().clone();
+        let define_loc = def.define_loc().clone();
         let id = self.def_list.alloc(def);
         self.name_to_def.insert(name, id);
         self.add_symbol_to_file(id, define_loc, is_global);
@@ -406,7 +407,7 @@ impl SymbolMap {
             let parent = self.class(parent_id);
             if class_id == parent_id || parent.is_subclass_of(self, class_id) {
                 let class = self.class(parent_id);
-                return Err(SymbolMapError::ClassCyclicInheritance(class.name.clone()));
+                return Err(SymbolMapError::ClassCyclicInheritance(class.name().clone()));
             }
         }
 

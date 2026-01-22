@@ -276,10 +276,8 @@ fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
 
     let mut def_ids = vec![base_def_id];
     for name in names_iter {
-        let base_def = ctx.symbol_map.def(base_def_id);
-        let mut cloned_def = base_def.clone();
-        cloned_def.name = name;
-        let def_id = match ctx.symbol_map.add_def(cloned_def, !is_anonymous) {
+        let def = ctx.symbol_map.def(base_def_id).clone_with(name, define_loc);
+        let def_id = match ctx.symbol_map.add_def(def, !is_anonymous) {
             Ok(def_id) => def_id,
             Err(err) => {
                 ctx.error_by_filerange(define_loc, err.to_string());
@@ -429,10 +427,8 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
         };
         let base_def = ctx.symbol_map.def(base_def_id);
 
-        let mut cloned_def = base_def.clone();
-        cloned_def.name = def.name;
-        cloned_def.define_loc = define_loc;
-        let def_id = match ctx.symbol_map.add_def(cloned_def, defm.name().is_some()) {
+        let def = base_def.clone_with(def.name.clone(), define_loc.clone());
+        let def_id = match ctx.symbol_map.add_def(def, defm.name().is_some()) {
             Ok(def_id) => def_id,
             Err(err) => {
                 ctx.error_by_filerange(define_loc, err.to_string());

@@ -4,9 +4,9 @@ use syntax::syntax_kind::SyntaxKind;
 
 use crate::file_system::{FilePosition, FileRange, SourceUnitId};
 use crate::index::IndexDatabase;
-use crate::symbol_map::SymbolMap;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
+use crate::symbol_map::{SymbolMap, record::AsRecordData};
 
 #[derive(Debug)]
 pub struct Hover {
@@ -41,7 +41,7 @@ fn extract_symbol_signature(
 
     let symbol_info = match symbol {
         Symbol::Class(class) => {
-            let name = &class.name;
+            let name = class.name();
             let template_arg = class
                 .iter_template_arg()
                 .map(|id| symbol_map.template_arg(id))
@@ -54,7 +54,7 @@ fn extract_symbol_signature(
             }
         }
         Symbol::Def(def) => {
-            format!("def {}", def.name)
+            format!("def {}", def.name())
         }
         Symbol::TemplateArgument(template_arg) => {
             format!("{} {}", template_arg.typ, template_arg.name)
