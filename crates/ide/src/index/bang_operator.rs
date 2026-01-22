@@ -4,7 +4,7 @@ use syntax::{
 };
 
 use crate::{
-    TY,
+    TY, bang_operator,
     symbol_map::{
         typ::Type,
         variable::{Variable, VariableKind},
@@ -17,15 +17,18 @@ impl IndexExpression for ast::BangOperator {
     type Output = Type;
 
     fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+        let kind = self.kind()?;
+        let meta = bang_operator::get_metadata_for_syntax_kind(kind)?;
+
         // BangOperatorの種類をenumで表現したい
-        match self.kind()? {
+        match kind {
             SyntaxKind::XAdd
             | SyntaxKind::XAnd
             | SyntaxKind::XMul
             | SyntaxKind::XOr
             | SyntaxKind::XXor => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 common::index_values_and_check_types(ctx, values, &TY![int]);
                 Some(TY![int])
             }
@@ -34,26 +37,26 @@ impl IndexExpression for ast::BangOperator {
             | SyntaxKind::XSrl
             | SyntaxKind::XSra
             | SyntaxKind::XShl => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 common::index_values_and_check_types(ctx, values, &TY![int]);
                 Some(TY![int])
             }
             SyntaxKind::XCast => {
-                let typ = common::expect_type_annotation(ctx, self).unwrap_or(Type::unknown());
-                let values = common::expect_values(ctx, self, 1..=1);
+                let typ = common::check_type_annotation(ctx, self, meta).unwrap_or(Type::unknown());
+                let values = common::expect_values(ctx, self, meta);
                 common::index_values(ctx, values);
                 Some(typ)
             }
             SyntaxKind::XCon => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 common::index_values_and_check_types(ctx, values, &TY![dag]);
                 Some(TY![dag])
             }
             SyntaxKind::XDag => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 3..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let _ = value_types.next();
@@ -79,8 +82,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![dag])
             }
             SyntaxKind::XEmpty => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((range, Some(typ))) = value_types.next()
@@ -97,8 +100,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![bit])
             }
             SyntaxKind::XEq | SyntaxKind::XNe => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let value_types = common::index_values(ctx, values).into_iter();
 
                 for (range, typ) in value_types.take(2) {
@@ -121,8 +124,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![bit])
             }
             SyntaxKind::XExists => {
-                common::expect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((range, Some(typ))) = value_types.next()
@@ -134,8 +137,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![bit])
             }
             SyntaxKind::XFilter => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 3..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
 
                 let var = values.first()?;
                 let list = values.get(1)?;
@@ -171,8 +174,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(list_typ)
             }
             SyntaxKind::XFind => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((string1_range, Some(string1_typ))) = value_types.next()
@@ -202,8 +205,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![int])
             }
             SyntaxKind::XFoldl => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 5..=5);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
 
                 let init = values.first()?;
                 let list = values.get(1)?;
@@ -258,8 +261,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(init_typ)
             }
             SyntaxKind::XForEach => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 3..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
 
                 let var = values.first()?;
                 let sequence = values.get(1)?;
@@ -296,8 +299,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(Type::list(expr_typ))
             }
             SyntaxKind::XGe | SyntaxKind::XGt | SyntaxKind::XLe | SyntaxKind::XLt => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let value_types = common::index_values(ctx, values);
 
                 for (range, typ) in value_types.into_iter().take(2) {
@@ -319,8 +322,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![bit])
             }
             SyntaxKind::XGetDagArg => {
-                let typ = common::expect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                let typ = common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next()
@@ -342,8 +345,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(typ.unwrap_or(Type::unknown()))
             }
             SyntaxKind::XGetDagName => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next()
@@ -362,7 +365,7 @@ impl IndexExpression for ast::BangOperator {
             }
             SyntaxKind::XGetDagOp => {
                 let typ = self.r#type().and_then(|it| it.index_expression(ctx));
-                let values = common::expect_values(ctx, self, 1..=1);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next()
@@ -374,8 +377,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(typ.unwrap_or(Type::unknown()))
             }
             SyntaxKind::XHead => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let (list_range, list_typ) = value_types.next()?;
@@ -389,8 +392,8 @@ impl IndexExpression for ast::BangOperator {
                 }
             }
             SyntaxKind::XIf => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 3..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((test_range, Some(test_typ))) = value_types.next()
@@ -421,14 +424,14 @@ impl IndexExpression for ast::BangOperator {
                 }
             }
             SyntaxKind::XInitialized => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 common::index_values(ctx, values);
                 Some(TY![bit])
             }
             SyntaxKind::XInstances => {
-                let typ = common::expect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 0..=1);
+                let typ = common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((regex_range, Some(regex_typ))) = value_types.next()
@@ -443,8 +446,8 @@ impl IndexExpression for ast::BangOperator {
                 typ.map(Type::list)
             }
             SyntaxKind::XInterleave => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((list_range, Some(list_type))) = value_types.next() {
@@ -480,14 +483,14 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![string])
             }
             SyntaxKind::XIsA => {
-                common::expect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 common::index_values(ctx, values);
                 Some(TY![bit])
             }
             SyntaxKind::XListConcat => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let Some((list1_range, Some(list1_type))) = value_types.next() else {
@@ -520,8 +523,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(ret_typ)
             }
             SyntaxKind::XListFlatten => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let Some((list_range, Some(list_type))) = value_types.next() else {
@@ -538,8 +541,8 @@ impl IndexExpression for ast::BangOperator {
                 }
             }
             SyntaxKind::XListRemove => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let Some((list1_range, Some(list1_type))) = value_types.next() else {
@@ -567,8 +570,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(list1_type.clone())
             }
             SyntaxKind::XListSplat => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let Some((_, Some(value_type))) = value_types.next() else {
@@ -584,8 +587,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(Type::list(value_type.clone()))
             }
             SyntaxKind::XLog2 => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((range, Some(typ))) = value_types.next()
@@ -597,8 +600,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![int])
             }
             SyntaxKind::XNot => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((range, Some(typ))) = value_types.next()
@@ -610,8 +613,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![bit])
             }
             SyntaxKind::XRange => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let ret_typ = Some(TY![list<int>]);
@@ -649,14 +652,14 @@ impl IndexExpression for ast::BangOperator {
                 ret_typ
             }
             SyntaxKind::XRepr => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 common::index_values(ctx, values);
                 Some(TY![string])
             }
             SyntaxKind::XSetDagArg => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 3..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next()
@@ -678,8 +681,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![dag])
             }
             SyntaxKind::XSetDagName => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 3..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next()
@@ -710,8 +713,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![dag])
             }
             SyntaxKind::XSetDagOp => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=2);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((dag_range, Some(dag_typ))) = value_types.next()
@@ -723,8 +726,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![dag])
             }
             SyntaxKind::XSize => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((range, Some(typ))) = value_types.next()
@@ -741,8 +744,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![int])
             }
             SyntaxKind::XStrConcat => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let value_types = common::index_values(ctx, values).into_iter();
 
                 for (range, typ) in value_types {
@@ -757,8 +760,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![string])
             }
             SyntaxKind::XSubst => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 3..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 let (target_range, target_typ) = value_types.next()?;
@@ -795,8 +798,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(value_typ)
             }
             SyntaxKind::XSubstr => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 2..=3);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((string_range, Some(string_typ))) = value_types.next()
@@ -823,8 +826,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(TY![string])
             }
             SyntaxKind::XTail => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((list_range, Some(list_typ))) = value_types.next() {
@@ -837,8 +840,8 @@ impl IndexExpression for ast::BangOperator {
                 Some(Type::unknown())
             }
             SyntaxKind::XToLower | SyntaxKind::XToUpper => {
-                common::unexpect_type_annotation(ctx, self);
-                let values = common::expect_values(ctx, self, 1..=1);
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((range, Some(typ))) = value_types.next()
@@ -857,67 +860,75 @@ impl IndexExpression for ast::BangOperator {
 }
 
 mod common {
-    use std::ops::{Bound, RangeBounds};
-
     use syntax::{
         ast::{self, AstNode},
         parser::TextRange,
     };
 
-    use crate::{index::IndexExpression, symbol_map::typ::Type};
+    use crate::{
+        bang_operator::BangOperatorMetadata, index::IndexExpression, symbol_map::typ::Type,
+    };
 
-    pub(super) fn expect_type_annotation(
+    pub(super) fn check_type_annotation(
         ctx: &mut super::IndexCtx,
         node: &ast::BangOperator,
+        meta: &BangOperatorMetadata,
     ) -> Option<Type> {
         match node.r#type() {
-            Some(typ) => typ.index_expression(ctx),
-            None => {
-                ctx.error_by_syntax(node.syntax(), "expected type annotation");
-                None
+            Some(typ) => {
+                if meta.needs_type_annotation {
+                    typ.index_expression(ctx)
+                } else {
+                    ctx.error_by_syntax(typ.syntax(), "unexpected type annotation");
+                    None
+                }
             }
-        }
-    }
-
-    pub(super) fn unexpect_type_annotation(ctx: &mut super::IndexCtx, node: &ast::BangOperator) {
-        if let Some(typ) = node.r#type() {
-            ctx.error_by_syntax(typ.syntax(), "unexpected type annotation");
+            None => {
+                if meta.needs_type_annotation {
+                    ctx.error_by_syntax(node.syntax(), "expected type annotation");
+                    None
+                } else {
+                    None
+                }
+            }
         }
     }
 
     pub(super) fn expect_values(
         ctx: &mut super::IndexCtx,
         node: &ast::BangOperator,
-        num: impl RangeBounds<usize>,
+        meta: &BangOperatorMetadata,
     ) -> Vec<ast::Value> {
         let values: Vec<ast::Value> = node.values().collect();
         let values_len = values.len();
-        match (num.start_bound(), num.end_bound()) {
-            (Bound::Included(start), Bound::Included(end)) if start == end => {
-                if values.len() != *start {
+
+        let (min_args, max_args) = (meta.min_args, meta.max_args);
+
+        match max_args {
+            Some(max) if min_args == max => {
+                if values_len != min_args {
                     ctx.error_by_syntax(
                         node.syntax(),
-                        format!("expected {start} arguments, found {values_len}"),
+                        format!("expected {min_args} arguments, found {values_len}"),
                     );
                 }
             }
-            (Bound::Included(start), Bound::Included(end)) if start != end => {
-                if values.len() < *start || *end < values.len() {
+            Some(max) => {
+                if values_len < min_args || max < values_len {
                     ctx.error_by_syntax(
                         node.syntax(),
-                        format!("expected {start} to {end} arguments, found {values_len}"),
+                        format!("expected {min_args} to {max} arguments, found {values_len}"),
                     );
                 }
             }
-            (Bound::Included(start), Bound::Unbounded) => {
-                if values.len() < *start {
+            None => {
+                if values_len < min_args {
                     ctx.error_by_syntax(
                         node.syntax(),
-                        format!("expected {start} or more arguments, found {values_len}"),
+                        format!("expected {min_args} or more arguments, found {values_len}"),
                     );
                 }
             }
-            _ => unimplemented!(),
         }
         values
     }

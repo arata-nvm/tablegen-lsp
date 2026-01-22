@@ -1,4 +1,5 @@
 pub mod analysis;
+pub mod bang_operator;
 pub mod db;
 pub mod file_system;
 pub mod handlers;
