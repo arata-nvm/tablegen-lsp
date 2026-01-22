@@ -34,7 +34,8 @@ fn extract_symbol_signature(
     symbol_map: &SymbolMap,
     pos: FilePosition,
 ) -> Option<(String, FileRange)> {
-    let symbol = symbol_map.find_symbol_at(pos)?;
+    let symbol_id = symbol_map.find_symbol_at(pos)?;
+    let symbol = symbol_map.symbol(symbol_id);
 
     let symbol_info = match symbol {
         Symbol::Class(class) => {

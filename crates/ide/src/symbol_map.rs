@@ -259,12 +259,10 @@ impl SymbolMap {
         }))
     }
 
-    pub fn find_symbol_at(&self, pos: FilePosition) -> Option<Symbol<'_>> {
-        let id = self
-            .pos_to_symbol_map
+    pub fn find_symbol_at(&self, pos: FilePosition) -> Option<SymbolId> {
+        self.pos_to_symbol_map
             .get(&pos.file)
-            .and_then(|map| map.values_overlap(pos.position).next().cloned())?;
-        Some(self.symbol(id))
+            .and_then(|map| map.values_overlap(pos.position).next().cloned())
     }
 
     pub fn iter_file(&self) -> impl Iterator<Item = FileId> + '_ {

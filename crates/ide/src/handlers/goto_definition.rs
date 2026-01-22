@@ -10,7 +10,8 @@ pub fn exec(
 ) -> Option<FileRange> {
     let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
-    let symbol = symbol_map.find_symbol_at(pos)?;
+    let symbol_id = symbol_map.find_symbol_at(pos)?;
+    let symbol = symbol_map.symbol(symbol_id);
     Some(*symbol.define_loc())
 }
 
