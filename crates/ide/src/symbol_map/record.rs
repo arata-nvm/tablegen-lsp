@@ -46,7 +46,6 @@ impl RecordData {
 
 pub trait AsRecordData: Sized {
     fn record_data(&self) -> &RecordData;
-    fn record_data_mut(&mut self) -> &mut RecordData;
 
     fn name(&self) -> &EcoString {
         &self.record_data().name
@@ -62,16 +61,6 @@ pub trait AsRecordData: Sized {
 
     fn parent_classes(&self) -> &[ClassId] {
         &self.record_data().parent_classes
-    }
-
-    fn add_reference_loc(&mut self, reference_loc: FileRange) {
-        self.record_data_mut().reference_locs.push(reference_loc);
-    }
-
-    fn add_record_field(&mut self, name: EcoString, record_field_id: RecordFieldId) {
-        self.record_data_mut()
-            .name_to_record_field
-            .insert(name, record_field_id);
     }
 
     fn iter_direct_field(&self) -> impl Iterator<Item = RecordFieldId> + '_ {
@@ -103,11 +92,6 @@ pub trait AsRecordData: Sized {
         None
     }
 
-    /// callers must ensure that the parent is not already inherited
-    fn add_parent(&mut self, parent_id: ClassId) {
-        self.record_data_mut().parent_classes.push(parent_id);
-    }
-
     fn is_subclass_of(&self, symbol_map: &SymbolMap, other_id: ClassId) -> bool {
         let RecordData { parent_classes, .. } = self.record_data();
 
@@ -119,6 +103,25 @@ pub trait AsRecordData: Sized {
             .iter()
             .map(|parent_id| symbol_map.class(*parent_id))
             .any(|parent| parent.is_subclass_of(symbol_map, other_id))
+    }
+}
+
+pub trait AsRecordDataMut: AsRecordData {
+    fn record_data_mut(&mut self) -> &mut RecordData;
+
+    fn add_reference_loc(&mut self, reference_loc: FileRange) {
+        self.record_data_mut().reference_locs.push(reference_loc);
+    }
+
+    fn add_record_field(&mut self, name: EcoString, record_field_id: RecordFieldId) {
+        self.record_data_mut()
+            .name_to_record_field
+            .insert(name, record_field_id);
+    }
+
+    /// callers must ensure that the parent is not already inherited
+    fn add_parent(&mut self, parent_id: ClassId) {
+        self.record_data_mut().parent_classes.push(parent_id);
     }
 }
 
@@ -163,32 +166,11 @@ pub enum Record<'a> {
     Def(&'a Def),
 }
 
-impl<'a> Record<'a> {
-    pub fn name(&self) -> &EcoString {
+impl<'a> AsRecordData for Record<'a> {
+    fn record_data(&self) -> &RecordData {
         match self {
-            Self::Class(class) => class.name(),
-            Self::Def(def) => def.name(),
-        }
-    }
-
-    pub fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
-        match self {
-            Self::Class(class) => class.find_field(symbol_map, name),
-            Self::Def(def) => def.find_field(symbol_map, name),
-        }
-    }
-
-    pub fn is_subclass_of(&self, symbol_map: &SymbolMap, other_id: ClassId) -> bool {
-        match self {
-            Self::Class(class) => class.is_subclass_of(symbol_map, other_id),
-            Self::Def(def) => def.is_subclass_of(symbol_map, other_id),
-        }
-    }
-
-    pub fn parents(&self) -> &[ClassId] {
-        match self {
-            Self::Class(class) => class.parent_classes(),
-            Self::Def(def) => def.parent_classes(),
+            Self::Class(class) => class.record_data(),
+            Self::Def(def) => def.record_data(),
         }
     }
 }
@@ -199,18 +181,20 @@ pub enum RecordMut<'a> {
     Def(&'a mut Def),
 }
 
-impl<'a> RecordMut<'a> {
-    pub fn add_record_field(&mut self, name: EcoString, record_field_id: RecordFieldId) {
+impl<'a> AsRecordData for RecordMut<'a> {
+    fn record_data(&self) -> &RecordData {
         match self {
-            Self::Class(class) => class.add_record_field(name, record_field_id),
-            Self::Def(def) => def.add_record_field(name, record_field_id),
+            Self::Class(class) => class.record_data(),
+            Self::Def(def) => def.record_data(),
         }
     }
+}
 
-    pub(super) fn add_parent(&mut self, parent_id: ClassId) {
+impl<'a> AsRecordDataMut for RecordMut<'a> {
+    fn record_data_mut(&mut self) -> &mut RecordData {
         match self {
-            Self::Class(class) => class.add_parent(parent_id),
-            Self::Def(def) => def.add_parent(parent_id),
+            Self::Class(class) => class.record_data_mut(),
+            Self::Def(def) => def.record_data_mut(),
         }
     }
 }

@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use crate::file_system::FileRange;
 
 use super::{
-    record::{AsRecordData, RecordData},
+    record::{AsRecordData, AsRecordDataMut, RecordData},
     template_arg::TemplateArgumentId,
 };
 
@@ -48,7 +48,9 @@ impl AsRecordData for Class {
     fn record_data(&self) -> &RecordData {
         &self.inner
     }
+}
 
+impl AsRecordDataMut for Class {
     fn record_data_mut(&mut self) -> &mut RecordData {
         &mut self.inner
     }

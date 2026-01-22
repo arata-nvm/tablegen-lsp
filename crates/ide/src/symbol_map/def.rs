@@ -3,7 +3,7 @@ use id_arena::Id;
 
 use crate::file_system::FileRange;
 
-use super::record::{AsRecordData, RecordData};
+use super::record::{AsRecordData, AsRecordDataMut, RecordData};
 
 pub type DefId = Id<Def>;
 
@@ -30,7 +30,9 @@ impl AsRecordData for Def {
     fn record_data(&self) -> &RecordData {
         &self.inner
     }
+}
 
+impl AsRecordDataMut for Def {
     fn record_data_mut(&mut self) -> &mut RecordData {
         &mut self.inner
     }

@@ -19,6 +19,7 @@ use thiserror::Error;
 use variable::{Variable, VariableId};
 
 use crate::file_system::{FileId, FilePosition, FileRange};
+use crate::symbol_map::record::AsRecordDataMut;
 
 pub mod class;
 pub mod def;

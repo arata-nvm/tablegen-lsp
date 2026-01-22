@@ -26,7 +26,7 @@ use crate::{
         defm::Defm,
         defset::Defset,
         multiclass::{Multiclass, MulticlassId},
-        record::RecordField,
+        record::{AsRecordData, AsRecordDataMut, RecordField},
         symbol::{Symbol, SymbolId},
         template_arg::TemplateArgument,
         typ::Type,

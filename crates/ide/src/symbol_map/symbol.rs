@@ -1,6 +1,6 @@
 use ecow::EcoString;
 
-use crate::file_system::FileRange;
+use crate::{file_system::FileRange, symbol_map::record::AsRecordDataMut};
 
 use super::{
     class::{Class, ClassId},
