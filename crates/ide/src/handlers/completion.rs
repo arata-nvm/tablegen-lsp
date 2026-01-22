@@ -4,13 +4,16 @@ use syntax::{
     ast::{self, AstNode},
 };
 
-use crate::symbol_map::{class::ClassId, def::DefId, record::RecordId, symbol::SymbolId};
 use crate::{
     bang_operator,
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
     symbol_map::{SymbolMap, record::AsRecordData, typ::Type},
     utils,
+};
+use crate::{
+    symbol_map::{class::ClassId, def::DefId, record::RecordId},
+    utils::DefNameType,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -99,11 +102,16 @@ pub fn exec(
     }
 
     if let Some(_) = node_at_pos.ancestor::<ast::FieldLet>() {
-        (|| -> Option<()> {
-            let class_id = find_class(&node_at_pos, symbol_map)?;
+        if let Some(class_id) = find_class(&node_at_pos, symbol_map) {
             ctx.complete_record_fields(symbol_map, &[class_id.into()], None);
-            Some(())
-        })();
+        }
+
+        if let Some(def_id) = find_def(&node_at_pos, symbol_map) {
+            ctx.complete_record_fields(symbol_map, &[def_id.into()], None);
+        } else if let Some(parents) = find_def_parent_classes(&node_at_pos, symbol_map) {
+            ctx.complete_record_fields(symbol_map, &parents, None);
+        }
+
         return Some(ctx.finish());
     }
 
@@ -129,8 +137,12 @@ pub fn exec(
             ctx.complete_record_fields(symbol_map, &[class_id.into()], exclude);
         }
 
-        if let Some(def_id) = find_def(pos, &node_at_pos, symbol_map) {
-            ctx.complete_record_fields(symbol_map, &[def_id.into()], None);
+        if let Some(def_id) = find_def(&node_at_pos, symbol_map) {
+            let exclude = find_field_name_to_exclude(&node_at_pos);
+            ctx.complete_record_fields(symbol_map, &[def_id.into()], exclude);
+        } else if let Some(parents) = find_def_parent_classes(&node_at_pos, symbol_map) {
+            let exclude = find_field_name_to_exclude(&node_at_pos);
+            ctx.complete_record_fields(symbol_map, &parents, exclude);
         }
 
         return Some(ctx.finish());
@@ -146,14 +158,29 @@ fn find_class(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<ClassId> {
     Some(class_id)
 }
 
-fn find_def(pos: FilePosition, node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<DefId> {
+fn find_def(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<DefId> {
     let def_stmt = node.ancestor::<ast::Def>()?;
-    let def_name_pos = def_stmt.syntax().text_range().start();
-    let symbol_id = symbol_map.find_symbol_at(FilePosition::new(pos.file, def_name_pos))?;
-    match symbol_id {
-        SymbolId::DefId(def_id) => Some(def_id),
-        _ => None,
-    }
+    let def_name_type = utils::determine_def_type(&def_stmt)?;
+    let DefNameType::Identifier(_, ident) = def_name_type else {
+        return None;
+    };
+    let name = ident.value()?;
+    symbol_map.find_def(&name)
+}
+
+fn find_def_parent_classes(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<Vec<RecordId>> {
+    let def_stmt = node.ancestor::<ast::Def>()?;
+    let record_body = def_stmt.record_body()?;
+    let parent_class_list = record_body.parent_class_list()?;
+    Some(
+        parent_class_list
+            .classes()
+            .filter_map(|class_ref| class_ref.name())
+            .filter_map(|name| name.value())
+            .filter_map(|name| symbol_map.find_class(&name))
+            .map(RecordId::Class)
+            .collect::<Vec<_>>(),
+    )
 }
 
 fn find_class_names_to_exclude(node: &SyntaxNode) -> Option<HashSet<EcoString>> {
@@ -628,6 +655,20 @@ mod tests {
         insta::assert_debug_snapshot!(check(
             "class Foo { int field1; } class Bar : Foo { int field2 = f$",
         ));
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int field1; } def foo : Foo { int field2 = f$",
+        ));
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int field1; } def foo : Foo { int field2 = f$ }",
+        ));
+        insta::assert_debug_snapshot!(check(
+            r#"
+        class Foo { int field1; }
+        foreach i = 0...3 in {
+          def foo#i : Foo { int field2 = f$ }
+        }
+        "#,
+        ));
     }
 
     #[test]
@@ -641,6 +682,7 @@ mod tests {
         insta::assert_debug_snapshot!(check(
             "class Foo { int Bar; int Baz; } class Foo2 : Foo { let B$"
         ));
+        insta::assert_debug_snapshot!(check("class Foo { int field1; } def foo : Foo { let f$"));
     }
 
     #[test]

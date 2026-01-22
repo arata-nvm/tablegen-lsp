@@ -1,0 +1,34 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(\"class Foo { int field1; } def foo : Foo { int field2 = f$\",)"
+---
+[
+    CompletionItem {
+        label: "false",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "field1",
+        insert_text_snippet: None,
+        detail: "int",
+        documentation: None,
+        kind: Field,
+    },
+    CompletionItem {
+        label: "foo",
+        insert_text_snippet: None,
+        detail: "def",
+        documentation: None,
+        kind: Def,
+    },
+    CompletionItem {
+        label: "true",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+    },
+]

@@ -1,0 +1,34 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(r#\"\n        class Foo { int field1; }\n        foreach i = 0...3 in {\n          def foo#i : Foo { int field2 = f$ }\n        }\n        \"#,)"
+---
+[
+    CompletionItem {
+        label: "false",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "field1",
+        insert_text_snippet: None,
+        detail: "int",
+        documentation: None,
+        kind: Field,
+    },
+    CompletionItem {
+        label: "i",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Variable,
+    },
+    CompletionItem {
+        label: "true",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+    },
+]
