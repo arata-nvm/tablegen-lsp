@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use ecow::{EcoString, eco_format};
 use syntax::{
-    SyntaxNode,
+    SyntaxNode, SyntaxNodePtr,
     parser::{TextRange, TextSize},
 };
 
@@ -11,7 +11,7 @@ use crate::{
     file_system::{FileId, FilePosition, FileRange, SourceUnit},
     handlers::diagnostics::Diagnostic,
     interop::{TblgenDef, TblgenSymbolTable},
-    symbol_map::{SymbolMap, def::DefId, symbol::SymbolId, variable::VariableId},
+    symbol_map::{SymbolMap, def::DefId, symbol::SymbolId, typ::Type, variable::VariableId},
 };
 
 use super::{Index, IndexDatabase, scope::Scopes};
@@ -26,6 +26,7 @@ pub struct IndexCtx<'a> {
     pub anonymous_def_index: u32,
     pub tblgen_symtab: Arc<TblgenSymbolTable>,
     pub pos_to_multiclass_def_map: HashMap<FilePosition, DefId>,
+    pub resolved_types: HashMap<SyntaxNodePtr, Type>,
 }
 
 impl<'a> IndexCtx<'a> {
@@ -45,6 +46,7 @@ impl<'a> IndexCtx<'a> {
             anonymous_def_index: 0,
             tblgen_symtab,
             pos_to_multiclass_def_map: HashMap::new(),
+            resolved_types: HashMap::new(),
         }
     }
 
@@ -122,6 +124,7 @@ impl<'a> IndexCtx<'a> {
         Index {
             symbol_map: self.symbol_map,
             diagnostics: self.diagnostics,
+            resolved_types: self.resolved_types,
         }
     }
 

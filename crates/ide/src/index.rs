@@ -6,7 +6,10 @@ pub mod scope;
 use context::IndexCtx;
 use ecow::EcoString;
 use scope::ScopeKind;
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use syntax::{
     SyntaxNodePtr,
     ast::{self, AstNode},
@@ -43,6 +46,7 @@ pub trait IndexDatabase: SourceDatabase {
 pub struct Index {
     symbol_map: SymbolMap,
     diagnostics: Vec<Diagnostic>,
+    resolved_types: HashMap<SyntaxNodePtr, Type>,
 }
 
 impl Index {
@@ -52,6 +56,10 @@ impl Index {
 
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
+    }
+
+    pub fn resolved_types(&self) -> &HashMap<SyntaxNodePtr, Type> {
+        &self.resolved_types
     }
 }
 
@@ -1132,6 +1140,10 @@ impl IndexExpression for ast::Value {
             }
         }
 
+        if let Some(ref typ) = ret_typ {
+            let ptr = SyntaxNodePtr::new(self.syntax());
+            ctx.resolved_types.insert(ptr, typ.clone());
+        }
         ret_typ
     }
 }
@@ -1142,8 +1154,8 @@ impl IndexValue for ast::InnerValue {
     fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
         let mut lhs_typ = self.simple_value()?.index_value(ctx, mode)?;
         for suffix in self.suffixes() {
-            lhs_typ = match suffix {
-                ast::ValueSuffix::RangeSuffix(range_suffix) => {
+            let new_typ = match suffix {
+                ast::ValueSuffix::RangeSuffix(ref range_suffix) => {
                     let _ = range_suffix.index_value(ctx, mode);
                     let range_list = range_suffix.range_list()?;
                     match get_bit_list_in_range_list(&range_list) {
@@ -1157,7 +1169,7 @@ impl IndexValue for ast::InnerValue {
                         None => TY![bit],
                     }
                 }
-                ast::ValueSuffix::SliceSuffix(slice_suffix) => {
+                ast::ValueSuffix::SliceSuffix(ref slice_suffix) => {
                     let _ = slice_suffix.index_value(ctx, mode);
                     if slice_suffix.is_single_element() {
                         match lhs_typ.list_element_type() {
@@ -1168,24 +1180,31 @@ impl IndexValue for ast::InnerValue {
                             }
                         }
                     } else {
-                        lhs_typ
+                        lhs_typ.clone()
                     }
                 }
-                ast::ValueSuffix::FieldSuffix(field_suffix) => {
+                ast::ValueSuffix::FieldSuffix(ref field_suffix) => {
                     let (name, reference_loc) = utils::identifier(&field_suffix.name()?, ctx)?;
-                    let Some(field_id) = lhs_typ.record_find_field(&ctx.symbol_map, &name) else {
-                        ctx.error_by_syntax(
-                            field_suffix.syntax(),
-                            format!("cannot access field: {name}"),
-                        );
-                        return None;
-                    };
-                    ctx.symbol_map.add_reference(field_id, reference_loc);
-                    let field = ctx.symbol_map.record_field(field_id);
-                    field.typ.clone()
+                    match lhs_typ.record_find_field(&ctx.symbol_map, &name) {
+                        Ok(field_id) => {
+                            ctx.symbol_map.add_reference(field_id, reference_loc);
+                            let field = ctx.symbol_map.record_field(field_id);
+                            field.typ.clone()
+                        }
+                        Err(err) => {
+                            ctx.error_by_syntax(field_suffix.syntax(), err.to_string());
+                            return None;
+                        }
+                    }
                 }
             };
+
+            let suffix_ptr = SyntaxNodePtr::new(suffix.syntax());
+            ctx.resolved_types.insert(suffix_ptr, new_typ.clone());
+            lhs_typ = new_typ;
         }
+        let ptr = SyntaxNodePtr::new(self.syntax());
+        ctx.resolved_types.insert(ptr, lhs_typ.clone());
         Some(lhs_typ)
     }
 }
@@ -1228,7 +1247,7 @@ impl IndexValue for ast::SimpleValue {
     type Output = Type;
 
     fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
-        match self {
+        let typ = match self {
             ast::SimpleValue::Integer(_) => Some(TY![int]),
             ast::SimpleValue::String(_) => Some(TY![string]),
             ast::SimpleValue::Code(_) => Some(TY![code]),
@@ -1330,7 +1349,13 @@ impl IndexValue for ast::SimpleValue {
                 }
                 None
             }
+        };
+
+        if let Some(ref typ) = typ {
+            let ptr = SyntaxNodePtr::new(self.syntax());
+            ctx.resolved_types.insert(ptr, typ.clone());
         }
+        typ
     }
 }
 
