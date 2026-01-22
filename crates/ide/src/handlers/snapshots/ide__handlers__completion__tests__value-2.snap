@@ -7,18 +7,21 @@ expression: "check(\"def foo; defvar tmp = f$\")"
         label: "false",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
     CompletionItem {
         label: "foo",
         insert_text_snippet: None,
         detail: "def",
+        documentation: None,
         kind: Def,
     },
     CompletionItem {
         label: "true",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
 ]

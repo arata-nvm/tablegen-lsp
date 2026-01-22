@@ -9,6 +9,7 @@ expression: "check(\"class Foo<int a>; class Bar : F$;\")"
             "Foo<${1}>$0",
         ),
         detail: "class",
+        documentation: None,
         kind: Class,
     },
 ]

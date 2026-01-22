@@ -7,6 +7,7 @@ expression: "check(\"class Foo { int field1; } class Bar<list<list<Foo>> foos> {
         label: "field1",
         insert_text_snippet: None,
         detail: "int",
+        documentation: None,
         kind: Field,
     },
 ]

@@ -9,6 +9,7 @@ expression: "check(\"class Base1; class Base2; class Derived : Base1, B$;\")"
             "Base2$0",
         ),
         detail: "class",
+        documentation: None,
         kind: Class,
     },
 ]

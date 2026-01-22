@@ -9,6 +9,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "add(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!add(` *a* `,` *b* `, ...)`\n\nThis operator adds *a*, *b*, etc., and produces the sum.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -17,6 +20,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "and(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!and(` *a* `,` *b* `, ...)`\n\nThis operator does a bitwise AND on *a*, *b*, etc., and produces the result. A logical AND can be performed if all the arguments are either 0 or 1. This operator is short-circuit to 0 when the left-most operand is 0.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -25,6 +31,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "cast<${1}>(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!cast<` *type* `>(` *a* `)`\n\nThis operator performs a cast on *a* and produces the result. If *a* is not a string, then a straightforward cast is performed, say between an `int` and a `bit`, or between record types. This allows casting a record to a class. If a record is cast to `string`, the record's name is produced.\n\nIf *a* is a string, then it is treated as a record name and looked up in the list of all defined records. The resulting record is expected to be of the specified *type*.\n\nFor example, if `!cast<` *type* `>(` *name* `)` appears in a multiclass definition, or in a class instantiated inside a multiclass definition, and the *name* does not reference any template arguments of the multiclass, then a record by that name must have been instantiated earlier in the source file. If *name* does reference a template argument, then the lookup is delayed until `defm` statements instantiating the multiclass (or later, if the defm occurs in another multiclass and template arguments of the inner multiclass that are referenced by *name* are substituted by values that themselves contain references to template arguments of the outer multiclass).\n\nIf the type of *a* does not match *type*, TableGen raises an error.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -33,6 +42,20 @@ expression: "check_trigger(\"!$\", \"!\")"
             "concat(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!con(` *a* `,` *b* `, ...)`\n\nThis operator concatenates the DAG nodes *a*, *b*, etc. Their operations must equal.\n\n`!con((op a1:$name1, a2:$name2), (op b1:$name3))`\n\nresults in the DAG node `(op a1:$name1, a2:$name2, b1:$name3)`.",
+        ),
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "cond",
+        insert_text_snippet: Some(
+            "cond(${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "`!cond(` *cond1* `:` *val1* `,` *cond2* `:` *val2* `, ...,` *condn* `:` *valn* `)`\n\nThis operator tests *cond1* and returns *val1* if the result is true. If false, the operator tests *cond2* and returns *val2* if the result is true. And so forth. An error is reported if no conditions are true.\n\nThis example produces the sign word for an integer:\n\n```\n!cond(!lt(x, 0) : \"negative\", !eq(x, 0) : \"zero\", true : \"positive\")\n```",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -41,6 +64,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "dag(${2}, ${3}, ${4})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!dag(` *op* `,` *arguments* `,` *names* `)`\n\nThis operator creates a DAG node with the given operator and arguments. The *arguments* and *names* arguments must be lists of equal length or uninitialized (`?`). The *names* argument must be of type `list<string>`.\n\nDue to limitations of the type system, *arguments* must be a list of items of a common type. In practice, this means that they should either have the same type or be records with a common parent class. Mixing `dag` and non-`dag` items is not possible. However, `?` can be used.\n\nExample: `!dag(op, [a1, a2, ?], [\"name1\", \"name2\", \"name3\"])` results in `(op a1-value:$name1, a2-value:$name2, ?:$name3)`.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -49,6 +75,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "div(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!div(` *a* `,` *b* `)`\n\nThis operator performs signed division of *a* by *b*, and produces the quotient. Division by 0 produces an error. Division of INT64_MIN by -1 produces an error.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -57,6 +86,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "empty(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!empty(` *a* `)`\n\nThis operator produces 1 if the string, list, or DAG *a* is empty; 0 otherwise. A dag is empty if it has no arguments; the operator does not count.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -65,6 +97,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "eq(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!eq(` *a* `,` *b* `)`\n\nThis operator produces 1 if *a* is equal to *b*; 0 otherwise. The arguments must be `bit`, `bits`, `int`, `string`, or record values. Use `!cast<string>` to compare other types of objects.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -73,6 +108,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "exists<${1}>(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!exists<` *type* `>(` *name* `)`\n\nThis operator produces 1 if a record of the given *type* whose name is *name* exists; 0 otherwise. *name* should be of type *string*.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -81,6 +119,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "filter(${2}, ${3}, ${4})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!filter(` *var* `,` *list* `,` *predicate* `)`\n\nThis operator creates a new `list` by filtering the elements in *list*. To perform the filtering, TableGen binds the variable *var* to each element and then evaluates the *predicate* expression, which presumably refers to *var*. The predicate must produce a boolean value (`bit`, `bits`, or `int`). The value is interpreted as with `!if`: if the value is 0, the element is not included in the new list. If the value is anything else, the element is included.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -89,6 +130,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "find(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!find(` *string1* `,` *string2* `[`, *start* `])`\n\nThis operator searches for *string2* in *string1* and produces its position. The starting position of the search may be specified by *start*, which can range between 0 and the length of *string1*; the default is 0. If the string is not found, the result is -1.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -97,6 +141,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "foldl(${2}, ${3}, ${4}, ${5}, ${6})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!foldl(` *init* `,` *list* `,` *acc* `,` *var* `,` *expr* `)`\n\nThis operator performs a left-fold over the items in *list*. The variable *acc* acts as the accumulator and is initialized to *init*. The variable *var* is bound to each element in the *list*. The expression is evaluated for each element and presumably uses *acc* and *var* to calculate the accumulated value, which `!foldl` stores back in *acc*. The type of *acc* is the same as *init*; the type of *var* is the same as the elements of *list*; *expr* must have the same type as *init*.\n\nThe following example computes the total of the `Number` field in the list of records in `RecList`:\n\n```\nint x = !foldl(0, RecList, total, rec, !add(total, rec.Number));\n```\n\nIf your goal is to filter the list and produce a new list that includes only some of the elements, see `!filter`.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -105,6 +152,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "foreach(${2}, ${3}, ${4})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!foreach(` *var* `,` *sequence* `,` *expr* `)`\n\nThis operator creates a new `list`/`dag` in which each element is a function of the corresponding element in the *sequence* `list`/`dag`. To perform the function, TableGen binds the variable *var* to an element and then evaluates the expression. The expression presumably refers to the variable *var* and calculates the result value.\n\nIf you simply want to create a list of a certain length containing the same value repeated multiple times, see `!listsplat`.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -113,6 +163,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "ge(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!ge(` *a* `,` *b* `)`\n\nThis operator produces 1 if *a* is greater than or equal to *b*; 0 otherwise. The arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -121,6 +174,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "getdagarg<${1}>(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!getdagarg<` *type* `>(` *dag* `,` *key* `)`\n\nThis operator retrieves the argument from the given *dag* node by the specified *key*, which is either an integer index or a string name. If that argument is not convertible to the specified *type*, `?` is returned.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -129,6 +185,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "getdagname(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!getdagname(` *dag* `,` *index* `)`\n\nThis operator retrieves the argument name from the given *dag* node by the specified *index*. If that argument has no name associated, `?` is returned.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -137,6 +196,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "getdagop<${1}>(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!getdagop(` *dag* `)` --or-- `!getdagop<` *type* `>(` *dag* `)`\n\nThis operator produces the operator of the given *dag* node. Example: `!getdagop((foo 1, 2))` results in `foo`. Recall that DAG operators are always records.\n\nThe result of `!getdagop` can be used directly in a context where any record class at all is acceptable (typically placing it into another dag value). But in other contexts, it must be explicitly cast to a particular class. The `<` *type* `>` syntax is provided to make this easy.\n\nFor example, to assign the result to a value of type `BaseClass`, you could write either of these:\n\n```\nBaseClass b = !getdagop<BaseClass>(someDag);\nBaseClass b = !cast<BaseClass>(!getdagop(someDag));\n```\n\nBut to create a new DAG node that reuses the operator from another, no cast is necessary:\n\n```\ndag d = !dag(!getdagop(someDag), args, names);\n```",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -145,6 +207,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "gt(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!gt(` *a* `,` *b* `)`\n\nThis operator produces 1 if *a* is greater than *b*; 0 otherwise. The arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -153,6 +218,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "head(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!head(` *a* `)`\n\nThis operator produces the zeroth element of the list *a*. (See also `!tail`.)",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -161,6 +229,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "if(${2}, ${3}, ${4})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!if(` *test* `,` *then* `,` *else* `)`\n\nThis operator evaluates the *test*, which must produce a `bit` or `int`. If the result is not 0, the *then* expression is produced; otherwise the *else* expression is produced.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -169,6 +240,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "initialized(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!initialized(` *a* `)`\n\nThis operator produces 1 if *a* is not the uninitialized value (`?`) and 0 otherwise.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -177,6 +251,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "instances<${1}>()$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!instances<` *type* `>([` *regex* `])`\n\nThis operator produces a list of records whose type is *type*. If *regex* is provided, only records whose name matches the regular expression *regex* will be included. The format of *regex* is ERE (Extended POSIX Regular Expressions).\n\nIf `!instances` is in a class/multiclass/foreach, only these records of *type* that have been instantiated will be considered.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -185,6 +262,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "interleave(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!interleave(` *list* `,` *delim* `)`\n\nThis operator concatenates the items in the *list*, interleaving the *delim* string between each pair, and produces the resulting string. The list can be a list of string, int, bits, or bit. An empty list results in an empty string. The delimiter can be the empty string.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -193,6 +273,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "isa<${1}>(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!isa<` *type* `>(` *a* `)`\n\nThis operator produces 1 if the type of *a* is a subtype of the given *type*; 0 otherwise.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -201,6 +284,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "le(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!le(` *a* `,` *b* `)`\n\nThis operator produces 1 if *a* is less than or equal to *b*; 0 otherwise. The arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -209,6 +295,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "listconcat(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!listconcat(` *list1* `,` *list2* `, ...)`\n\nThis operator concatenates the list arguments *list1*, *list2*, etc., and produces the resulting list. The lists must have the same element type.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -217,6 +306,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "listflatten(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!listflatten(` *list* `)`\n\nThis operator flattens a list of lists *list* and produces a list with all elements of the constituent lists concatenated. If *list* is of type `list<list<X>>` the resulting list is of type `list<X>`. If *list*'s element type is not a list, the result is *list* itself.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -225,6 +317,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "listremove(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!listremove(` *list1* `,` *list2* `)`\n\nThis operator returns a copy of *list1* removing all elements that also occur in *list2*. The lists must have the same element type.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -233,6 +328,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "listsplat(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!listsplat(` *value* `,` *count* `)`\n\nThis operator produces a list of length *count* whose elements are all equal to the *value*. For example, `!listsplat(42, 3)` results in `[42, 42, 42]`.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -241,6 +339,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "log2(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!logtwo(` *a* `)`\n\nThis operator produces the base 2 log of *a* and produces the integer result. The log of 0 or a negative number produces an error. This is a flooring operation.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -249,6 +350,20 @@ expression: "check_trigger(\"!$\", \"!\")"
             "lt(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!lt(` *a* `,` *b* `)`\n\nThis operator produces 1 if *a* is less than *b*; 0 otherwise. The arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "match",
+        insert_text_snippet: Some(
+            "match(${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "`!match(` *str* `,` *regex* `)`\n\nThis operator produces 1 if the *str* matches the regular expression *regex*. The format of *regex* is ERE (Extended POSIX Regular Expressions).",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -257,6 +372,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "mul(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!mul(` *a* `,` *b* `, ...)`\n\nThis operator multiplies *a*, *b*, etc., and produces the product.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -265,6 +383,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "ne(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!ne(` *a* `,` *b* `)`\n\nThis operator produces 1 if *a* is not equal to *b*; 0 otherwise. The arguments must be `bit`, `bits`, `int`, `string`, or record values. Use `!cast<string>` to compare other types of objects.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -273,6 +394,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "not(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!not(` *a* `)`\n\nThis operator performs a logical NOT on *a*, which must be an integer. The argument 0 results in 1 (true); any other argument results in 0 (false).",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -281,6 +405,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "or(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!or(` *a* `,` *b* `, ...)`\n\nThis operator does a bitwise OR on *a*, *b*, etc., and produces the result. A logical OR can be performed if all the arguments are either 0 or 1. This operator is short-circuit to -1 (all ones) the left-most operand is -1.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -289,6 +416,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "range(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!range([` *start* `,]` *end* `[,` *step* `])`\n\nThis operator produces half-open range sequence `[start : end : step)` as `list<int>`. *start* is `0` and *step* is `1` by default. *step* can be negative and cannot be 0. If *start* `<` *end* and *step* is negative, or *start* `>` *end* and *step* is positive, the result is an empty list `[]<int>`.\n\nFor example:\n\n* `!range(4)` is equivalent to `!range(0, 4, 1)` and the result is `[0, 1, 2, 3]`.\n* `!range(1, 4)` is equivalent to `!range(1, 4, 1)` and the result is `[1, 2, 3]`.\n* The result of `!range(0, 4, 2)` is `[0, 2]`.\n* The results of `!range(0, 4, -1)` and `!range(4, 0, 1)` are empty.\n\n`!range(` *list* `)`\n\nEquivalent to `!range(0, !size(list))`.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -297,6 +427,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "repr(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!repr(` *value* `)`\n\nRepresents *value* as a string. String format for the value is not guaranteed to be stable. Intended for debugging purposes only.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -305,6 +438,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "setdagarg(${2}, ${3}, ${4})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!setdagarg(` *dag* `,` *key* `,` *arg* `)`\n\nThis operator produces a DAG node with the same operator and arguments as *dag*, but replacing the value of the argument specified by the *key* with *arg*. That *key* could be either an integer index or a string name.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -313,6 +449,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "setdagname(${2}, ${3}, ${4})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!setdagname(` *dag* `,` *key* `,` *name* `)`\n\nThis operator produces a DAG node with the same operator and arguments as *dag*, but replacing the name of the argument specified by the *key* with *name*. That *key* could be either an integer index or a string name.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -321,6 +460,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "setdagop(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!setdagop(` *dag* `,` *op* `)`\n\nThis operator produces a DAG node with the same arguments as *dag*, but with its operator replaced with *op*.\n\nExample: `!setdagop((foo 1, 2), bar)` results in `(bar 1, 2)`.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -329,6 +471,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "shl(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!shl(` *a* `,` *count* `)`\n\nThis operator shifts *a* left logically by *count* bits and produces the resulting value. The operation is performed on a 64-bit integer; the result is undefined for shift counts outside 0...63.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -337,6 +482,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "size(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!size(` *a* `)`\n\nThis operator produces the size of the string, list, or dag *a*. The size of a DAG is the number of arguments; the operator does not count.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -345,6 +493,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "sra(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!sra(` *a* `,` *count* `)`\n\nThis operator shifts *a* right arithmetically by *count* bits and produces the resulting value. The operation is performed on a 64-bit integer; the result is undefined for shift counts outside 0...63.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -353,6 +504,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "srl(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!srl(` *a* `,` *count* `)`\n\nThis operator shifts *a* right logically by *count* bits and produces the resulting value. The operation is performed on a 64-bit integer; the result is undefined for shift counts outside 0...63.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -361,6 +515,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "strconcat(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!strconcat(` *str1* `,` *str2* `, ...)`\n\nThis operator concatenates the string arguments *str1*, *str2*, etc., and produces the resulting string.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -369,6 +526,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "sub(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!sub(` *a* `,` *b* `)`\n\nThis operator subtracts *b* from *a* and produces the arithmetic difference.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -377,6 +537,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "subst(${2}, ${3}, ${4})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!subst(` *target* `,` *repl* `,` *value* `)`\n\nThis operator replaces all occurrences of the *target* in the *value* with the *repl* and produces the resulting value. The *value* can be a string, in which case substring substitution is performed.\n\nThe *value* can be a record name, in which case the operator produces the *repl* record if the *target* record name equals the *value* record name; otherwise it produces the *value*.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -385,6 +548,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "substr(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!substr(` *string* `,` *start* `[`, *length* `])`\n\nThis operator extracts a substring of the given *string*. The starting position of the substring is specified by *start*, which can range between 0 and the length of the string. The length of the substring is specified by *length*; if not specified, the rest of the string is extracted. The *start* and *length* arguments must be integers.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -393,6 +559,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "tail(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!tail(` *a* `)`\n\nThis operator produces a new list with all the elements of the list *a* except for the zeroth one. (See also `!head`.)",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -401,6 +570,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "tolower(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!tolower(` *a* `)`\n\nThis operator converts a string input *a* to lower case.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -409,6 +581,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "toupper(${2})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!toupper(` *a* `)`\n\nThis operator converts a string input *a* to upper case.",
+        ),
         kind: Keyword,
     },
     CompletionItem {
@@ -417,6 +592,9 @@ expression: "check_trigger(\"!$\", \"!\")"
             "xor(${2}, ${3})$0",
         ),
         detail: "",
+        documentation: Some(
+            "`!xor(` *a* `,` *b* `, ...)`\n\nThis operator does a bitwise EXCLUSIVE OR on *a*, *b*, etc., and produces the result. A logical XOR can be performed if all the arguments are either 0 or 1.",
+        ),
         kind: Keyword,
     },
 ]

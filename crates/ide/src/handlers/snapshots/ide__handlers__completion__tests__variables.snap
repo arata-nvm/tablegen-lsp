@@ -7,18 +7,21 @@ expression: "check(\"defvar x = 10; defvar y = x$\")"
         label: "false",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
     CompletionItem {
         label: "true",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
     CompletionItem {
         label: "x",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Variable,
     },
 ]

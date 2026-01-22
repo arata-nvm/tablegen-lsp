@@ -7,18 +7,21 @@ expression: "check(\"class Foo { defvar hoge = 1; int x = h$\")"
         label: "false",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
     CompletionItem {
         label: "hoge",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Variable,
     },
     CompletionItem {
         label: "true",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
 ]

@@ -18,6 +18,7 @@ pub struct CompletionItem {
     pub label: String,
     pub insert_text_snippet: Option<String>,
     pub detail: String,
+    pub documentation: Option<String>,
     pub kind: CompletionItemKind,
 }
 
@@ -31,20 +32,7 @@ impl CompletionItem {
             label: label.into(),
             insert_text_snippet: None,
             detail: detail.into(),
-            kind,
-        }
-    }
-
-    fn new_snippet(
-        label: impl Into<String>,
-        insert_text_snippet: impl Into<String>,
-        detail: impl Into<String>,
-        kind: CompletionItemKind,
-    ) -> Self {
-        Self {
-            label: label.into(),
-            insert_text_snippet: Some(insert_text_snippet.into()),
-            detail: detail.into(),
+            documentation: None,
             kind,
         }
     }
@@ -270,19 +258,13 @@ impl CompletionContext {
                 .push(CompletionItem::new_simple(ty, "", CompletionItemKind::Type));
         }
 
-        self.items.push(CompletionItem::new_snippet(
-            "bits",
-            "bits<$1> $0",
-            "",
-            CompletionItemKind::Type,
-        ));
+        let mut item = CompletionItem::new_simple("bits", "", CompletionItemKind::Type);
+        item.insert_text_snippet = Some("bits<$1> $0".to_string());
+        self.items.push(item);
 
-        self.items.push(CompletionItem::new_snippet(
-            "list",
-            "list<$1> $0",
-            "",
-            CompletionItemKind::Type,
-        ));
+        let mut item = CompletionItem::new_simple("list", "", CompletionItemKind::Type);
+        item.insert_text_snippet = Some("list<$1> $0".to_string());
+        self.items.push(item);
     }
 
     fn complete_primitive_values(&mut self) {
@@ -312,12 +294,10 @@ impl CompletionContext {
                 format!("{name}({args})$0", name = meta.name)
             };
 
-            self.items.push(CompletionItem::new_snippet(
-                meta.name,
-                snippet,
-                "",
-                CompletionItemKind::Keyword,
-            ));
+            let mut item = CompletionItem::new_simple(meta.name, "", CompletionItemKind::Keyword);
+            item.insert_text_snippet = Some(snippet);
+            item.documentation = Some(meta.documentation.into());
+            self.items.push(item);
         }
     }
 
@@ -333,20 +313,22 @@ impl CompletionContext {
                 .map(|(i, _)| format!("${{{}}}", i + 1))
                 .collect::<Vec<_>>()
                 .join(", ");
-            self.items.push(CompletionItem::new_snippet(
+            let snippet = format!(
+                "{}{}$0",
+                class.name(),
+                if arg_snippet.is_empty() {
+                    "".to_string()
+                } else {
+                    format!("<{arg_snippet}>")
+                }
+            );
+            let mut item = CompletionItem::new_simple(
                 class.name().clone(),
-                format!(
-                    "{}{}$0",
-                    class.name(),
-                    if arg_snippet.is_empty() {
-                        "".to_string()
-                    } else {
-                        format!("<{arg_snippet}>")
-                    }
-                ),
                 "class",
                 CompletionItemKind::Class,
-            ));
+            );
+            item.insert_text_snippet = Some(snippet);
+            self.items.push(item);
         }
     }
 
@@ -362,20 +344,22 @@ impl CompletionContext {
                 .map(|(i, _)| format!("${{{}}}", i + 1))
                 .collect::<Vec<_>>()
                 .join(", ");
-            self.items.push(CompletionItem::new_snippet(
+            let snippet = format!(
+                "{}{}$0",
+                multiclass.name,
+                if arg_snippet.is_empty() {
+                    "".to_string()
+                } else {
+                    format!("<{arg_snippet}>")
+                }
+            );
+            let mut item = CompletionItem::new_simple(
                 multiclass.name.clone(),
-                format!(
-                    "{}{}$0",
-                    multiclass.name,
-                    if arg_snippet.is_empty() {
-                        "".to_string()
-                    } else {
-                        format!("<{arg_snippet}>")
-                    }
-                ),
                 "multiclass",
                 CompletionItemKind::Multiclass,
-            ));
+            );
+            item.insert_text_snippet = Some(snippet);
+            self.items.push(item);
         }
     }
 

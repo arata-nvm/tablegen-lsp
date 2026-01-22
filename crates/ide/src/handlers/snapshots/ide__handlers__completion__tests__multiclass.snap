@@ -9,6 +9,7 @@ expression: "check(\"multiclass Foo; defm bar : F$\")"
             "Foo$0",
         ),
         detail: "multiclass",
+        documentation: None,
         kind: Multiclass,
     },
 ]

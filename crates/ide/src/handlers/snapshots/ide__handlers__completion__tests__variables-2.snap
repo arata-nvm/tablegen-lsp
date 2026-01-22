@@ -7,18 +7,21 @@ expression: "check(\"foreach i = 0...4 in { defvar x = i$ }\")"
         label: "false",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
     CompletionItem {
         label: "i",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Variable,
     },
     CompletionItem {
         label: "true",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
 ]

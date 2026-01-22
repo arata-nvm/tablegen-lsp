@@ -7,12 +7,14 @@ expression: "check(r#\"\nclass base1 { int field1; }\nclass base2 { int field2; 
         label: "field1",
         insert_text_snippet: None,
         detail: "int",
+        documentation: None,
         kind: Field,
     },
     CompletionItem {
         label: "field2",
         insert_text_snippet: None,
         detail: "int",
+        documentation: None,
         kind: Field,
     },
 ]

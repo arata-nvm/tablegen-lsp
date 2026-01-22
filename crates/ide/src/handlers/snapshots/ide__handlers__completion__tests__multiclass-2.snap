@@ -9,6 +9,7 @@ expression: "check(\"multiclass Base<int x>; multiclass Derived<int y>; defm tes
             "Base<${1}>$0",
         ),
         detail: "multiclass",
+        documentation: None,
         kind: Multiclass,
     },
     CompletionItem {
@@ -17,6 +18,7 @@ expression: "check(\"multiclass Base<int x>; multiclass Derived<int y>; defm tes
             "Derived<${1}>$0",
         ),
         detail: "multiclass",
+        documentation: None,
         kind: Multiclass,
     },
 ]

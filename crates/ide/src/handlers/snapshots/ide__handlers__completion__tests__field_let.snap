@@ -7,6 +7,7 @@ expression: "check(\"class Foo { int Bar; let B$\")"
         label: "Bar",
         insert_text_snippet: None,
         detail: "int",
+        documentation: None,
         kind: Field,
     },
 ]

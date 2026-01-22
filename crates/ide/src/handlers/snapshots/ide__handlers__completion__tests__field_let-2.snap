@@ -1,18 +1,20 @@
 ---
 source: crates/ide/src/handlers/completion.rs
-expression: "check(\"class Foo { int Bar; int Baz; } class Foo2 : Foo { let $\")"
+expression: "check(\"class Foo { int Bar; int Baz; } class Foo2 : Foo { let B$\")"
 ---
 [
     CompletionItem {
         label: "Bar",
         insert_text_snippet: None,
         detail: "int",
+        documentation: None,
         kind: Field,
     },
     CompletionItem {
         label: "Baz",
         insert_text_snippet: None,
         detail: "int",
+        documentation: None,
         kind: Field,
     },
 ]

@@ -167,6 +167,14 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
         lsp_item.insert_text_format = Some(lsp_types::InsertTextFormat::SNIPPET);
         lsp_item.insert_text = Some(insert_text_snippet);
     }
+    if let Some(documentation) = item.documentation {
+        lsp_item.documentation = Some(lsp_types::Documentation::MarkupContent(
+            lsp_types::MarkupContent {
+                kind: lsp_types::MarkupKind::Markdown,
+                value: documentation,
+            },
+        ));
+    }
     lsp_item
 }
 

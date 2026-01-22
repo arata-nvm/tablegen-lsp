@@ -7,18 +7,21 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         label: "false",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
     CompletionItem {
         label: "foo",
         insert_text_snippet: None,
         detail: "list<Foo>",
+        documentation: None,
         kind: Defset,
     },
     CompletionItem {
         label: "true",
         insert_text_snippet: None,
         detail: "",
+        documentation: None,
         kind: Keyword,
     },
 ]
