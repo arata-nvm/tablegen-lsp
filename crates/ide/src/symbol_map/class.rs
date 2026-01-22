@@ -39,7 +39,7 @@ impl Class {
 
     pub fn is_empty(&self) -> bool {
         self.name_to_template_arg.is_empty()
-            && self.iter_field().count() == 0
+            && self.iter_direct_field().count() == 0
             && self.parent_classes().is_empty()
     }
 }

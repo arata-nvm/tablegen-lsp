@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use ecow::EcoString;
 use syntax::{
     SyntaxNode,
@@ -10,12 +8,9 @@ use crate::symbol_map::class::ClassId;
 use crate::{
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
-    symbol_map::{
-        SymbolMap,
-        record::{AsRecordData, RecordFieldId},
-        typ::Type,
-    },
+    symbol_map::{SymbolMap, record::AsRecordData, typ::Type},
 };
+use std::collections::HashSet;
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct CompletionItem {
@@ -414,10 +409,8 @@ impl CompletionContext {
         class_id: ClassId,
         exclude_field_name: Option<&str>,
     ) {
-        let mut found_fields = HashSet::new();
-        collect_class_fields(symbol_map, class_id, &mut found_fields);
-
-        for field_id in found_fields {
+        let class = symbol_map.class(class_id);
+        for field_id in class.iter_field(symbol_map) {
             let field = symbol_map.record_field(field_id);
             if exclude_field_name.is_some_and(|name| name == field.name.as_str()) {
                 continue;
@@ -465,20 +458,6 @@ impl CompletionContext {
                 CompletionItemKind::Variable,
             ));
         }
-    }
-}
-
-fn collect_class_fields(
-    symbol_map: &SymbolMap,
-    class_id: ClassId,
-    found_fields: &mut HashSet<RecordFieldId>,
-) {
-    let class = symbol_map.class(class_id);
-    for field_id in class.iter_field() {
-        found_fields.insert(field_id);
-    }
-    for parent_id in class.parent_classes() {
-        collect_class_fields(symbol_map, *parent_id, found_fields);
     }
 }
 

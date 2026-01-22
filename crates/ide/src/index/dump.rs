@@ -28,7 +28,7 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
                     }
                     writeln!(output, "{{").unwrap();
 
-                    for field_id in class.iter_field() {
+                    for field_id in class.iter_direct_field() {
                         let field = symbol_map.record_field(field_id);
                         writeln!(output, "  {} {};", field.typ, field.name).unwrap();
                     }
@@ -43,7 +43,7 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
                     }
                     writeln!(output, "{{").unwrap();
 
-                    for field_id in def.iter_field() {
+                    for field_id in def.iter_direct_field() {
                         let field = symbol_map.record_field(field_id);
                         writeln!(output, "  {} {};", field.typ, field.name).unwrap();
                     }
@@ -61,7 +61,7 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
                         }
                         writeln!(output, "{{").unwrap();
 
-                        for field_id in def.iter_field() {
+                        for field_id in def.iter_direct_field() {
                             let field = symbol_map.record_field(field_id);
                             writeln!(output, "  {} {};", field.typ, field.name).unwrap();
                         }

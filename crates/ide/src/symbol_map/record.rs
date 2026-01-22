@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use ecow::EcoString;
 use id_arena::Id;
 use indexmap::IndexMap;
@@ -42,7 +44,7 @@ impl RecordData {
     }
 }
 
-pub trait AsRecordData {
+pub trait AsRecordData: Sized {
     fn record_data(&self) -> &RecordData;
     fn record_data_mut(&mut self) -> &mut RecordData;
 
@@ -72,8 +74,12 @@ pub trait AsRecordData {
             .insert(name, record_field_id);
     }
 
-    fn iter_field(&self) -> impl Iterator<Item = RecordFieldId> + '_ {
+    fn iter_direct_field(&self) -> impl Iterator<Item = RecordFieldId> + '_ {
         self.record_data().name_to_record_field.values().copied()
+    }
+
+    fn iter_field(&self, symbol_map: &SymbolMap) -> impl Iterator<Item = RecordFieldId> + '_ {
+        collect_all_fields(self, symbol_map).into_iter()
     }
 
     fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
@@ -114,6 +120,23 @@ pub trait AsRecordData {
             .map(|parent_id| symbol_map.class(*parent_id))
             .any(|parent| parent.is_subclass_of(symbol_map, other_id))
     }
+}
+
+fn collect_all_fields<T: AsRecordData>(
+    record: &T,
+    symbol_map: &SymbolMap,
+) -> HashSet<RecordFieldId> {
+    let mut found_fields = HashSet::new();
+    // Add direct fields
+    for field_id in record.iter_direct_field() {
+        found_fields.insert(field_id);
+    }
+    // Add parent fields
+    for parent_id in record.parent_classes() {
+        let parent = symbol_map.class(*parent_id);
+        found_fields.extend(collect_all_fields(parent, symbol_map));
+    }
+    found_fields
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
