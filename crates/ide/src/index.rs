@@ -35,6 +35,7 @@ use crate::{
         typ::Type,
         variable::{Variable, VariableId, VariableKind},
     },
+    utils::{self, DefNameType},
 };
 
 #[salsa::query_group(IndexDatabaseStorage)]
@@ -187,7 +188,7 @@ impl IndexStatement for ast::Class {
         let Some(name_node) = self.name() else {
             return;
         };
-        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+        let Some((name, define_loc)) = common::identifier(&name_node, ctx) else {
             return;
         };
         let class = Class::new(name, define_loc);
@@ -222,7 +223,7 @@ impl IndexStatement for ast::Def {
 }
 
 fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx, multiclass_id: MulticlassId) {
-    let Some(def_name_type) = determine_def_type(def) else {
+    let Some(def_name_type) = utils::determine_def_type(def) else {
         return;
     };
 
@@ -305,7 +306,7 @@ fn lookup_def_name(
     def: &ast::Def,
     ctx: &mut IndexCtx,
 ) -> Option<(Vec<EcoString>, FileRange, bool)> {
-    let def_name_type = determine_def_type(def)?;
+    let def_name_type = utils::determine_def_type(def)?;
 
     let def_kw_loc = def
         .syntax()
@@ -324,7 +325,7 @@ fn lookup_def_name(
         return match def_name_type {
             DefNameType::Identifier(_, ref ident) => {
                 // fallback
-                let (name, define_loc) = utils::identifier(ident, ctx)?;
+                let (name, define_loc) = common::identifier(ident, ctx)?;
                 Some((vec![name], define_loc, false))
             }
             _ => {
@@ -341,36 +342,6 @@ fn lookup_def_name(
     let define_loc = FileRange::new(ctx.current_file_id(), tblgen_define_loc);
     let is_anonymous = matches!(def_name_type, DefNameType::Anonymous);
     Some((def_names, define_loc, is_anonymous))
-}
-
-#[derive(Debug)]
-enum DefNameType {
-    // def foo
-    Identifier(ast::Value, ast::Identifier),
-    // def foo#i
-    ValueStartWithIdentifier(ast::Value),
-    // def !strconcat(foo, bar)
-    Value,
-    // def
-    Anonymous,
-}
-
-fn determine_def_type(def: &ast::Def) -> Option<DefNameType> {
-    let Some(name_value) = def.name() else {
-        return Some(DefNameType::Anonymous);
-    };
-    let inner_value = name_value.inner_values().next()?;
-    let simple_value = inner_value.simple_value()?;
-    match simple_value {
-        ast::SimpleValue::Identifier(ident) => {
-            if name_value.inner_values().count() > 1 {
-                Some(DefNameType::ValueStartWithIdentifier(name_value))
-            } else {
-                Some(DefNameType::Identifier(name_value, ident))
-            }
-        }
-        _ => Some(DefNameType::Value),
-    }
 }
 
 impl IndexStatement for ast::Defm {
@@ -457,7 +428,7 @@ impl IndexStatement for ast::Defset {
         let Some(name_node) = self.name() else {
             return;
         };
-        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+        let Some((name, define_loc)) = common::identifier(&name_node, ctx) else {
             return;
         };
         let Some(typ) = self.r#type().and_then(|t| t.index_expression(ctx)) else {
@@ -485,7 +456,7 @@ impl IndexStatement for ast::Defvar {
         let Some(name_node) = self.name() else {
             return;
         };
-        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+        let Some((name, define_loc)) = common::identifier(&name_node, ctx) else {
             return;
         };
         let typ = self
@@ -529,7 +500,7 @@ fn index_declaration(
     this: &ast::ForeachIterator,
     ctx: &mut IndexCtx,
 ) -> Option<(EcoString, VariableId)> {
-    let (name, define_loc) = utils::identifier(&this.name()?, ctx)?;
+    let (name, define_loc) = common::identifier(&this.name()?, ctx)?;
     let typ = this.init()?.index_expression(ctx)?;
 
     let variable = Variable::new(name.clone(), typ, VariableKind::Foreach, define_loc);
@@ -641,7 +612,7 @@ impl IndexStatement for ast::MultiClass {
         let Some(name_node) = self.name() else {
             return;
         };
-        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+        let Some((name, define_loc)) = common::identifier(&name_node, ctx) else {
             return;
         };
         let multiclass = Multiclass::new(name, define_loc);
@@ -680,7 +651,7 @@ impl IndexStatement for ast::TemplateArgDecl {
         let Some(name_node) = self.name() else {
             return;
         };
-        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+        let Some((name, define_loc)) = common::identifier(&name_node, ctx) else {
             return;
         };
         let Some(typ) = self.r#type().and_then(|it| it.index_expression(ctx)) else {
@@ -770,7 +741,7 @@ impl IndexStatement for ast::ParentClassList {
 }
 
 fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> Option<ClassId> {
-    let (name, reference_loc) = utils::identifier(&class_ref.name()?, ctx)?;
+    let (name, reference_loc) = common::identifier(&class_ref.name()?, ctx)?;
     let Some(class_id) = ctx.symbol_map.find_class(&name) else {
         ctx.error_by_filerange(reference_loc, format!("class not found: {name}"));
         return None;
@@ -803,7 +774,7 @@ fn resolve_class_ref_as_multiclass(
     class_ref: &ast::ClassRef,
     ctx: &mut IndexCtx,
 ) -> Option<MulticlassId> {
-    let (name, reference_loc) = utils::identifier(&class_ref.name()?, ctx)?;
+    let (name, reference_loc) = common::identifier(&class_ref.name()?, ctx)?;
     let Some(multiclass_id) = ctx.symbol_map.find_multiclass(&name) else {
         ctx.error_by_filerange(reference_loc, format!("multiclass not found: {name}"));
         return None;
@@ -979,7 +950,7 @@ impl IndexStatement for ast::FieldDef {
         let Some(name_node) = self.name() else {
             return;
         };
-        let Some((name, define_loc)) = utils::identifier(&name_node, ctx) else {
+        let Some((name, define_loc)) = common::identifier(&name_node, ctx) else {
             return;
         };
         let Some(typ) = self.r#type().and_then(|t| t.index_expression(ctx)) else {
@@ -1020,7 +991,7 @@ impl IndexStatement for ast::FieldLet {
         let Some(name_node) = self.name() else {
             return;
         };
-        let Some((name, reference_loc)) = utils::identifier(&name_node, ctx) else {
+        let Some((name, reference_loc)) = common::identifier(&name_node, ctx) else {
             return;
         };
 
@@ -1184,7 +1155,7 @@ impl IndexValue for ast::InnerValue {
                     }
                 }
                 ast::ValueSuffix::FieldSuffix(ref field_suffix) => {
-                    let (name, reference_loc) = utils::identifier(&field_suffix.name()?, ctx)?;
+                    let (name, reference_loc) = common::identifier(&field_suffix.name()?, ctx)?;
                     match lhs_typ.record_find_field(&ctx.symbol_map, &name) {
                         Ok(field_id) => {
                             ctx.symbol_map.add_reference(field_id, reference_loc);
@@ -1283,7 +1254,7 @@ impl IndexValue for ast::SimpleValue {
                 Some(TY![dag])
             }
             ast::SimpleValue::Identifier(identifier) => {
-                let (name, reference_loc) = utils::identifier(identifier, ctx)?;
+                let (name, reference_loc) = common::identifier(identifier, ctx)?;
                 if name == "NAME" {
                     return Some(TY![string]);
                 }
@@ -1312,7 +1283,7 @@ impl IndexValue for ast::SimpleValue {
                 }
             }
             ast::SimpleValue::ClassValue(class_value) => {
-                let (name, reference_loc) = utils::identifier(&class_value.name()?, ctx)?;
+                let (name, reference_loc) = common::identifier(&class_value.name()?, ctx)?;
                 let class_id = ctx.symbol_map.find_class(&name)?;
                 ctx.symbol_map.add_reference(class_id, reference_loc);
 
@@ -1378,7 +1349,7 @@ impl IndexExpression for ast::Type {
                 Some(Type::list(elm_typ))
             }
             ast::Type::ClassId(class_id) => {
-                let (name, reference_loc) = utils::identifier(&class_id.name()?, ctx)?;
+                let (name, reference_loc) = common::identifier(&class_id.name()?, ctx)?;
                 match ctx.symbol_map.find_class(&name) {
                     Some(class_id) => {
                         ctx.symbol_map.add_reference(class_id, reference_loc);
@@ -1394,7 +1365,7 @@ impl IndexExpression for ast::Type {
     }
 }
 
-mod utils {
+mod common {
     use super::context::IndexCtx;
     use crate::file_system::FileRange;
     use ecow::EcoString;

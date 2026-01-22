@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::{IndexExpression, context::IndexCtx, scope::ScopeKind, utils};
+use super::{IndexExpression, context::IndexCtx, scope::ScopeKind};
 
 impl IndexExpression for ast::BangOperator {
     type Output = Type;
@@ -155,7 +155,7 @@ impl IndexExpression for ast::BangOperator {
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
+                        super::common::identifier(&identifier, ctx)?
                     }
                     _ => return None,
                 };
@@ -226,13 +226,13 @@ impl IndexExpression for ast::BangOperator {
 
                 let (acc_name, acc_define_loc) = match acc.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
+                        super::common::identifier(&identifier, ctx)?
                     }
                     _ => return None,
                 };
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
+                        super::common::identifier(&identifier, ctx)?
                     }
                     _ => return None,
                 };
@@ -279,7 +279,7 @@ impl IndexExpression for ast::BangOperator {
 
                 let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
                     Some(ast::SimpleValue::Identifier(identifier)) => {
-                        utils::identifier(&identifier, ctx)?
+                        super::common::identifier(&identifier, ctx)?
                     }
                     _ => return None,
                 };

@@ -1,4 +1,4 @@
-use syntax::{SyntaxNode, parser::TextRange, syntax_kind::SyntaxKind};
+use syntax::{SyntaxNode, ast, parser::TextRange, syntax_kind::SyntaxKind};
 
 pub fn range_excluding_trivia(node: &SyntaxNode) -> TextRange {
     let start = node.text_range().start();
@@ -58,4 +58,34 @@ pub fn extract_doc_comments(root: SyntaxNode, range: TextRange) -> Option<String
 
     let doc = comments.into_iter().rev().collect::<Vec<_>>().join("\n");
     if doc.is_empty() { None } else { Some(doc) }
+}
+
+#[derive(Debug)]
+pub enum DefNameType {
+    // def foo
+    Identifier(ast::Value, ast::Identifier),
+    // def foo#i
+    ValueStartWithIdentifier(ast::Value),
+    // def !strconcat(foo, bar)
+    Value,
+    // def
+    Anonymous,
+}
+
+pub fn determine_def_type(def: &ast::Def) -> Option<DefNameType> {
+    let Some(name_value) = def.name() else {
+        return Some(DefNameType::Anonymous);
+    };
+    let inner_value = name_value.inner_values().next()?;
+    let simple_value = inner_value.simple_value()?;
+    match simple_value {
+        ast::SimpleValue::Identifier(ident) => {
+            if name_value.inner_values().count() > 1 {
+                Some(DefNameType::ValueStartWithIdentifier(name_value))
+            } else {
+                Some(DefNameType::Identifier(name_value, ident))
+            }
+        }
+        _ => Some(DefNameType::Value),
+    }
 }
