@@ -6,6 +6,7 @@ use syntax::{
 
 use crate::symbol_map::{class::ClassId, record::RecordId};
 use crate::{
+    bang_operator,
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
     symbol_map::{SymbolMap, record::AsRecordData, typ::Type},
@@ -296,59 +297,24 @@ impl CompletionContext {
     }
 
     fn complete_bang_operators(&mut self) {
-        const BANG_OPERATORS: [&str; 48] = [
-            "concat",
-            "add",
-            "sub",
-            "mul",
-            "div",
-            "not",
-            "log2",
-            "and",
-            "or",
-            "xor",
-            "sra",
-            "srl",
-            "shl",
-            "listconcat",
-            "listsplat",
-            "strconcat",
-            "interleave",
-            "substr",
-            "find",
-            "cast",
-            "subst",
-            "foreach",
-            "filter",
-            "foldl",
-            "head",
-            "tail",
-            "size",
-            "empty",
-            "if",
-            "eq",
-            "isa",
-            "dag",
-            "ne",
-            "le",
-            "lt",
-            "ge",
-            "gt",
-            "setdagop",
-            "getdagop",
-            "exists",
-            "listremove",
-            "tolower",
-            "toupper",
-            "range",
-            "getdagarg",
-            "getdagname",
-            "setdagarg",
-            "setdagname",
-        ];
-        for &op in &BANG_OPERATORS {
-            self.items.push(CompletionItem::new_simple(
-                op,
+        for meta in bang_operator::OPS {
+            let snippet = if meta.needs_type_annotation {
+                let args = (0..meta.min_args)
+                    .map(|i| format!("${{{}}}", i + 2))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{name}<${{1}}>({args})$0", name = meta.name)
+            } else {
+                let args = (0..meta.min_args)
+                    .map(|i| format!("${{{}}}", i + 2))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{name}({args})$0", name = meta.name)
+            };
+
+            self.items.push(CompletionItem::new_snippet(
+                meta.name,
+                snippet,
                 "",
                 CompletionItemKind::Keyword,
             ));

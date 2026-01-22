@@ -5,289 +5,417 @@ expression: "check_trigger(\"!$\", \"!\")"
 [
     CompletionItem {
         label: "add",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "add(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "and",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "and(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "cast",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "cast<${1}>(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "concat",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "concat(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "dag",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "dag(${2}, ${3}, ${4})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "div",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "div(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "empty",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "empty(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "eq",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "eq(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "exists",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "exists<${1}>(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "filter",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "filter(${2}, ${3}, ${4})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "find",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "find(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "foldl",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "foldl(${2}, ${3}, ${4}, ${5}, ${6})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "foreach",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "foreach(${2}, ${3}, ${4})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "ge",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "ge(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "getdagarg",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "getdagarg<${1}>(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "getdagname",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "getdagname(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "getdagop",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "getdagop<${1}>(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "gt",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "gt(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "head",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "head(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "if",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "if(${2}, ${3}, ${4})$0",
+        ),
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "initialized",
+        insert_text_snippet: Some(
+            "initialized(${2})$0",
+        ),
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "instances",
+        insert_text_snippet: Some(
+            "instances<${1}>()$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "interleave",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "interleave(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "isa",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "isa<${1}>(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "le",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "le(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "listconcat",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "listconcat(${2}, ${3})$0",
+        ),
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "listflatten",
+        insert_text_snippet: Some(
+            "listflatten(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "listremove",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "listremove(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "listsplat",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "listsplat(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "log2",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "log2(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "lt",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "lt(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "mul",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "mul(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "ne",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "ne(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "not",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "not(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "or",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "or(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "range",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "range(${2})$0",
+        ),
+        detail: "",
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "repr",
+        insert_text_snippet: Some(
+            "repr(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "setdagarg",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "setdagarg(${2}, ${3}, ${4})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "setdagname",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "setdagname(${2}, ${3}, ${4})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "setdagop",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "setdagop(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "shl",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "shl(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "size",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "size(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "sra",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "sra(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "srl",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "srl(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "strconcat",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "strconcat(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "sub",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "sub(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "subst",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "subst(${2}, ${3}, ${4})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "substr",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "substr(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "tail",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "tail(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "tolower",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "tolower(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "toupper",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "toupper(${2})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
     CompletionItem {
         label: "xor",
-        insert_text_snippet: None,
+        insert_text_snippet: Some(
+            "xor(${2}, ${3})$0",
+        ),
         detail: "",
         kind: Keyword,
     },
