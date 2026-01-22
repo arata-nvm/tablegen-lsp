@@ -33,7 +33,7 @@ expression: dump_diagnostics(index.diagnostics())
                 ),
                 range: 318..336,
             },
-            message: "cannot access field: nonexistent_field",
+            message: "field 'nonexistent_field' not found in record",
         },
     ),
     Lsp(

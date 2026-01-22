@@ -134,6 +134,10 @@ pub enum TypeError {
     DuplicateBitIndex(usize),
     #[error("expected list type, got '{0}'")]
     ExpectedListType(Type),
+    #[error("expected record type, got '{0}'")]
+    ExpectedRecordType(Type),
+    #[error("field '{0}' not found in record")]
+    FieldNotFound(EcoString),
 }
 
 impl Type {
@@ -230,29 +234,31 @@ impl Type {
         &self,
         symbol_map: &SymbolMap,
         name: &EcoString,
-    ) -> Option<RecordFieldId> {
+    ) -> Result<RecordFieldId, TypeError> {
         let Self::Record {
             data,
             name: _,
             _priv: _,
         } = self
         else {
-            return None;
+            return Err(TypeError::ExpectedRecordType(self.clone()));
         };
 
         match data {
             RecordData::DefinedRecord(record_id) => {
                 let record = symbol_map.record(*record_id);
-                record.find_field(symbol_map, name)
+                record
+                    .find_field(symbol_map, name)
+                    .ok_or_else(|| TypeError::FieldNotFound(name.clone()))
             }
             RecordData::AnonymousClass(parents) => {
                 for parent_id in parents {
                     let parent = symbol_map.class(*parent_id);
                     if let Some(field_id) = parent.find_field(symbol_map, name) {
-                        return Some(field_id);
+                        return Ok(field_id);
                     }
                 }
-                None
+                Err(TypeError::FieldNotFound(name.clone()))
             }
         }
     }
