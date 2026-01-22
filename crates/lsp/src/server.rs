@@ -122,7 +122,7 @@ impl LanguageServer for Server {
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 inlay_hint_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions {
-                    trigger_characters: Some(vec![String::from("!")]), // for bang operator
+                    trigger_characters: Some(vec![".".to_string(), "!".to_string()]),
                     ..Default::default()
                 }),
                 document_link_provider: Some(DocumentLinkOptions {

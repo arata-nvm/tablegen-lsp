@@ -263,6 +263,27 @@ impl Type {
         }
     }
 
+    pub fn record_to_ids(&self) -> Option<Vec<RecordId>> {
+        let Self::Record {
+            data,
+            name: _,
+            _priv: _,
+        } = self
+        else {
+            return None;
+        };
+
+        Some(match data {
+            RecordData::DefinedRecord(record_id) => {
+                vec![*record_id]
+            }
+            RecordData::AnonymousClass(parents) => parents
+                .iter()
+                .map(|&class_id| RecordId::Class(class_id))
+                .collect(),
+        })
+    }
+
     pub fn bits_with_selected_indices(&self, bits: Vec<usize>) -> Result<Self, TypeError> {
         let Self::Bits {
             len: old_width,

@@ -1,10 +1,10 @@
 use ecow::EcoString;
 use syntax::{
-    SyntaxNode,
+    SyntaxNode, SyntaxNodePtr,
     ast::{self, AstNode},
 };
 
-use crate::symbol_map::class::ClassId;
+use crate::symbol_map::{class::ClassId, record::RecordId};
 use crate::{
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
@@ -71,6 +71,7 @@ pub fn exec(
     let parse = db.parse(pos.file);
     let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
+    let resolved_types = index.resolved_types();
 
     let root_node = parse.syntax_node();
     let token_at_pos = root_node.token_at_offset(pos.position).left_biased()?;
@@ -83,6 +84,27 @@ pub fn exec(
         return Some(ctx.finish());
     }
 
+    if node_at_pos.ancestor::<ast::FieldSuffix>().is_some() {
+        (|| -> Option<()> {
+            let inner_value = node_at_pos.ancestor::<ast::InnerValue>()?;
+            let suffixes = inner_value.suffixes().collect::<Vec<_>>();
+            let typ = if suffixes.len() < 2 {
+                // hoge.|
+                let simple_value = inner_value.simple_value()?;
+                let ptr = SyntaxNodePtr::new(simple_value.syntax());
+                resolved_types.get(&ptr)?
+            } else {
+                // hoge.fuga.| or hoge.fuga.piyo.|
+                let suffix = suffixes.get(suffixes.len() - 2)?;
+                let ptr = SyntaxNodePtr::new(suffix.syntax());
+                resolved_types.get(&ptr)?
+            };
+            let record_ids = typ.record_to_ids()?;
+            ctx.complete_record_fields(symbol_map, &record_ids, None);
+            Some(())
+        })();
+        return Some(ctx.finish());
+    }
     if let Some(field_let) = node_at_pos.ancestor::<ast::FieldLet>() {
         (|| -> Option<()> {
             let name = field_let.name()?;
@@ -94,7 +116,7 @@ pub fn exec(
             if let Some(class_stmt) = node_at_pos.ancestor::<ast::Class>() {
                 let class_name = class_stmt.name()?.value()?;
                 if let Some(class_id) = symbol_map.find_class(&class_name) {
-                    ctx.complete_record_fields(symbol_map, class_id, None);
+                    ctx.complete_record_fields(symbol_map, &[class_id.into()], None);
                 }
             }
 
@@ -132,7 +154,7 @@ pub fn exec(
                             .and_then(|fl| fl.name())
                             .and_then(|n| n.value())
                     });
-                ctx.complete_record_fields(symbol_map, class_id, exclude_name.as_deref());
+                ctx.complete_record_fields(symbol_map, &[class_id.into()], exclude_name.as_deref());
                 None
             })();
         }
@@ -406,20 +428,22 @@ impl CompletionContext {
     fn complete_record_fields(
         &mut self,
         symbol_map: &SymbolMap,
-        class_id: ClassId,
+        record_ids: &[RecordId],
         exclude_field_name: Option<&str>,
     ) {
-        let class = symbol_map.class(class_id);
-        for field_id in class.iter_field(symbol_map) {
-            let field = symbol_map.record_field(field_id);
-            if exclude_field_name.is_some_and(|name| name == field.name.as_str()) {
-                continue;
+        for record_id in record_ids {
+            let record = symbol_map.record(*record_id);
+            for field_id in record.iter_field(symbol_map) {
+                let field = symbol_map.record_field(field_id);
+                if exclude_field_name.is_some_and(|name| name == field.name.as_str()) {
+                    continue;
+                }
+                self.items.push(CompletionItem::new_simple(
+                    field.name.clone(),
+                    field.typ.to_string(),
+                    CompletionItemKind::Field,
+                ));
             }
-            self.items.push(CompletionItem::new_simple(
-                field.name.clone(),
-                field.typ.to_string(),
-                CompletionItemKind::Field,
-            ));
         }
     }
 
@@ -610,5 +634,48 @@ mod tests {
             "defvar outer = 1; foreach i = 0...2 in { defvar inner = outer$ }"
         ));
         insta::assert_debug_snapshot!(check("class Foo { defvar hoge = 1; int x = h$"));
+    }
+
+    #[test]
+    fn field_suffix() {
+        // '.' trigger
+        insta::assert_debug_snapshot!(check_trigger(
+            "class Foo { int field1; int field2; } class Bar<Foo foo> { int x = foo.$",
+            ".",
+        ));
+        // partial field name
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int field1; int field2; } class Bar<Foo foo> { int x = foo.f$",
+        ));
+        // nested field access
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int field1; int field2; } class Bar { Foo foo; } class Baz<Bar bar> { int x = bar.foo.f$",
+        ));
+        // derived class
+        insta::assert_debug_snapshot!(check(
+            "class Base { int base_field; } class Derived : Base { int derived_field; } class Bar<Derived bar> { int x = bar.b$"
+        ));
+        // list of records
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int field1; } class Bar<list<Foo> foos> { int x = foos[0].f$"
+        ));
+        // list of lists of records
+        insta::assert_debug_snapshot!(check(
+            "class Foo { int field1; } class Bar<list<list<Foo>> foos> { int x = foos[0][0].f$"
+        ));
+        // anonymous class
+        insta::assert_debug_snapshot!(check(
+            r#"
+class base1 { int field1; }
+class base2 { int field2; }
+class base3 { int field3; }
+class derived12: base1, base2;
+class derived123: base1, base2, base3;
+def derived12_val : derived12;
+def derived123_val : derived123;
+defvar val1 = !if(false, derived12_val, derived123_val);
+defvar val2 = val1.f$
+            "#
+        ));
     }
 }

@@ -1,0 +1,18 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(r#\"\nclass base1 { int field1; }\nclass base2 { int field2; }\nclass base3 { int field3; }\nclass derived12: base1, base2;\nclass derived123: base1, base2, base3;\ndef derived12_val : derived12;\ndef derived123_val : derived123;\ndefvar val1 = !if(false, derived12_val, derived123_val);\ndefvar val2 = val1.f$\n            \"#)"
+---
+[
+    CompletionItem {
+        label: "field1",
+        insert_text_snippet: None,
+        detail: "int",
+        kind: Field,
+    },
+    CompletionItem {
+        label: "field2",
+        insert_text_snippet: None,
+        detail: "int",
+        kind: Field,
+    },
+]

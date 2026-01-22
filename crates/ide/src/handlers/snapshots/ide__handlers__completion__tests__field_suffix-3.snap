@@ -1,0 +1,18 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(\"class Foo { int field1; int field2; } class Bar { Foo foo; } class Baz<Bar bar> { int x = bar.foo.f$\",)"
+---
+[
+    CompletionItem {
+        label: "field1",
+        insert_text_snippet: None,
+        detail: "int",
+        kind: Field,
+    },
+    CompletionItem {
+        label: "field2",
+        insert_text_snippet: None,
+        detail: "int",
+        kind: Field,
+    },
+]
