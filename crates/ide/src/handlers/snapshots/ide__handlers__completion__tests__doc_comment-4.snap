@@ -1,0 +1,17 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(r#\"\n// doc comment for multiclass\nmulticlass Foo;\ndefm bar : F$\n            \"#)"
+---
+[
+    CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo$0",
+        ),
+        detail: "multiclass",
+        documentation: Some(
+            "doc comment for multiclass",
+        ),
+        kind: Multiclass,
+    },
+]

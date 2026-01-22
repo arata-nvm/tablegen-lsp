@@ -1,0 +1,17 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(r#\"\n// doc comment for class\nclass Foo;\nclass Bar : F$\n            \"#)"
+---
+[
+    CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo$0",
+        ),
+        detail: "class",
+        documentation: Some(
+            "doc comment for class",
+        ),
+        kind: Class,
+    },
+]

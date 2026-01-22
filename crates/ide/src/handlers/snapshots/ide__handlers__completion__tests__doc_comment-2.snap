@@ -1,0 +1,29 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(r#\"\n// doc comment for def\ndef foo;\ndefvar tmp = f$\n            \"#)"
+---
+[
+    CompletionItem {
+        label: "false",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+    },
+    CompletionItem {
+        label: "foo",
+        insert_text_snippet: None,
+        detail: "def",
+        documentation: Some(
+            "doc comment for def",
+        ),
+        kind: Def,
+    },
+    CompletionItem {
+        label: "true",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+    },
+]

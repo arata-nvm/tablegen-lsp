@@ -1,12 +1,9 @@
-use syntax::SyntaxNode;
-use syntax::parser::TextRange;
-use syntax::syntax_kind::SyntaxKind;
-
 use crate::file_system::{FilePosition, FileRange, SourceUnitId};
 use crate::index::IndexDatabase;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
 use crate::symbol_map::{SymbolMap, record::AsRecordData};
+use crate::utils;
 
 #[derive(Debug)]
 pub struct Hover {
@@ -25,7 +22,7 @@ pub fn exec(
     let (signature, define_loc) = extract_symbol_signature(symbol_map, pos)?;
 
     let parse = db.parse(define_loc.file);
-    let symbol_doc = extract_doc_comments(parse.syntax_node(), define_loc.range);
+    let symbol_doc = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
 
     Some(Hover {
         signature,
@@ -89,54 +86,6 @@ fn extract_symbol_signature(
     let define_loc = symbol.define_loc();
 
     Some((symbol_info, *define_loc))
-}
-
-fn extract_doc_comments(root: SyntaxNode, range: TextRange) -> Option<String> {
-    let id_node = root.covering_element(range);
-    let identifier_node = match id_node.kind() {
-        SyntaxKind::Id => id_node.parent()?,
-        SyntaxKind::Identifier => id_node.into_node()?,
-        _ => return None,
-    };
-
-    // Class or FieldDef or Defset or InnerValue
-    let mut parent_node = identifier_node.parent()?;
-
-    if parent_node.kind() == SyntaxKind::InnerValue {
-        let value_node = parent_node.parent()?;
-        // Def
-        parent_node = value_node.parent()?;
-    }
-
-    let mut cur_token = parent_node.first_token()?;
-    let mut comments = Vec::new();
-    loop {
-        cur_token = match cur_token.prev_token() {
-            Some(t) => t,
-            None => break,
-        };
-        if cur_token.kind() != SyntaxKind::Whitespace || cur_token.text().matches('\n').count() != 1
-        {
-            break;
-        }
-
-        cur_token = match cur_token.prev_token() {
-            Some(t) => t,
-            None => break,
-        };
-        if cur_token.kind() != SyntaxKind::LineComment {
-            break;
-        }
-
-        let comment = cur_token.text();
-        if !comment.starts_with("//") {
-            break;
-        }
-        comments.push(comment.trim_start_matches('/').trim_start().to_string());
-    }
-
-    let doc = comments.into_iter().rev().collect::<Vec<_>>().join("\n");
-    if doc.is_empty() { None } else { Some(doc) }
 }
 
 #[cfg(test)]

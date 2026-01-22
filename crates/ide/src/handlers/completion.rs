@@ -10,6 +10,7 @@ use crate::{
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
     symbol_map::{SymbolMap, record::AsRecordData, typ::Type},
+    utils,
 };
 use std::collections::HashSet;
 
@@ -66,7 +67,7 @@ pub fn exec(
     let token_at_pos = root_node.token_at_offset(pos.position).left_biased()?;
     let node_at_pos = token_at_pos.parent()?;
 
-    let mut ctx = CompletionContext::new();
+    let mut ctx = CompletionContext::new(db);
 
     if trigger_char == Some("!".into()) {
         ctx.complete_bang_operators();
@@ -212,13 +213,17 @@ fn contains_inclusive(range: syntax::parser::TextRange, pos: syntax::parser::Tex
     range.start() <= pos && pos <= range.end()
 }
 
-struct CompletionContext {
+struct CompletionContext<'a> {
     items: Vec<CompletionItem>,
+    db: &'a dyn IndexDatabase,
 }
 
-impl CompletionContext {
-    fn new() -> Self {
-        Self { items: Vec::new() }
+impl<'a> CompletionContext<'a> {
+    fn new(db: &'a dyn IndexDatabase) -> Self {
+        Self {
+            items: Vec::new(),
+            db,
+        }
     }
 
     fn finish(self) -> Vec<CompletionItem> {
@@ -307,6 +312,7 @@ impl CompletionContext {
             if exclude.contains(class.name()) {
                 continue;
             }
+
             let arg_snippet = class
                 .iter_template_arg()
                 .enumerate()
@@ -322,12 +328,18 @@ impl CompletionContext {
                     format!("<{arg_snippet}>")
                 }
             );
+
+            let define_loc = class.define_loc();
+            let parse = self.db.parse(define_loc.file);
+            let documentation = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
+
             let mut item = CompletionItem::new_simple(
                 class.name().clone(),
                 "class",
                 CompletionItemKind::Class,
             );
             item.insert_text_snippet = Some(snippet);
+            item.documentation = documentation;
             self.items.push(item);
         }
     }
@@ -338,6 +350,7 @@ impl CompletionContext {
             if exclude.contains(&multiclass.name) {
                 continue;
             }
+
             let arg_snippet = multiclass
                 .iter_template_arg()
                 .enumerate()
@@ -353,12 +366,18 @@ impl CompletionContext {
                     format!("<{arg_snippet}>")
                 }
             );
+
+            let define_loc = &multiclass.define_loc;
+            let parse = self.db.parse(define_loc.file);
+            let documentation = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
+
             let mut item = CompletionItem::new_simple(
                 multiclass.name.clone(),
                 "multiclass",
                 CompletionItemKind::Multiclass,
             );
             item.insert_text_snippet = Some(snippet);
+            item.documentation = documentation;
             self.items.push(item);
         }
     }
@@ -367,11 +386,18 @@ impl CompletionContext {
         let class = symbol_map.class(class_id);
         for arg_id in class.iter_template_arg() {
             let arg = symbol_map.template_arg(arg_id);
-            self.items.push(CompletionItem::new_simple(
+
+            let define_loc = &arg.define_loc;
+            let parse = self.db.parse(define_loc.file);
+            let documentation = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
+
+            let mut item = CompletionItem::new_simple(
                 arg.name.clone(),
                 arg.typ.to_string(),
                 CompletionItemKind::TemplateArgument,
-            ));
+            );
+            item.documentation = documentation;
+            self.items.push(item);
         }
     }
 
@@ -388,11 +414,19 @@ impl CompletionContext {
                 if exclude_field_name.is_some_and(|name| name == field.name.as_str()) {
                     continue;
                 }
-                self.items.push(CompletionItem::new_simple(
+
+                let define_loc = &field.define_loc;
+                let parse = self.db.parse(define_loc.file);
+                let documentation =
+                    utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
+
+                let mut item = CompletionItem::new_simple(
                     field.name.clone(),
                     field.typ.to_string(),
                     CompletionItemKind::Field,
-                ));
+                );
+                item.documentation = documentation;
+                self.items.push(item);
             }
         }
     }
@@ -400,22 +434,33 @@ impl CompletionContext {
     fn complete_defs(&mut self, symbol_map: &SymbolMap) {
         for def_id in symbol_map.iter_def() {
             let def = symbol_map.def(def_id);
-            self.items.push(CompletionItem::new_simple(
-                def.name().clone(),
-                "def",
-                CompletionItemKind::Def,
-            ));
+
+            let define_loc = def.define_loc();
+            let parse = self.db.parse(define_loc.file);
+            let documentation = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
+
+            let mut item =
+                CompletionItem::new_simple(def.name().clone(), "def", CompletionItemKind::Def);
+            item.documentation = documentation;
+            self.items.push(item);
         }
     }
 
     fn complete_defsets(&mut self, symbol_map: &SymbolMap) {
         for defset_id in symbol_map.iter_defset() {
             let defset = symbol_map.defset(defset_id);
-            self.items.push(CompletionItem::new_simple(
+
+            let define_loc = &defset.define_loc;
+            let parse = self.db.parse(define_loc.file);
+            let documentation = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
+
+            let mut item = CompletionItem::new_simple(
                 defset.name.clone(),
                 defset.typ.to_string(),
                 CompletionItemKind::Defset,
-            ));
+            );
+            item.documentation = documentation;
+            self.items.push(item);
         }
     }
 
@@ -584,6 +629,42 @@ mod tests {
             "defvar outer = 1; foreach i = 0...2 in { defvar inner = outer$ }"
         ));
         insta::assert_debug_snapshot!(check("class Foo { defvar hoge = 1; int x = h$"));
+    }
+
+    #[test]
+    fn doc_comment() {
+        insta::assert_debug_snapshot!(check(
+            r#"
+// doc comment for class
+class Foo;
+class Bar : F$
+            "#
+        ));
+        insta::assert_debug_snapshot!(check(
+            r#"
+// doc comment for def
+def foo;
+defvar tmp = f$
+            "#
+        ));
+        insta::assert_debug_snapshot!(check(
+            r#"
+class Foo {
+    // doc comment for field
+    int field1;
+}
+class Bar<Foo foo> {
+    int x = foo.f$
+}
+            "#
+        ));
+        insta::assert_debug_snapshot!(check(
+            r#"
+// doc comment for multiclass
+multiclass Foo;
+defm bar : F$
+            "#
+        ));
     }
 
     #[test]
