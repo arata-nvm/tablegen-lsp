@@ -4,6 +4,15 @@ expression: "check(\"class Foo<int a = t$\")"
 ---
 [
     CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo<${1}>$0",
+        ),
+        detail: "class",
+        documentation: None,
+        kind: Class,
+    },
+    CompletionItem {
         label: "a",
         insert_text_snippet: None,
         detail: "int",

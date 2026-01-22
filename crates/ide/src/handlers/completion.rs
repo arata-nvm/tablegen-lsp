@@ -87,7 +87,7 @@ pub fn exec(
 
     if node_at_pos.ancestor_within::<ast::Type>(2).is_some() {
         ctx.complete_primitive_types();
-        ctx.complete_classes(symbol_map, &HashSet::new());
+        ctx.complete_classes(symbol_map, &HashSet::new(), false);
         return Some(ctx.finish());
     }
 
@@ -96,7 +96,7 @@ pub fn exec(
         if node_at_pos.ancestor::<ast::Defm>().is_some() {
             ctx.complete_multiclasses(symbol_map, &exclude);
         } else {
-            ctx.complete_classes(symbol_map, &exclude);
+            ctx.complete_classes(symbol_map, &exclude, false);
         }
         return Some(ctx.finish());
     }
@@ -124,6 +124,7 @@ pub fn exec(
 
     if node_at_pos.ancestor_within::<ast::InnerValue>(2).is_some() {
         ctx.complete_primitive_values();
+        ctx.complete_classes(symbol_map, &HashSet::new(), true);
         ctx.complete_defs(symbol_map);
         ctx.complete_defsets(symbol_map);
 
@@ -362,7 +363,12 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    fn complete_classes(&mut self, symbol_map: &SymbolMap, exclude: &HashSet<EcoString>) {
+    fn complete_classes(
+        &mut self,
+        symbol_map: &SymbolMap,
+        exclude: &HashSet<EcoString>,
+        need_brackets: bool,
+    ) {
         for class_id in symbol_map.iter_class() {
             let class = symbol_map.class(class_id);
             if exclude.contains(class.name()) {
@@ -375,15 +381,11 @@ impl<'a> CompletionContext<'a> {
                 .map(|(i, _)| format!("${{{}}}", i + 1))
                 .collect::<Vec<_>>()
                 .join(", ");
-            let snippet = format!(
-                "{}{}$0",
-                class.name(),
-                if arg_snippet.is_empty() {
-                    "".to_string()
-                } else {
-                    format!("<{arg_snippet}>")
-                }
-            );
+            let snippet = if !arg_snippet.is_empty() || need_brackets {
+                format!("{name}<{arg_snippet}>$0", name = class.name())
+            } else {
+                format!("{name}$0", name = class.name())
+            };
 
             let define_loc = class.define_loc();
             let parse = self.db.parse(define_loc.file);

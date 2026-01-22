@@ -4,6 +4,24 @@ expression: "check(\"class Base { int base_field; } class Derived : Base { int d
 ---
 [
     CompletionItem {
+        label: "Base",
+        insert_text_snippet: Some(
+            "Base<>$0",
+        ),
+        detail: "class",
+        documentation: None,
+        kind: Class,
+    },
+    CompletionItem {
+        label: "Derived",
+        insert_text_snippet: Some(
+            "Derived<>$0",
+        ),
+        detail: "class",
+        documentation: None,
+        kind: Class,
+    },
+    CompletionItem {
         label: "base_field",
         insert_text_snippet: None,
         detail: "int",

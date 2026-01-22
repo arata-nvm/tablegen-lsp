@@ -4,6 +4,15 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
 ---
 [
     CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo<>$0",
+        ),
+        detail: "class",
+        documentation: None,
+        kind: Class,
+    },
+    CompletionItem {
         label: "false",
         insert_text_snippet: None,
         detail: "",
