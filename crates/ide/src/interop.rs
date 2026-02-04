@@ -70,6 +70,7 @@ pub struct TblgenSymbolTable {
 pub struct TblgenDef {
     pub name: EcoString,
     pub define_loc: FilePosition,
+    pub direct_super_classes: Vec<EcoString>,
 }
 
 impl TblgenSymbolTable {
@@ -106,9 +107,16 @@ impl TblgenSymbolTable {
                 continue;
             };
 
+            let direct_super_classes = record
+                .direct_super_classes()
+                .filter_map(|cls| cls.name().ok())
+                .map(EcoString::from)
+                .collect::<Vec<_>>();
+
             let def = TblgenDef {
                 name: EcoString::from(name),
                 define_loc: define_loc_original,
+                direct_super_classes,
             };
 
             defs.entry(define_loc_instantiated)

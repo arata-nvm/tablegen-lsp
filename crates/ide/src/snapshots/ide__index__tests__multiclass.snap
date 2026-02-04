@@ -34,7 +34,7 @@ multiclass ChildMulticlass {
 def placeholder : BaseReg, {
 }
 multiclass OuterMulticlass {
-defm placeholder : ;
+defm placeholder : SimpleMulticlass, ;
 multiclass MulticlassWithDefvar {
 def placeholder : Instruction, {
 }

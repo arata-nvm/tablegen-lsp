@@ -44,7 +44,7 @@ def inst2_rr : Instruction, {
   string Name;
 }
 multiclass OuterMulticlass {
-defm placeholder : ;
+defm placeholder : SimpleMulticlass, ;
 def outer_inst_inner_variant1 : BaseReg, {
 }
 def outer_inst_inner_variant2 : BaseReg, {

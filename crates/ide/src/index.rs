@@ -385,28 +385,52 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
     let Some(parent_class_list) = defm.parent_class_list() else {
         return;
     };
-    let superclass_locs = parent_class_list
-        .classes()
-        .map(|class| class.syntax().text_range().start());
 
-    let mut defs = Vec::new();
-    for super_class_loc in superclass_locs {
-        let super_class_pos = FilePosition::new(ctx.current_file_id(), super_class_loc);
-        defs.extend(ctx.get_tblgen_defs_at(&super_class_pos).iter().cloned());
-    }
+    let current_file_id = ctx.current_file_id();
 
-    if defs.is_empty() {
+    let (multiclass_parents, _) = split_parent_class_list(&parent_class_list, ctx);
+    if multiclass_parents.is_empty() {
+        ctx.error_by_syntax(
+            parent_class_list.syntax(),
+            "defm requires at least one multiclass parent",
+        );
         return;
     }
 
+    // multiclassの参照位置からtblgen defsを取得する
+    let mut tblgen_defs = Vec::new();
+    for (class_ref, _) in &multiclass_parents {
+        let super_class_loc = class_ref.syntax().text_range().start();
+        let super_class_pos = FilePosition::new(current_file_id, super_class_loc);
+        let new_tblgen_defs = ctx.get_tblgen_defs_at(&super_class_pos);
+        tblgen_defs.extend(new_tblgen_defs.iter().cloned());
+    }
+
+    if tblgen_defs.is_empty() {
+        return;
+    }
+
+    // tblgen defsからDefを作成・登録
     let mut def_ids = Vec::new();
-    for def in defs {
-        let Some(base_def_id) = ctx.get_multiclass_def_at(&def.define_loc) else {
+    for tblgen_def in tblgen_defs {
+        let Some(base_def_id) = ctx.get_multiclass_def_at(&tblgen_def.define_loc) else {
             continue;
         };
         let base_def = ctx.symbol_map.def(base_def_id);
 
-        let def = base_def.clone_with(def.name.clone(), define_loc.clone());
+        // tblgenから取得した名前でDefを作成
+        let mut def = base_def.clone_with(tblgen_def.name.clone(), define_loc.clone());
+
+        // tblgenから取得した親クラスをDefに追加
+        for parent_name in &tblgen_def.direct_super_classes {
+            if let Some(class_id) = ctx.symbol_map.find_class(parent_name)
+                && !def.is_subclass_of(&ctx.symbol_map, class_id)
+            {
+                def.add_parent(class_id);
+            }
+        }
+
+        // Defを登録
         let def_id = match ctx.symbol_map.add_def(def, defm.name().is_some()) {
             Ok(def_id) => def_id,
             Err(err) => {
@@ -718,26 +742,66 @@ impl IndexStatement for ast::ParentClassList {
                     ctx.error_by_syntax(class_ref.syntax(), e.to_string());
                 }
             }
+        } else if let Some(defm_id) = ctx.scopes.current_defm_id() {
+            let (multiclass_parents, _) = split_parent_class_list(self, ctx);
+            if multiclass_parents.is_empty() {
+                ctx.error_by_syntax(
+                    self.syntax(),
+                    "defm requires at least one multiclass parent",
+                );
+                return;
+            }
+
+            // 継承するmulticlassをDefmに追加
+            for (_, parent_multiclass_id) in &multiclass_parents {
+                let defm = ctx.symbol_map.defm_mut(defm_id);
+                defm.add_parent(*parent_multiclass_id);
+            }
+
+            // 継承するclassはtblgenから取得するので、ここでは何もしない
         } else if let Some(multiclass_id) = ctx.scopes.current_multiclass_id() {
             for class_ref in self.classes() {
-                if let Some(parent_multiclass_id) = resolve_class_ref_as_multiclass(&class_ref, ctx)
+                if let Some(parent_multiclass_id) =
+                    resolve_class_ref_as_multiclass(&class_ref, ctx, true)
                 {
                     let multiclass = ctx.symbol_map.multiclass_mut(multiclass_id);
                     multiclass.add_parent(parent_multiclass_id);
-                }
-            }
-        } else if let Some(defm_id) = ctx.scopes.current_defm_id() {
-            for class_ref in self.classes() {
-                if let Some(parent_multiclass_id) = resolve_class_ref_as_multiclass(&class_ref, ctx)
-                {
-                    let defm = ctx.symbol_map.defm_mut(defm_id);
-                    defm.add_parent(parent_multiclass_id);
                 }
             }
         } else {
             tracing::warn!("parent class list outside of record or multiclass");
         }
     }
+}
+
+fn split_parent_class_list(
+    list: &ast::ParentClassList,
+    ctx: &mut IndexCtx,
+) -> (
+    Vec<(ast::ClassRef, MulticlassId)>,
+    Vec<(ast::ClassRef, ClassId)>,
+) {
+    let mut classes = list.classes().peekable();
+
+    let mut multiclass_parents = Vec::new();
+    while let Some(class_ref) = classes.peek() {
+        let Some(multiclass_id) = resolve_class_ref_as_multiclass(class_ref, ctx, false) else {
+            break;
+        };
+        multiclass_parents.push((
+            classes.next().expect("peeked class_ref should be Some"),
+            multiclass_id,
+        ));
+    }
+
+    let mut class_parents = Vec::new();
+    while let Some(class_ref) = classes.next() {
+        if let Some(class_id) = resolve_class_ref_as_class(&class_ref, ctx) {
+            class_parents.push((class_ref, class_id));
+        }
+    }
+
+    (multiclass_parents, class_parents)
 }
 
 fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> Option<ClassId> {
@@ -773,10 +837,13 @@ fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> 
 fn resolve_class_ref_as_multiclass(
     class_ref: &ast::ClassRef,
     ctx: &mut IndexCtx,
+    emit_error: bool,
 ) -> Option<MulticlassId> {
     let (name, reference_loc) = common::identifier(&class_ref.name()?, ctx)?;
     let Some(multiclass_id) = ctx.symbol_map.find_multiclass(&name) else {
-        ctx.error_by_filerange(reference_loc, format!("multiclass not found: {name}"));
+        if emit_error {
+            ctx.error_by_filerange(reference_loc, format!("multiclass not found: {name}"));
+        }
         return None;
     };
     ctx.symbol_map.add_reference(multiclass_id, reference_loc);
@@ -1559,6 +1626,19 @@ class Bar;
             "#,
         );
         let index = db.index(f.source_unit_id());
+        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+    }
+
+    #[test]
+    fn defm_parent_class() {
+        let (db, f) = tests::load_single_file("testdata/defm_parent_class.td");
+        let index = db.index(f.source_unit_id());
+        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
+        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+
+        let (db, f) = tests::load_single_file_with_tblgen("testdata/defm_parent_class.td");
+        let index = db.index(f.source_unit_id());
+        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
         insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
     }
 }
