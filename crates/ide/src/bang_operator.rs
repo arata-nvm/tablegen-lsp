@@ -14,10 +14,6 @@ pub fn get_metadata_for_syntax_kind(kind: SyntaxKind) -> Option<&'static BangOpe
     OPS.iter().find(|meta| meta.syntax_kind == kind)
 }
 
-pub fn get_metadata_for_name(name: &str) -> Option<&'static BangOperatorMetadata> {
-    OPS.iter().find(|meta| meta.name == name)
-}
-
 // ref: https://github.com/llvm/llvm-project/blob/a69cddef43f64d5307c0d5f2f01e5176ac05729a/llvm/docs/TableGen/ProgRef.rst
 pub const OPS: &[BangOperatorMetadata] = &[
     BangOperatorMetadata {
