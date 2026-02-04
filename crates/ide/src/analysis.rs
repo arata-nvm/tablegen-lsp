@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use salsa::ParallelDatabase;
@@ -21,9 +22,18 @@ use crate::index::{Index, IndexDatabase};
 use crate::interop::TblgenParseResult;
 use crate::line_index::LineIndex;
 
-#[derive(Default)]
 pub struct AnalysisHost {
     db: RootDatabase,
+    initialized_tblgen_units: HashSet<SourceUnitId>,
+}
+
+impl Default for AnalysisHost {
+    fn default() -> Self {
+        Self {
+            db: RootDatabase::default(),
+            initialized_tblgen_units: HashSet::new(),
+        }
+    }
 }
 
 impl AnalysisHost {
@@ -61,8 +71,13 @@ impl AnalysisHost {
         let id = SourceUnitId::from_root_file(root_file);
         let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
         self.db.set_source_unit(id, Arc::new(source_unit));
-        self.db.set_tblgen_diagnostics(id, None);
-        self.db.set_tblgen_symbol_table(id, None);
+
+        // 存在しないデータにアクセスを試みるとクラッシュするので、初回のみNoneで初期化する
+        if !self.initialized_tblgen_units.contains(&id) {
+            self.db.set_tblgen_diagnostics(id, None);
+            self.db.set_tblgen_symbol_table(id, None);
+            self.initialized_tblgen_units.insert(id);
+        }
         id
     }
 }
