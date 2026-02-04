@@ -9,6 +9,12 @@ expression: "check(\"class Foo { int Bar; int Baz; } class Foo2 : Foo { let B$\"
         detail: "int",
         documentation: None,
         kind: Field,
+        sort_text: None,
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "Baz",
@@ -16,5 +22,11 @@ expression: "check(\"class Foo { int Bar; int Baz; } class Foo2 : Foo { let B$\"
         detail: "int",
         documentation: None,
         kind: Field,
+        sort_text: None,
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
     },
 ]

@@ -11,5 +11,7 @@ expression: "check(\"multiclass Foo; defm bar : F$\")"
         detail: "multiclass",
         documentation: None,
         kind: Multiclass,
+        sort_text: None,
+        item_type: None,
     },
 ]

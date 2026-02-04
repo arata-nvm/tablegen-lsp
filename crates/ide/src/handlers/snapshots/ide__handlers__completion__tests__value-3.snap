@@ -11,6 +11,20 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         detail: "class",
         documentation: None,
         kind: Class,
+        sort_text: None,
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "Foo",
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "false",
@@ -18,6 +32,12 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "foo",
@@ -25,6 +45,23 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         detail: "list<Foo>",
         documentation: None,
         kind: Defset,
+        sort_text: None,
+        item_type: Some(
+            List {
+                elm: Record {
+                    data: DefinedRecord(
+                        Class(
+                            Id {
+                                idx: 0,
+                            },
+                        ),
+                    ),
+                    name: "Foo",
+                    _priv: (),
+                },
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "true",
@@ -32,5 +69,11 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
 ]

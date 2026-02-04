@@ -175,6 +175,7 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
             },
         ));
     }
+    lsp_item.sort_text = item.sort_text;
     lsp_item
 }
 

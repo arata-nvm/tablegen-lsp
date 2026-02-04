@@ -11,5 +11,19 @@ expression: "check(\"class Base1; class Base2; class Derived : Base1, B$;\")"
         detail: "class",
         documentation: None,
         kind: Class,
+        sort_text: None,
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 1,
+                        },
+                    ),
+                ),
+                name: "Base2",
+                _priv: (),
+            },
+        ),
     },
 ]

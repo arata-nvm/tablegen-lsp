@@ -11,6 +11,20 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "class",
         documentation: None,
         kind: Class,
+        sort_text: None,
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 1,
+                        },
+                    ),
+                ),
+                name: "Bar",
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "Foo",
@@ -20,6 +34,20 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "class",
         documentation: None,
         kind: Class,
+        sort_text: None,
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "Foo",
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "bit",
@@ -27,6 +55,8 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "",
         documentation: None,
         kind: Type,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "bits",
@@ -36,6 +66,8 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "",
         documentation: None,
         kind: Type,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "code",
@@ -43,6 +75,8 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "",
         documentation: None,
         kind: Type,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "dag",
@@ -50,6 +84,8 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "",
         documentation: None,
         kind: Type,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "int",
@@ -57,6 +93,8 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "",
         documentation: None,
         kind: Type,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "list",
@@ -66,6 +104,8 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "",
         documentation: None,
         kind: Type,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "string",
@@ -73,5 +113,7 @@ expression: "check(\"class Foo; class Bar<F$\")"
         detail: "",
         documentation: None,
         kind: Type,
+        sort_text: None,
+        item_type: None,
     },
 ]

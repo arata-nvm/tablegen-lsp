@@ -9,6 +9,12 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "i",
@@ -16,6 +22,8 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         detail: "",
         documentation: None,
         kind: Variable,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "outer",
@@ -23,6 +31,8 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         detail: "",
         documentation: None,
         kind: Variable,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "true",
@@ -30,5 +40,11 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
 ]

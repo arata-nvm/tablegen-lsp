@@ -4,20 +4,19 @@ expression: "check(\"class Foo { int field1; int field2 = f$\")"
 ---
 [
     CompletionItem {
-        label: "Foo",
-        insert_text_snippet: Some(
-            "Foo<>$0",
-        ),
-        detail: "class",
-        documentation: None,
-        kind: Class,
-    },
-    CompletionItem {
         label: "false",
         insert_text_snippet: None,
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "field1",
@@ -25,6 +24,14 @@ expression: "check(\"class Foo { int field1; int field2 = f$\")"
         detail: "int",
         documentation: None,
         kind: Field,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "true",
@@ -32,5 +39,38 @@ expression: "check(\"class Foo { int field1; int field2 = f$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo<>$0",
+        ),
+        detail: "class",
+        documentation: None,
+        kind: Class,
+        sort_text: Some(
+            "1",
+        ),
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "Foo",
+                _priv: (),
+            },
+        ),
     },
 ]

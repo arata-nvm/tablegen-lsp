@@ -11,5 +11,13 @@ expression: "check(r#\"\nclass Foo {\n    // doc comment for field\n    int fiel
             "doc comment for field",
         ),
         kind: Field,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
     },
 ]

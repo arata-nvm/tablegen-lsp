@@ -9,6 +9,12 @@ expression: "check(r#\"\nclass base1 { int field1; }\nclass base2 { int field2; 
         detail: "int",
         documentation: None,
         kind: Field,
+        sort_text: None,
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "field2",
@@ -16,5 +22,11 @@ expression: "check(r#\"\nclass base1 { int field1; }\nclass base2 { int field2; 
         detail: "int",
         documentation: None,
         kind: Field,
+        sort_text: None,
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
     },
 ]

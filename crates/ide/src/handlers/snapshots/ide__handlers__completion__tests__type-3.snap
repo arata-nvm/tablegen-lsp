@@ -11,5 +11,19 @@ expression: "check(\"class Foo<int a>; class Bar : F$;\")"
         detail: "class",
         documentation: None,
         kind: Class,
+        sort_text: None,
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "Foo",
+                _priv: (),
+            },
+        ),
     },
 ]

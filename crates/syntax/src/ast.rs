@@ -240,6 +240,9 @@ asts! {
         name: Identifier,
         range_list: RangeList,
         value: Value,
+        pub fn has_equal(&self) -> bool {
+            self.0.children_with_tokens().any(|token| token.kind() == SyntaxKind::Equal)
+        }
     };
     Type [
         BitType,

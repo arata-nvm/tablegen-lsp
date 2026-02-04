@@ -9,6 +9,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "class",
@@ -16,6 +18,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "def",
@@ -23,6 +27,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "defm",
@@ -30,6 +36,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "defset",
@@ -37,6 +45,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "deftype",
@@ -44,6 +54,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "defvar",
@@ -51,6 +63,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "dump",
@@ -58,6 +72,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "foreach",
@@ -65,6 +81,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "if",
@@ -72,6 +90,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "include",
@@ -79,6 +99,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "let",
@@ -86,6 +108,8 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
     CompletionItem {
         label: "multiclass",
@@ -93,5 +117,7 @@ expression: "check(\"c$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: None,
     },
 ]

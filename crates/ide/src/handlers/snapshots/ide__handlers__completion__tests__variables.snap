@@ -9,6 +9,12 @@ expression: "check(\"defvar x = 10; defvar y = x$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "true",
@@ -16,6 +22,12 @@ expression: "check(\"defvar x = 10; defvar y = x$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "x",
@@ -23,5 +35,7 @@ expression: "check(\"defvar x = 10; defvar y = x$\")"
         detail: "",
         documentation: None,
         kind: Variable,
+        sort_text: None,
+        item_type: None,
     },
 ]

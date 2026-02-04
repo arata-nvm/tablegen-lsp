@@ -4,6 +4,51 @@ expression: "check(\"class Foo { int field1; } class Bar : Foo { int field2 = f$
 ---
 [
     CompletionItem {
+        label: "false",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
+        label: "field1",
+        insert_text_snippet: None,
+        detail: "int",
+        documentation: None,
+        kind: Field,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
+        label: "true",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
         label: "Bar",
         insert_text_snippet: Some(
             "Bar<>$0",
@@ -11,6 +56,22 @@ expression: "check(\"class Foo { int field1; } class Bar : Foo { int field2 = f$
         detail: "class",
         documentation: None,
         kind: Class,
+        sort_text: Some(
+            "1",
+        ),
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 1,
+                        },
+                    ),
+                ),
+                name: "Bar",
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "Foo",
@@ -20,26 +81,21 @@ expression: "check(\"class Foo { int field1; } class Bar : Foo { int field2 = f$
         detail: "class",
         documentation: None,
         kind: Class,
-    },
-    CompletionItem {
-        label: "false",
-        insert_text_snippet: None,
-        detail: "",
-        documentation: None,
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "field1",
-        insert_text_snippet: None,
-        detail: "int",
-        documentation: None,
-        kind: Field,
-    },
-    CompletionItem {
-        label: "true",
-        insert_text_snippet: None,
-        detail: "",
-        documentation: None,
-        kind: Keyword,
+        sort_text: Some(
+            "1",
+        ),
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "Foo",
+                _priv: (),
+            },
+        ),
     },
 ]

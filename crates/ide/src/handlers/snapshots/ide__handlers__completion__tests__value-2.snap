@@ -9,6 +9,12 @@ expression: "check(\"def foo; defvar tmp = f$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "foo",
@@ -16,6 +22,20 @@ expression: "check(\"def foo; defvar tmp = f$\")"
         detail: "def",
         documentation: None,
         kind: Def,
+        sort_text: None,
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Def(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "foo",
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "true",
@@ -23,5 +43,11 @@ expression: "check(\"def foo; defvar tmp = f$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: None,
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
 ]

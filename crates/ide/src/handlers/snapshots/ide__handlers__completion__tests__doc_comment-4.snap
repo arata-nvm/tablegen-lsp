@@ -13,5 +13,7 @@ expression: "check(r#\"\n// doc comment for multiclass\nmulticlass Foo;\ndefm ba
             "doc comment for multiclass",
         ),
         kind: Multiclass,
+        sort_text: None,
+        item_type: None,
     },
 ]

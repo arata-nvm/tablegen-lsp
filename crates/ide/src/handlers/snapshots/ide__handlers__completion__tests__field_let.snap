@@ -9,5 +9,11 @@ expression: "check(\"class Foo { int Bar; let B$\")"
         detail: "int",
         documentation: None,
         kind: Field,
+        sort_text: None,
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
     },
 ]

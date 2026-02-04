@@ -8,7 +8,12 @@ use crate::{
     bang_operator,
     file_system::{FilePosition, SourceUnitId},
     index::IndexDatabase,
-    symbol_map::{SymbolMap, record::AsRecordData, typ::Type},
+    symbol_map::{
+        SymbolMap,
+        record::{AsRecordData, RecordFieldId},
+        template_arg::TemplateArgumentId,
+        typ::Type,
+    },
     utils,
 };
 use crate::{
@@ -17,13 +22,15 @@ use crate::{
 };
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct CompletionItem {
     pub label: String,
     pub insert_text_snippet: Option<String>,
     pub detail: String,
     pub documentation: Option<String>,
     pub kind: CompletionItemKind,
+    pub sort_text: Option<String>,
+    pub(crate) item_type: Option<Type>,
 }
 
 impl CompletionItem {
@@ -38,7 +45,14 @@ impl CompletionItem {
             detail: detail.into(),
             documentation: None,
             kind,
+            sort_text: None,
+            item_type: None,
         }
+    }
+
+    fn with_type(mut self, typ: Type) -> Self {
+        self.item_type = Some(typ);
+        self
     }
 }
 
@@ -74,7 +88,7 @@ pub fn exec(
 
     if trigger_char == Some("!".into()) {
         ctx.complete_bang_operators();
-        return Some(ctx.finish());
+        return Some(ctx.finish(symbol_map));
     }
 
     if node_at_pos
@@ -82,13 +96,13 @@ pub fn exec(
         .is_some()
     {
         ctx.complete_toplevel_keywords();
-        return Some(ctx.finish());
+        return Some(ctx.finish(symbol_map));
     }
 
     if node_at_pos.ancestor_within::<ast::Type>(2).is_some() {
         ctx.complete_primitive_types();
         ctx.complete_classes(symbol_map, &HashSet::new(), false);
-        return Some(ctx.finish());
+        return Some(ctx.finish(symbol_map));
     }
 
     if node_at_pos.ancestor_within::<ast::ClassRef>(2).is_some() {
@@ -98,7 +112,7 @@ pub fn exec(
         } else {
             ctx.complete_classes(symbol_map, &exclude, false);
         }
-        return Some(ctx.finish());
+        return Some(ctx.finish(symbol_map));
     }
 
     if let Some(field_let) = node_at_pos.ancestor::<ast::FieldLet>()
@@ -106,25 +120,29 @@ pub fn exec(
     {
         if let Some(class_id) = find_class(&node_at_pos, symbol_map) {
             ctx.complete_record_fields(symbol_map, &[class_id.into()], None);
-        }
-
-        if let Some(def_id) = find_def(&node_at_pos, symbol_map) {
+        } else if let Some(def_id) = find_def(&node_at_pos, symbol_map) {
             ctx.complete_record_fields(symbol_map, &[def_id.into()], None);
         } else if let Some(parents) = find_def_parent_classes(&node_at_pos, symbol_map) {
             ctx.complete_record_fields(symbol_map, &parents, None);
         }
 
-        return Some(ctx.finish());
+        return Some(ctx.finish(symbol_map));
     }
 
     if node_at_pos.ancestor::<ast::FieldSuffix>().is_some() {
         let typ = find_typ_of_field_suffix(&node_at_pos, resolved_types)?;
         let record_ids = typ.record_to_ids()?;
+        if let Some(expected_type) = find_expected_type_for_inner_value(&node_at_pos, symbol_map) {
+            ctx.set_expected_type(expected_type);
+        }
         ctx.complete_record_fields(symbol_map, &record_ids, None);
-        return Some(ctx.finish());
+        return Some(ctx.finish(symbol_map));
     }
 
     if node_at_pos.ancestor_within::<ast::InnerValue>(2).is_some() {
+        if let Some(expected_type) = find_expected_type_for_inner_value(&node_at_pos, symbol_map) {
+            ctx.set_expected_type(expected_type);
+        }
         ctx.complete_primitive_values();
         ctx.complete_classes(symbol_map, &HashSet::new(), true);
         ctx.complete_defs(symbol_map);
@@ -148,10 +166,10 @@ pub fn exec(
             ctx.complete_record_fields(symbol_map, &parents, exclude);
         }
 
-        return Some(ctx.finish());
+        return Some(ctx.finish(symbol_map));
     }
 
-    Some(ctx.finish())
+    Some(ctx.finish(symbol_map))
 }
 
 fn find_class(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<ClassId> {
@@ -169,6 +187,34 @@ fn find_def(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<DefId> {
     };
     let name = ident.value()?;
     symbol_map.find_def(&name)
+}
+
+fn find_template_arg(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<TemplateArgumentId> {
+    let template_arg_decl = node.ancestor::<ast::TemplateArgDecl>()?;
+    let template_arg_name = template_arg_decl.name()?.value()?;
+    let class_id = find_class(node, symbol_map)?;
+    let class = symbol_map.class(class_id);
+    class.find_template_arg(&template_arg_name)
+}
+
+fn find_record_field(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<RecordFieldId> {
+    let field_name = if let Some(field_def) = node.ancestor::<ast::FieldDef>() {
+        field_def.name()?.value()?
+    } else if let Some(field_let) = node.ancestor::<ast::FieldLet>() {
+        field_let.name()?.value()?
+    } else {
+        return None;
+    };
+
+    if let Some(class_id) = find_class(node, symbol_map) {
+        let class = symbol_map.class(class_id);
+        class.find_field(symbol_map, &field_name)
+    } else if let Some(def_id) = find_def(node, symbol_map) {
+        let def = symbol_map.def(def_id);
+        def.find_field(symbol_map, &field_name)
+    } else {
+        None
+    }
 }
 
 fn find_def_parent_classes(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<Vec<RecordId>> {
@@ -250,6 +296,21 @@ fn find_typ_of_field_suffix<'typ>(
     }
 }
 
+fn find_expected_type_for_inner_value(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<Type> {
+    // FieldDef: int field1 = |
+    // FieldLet: let field1 = |
+    if let Some(field_id) = find_record_field(node, symbol_map) {
+        return Some(symbol_map.record_field(field_id).typ.clone());
+    }
+
+    // TemplateArgDecl: class Foo<Bar x = |
+    if let Some(template_arg_id) = find_template_arg(node, symbol_map) {
+        return Some(symbol_map.template_arg(template_arg_id).typ.clone());
+    }
+
+    None
+}
+
 trait SyntaxNodeExt {
     fn ancestor<N: AstNode<Language = syntax::Language>>(&self) -> Option<N>;
 
@@ -275,6 +336,7 @@ impl SyntaxNodeExt for SyntaxNode {
 struct CompletionContext<'a> {
     items: Vec<CompletionItem>,
     db: &'a dyn IndexDatabase,
+    expected_type: Option<Type>,
 }
 
 impl<'a> CompletionContext<'a> {
@@ -282,10 +344,27 @@ impl<'a> CompletionContext<'a> {
         Self {
             items: Vec::new(),
             db,
+            expected_type: None,
         }
     }
 
-    fn finish(self) -> Vec<CompletionItem> {
+    fn set_expected_type(&mut self, expected_type: Type) {
+        self.expected_type = Some(expected_type);
+    }
+
+    fn finish(mut self, symbol_map: &SymbolMap) -> Vec<CompletionItem> {
+        let Some(expected_type) = self.expected_type else {
+            return self.items;
+        };
+
+        for item in &mut self.items {
+            let matches = item
+                .item_type
+                .as_ref()
+                .map_or(false, |t| t.can_be_casted_to(symbol_map, &expected_type));
+            let prefix = if matches { "0" } else { "1" };
+            item.sort_text = Some(prefix.to_string());
+        }
         self.items
     }
 
@@ -334,11 +413,10 @@ impl<'a> CompletionContext<'a> {
     fn complete_primitive_values(&mut self) {
         const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
         for &value in &BOOLEAN_VALUES {
-            self.items.push(CompletionItem::new_simple(
-                value,
-                "",
-                CompletionItemKind::Keyword,
-            ));
+            self.items.push(
+                CompletionItem::new_simple(value, "", CompletionItemKind::Keyword)
+                    .with_type(Type::bit()),
+            );
         }
     }
 
@@ -400,6 +478,7 @@ impl<'a> CompletionContext<'a> {
             );
             item.insert_text_snippet = Some(snippet);
             item.documentation = documentation;
+            item.item_type = Some(Type::record(class_id.into(), class.name().clone()));
             self.items.push(item);
         }
     }
@@ -457,6 +536,7 @@ impl<'a> CompletionContext<'a> {
                 CompletionItemKind::TemplateArgument,
             );
             item.documentation = documentation;
+            item.item_type = Some(arg.typ.clone());
             self.items.push(item);
         }
     }
@@ -488,6 +568,7 @@ impl<'a> CompletionContext<'a> {
                     CompletionItemKind::Field,
                 );
                 item.documentation = documentation;
+                item.item_type = Some(field.typ.clone());
                 self.items.push(item);
             }
         }
@@ -504,6 +585,7 @@ impl<'a> CompletionContext<'a> {
             let mut item =
                 CompletionItem::new_simple(def.name().clone(), "def", CompletionItemKind::Def);
             item.documentation = documentation;
+            item.item_type = Some(Type::record(def_id.into(), def.name().clone()));
             self.items.push(item);
         }
     }
@@ -522,6 +604,7 @@ impl<'a> CompletionContext<'a> {
                 CompletionItemKind::Defset,
             );
             item.documentation = documentation;
+            item.item_type = Some(defset.typ.clone());
             self.items.push(item);
         }
     }
@@ -532,12 +615,10 @@ impl<'a> CompletionContext<'a> {
         variables: Vec<(EcoString, Option<Type>)>,
     ) {
         for (name, typ) in variables {
-            let detail = typ.map(|t| t.to_string()).unwrap_or_default();
-            self.items.push(CompletionItem::new_simple(
-                name,
-                detail,
-                CompletionItemKind::Variable,
-            ));
+            let detail = typ.as_ref().map(|t| t.to_string()).unwrap_or_default();
+            let mut item = CompletionItem::new_simple(name, detail, CompletionItemKind::Variable);
+            item.item_type = typ;
+            self.items.push(item);
         }
     }
 }
@@ -614,7 +695,7 @@ mod tests {
         let (db, f) = tests::single_file(s);
         let mut result =
             super::exec(&db, f.source_unit_id(), f.marker(0), None).expect("completion failed");
-        result.sort_by(|a, b| a.label.cmp(&b.label));
+        result.sort_by(|a, b| a.sort_text.cmp(&b.sort_text).then(a.label.cmp(&b.label)));
         result
     }
 
@@ -629,6 +710,21 @@ mod tests {
         .expect("completion failed");
         result.sort_by(|a, b| a.label.cmp(&b.label));
         result
+    }
+
+    #[test]
+    fn type_matching_priority() {
+        let result = check(r#"defvar var1 = 1; defvar var2 = "hoge"; class Foo { int field1 = v$"#);
+        println!("{:?}", result);
+        let idx_var1 = result.iter().position(|it| it.label == "var1").unwrap();
+        let idx_var2 = result.iter().position(|it| it.label == "var2").unwrap();
+        assert!(idx_var1 < idx_var2);
+
+        let result = check(r#"defvar var1 = "hoge"; defvar var2 = 1; class Foo { int field1 = v$"#);
+        println!("{:?}", result);
+        let idx_var1 = result.iter().position(|it| it.label == "var1").unwrap();
+        let idx_var2 = result.iter().position(|it| it.label == "var2").unwrap();
+        assert!(idx_var1 < idx_var2);
     }
 
     #[test]

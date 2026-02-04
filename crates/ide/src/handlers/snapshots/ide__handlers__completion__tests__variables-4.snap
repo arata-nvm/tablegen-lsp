@@ -4,27 +4,19 @@ expression: "check(\"class Foo { defvar hoge = 1; int x = h$\")"
 ---
 [
     CompletionItem {
-        label: "Foo",
-        insert_text_snippet: Some(
-            "Foo<>$0",
-        ),
-        detail: "class",
-        documentation: None,
-        kind: Class,
-    },
-    CompletionItem {
         label: "false",
         insert_text_snippet: None,
         detail: "",
         documentation: None,
         kind: Keyword,
-    },
-    CompletionItem {
-        label: "hoge",
-        insert_text_snippet: None,
-        detail: "",
-        documentation: None,
-        kind: Variable,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "true",
@@ -32,5 +24,49 @@ expression: "check(\"class Foo { defvar hoge = 1; int x = h$\")"
         detail: "",
         documentation: None,
         kind: Keyword,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
+        label: "Foo",
+        insert_text_snippet: Some(
+            "Foo<>$0",
+        ),
+        detail: "class",
+        documentation: None,
+        kind: Class,
+        sort_text: Some(
+            "1",
+        ),
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "Foo",
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
+        label: "hoge",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Variable,
+        sort_text: Some(
+            "1",
+        ),
+        item_type: None,
     },
 ]

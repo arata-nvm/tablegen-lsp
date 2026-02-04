@@ -4,6 +4,51 @@ expression: "check(\"class Base { int base_field; } class Derived : Base { int d
 ---
 [
     CompletionItem {
+        label: "base_field",
+        insert_text_snippet: None,
+        detail: "int",
+        documentation: None,
+        kind: Field,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Int {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
+        label: "false",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
+        label: "true",
+        insert_text_snippet: None,
+        detail: "",
+        documentation: None,
+        kind: Keyword,
+        sort_text: Some(
+            "0",
+        ),
+        item_type: Some(
+            Bit {
+                _priv: (),
+            },
+        ),
+    },
+    CompletionItem {
         label: "Base",
         insert_text_snippet: Some(
             "Base<>$0",
@@ -11,6 +56,22 @@ expression: "check(\"class Base { int base_field; } class Derived : Base { int d
         detail: "class",
         documentation: None,
         kind: Class,
+        sort_text: Some(
+            "1",
+        ),
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 0,
+                        },
+                    ),
+                ),
+                name: "Base",
+                _priv: (),
+            },
+        ),
     },
     CompletionItem {
         label: "Derived",
@@ -20,26 +81,21 @@ expression: "check(\"class Base { int base_field; } class Derived : Base { int d
         detail: "class",
         documentation: None,
         kind: Class,
-    },
-    CompletionItem {
-        label: "base_field",
-        insert_text_snippet: None,
-        detail: "int",
-        documentation: None,
-        kind: Field,
-    },
-    CompletionItem {
-        label: "false",
-        insert_text_snippet: None,
-        detail: "",
-        documentation: None,
-        kind: Keyword,
-    },
-    CompletionItem {
-        label: "true",
-        insert_text_snippet: None,
-        detail: "",
-        documentation: None,
-        kind: Keyword,
+        sort_text: Some(
+            "1",
+        ),
+        item_type: Some(
+            Record {
+                data: DefinedRecord(
+                    Class(
+                        Id {
+                            idx: 1,
+                        },
+                    ),
+                ),
+                name: "Derived",
+                _priv: (),
+            },
+        ),
     },
 ]
