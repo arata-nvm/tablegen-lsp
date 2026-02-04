@@ -14,7 +14,7 @@ use crate::{
         template_arg::TemplateArgumentId,
         typ::Type,
     },
-    utils,
+    utils::{self, SyntaxNodeExt},
 };
 use crate::{
     symbol_map::{class::ClassId, def::DefId, record::RecordId},
@@ -309,28 +309,6 @@ fn find_expected_type_for_inner_value(node: &SyntaxNode, symbol_map: &SymbolMap)
     }
 
     None
-}
-
-trait SyntaxNodeExt {
-    fn ancestor<N: AstNode<Language = syntax::Language>>(&self) -> Option<N>;
-
-    fn ancestor_within<N: AstNode<Language = syntax::Language>>(
-        &self,
-        max_depth: usize,
-    ) -> Option<N>;
-}
-
-impl SyntaxNodeExt for SyntaxNode {
-    fn ancestor<N: AstNode<Language = syntax::Language>>(&self) -> Option<N> {
-        self.ancestors().find_map(N::cast)
-    }
-
-    fn ancestor_within<N: AstNode<Language = syntax::Language>>(
-        &self,
-        max_depth: usize,
-    ) -> Option<N> {
-        self.ancestors().take(max_depth).find_map(N::cast)
-    }
 }
 
 struct CompletionContext<'a> {

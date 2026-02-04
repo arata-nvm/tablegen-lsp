@@ -1,4 +1,9 @@
-use syntax::{SyntaxNode, ast, parser::TextRange, syntax_kind::SyntaxKind};
+use syntax::{
+    SyntaxNode,
+    ast::{self, AstNode},
+    parser::TextRange,
+    syntax_kind::SyntaxKind,
+};
 
 pub fn range_excluding_trivia(node: &SyntaxNode) -> TextRange {
     let start = node.text_range().start();
@@ -87,5 +92,27 @@ pub fn determine_def_type(def: &ast::Def) -> Option<DefNameType> {
             }
         }
         _ => Some(DefNameType::Value),
+    }
+}
+
+pub(crate) trait SyntaxNodeExt {
+    fn ancestor<N: AstNode<Language = syntax::Language>>(&self) -> Option<N>;
+
+    fn ancestor_within<N: AstNode<Language = syntax::Language>>(
+        &self,
+        max_depth: usize,
+    ) -> Option<N>;
+}
+
+impl SyntaxNodeExt for SyntaxNode {
+    fn ancestor<N: AstNode<Language = syntax::Language>>(&self) -> Option<N> {
+        self.ancestors().find_map(N::cast)
+    }
+
+    fn ancestor_within<N: AstNode<Language = syntax::Language>>(
+        &self,
+        max_depth: usize,
+    ) -> Option<N> {
+        self.ancestors().take(max_depth).find_map(N::cast)
     }
 }
