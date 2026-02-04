@@ -101,7 +101,9 @@ pub fn exec(
         return Some(ctx.finish());
     }
 
-    if let Some(_) = node_at_pos.ancestor::<ast::FieldLet>() {
+    if let Some(field_let) = node_at_pos.ancestor::<ast::FieldLet>()
+        && !field_let.has_equal()
+    {
         if let Some(class_id) = find_class(&node_at_pos, symbol_map) {
             ctx.complete_record_fields(symbol_map, &[class_id.into()], None);
         }
