@@ -1,9 +1,12 @@
+use syntax::ast;
+
+use crate::bang_operator::get_metadata_for_syntax_kind;
 use crate::file_system::{FilePosition, FileRange, SourceUnitId};
 use crate::index::IndexDatabase;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
 use crate::symbol_map::{SymbolMap, record::AsRecordData};
-use crate::utils;
+use crate::utils::{self, SyntaxNodeExt};
 
 #[derive(Debug)]
 pub struct Hover {
@@ -16,18 +19,35 @@ pub fn exec(
     source_unit_id: SourceUnitId,
     pos: FilePosition,
 ) -> Option<Hover> {
+    let parse = db.parse(pos.file);
+    let root_node = parse.syntax_node();
+    let token_at_pos = root_node.token_at_offset(pos.position).left_biased()?;
+    let node_at_pos = token_at_pos.parent()?;
+
     let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
 
-    let (signature, define_loc) = extract_symbol_signature(symbol_map, pos)?;
+    if let Some((signature, define_loc)) = extract_symbol_signature(symbol_map, pos) {
+        let parse = db.parse(define_loc.file);
+        let symbol_doc = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
 
-    let parse = db.parse(define_loc.file);
-    let symbol_doc = utils::extract_doc_comments(parse.syntax_node(), define_loc.range);
+        return Some(Hover {
+            signature,
+            document: symbol_doc,
+        });
+    }
 
-    Some(Hover {
-        signature,
-        document: symbol_doc,
-    })
+    if let Some(bang_operator) = node_at_pos.ancestor::<ast::BangOperator>() {
+        let operator_kind = bang_operator.kind()?;
+        let metadata = get_metadata_for_syntax_kind(operator_kind)?;
+
+        return Some(Hover {
+            signature: format!("!{}", metadata.name),
+            document: Some(metadata.documentation.to_string()),
+        });
+    }
+
+    None
 }
 
 fn extract_symbol_signature(
@@ -144,5 +164,10 @@ def $foo;
 class $Foo;
             "#
         ));
+    }
+
+    #[test]
+    fn bang_operator() {
+        insta::assert_debug_snapshot!(check("defvar a = !add$(1, 2);"));
     }
 }
