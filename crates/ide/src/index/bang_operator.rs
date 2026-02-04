@@ -451,16 +451,16 @@ impl IndexExpression for ast::BangOperator {
                 let mut value_types = common::index_values(ctx, values).into_iter();
 
                 if let Some((list_range, Some(list_type))) = value_types.next() {
-                    let is_not_acceptable_typ = |elm_typ: &Type| {
+                    let is_acceptable_typ = |elm_typ: &Type| {
                         elm_typ.can_be_casted_to(&ctx.symbol_map, &TY![string])
                             || elm_typ.can_be_casted_to(&ctx.symbol_map, &TY![int])
                             || elm_typ.is_bits()
                             || elm_typ.can_be_casted_to(&ctx.symbol_map, &TY![bit])
                     };
-                    if list_type
+                    if !list_type
                         .list_element_type()
-                        .map(|elm_typ| is_not_acceptable_typ(&elm_typ))
-                        .unwrap_or(true)
+                        .map(|elm_typ| is_acceptable_typ(&elm_typ))
+                        .unwrap_or(false)
                     {
                         ctx.error_by_textrange(
                             list_range,

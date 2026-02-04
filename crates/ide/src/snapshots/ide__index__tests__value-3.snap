@@ -5,3 +5,11 @@ expression: dump_symbol_map(index.symbol_map())
 class Foo<> : {
   bits<4> x;
 }
+class Interleave<> : {
+  string x;
+}
+class Cond<> : {
+  int ok;
+  int bad_cond;
+  int bad_value;
+}

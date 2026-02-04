@@ -1197,6 +1197,54 @@ impl IndexExpression for ast::Value {
     }
 }
 
+impl IndexExpression for ast::CondOperator {
+    type Output = Type;
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+        let mut result_typ: Option<Type> = None;
+
+        for clause in self.clauses() {
+            let Some(condition) = clause.condition() else {
+                continue;
+            };
+            if let Some(cond_typ) = condition.index_expression(ctx) {
+                if !cond_typ.can_be_casted_to(&ctx.symbol_map, &TY![bit]) {
+                    ctx.error_by_syntax(
+                        condition.syntax(),
+                        format!("expected bit; found {cond_typ}"),
+                    );
+                }
+            }
+
+            let Some(value) = clause.value() else {
+                continue;
+            };
+            let value_typ = value.index_expression(ctx).unwrap_or(Type::unknown());
+
+            result_typ = match result_typ {
+                None => Some(value_typ),
+                Some(ref cur_result_typ) => {
+                    if let Some(common_typ) =
+                        cur_result_typ.resolve_with(&ctx.symbol_map, &value_typ)
+                    {
+                        Some(common_typ)
+                    } else {
+                        ctx.error_by_syntax(
+                            value.syntax(),
+                            format!(
+                                "inconsistent types {cur_result_typ} and {value_typ} for !cond",
+                            ),
+                        );
+                        Some(Type::unknown())
+                    }
+                }
+            };
+        }
+
+        Some(result_typ.unwrap_or(Type::unknown()))
+    }
+}
+
 impl IndexValue for ast::InnerValue {
     type Output = Type;
 
@@ -1432,17 +1480,7 @@ impl IndexValue for ast::SimpleValue {
                 Some(Type::record(class_id.into(), name))
             }
             ast::SimpleValue::BangOperator(bang_operator) => bang_operator.index_expression(ctx),
-            ast::SimpleValue::CondOperator(cond_operator) => {
-                for clause in cond_operator.clauses() {
-                    if let Some(condition) = clause.condition() {
-                        let _ = condition.index_expression(ctx);
-                    }
-                    if let Some(value) = clause.value() {
-                        let _ = value.index_expression(ctx);
-                    }
-                }
-                None
-            }
+            ast::SimpleValue::CondOperator(cond_operator) => cond_operator.index_expression(ctx),
         };
 
         if let Some(ref typ) = typ {
