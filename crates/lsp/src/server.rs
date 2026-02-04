@@ -8,9 +8,11 @@ use async_lsp::lsp_types::{
     DocumentLinkOptions, DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse,
     FoldingRange, FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams,
     GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
-    InitializeResult, InlayHint, InlayHintParams, Location, MessageType, OneOf,
-    PublishDiagnosticsParams, ReferenceParams, ServerCapabilities, ServerInfo, ShowMessageParams,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url, notification, request,
+    InitializeResult, InlayHint, InlayHintParams, Location, MessageType, OneOf, ProgressParams,
+    ProgressParamsValue, ProgressToken, PublishDiagnosticsParams, ReferenceParams,
+    ServerCapabilities, ServerInfo, ShowMessageParams, TextDocumentSyncCapability,
+    TextDocumentSyncKind, Url, WorkDoneProgress, WorkDoneProgressBegin,
+    WorkDoneProgressCreateParams, WorkDoneProgressEnd, notification, request,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
@@ -37,6 +39,9 @@ pub struct Server {
     opened_source_units: HashSet<SourceUnitId>,
     root_source_unit: Option<SourceUnitId>,
 }
+
+const DIAGNOSTICS_PROGRESS_TOKEN: &str = "tablegen-lsp/diagnostics";
+const FLYCHECK_PROGRESS_TOKEN: &str = "tablegen-lsp/flycheck";
 
 pub struct ServerSnapshot {
     pub analysis: Analysis,
@@ -388,6 +393,8 @@ impl Server {
     }
 
     fn spawn_update_diagnostics(&mut self) {
+        let token = ProgressToken::String(DIAGNOSTICS_PROGRESS_TOKEN.into());
+        self.begin_work_done_progress(token.clone(), "Analyzing source code...");
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
         let opened_source_units = self.opened_source_units();
@@ -440,10 +447,16 @@ impl Server {
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
         }
+        self.end_work_done_progress(
+            ProgressToken::String(DIAGNOSTICS_PROGRESS_TOKEN.into()),
+            None,
+        );
         ControlFlow::Continue(())
     }
 
     fn spawn_flycheck(&mut self) {
+        let token = ProgressToken::String(FLYCHECK_PROGRESS_TOKEN.into());
+        self.begin_work_done_progress(token.clone(), "Running flycheck...");
         let opened_source_units = self.opened_source_units();
         let client = self.client.clone();
         let include_dirs = self.config.include_dirs.clone();
@@ -477,6 +490,7 @@ impl Server {
         tracing::info!("update_flycheck: {source_unit_id:?}");
         self.host.set_tblgen_parse_result(source_unit_id, result);
         self.spawn_update_diagnostics_of(source_unit_id);
+        self.end_work_done_progress(ProgressToken::String(FLYCHECK_PROGRESS_TOKEN.into()), None);
         ControlFlow::Continue(())
     }
 
@@ -524,5 +538,49 @@ impl Server {
                 SourceUnitId::from_root_file(file_id)
             }
         }
+    }
+
+    fn begin_work_done_progress(&self, token: ProgressToken, title: &str) {
+        let client = self.client.clone();
+        let title = title.to_string();
+        task::spawn(async move {
+            if let Err(err) = client
+                .request::<request::WorkDoneProgressCreate>(WorkDoneProgressCreateParams {
+                    token: token.clone(),
+                })
+                .await
+            {
+                tracing::warn!("failed to create work done progress: {err:?}");
+                return;
+            }
+
+            if let Err(err) = client.notify::<notification::Progress>(ProgressParams {
+                token,
+                value: ProgressParamsValue::WorkDone(WorkDoneProgress::Begin(
+                    WorkDoneProgressBegin {
+                        title,
+                        cancellable: Some(false),
+                        message: None,
+                        percentage: None,
+                    },
+                )),
+            }) {
+                tracing::warn!("failed to begin work done progress: {err:?}");
+            }
+        });
+    }
+
+    fn end_work_done_progress(&self, token: ProgressToken, message: Option<String>) {
+        let client = self.client.clone();
+        task::spawn(async move {
+            if let Err(err) = client.notify::<notification::Progress>(ProgressParams {
+                token,
+                value: ProgressParamsValue::WorkDone(WorkDoneProgress::End(WorkDoneProgressEnd {
+                    message,
+                })),
+            }) {
+                tracing::warn!("failed to end work done progress: {err:?}");
+            }
+        });
     }
 }
