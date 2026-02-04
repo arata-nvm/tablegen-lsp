@@ -1,0 +1,7 @@
+---
+source: crates/ide/src/index.rs
+expression: dump_symbol_map(index.symbol_map())
+---
+class Foo<> : {
+  bits<4> x;
+}

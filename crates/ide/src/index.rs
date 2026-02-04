@@ -1129,7 +1129,13 @@ fn get_bit_list_in_range_piece(range_piece: &ast::RangePiece) -> Option<Vec<usiz
     match (range_piece.start(), range_piece.end()) {
         (Some(start), Some(end)) => {
             let start = value_as_integer(start)?;
-            let end = value_as_integer(end)?;
+
+            // hoge{1-3}のような形式の場合、endが負になるので絶対値を取る
+            let mut end = value_as_integer(end)?;
+            if end < 0 {
+                end = -end;
+            }
+
             if start <= end {
                 Some((start..=end).map(|v| v as usize).collect())
             } else {
@@ -1637,6 +1643,19 @@ class Bar;
         insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/defm_parent_class.td");
+        let index = db.index(f.source_unit_id());
+        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
+        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+    }
+
+    #[test]
+    fn value() {
+        let (db, f) = tests::load_single_file("testdata/value.td");
+        let index = db.index(f.source_unit_id());
+        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
+        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+
+        let (db, f) = tests::load_single_file_with_tblgen("testdata/value.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
         insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
