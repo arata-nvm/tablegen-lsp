@@ -101,6 +101,7 @@ multiclass MulticlassWithVar {
 def placeholder : BaseClass, {
   int value;
 }
+}
 variable int offset
 def var_multiclass_inst : BaseClass, {
   int value;

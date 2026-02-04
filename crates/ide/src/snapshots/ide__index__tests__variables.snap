@@ -38,6 +38,7 @@ multiclass MulticlassWithVar {
 def placeholder : BaseClass, {
   int value;
 }
+}
 variable int offset
 defset list<BaseClass> foreach_set
 variable int i

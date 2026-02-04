@@ -13,5 +13,7 @@ def placeholder : Base, {
 }
 def placeholder : Base, {
 }
+}
 multiclass OuterMC {
 defm placeholder : MC, ;
+}

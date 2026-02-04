@@ -78,6 +78,8 @@ pub fn dump_symbol_map(symbol_map: &SymbolMap) -> String {
                         }
                         writeln!(output, ";").unwrap();
                     }
+
+                    writeln!(output, "}}").unwrap();
                 }
                 Symbol::Defset(defset) => {
                     writeln!(output, "defset {} {}", defset.typ, defset.name).unwrap();

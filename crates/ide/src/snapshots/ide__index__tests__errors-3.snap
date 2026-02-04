@@ -35,6 +35,7 @@ class for_dup_test<> : {
 }
 defset list<for_dup_test> duplicate_defset
 multiclass duplicate_multiclass {
+}
 class CyclicA<> : {
 }
 class CyclicB<> : CyclicC, {

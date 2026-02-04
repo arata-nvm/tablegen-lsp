@@ -13,6 +13,7 @@ def placeholder : Base, {
 }
 def placeholder : Base, {
 }
+}
 def inst_single_A : Base, Extra1, {
 }
 def inst_single_B : Base, Extra1, {
@@ -23,6 +24,7 @@ def inst_multi_B : Base, Extra1, Extra2, {
 }
 multiclass OuterMC {
 defm placeholder : MC, ;
+}
 def outer_instinner_A : Base, Extra1, Extra2, {
 }
 def outer_instinner_B : Base, Extra1, Extra2, {
