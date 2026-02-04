@@ -308,26 +308,54 @@ impl LanguageServer for Server {
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_open: {params:?}");
-        let source_unit_id =
+        let path = UrlExt::to_file_path(&params.text_document.uri);
+        let file_id = self.vfs.assign_or_get_file_id(path);
+        self.host
+            .set_file_content(file_id, Arc::from(params.text_document.text.as_str()));
+
+        if !self.is_file_in_root_source_unit(&params.text_document.uri) {
+            self.client
+                .show_message(ShowMessageParams {
+                    typ: MessageType::WARNING,
+                    message: "This file is not included in the source root. Analysis is disabled."
+                        .to_string(),
+                })
+                .expect("failed to show message");
+            return ControlFlow::Continue(());
+        }
+
+        if let Some(_) = self.root_source_unit {
+            // set_source_rootでこのファイルはすでに解析されているはずなので、何もしない
+        } else {
             self.load_source_unit(&params.text_document.uri, &params.text_document.text);
-        self.opened_source_units.insert(source_unit_id);
-        self.spawn_update_diagnostics(Some(&params.text_document.uri));
-        self.spawn_flycheck(Some(&params.text_document.uri));
+            self.spawn_update_diagnostics(Some(&params.text_document.uri));
+            self.spawn_flycheck(Some(&params.text_document.uri));
+        }
+
         ControlFlow::Continue(())
     }
 
     fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
-            self.load_source_unit(&params.text_document.uri, &change.text);
-            self.spawn_update_diagnostics(Some(&params.text_document.uri));
+            if self.is_file_in_root_source_unit(&params.text_document.uri) {
+                self.load_source_unit(&params.text_document.uri, &change.text);
+                self.spawn_update_diagnostics(Some(&params.text_document.uri));
+            } else {
+                let path = UrlExt::to_file_path(&params.text_document.uri);
+                let file_id = self.vfs.assign_or_get_file_id(path);
+                self.host
+                    .set_file_content(file_id, Arc::from(change.text.as_str()));
+            }
         }
         ControlFlow::Continue(())
     }
 
     fn did_save(&mut self, params: DidSaveTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_save: {params:?}");
-        self.spawn_flycheck(Some(&params.text_document.uri));
+        if self.is_file_in_root_source_unit(&params.text_document.uri) {
+            self.spawn_flycheck(Some(&params.text_document.uri));
+        }
         ControlFlow::Continue(())
     }
 
@@ -527,6 +555,22 @@ impl Server {
         }
 
         ControlFlow::Continue(())
+    }
+
+    fn is_file_in_root_source_unit(&self, uri: &Url) -> bool {
+        match self.root_source_unit {
+            None => true,
+            Some(root_id) => {
+                let path = UrlExt::to_file_path(uri);
+                let Some(file_id) = self.vfs.file_for_path(&path) else {
+                    return false;
+                };
+                self.host
+                    .analysis()
+                    .source_unit(root_id)
+                    .contains_file(file_id)
+            }
+        }
     }
 
     fn load_source_unit(&mut self, uri: &Url, text: &str) -> SourceUnitId {

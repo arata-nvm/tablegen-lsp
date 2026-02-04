@@ -122,17 +122,26 @@ impl SourceUnitId {
     pub fn from_root_file(root_file: FileId) -> Self {
         Self(root_file)
     }
+
+    pub fn root_file(self) -> FileId {
+        self.0
+    }
 }
 
 #[derive(Debug)]
 pub struct SourceUnit {
     root: FileId,
+    // SourceUnitに含まれるすべてのFileIdをキーに含むことを保証する
     includes: HashMap<FileId, IncludeMap>,
 }
 
 impl SourceUnit {
     pub fn root(&self) -> FileId {
         self.root
+    }
+
+    pub fn contains_file(&self, file_id: FileId) -> bool {
+        self.includes.contains_key(&file_id)
     }
 
     pub fn iter_files(&self) -> impl Iterator<Item = FileId> + '_ {
