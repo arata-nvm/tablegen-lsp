@@ -13,3 +13,8 @@ class Cond<> : {
   int bad_cond;
   int bad_value;
 }
+class BitsConcat<> : {
+  bits<3> a;
+  bits<4> b;
+  bits<7> ab;
+}

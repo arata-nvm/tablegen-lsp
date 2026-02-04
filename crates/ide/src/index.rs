@@ -1351,16 +1351,27 @@ impl IndexValue for ast::SimpleValue {
 
     fn index_value(&self, ctx: &mut IndexCtx, mode: IndexValueMode) -> Option<Self::Output> {
         let typ = match self {
-            ast::SimpleValue::Integer(_) => Some(TY![int]),
+            ast::SimpleValue::Integer(integer) => match integer.bits_width() {
+                Some(width) => Some(Type::bits(width)),
+                None => Some(TY![int]),
+            },
             ast::SimpleValue::String(_) => Some(TY![string]),
             ast::SimpleValue::Code(_) => Some(TY![code]),
             ast::SimpleValue::Boolean(_) => Some(TY![bit]),
             ast::SimpleValue::Uninitialized(_) => Some(TY![?]),
             ast::SimpleValue::Bits(bits) => {
-                for value in bits.value_list()?.values() {
-                    let _ = value.index_expression(ctx);
+                let value_list = bits.value_list()?;
+                let mut total_width = 0usize;
+                for value in value_list.values() {
+                    let Some(value_typ) = value.index_expression(ctx) else {
+                        return Some(Type::unknown());
+                    };
+                    let Some(width) = value_typ.bits_width() else {
+                        return Some(Type::unknown());
+                    };
+                    total_width += width;
                 }
-                Some(Type::bits(bits.value_list()?.values().count()))
+                Some(Type::bits(total_width))
             }
             ast::SimpleValue::List(list) => {
                 let value_list = list.value_list()?;

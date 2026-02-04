@@ -335,6 +335,12 @@ asts! {
             let text = token.text();
             lexer::interpret_number(text)
         }
+        pub fn bits_width(&self) -> Option<usize> {
+            let token = self.0.first_token()?;
+            let text = token.text();
+            let rest = text.strip_prefix("0b")?;
+            Some(rest.chars().count())
+        }
     };
     String {
         pub fn value(&self) -> EcoString {

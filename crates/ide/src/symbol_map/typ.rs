@@ -284,6 +284,14 @@ impl Type {
         })
     }
 
+    pub fn bits_width(&self) -> Option<usize> {
+        match self {
+            Self::Bit { _priv: _ } => Some(1),
+            Self::Bits { len, _priv: _ } => Some(*len),
+            _ => None,
+        }
+    }
+
     pub fn bits_with_selected_indices(&self, bits: Vec<usize>) -> Result<Self, TypeError> {
         let Self::Bits {
             len: old_width,
