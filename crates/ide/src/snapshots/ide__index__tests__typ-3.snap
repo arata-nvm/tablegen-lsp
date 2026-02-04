@@ -113,6 +113,9 @@ def derived123_val : derived123, {
 variable {base2, base1} if_multi1
 variable {base3, base2} if_multi2
 variable base2 if_multi3
+variable list<base> list1
+variable list<{base2, base1}> list2
+variable list<base1> list3
 class RangeListTest<> : {
   bits<4> bits_field;
   string str_field;

@@ -69,3 +69,5 @@ def unknown_named : NamedArgs, {
 }
 variable unknown bad_range_suffix
 variable unknown bad_slice_suffix
+variable list<unknown> list_incompatible1
+variable list<int> list_incompatible2

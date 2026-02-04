@@ -122,6 +122,10 @@ defvar if_multi1 = !if(false, derived12_val, derived123_val);
 defvar if_multi2 = !if(false, derived23_val, derived123_val);
 defvar if_multi3 = !if(false, if_multi1, if_multi2);
 
+defvar list1 = []<base>;
+defvar list2 = [derived12_val, derived123_val];
+defvar list3 = [derived12_val, derived123_val]<base1>;
+
 // Range list type checking
 class RangeListTest {
   bits<4> bits_field = 0;

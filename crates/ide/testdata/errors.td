@@ -113,3 +113,8 @@ def unknown_named : NamedArgs<z=1>;
 
 defvar bad_range_suffix = "hoge"{0};
 defvar bad_slice_suffix = "hoge"[0];
+
+// === Incompatible List Element Types ===
+
+defvar list_incompatible1 = ["hoge", 2];
+defvar list_incompatible2 = ["hoge"]<int>;

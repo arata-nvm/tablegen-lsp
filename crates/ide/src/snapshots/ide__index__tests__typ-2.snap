@@ -9,7 +9,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 3005..3013,
+                range: 3134..3142,
             },
             message: "duplicate bit index 3",
         },
@@ -20,7 +20,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 3037..3038,
+                range: 3166..3167,
             },
             message: "cannot set bit index 8 for bits<4>",
         },
@@ -31,7 +31,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 3091..3092,
+                range: 3220..3221,
             },
             message: "expected bits type, got 'string'",
         },

@@ -355,4 +355,26 @@ expression: dump_diagnostics(index.diagnostics())
             message: "expected list type, got 'string'",
         },
     ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2448..2449,
+            },
+            message: "list element '2' is incompatible with list element type 'string'",
+        },
+    ),
+    Lsp(
+        LspDiagnostic {
+            location: FileRange {
+                file: FileId(
+                    0,
+                ),
+                range: 2481..2487,
+            },
+            message: "list element '\"hoge\"' is incompatible with list element type 'int'",
+        },
+    ),
 ]

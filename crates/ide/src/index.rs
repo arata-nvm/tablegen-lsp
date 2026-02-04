@@ -1232,15 +1232,60 @@ impl IndexValue for ast::SimpleValue {
             }
             ast::SimpleValue::List(list) => {
                 let value_list = list.value_list()?;
-                let value_types: Vec<_> = value_list
-                    .values()
-                    .filter_map(|value| value.index_expression(ctx))
-                    .collect();
-                value_types
-                    .into_iter()
-                    .next()
-                    .map(Type::list)
-                    .or(Some(Type::list_any()))
+                let elm_type = list.r#type().and_then(|typ| typ.index_expression(ctx));
+
+                if value_list.values().next().is_none() && elm_type.is_none() {
+                    return Some(Type::list_any());
+                }
+
+                let mut resolved_elm: Option<Type> = None;
+                for value in value_list.values() {
+                    let Some(value_type) = value.index_expression(ctx) else {
+                        continue;
+                    };
+
+                    if let Some(ref elm_type) = elm_type
+                        && !value_type.can_be_casted_to(&ctx.symbol_map, elm_type)
+                    {
+                        ctx.error_by_syntax(
+                            value.syntax(),
+                            format!(
+                                "list element '{}' is incompatible with list element type '{}'",
+                                value.syntax().text(),
+                                elm_type,
+                            ),
+                        );
+                        continue;
+                    }
+
+                    let Some(resolved_elm_unwrapped) = resolved_elm else {
+                        resolved_elm = Some(value_type);
+                        continue;
+                    };
+
+                    resolved_elm =
+                        match resolved_elm_unwrapped.resolve_with(&ctx.symbol_map, &value_type) {
+                            Some(common_type) => Some(common_type),
+                            None => {
+                                ctx.error_by_syntax(
+                                value.syntax(),
+                                format!(
+                                    "list element '{}' is incompatible with list element type '{}'",
+                                    value.syntax().text(),
+                                    resolved_elm_unwrapped,
+                                ),
+                            );
+                                Some(Type::unknown())
+                            }
+                        };
+                }
+
+                match elm_type {
+                    Some(elm_type) => Some(Type::list(elm_type)),
+                    None => resolved_elm
+                        .map(Type::list)
+                        .or_else(|| Some(Type::list(Type::unknown()))),
+                }
             }
             ast::SimpleValue::Dag(dag) => {
                 if let Some(value) = dag.operator().and_then(|it| it.value()) {
