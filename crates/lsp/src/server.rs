@@ -38,6 +38,8 @@ pub struct Server {
     diagnostic_version: i32,
     opened_source_units: HashSet<SourceUnitId>,
     root_source_unit: Option<SourceUnitId>,
+    flycheck_counter: u64,
+    diagnostics_counter: u64,
 }
 
 const DIAGNOSTICS_PROGRESS_TOKEN: &str = "tablegen-lsp/diagnostics";
@@ -48,7 +50,7 @@ pub struct ServerSnapshot {
     pub vfs: SharedFs<Vfs>,
 }
 
-struct UpdateDiagnosticsEvent(i32, DiagnosticCollection);
+struct UpdateDiagnosticsEvent(i32, DiagnosticCollection, ProgressToken);
 struct UpdateConfigEvent(Value);
 struct UpdateFlycheckEvent(SourceUnitId, TblgenParseResult);
 
@@ -90,6 +92,8 @@ impl Server {
             diagnostic_version: 0,
             opened_source_units: HashSet::new(),
             root_source_unit: None,
+            flycheck_counter: 0,
+            diagnostics_counter: 0,
         }
     }
 }
@@ -421,7 +425,10 @@ impl Server {
     }
 
     fn spawn_update_diagnostics(&mut self, trigger_uri: Option<&Url>) {
-        let token = ProgressToken::String(DIAGNOSTICS_PROGRESS_TOKEN.into());
+        let diagnostics_id = self.diagnostics_counter;
+        self.diagnostics_counter += 1;
+        let token =
+            ProgressToken::String(format!("{}/{}", DIAGNOSTICS_PROGRESS_TOKEN, diagnostics_id));
         let file_name = trigger_uri.and_then(|uri| {
             let path = UrlExt::to_file_path(uri);
             path.0
@@ -442,13 +449,16 @@ impl Server {
                 lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
             }
             client
-                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
+                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags, token))
                 .expect("failed to emit update diagnostics event");
         });
     }
 
     fn spawn_update_diagnostics_of(&mut self, source_unit_id: SourceUnitId) {
-        let token = ProgressToken::String(DIAGNOSTICS_PROGRESS_TOKEN.into());
+        let diagnostics_id = self.diagnostics_counter;
+        self.diagnostics_counter += 1;
+        let token =
+            ProgressToken::String(format!("{}/{}", DIAGNOSTICS_PROGRESS_TOKEN, diagnostics_id));
         self.begin_work_done_progress(token.clone(), "Analyzing diagnostics", None);
 
         let diag_version = self.bump_diagnostic_version();
@@ -459,7 +469,7 @@ impl Server {
             lsp_diags.add_source_unit_files(&source_unit);
             lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
             client
-                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
+                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags, token))
                 .expect("failed to emit update diagnostics event");
         });
     }
@@ -472,7 +482,7 @@ impl Server {
 
     fn update_diagnostics(
         &mut self,
-        UpdateDiagnosticsEvent(version, lsp_diags): UpdateDiagnosticsEvent,
+        UpdateDiagnosticsEvent(version, lsp_diags, token): UpdateDiagnosticsEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_diagnostics: {version:?}");
         for (file_id, lsp_diags_for_file) in lsp_diags {
@@ -484,15 +494,14 @@ impl Server {
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
         }
-        self.end_work_done_progress(
-            ProgressToken::String(DIAGNOSTICS_PROGRESS_TOKEN.into()),
-            None,
-        );
+        self.end_work_done_progress(token, None);
         ControlFlow::Continue(())
     }
 
     fn spawn_flycheck(&mut self, trigger_uri: Option<&Url>) {
-        let token = ProgressToken::String(FLYCHECK_PROGRESS_TOKEN.into());
+        let flycheck_id = self.flycheck_counter;
+        self.flycheck_counter += 1;
+        let token = ProgressToken::String(format!("{}/{}", FLYCHECK_PROGRESS_TOKEN, flycheck_id));
         let opened_source_units = self.opened_source_units();
         let file_name = trigger_uri.and_then(|uri| {
             let path = UrlExt::to_file_path(uri);
@@ -502,9 +511,9 @@ impl Server {
                 .map(|s| s.to_string())
         });
         self.begin_work_done_progress(token.clone(), "Running flycheck", file_name);
+
         let client = self.client.clone();
         let include_dirs = self.config.include_dirs.clone();
-
         let vfs = self.vfs.clone();
         self.spawn_with_snapshot(include_dirs, move |snap, include_dirs| {
             for source_unit_id in opened_source_units {
@@ -524,6 +533,15 @@ impl Server {
                     .emit(UpdateFlycheckEvent(source_unit_id, result))
                     .expect("failed to emit updatet flycheck event");
             }
+
+            if let Err(err) = client.notify::<notification::Progress>(ProgressParams {
+                token,
+                value: ProgressParamsValue::WorkDone(WorkDoneProgress::End(WorkDoneProgressEnd {
+                    message: None,
+                })),
+            }) {
+                tracing::warn!("failed to end work done progress: {err:?}");
+            }
         });
     }
 
@@ -533,7 +551,6 @@ impl Server {
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_flycheck: {source_unit_id:?}");
         self.host.set_tblgen_parse_result(source_unit_id, result);
-        self.end_work_done_progress(ProgressToken::String(FLYCHECK_PROGRESS_TOKEN.into()), None);
         self.spawn_update_diagnostics_of(source_unit_id);
         ControlFlow::Continue(())
     }
