@@ -97,6 +97,10 @@ def shadow_test2 : BaseClass, {
 }
 variable int condition
 variable int conditional_value
+variable int if_shadowed
+variable int if_shadowed
+variable int let_shadowed
+variable int let_shadowed
 multiclass MulticlassWithVar {
 def placeholder : BaseClass, {
   int value;

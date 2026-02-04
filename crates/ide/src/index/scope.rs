@@ -139,6 +139,7 @@ pub struct Scope {
 #[derive(Debug)]
 pub enum ScopeKind {
     Root,
+    Block,
     Class(ClassId),
     Def(DefId),
     Foreach(EcoString, VariableId),

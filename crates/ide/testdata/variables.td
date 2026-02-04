@@ -73,6 +73,18 @@ foreach i = 1...2 in {
 defvar condition = 1;
 defvar conditional_value = !if(condition, 100, 200);
 
+// Variable shadowing inside if
+defvar if_shadowed = 1;
+if true then {
+  defvar if_shadowed = 2;
+}
+
+// Variable shadowing inside let
+defvar let_shadowed = 1;
+let a = 1 in {
+  defvar let_shadowed = 2;
+}
+
 // Defvar in multiclass
 multiclass MulticlassWithVar<int base> {
   defvar offset = 10;

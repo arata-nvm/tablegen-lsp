@@ -596,10 +596,14 @@ impl IndexStatement for ast::If {
             let _ = condition.index_expression(ctx);
         }
         if let Some(then_body) = self.then_body() {
+            ctx.scopes.push(ScopeKind::Block);
             then_body.index_statement(ctx);
+            ctx.scopes.pop();
         }
         if let Some(else_body) = self.else_body() {
+            ctx.scopes.push(ScopeKind::Block);
             else_body.index_statement(ctx);
+            ctx.scopes.pop();
         }
     }
 }
@@ -610,7 +614,9 @@ impl IndexStatement for ast::Let {
             let_list.index_statement(ctx);
         }
         if let Some(statement_list) = self.statement_list() {
+            ctx.scopes.push(ScopeKind::Block);
             statement_list.index_statement(ctx);
+            ctx.scopes.pop();
         }
     }
 }
