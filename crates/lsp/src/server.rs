@@ -311,8 +311,8 @@ impl LanguageServer for Server {
         let source_unit_id =
             self.load_source_unit(&params.text_document.uri, &params.text_document.text);
         self.opened_source_units.insert(source_unit_id);
-        self.spawn_update_diagnostics();
-        self.spawn_flycheck();
+        self.spawn_update_diagnostics(Some(&params.text_document.uri));
+        self.spawn_flycheck(Some(&params.text_document.uri));
         ControlFlow::Continue(())
     }
 
@@ -320,14 +320,14 @@ impl LanguageServer for Server {
         tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
             self.load_source_unit(&params.text_document.uri, &change.text);
-            self.spawn_update_diagnostics();
+            self.spawn_update_diagnostics(Some(&params.text_document.uri));
         }
         ControlFlow::Continue(())
     }
 
     fn did_save(&mut self, params: DidSaveTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_save: {params:?}");
-        self.spawn_flycheck();
+        self.spawn_flycheck(Some(&params.text_document.uri));
         ControlFlow::Continue(())
     }
 
@@ -342,7 +342,7 @@ impl LanguageServer for Server {
             let source_unit_id = SourceUnitId::from_root_file(file_id);
             self.opened_source_units.remove(&source_unit_id);
         }
-        self.spawn_update_diagnostics();
+        self.spawn_update_diagnostics(Some(&params.text_document.uri));
         ControlFlow::Continue(())
     }
 }
@@ -364,7 +364,7 @@ impl Server {
         };
         let source_unit_id = self.load_source_unit(&params.uri, &content);
         self.root_source_unit.replace(source_unit_id);
-        self.spawn_update_diagnostics();
+        self.spawn_update_diagnostics(Some(&params.uri));
         ControlFlow::Continue(())
     }
 
@@ -374,7 +374,7 @@ impl Server {
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("clear_source_root");
         self.root_source_unit.take();
-        self.spawn_update_diagnostics();
+        self.spawn_update_diagnostics(None);
         ControlFlow::Continue(())
     }
 }
@@ -392,13 +392,20 @@ impl Server {
         task::spawn_blocking(move || f(snap, params))
     }
 
-    fn spawn_update_diagnostics(&mut self) {
+    fn spawn_update_diagnostics(&mut self, trigger_uri: Option<&Url>) {
         let token = ProgressToken::String(DIAGNOSTICS_PROGRESS_TOKEN.into());
-        self.begin_work_done_progress(token.clone(), "Analyzing source code...");
+        let file_name = trigger_uri.and_then(|uri| {
+            let path = UrlExt::to_file_path(uri);
+            path.0
+                .file_name()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string())
+        });
+        self.begin_work_done_progress(token.clone(), "Analyzing diagnostics", file_name);
+
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
         let opened_source_units = self.opened_source_units();
-
         self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
             for source_unit_id in opened_source_units {
@@ -413,9 +420,11 @@ impl Server {
     }
 
     fn spawn_update_diagnostics_of(&mut self, source_unit_id: SourceUnitId) {
+        let token = ProgressToken::String(DIAGNOSTICS_PROGRESS_TOKEN.into());
+        self.begin_work_done_progress(token.clone(), "Analyzing diagnostics", None);
+
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
-
         self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
             let source_unit = snap.analysis.source_unit(source_unit_id);
@@ -454,10 +463,17 @@ impl Server {
         ControlFlow::Continue(())
     }
 
-    fn spawn_flycheck(&mut self) {
+    fn spawn_flycheck(&mut self, trigger_uri: Option<&Url>) {
         let token = ProgressToken::String(FLYCHECK_PROGRESS_TOKEN.into());
-        self.begin_work_done_progress(token.clone(), "Running flycheck...");
         let opened_source_units = self.opened_source_units();
+        let file_name = trigger_uri.and_then(|uri| {
+            let path = UrlExt::to_file_path(uri);
+            path.0
+                .file_name()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string())
+        });
+        self.begin_work_done_progress(token.clone(), "Running flycheck", file_name);
         let client = self.client.clone();
         let include_dirs = self.config.include_dirs.clone();
 
@@ -489,8 +505,8 @@ impl Server {
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_flycheck: {source_unit_id:?}");
         self.host.set_tblgen_parse_result(source_unit_id, result);
-        self.spawn_update_diagnostics_of(source_unit_id);
         self.end_work_done_progress(ProgressToken::String(FLYCHECK_PROGRESS_TOKEN.into()), None);
+        self.spawn_update_diagnostics_of(source_unit_id);
         ControlFlow::Continue(())
     }
 
@@ -540,7 +556,7 @@ impl Server {
         }
     }
 
-    fn begin_work_done_progress(&self, token: ProgressToken, title: &str) {
+    fn begin_work_done_progress(&self, token: ProgressToken, title: &str, message: Option<String>) {
         let client = self.client.clone();
         let title = title.to_string();
         task::spawn(async move {
@@ -560,7 +576,7 @@ impl Server {
                     WorkDoneProgressBegin {
                         title,
                         cancellable: Some(false),
-                        message: None,
+                        message,
                         percentage: None,
                     },
                 )),
