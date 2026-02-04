@@ -70,3 +70,9 @@ class AssertClass {
   int value;
   assert value, "Value must be positive";
 }
+
+// Class with duplicate fields (same type)
+class ClassWithDuplicateFields {
+  int value = 1;
+  int value = 2;
+}

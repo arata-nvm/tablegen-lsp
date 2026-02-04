@@ -958,12 +958,17 @@ impl IndexStatement for ast::FieldDef {
         };
 
         let record = ctx.symbol_map.record(record_id);
-        if record.find_field(&ctx.symbol_map, &name).is_some() {
-            ctx.error_by_filerange(
-                define_loc,
-                format!("field '{name}' is already defined in record"),
-            );
-            return;
+        if let Some(existing_field_id) = record.find_field(&ctx.symbol_map, &name) {
+            let existing_field = ctx.symbol_map.record_field(existing_field_id);
+            if existing_field.typ != typ {
+                ctx.error_by_filerange(
+                    define_loc,
+                    format!("field '{name}' is already defined in record"),
+                );
+                return;
+            }
+
+            // allow duplicate fields with same type
         }
 
         let field = RecordField::new(name.clone(), typ.clone(), record_id, define_loc);

@@ -52,3 +52,6 @@ variable int defvar_field
 class AssertClass<> : {
   int value;
 }
+class ClassWithDuplicateFields<> : {
+  int value;
+}

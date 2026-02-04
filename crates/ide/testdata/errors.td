@@ -47,7 +47,7 @@ class duplicate_template_arg<int x, int x>; // Duplicate template argument
 
 class duplicate_field {
   int x;
-  int x; // Duplicate field
+  string x; // Duplicate field
 }
 
 defvar duplicate_var = 10;

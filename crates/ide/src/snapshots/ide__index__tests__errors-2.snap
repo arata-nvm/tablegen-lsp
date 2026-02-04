@@ -141,7 +141,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 998..999,
+                range: 1001..1002,
             },
             message: "field 'x' is already defined in record",
         },
@@ -152,7 +152,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1057..1070,
+                range: 1060..1073,
             },
             message: "variable 'duplicate_var' is already defined in the current scope",
         },
@@ -163,7 +163,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1106..1119,
+                range: 1109..1122,
             },
             message: "variable 'duplicate_def' is already defined in the current scope",
         },
@@ -174,7 +174,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1244..1260,
+                range: 1247..1263,
             },
             message: "defset 'duplicate_defset' already defined",
         },
@@ -185,7 +185,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1332..1352,
+                range: 1335..1355,
             },
             message: "multiclass 'duplicate_multiclass' already defined",
         },
@@ -196,7 +196,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1449..1456,
+                range: 1452..1459,
             },
             message: "class 'CyclicA' has cyclic inheritance",
         },
@@ -207,7 +207,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1533..1540,
+                range: 1536..1543,
             },
             message: "class 'CyclicB' has cyclic inheritance",
         },
@@ -218,7 +218,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1705..1717,
+                range: 1708..1720,
             },
             message: "value not specified for template argument 'x'",
         },
@@ -229,7 +229,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1705..1717,
+                range: 1708..1720,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -240,7 +240,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1760..1776,
+                range: 1763..1779,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -251,7 +251,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 1821..1842,
+                range: 1824..1845,
             },
             message: "too many arguments: 3",
         },
@@ -262,7 +262,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2020..2026,
+                range: 2023..2029,
             },
             message: "field 'derived_field1' of type 'Derived' is incompatible with type 'Base'",
         },
@@ -273,7 +273,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2055..2066,
+                range: 2058..2069,
             },
             message: "field 'derived_field2' of type 'Derived' is incompatible with type 'Unrelated'",
         },
@@ -284,7 +284,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2181..2200,
+                range: 2184..2203,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -295,7 +295,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2196..2199,
+                range: 2199..2202,
             },
             message: "we can only specify the template argument 'x' once",
         },
@@ -306,7 +306,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2249..2263,
+                range: 2252..2266,
             },
             message: "value not specified for template argument 'x'",
         },
@@ -317,7 +317,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2249..2263,
+                range: 2252..2266,
             },
             message: "value not specified for template argument 'y'",
         },
@@ -328,7 +328,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2259..2262,
+                range: 2262..2265,
             },
             message: "template argument 'z' doesn't exist",
         },
@@ -339,7 +339,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2324..2327,
+                range: 2327..2330,
             },
             message: "expected bits type, got 'string'",
         },
@@ -350,7 +350,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2361..2364,
+                range: 2364..2367,
             },
             message: "expected list type, got 'string'",
         },
@@ -361,7 +361,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2448..2449,
+                range: 2451..2452,
             },
             message: "list element '2' is incompatible with list element type 'string'",
         },
@@ -372,7 +372,7 @@ expression: dump_diagnostics(index.diagnostics())
                 file: FileId(
                     0,
                 ),
-                range: 2481..2487,
+                range: 2484..2490,
             },
             message: "list element '\"hoge\"' is incompatible with list element type 'int'",
         },
