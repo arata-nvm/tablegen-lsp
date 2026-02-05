@@ -56,10 +56,19 @@ pub(crate) fn completion(
     };
     let (pos, _) = from_proto::file_pos(&snap, params.text_document_position)?;
     let trigger_char = params.context.and_then(|it| it.trigger_character);
-    let Some(completion_list) = snap
-        .analysis
-        .completion(source_unit_id, pos, trigger_char)?
-    else {
+
+    // Prefer a background-computed index snapshot when available to avoid
+    // recomputing the Index salsa query on the hot completion path. Fall back
+    // to the regular analysis-based completion when no snapshot exists.
+    let completion_list = if let Some(index) = snap.background_index.get(source_unit_id) {
+        tracing::debug!("completion: using background index snapshot");
+        snap.analysis
+            .completion_with_index(source_unit_id, pos, trigger_char.clone(), index)?
+    } else {
+        tracing::debug!("completion: falling back to on-demand index");
+        snap.analysis.completion(source_unit_id, pos, trigger_char)?
+    };
+    let Some(completion_list) = completion_list else {
         return Ok(None);
     };
     let lsp_completion_list = completion_list
@@ -113,7 +122,16 @@ pub(crate) fn references(
         return Ok(None);
     };
     let (pos, _) = from_proto::file_pos(&snap, params.text_document_position)?;
-    let Some(location_list) = snap.analysis.references(source_unit_id, pos)? else {
+    // Prefer a background-computed index snapshot when available, and fall back
+    // to the on-demand analysis path otherwise.
+    let location_list = if let Some(index) = snap.background_index.get(source_unit_id) {
+        tracing::debug!("references: using background index snapshot");
+        ide::handlers::references::exec_with_index(&index, pos)
+    } else {
+        tracing::debug!("references: falling back to on-demand index");
+        snap.analysis.references(source_unit_id, pos)?
+    };
+    let Some(location_list) = location_list else {
         return Ok(None);
     };
     let mut lsp_location_list = Vec::new();

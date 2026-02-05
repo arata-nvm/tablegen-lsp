@@ -1,6 +1,6 @@
 use crate::{
     file_system::{FilePosition, FileRange, SourceUnitId},
-    index::IndexDatabase,
+    index::{Index, IndexDatabase},
 };
 
 pub fn exec(
@@ -9,6 +9,15 @@ pub fn exec(
     pos: FilePosition,
 ) -> Option<Vec<FileRange>> {
     let index = db.index(source_unit_id);
+    exec_with_index(&index, pos)
+}
+
+/// Execute reference search using a pre-computed `Index`.
+///
+/// This allows callers (such as the LSP layer) to reuse a background-computed
+/// index snapshot instead of re-running the `Index` salsa query on the hot
+/// request path.
+pub fn exec_with_index(index: &Index, pos: FilePosition) -> Option<Vec<FileRange>> {
     let symbol_map = index.symbol_map();
     let symbol_id = symbol_map.find_symbol_at(pos)?;
     let symbol = symbol_map.symbol(symbol_id);

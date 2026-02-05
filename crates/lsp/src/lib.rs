@@ -1,3 +1,4 @@
+pub mod background_index;
 pub mod config;
 pub mod diagnostics;
 pub mod from_proto;

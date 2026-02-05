@@ -159,6 +159,16 @@ impl Analysis {
         self.with_db(|db| completion::exec(db, source_unit_id, pos, trigger_char))
     }
 
+    pub fn completion_with_index(
+        &self,
+        source_unit_id: SourceUnitId,
+        pos: FilePosition,
+        trigger_char: Option<String>,
+        index: Arc<Index>,
+    ) -> Cancellable<Option<Vec<CompletionItem>>> {
+        self.with_db(|db| completion::exec_with_index(db, &index, source_unit_id, pos, trigger_char))
+    }
+
     pub fn document_link(
         &self,
         source_unit_id: SourceUnitId,

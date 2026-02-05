@@ -7,7 +7,7 @@ use syntax::{
 use crate::{
     bang_operator,
     file_system::{FilePosition, SourceUnitId},
-    index::IndexDatabase,
+    index::{Index, IndexDatabase},
     symbol_map::{
         SymbolMap,
         record::{AsRecordData, RecordFieldId},
@@ -69,14 +69,14 @@ pub enum CompletionItemKind {
     Variable,
 }
 
-pub fn exec(
+pub fn exec_with_index(
     db: &dyn IndexDatabase,
+    index: &Index,
     source_unit_id: SourceUnitId,
     pos: FilePosition,
     trigger_char: Option<String>,
 ) -> Option<Vec<CompletionItem>> {
     let parse = db.parse(pos.file);
-    let index = db.index(source_unit_id);
     let symbol_map = index.symbol_map();
     let resolved_types = index.resolved_types();
 
@@ -170,6 +170,16 @@ pub fn exec(
     }
 
     Some(ctx.finish(symbol_map))
+}
+
+pub fn exec(
+    db: &dyn IndexDatabase,
+    source_unit_id: SourceUnitId,
+    pos: FilePosition,
+    trigger_char: Option<String>,
+) -> Option<Vec<CompletionItem>> {
+    let index = db.index(source_unit_id);
+    exec_with_index(db, &index, source_unit_id, pos, trigger_char)
 }
 
 fn find_class(node: &SyntaxNode, symbol_map: &SymbolMap) -> Option<ClassId> {

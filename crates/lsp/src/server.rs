@@ -1,5 +1,5 @@
 use std::borrow::BorrowMut;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::ops::ControlFlow;
 use std::sync::Arc;
 
@@ -22,6 +22,7 @@ use tokio::task::{self};
 use ide::analysis::{Analysis, AnalysisHost};
 use ide::file_system::{FileSystem, SourceUnitId};
 
+use crate::background_index::BackgroundIndex;
 use crate::config::Config;
 use crate::diagnostics::DiagnosticCollection;
 use crate::vfs::{SharedFs, UrlExt, Vfs};
@@ -38,6 +39,8 @@ pub struct Server {
     root_source_unit: Option<SourceUnitId>,
 
     flycheck_task: Option<task::JoinHandle<()>>,
+    background_index: BackgroundIndex,
+    index_tasks: HashMap<SourceUnitId, task::JoinHandle<()>>,
 }
 
 const FLYCHECK_PROGRESS_TOKEN: &str = "tablegen-lsp/flycheck";
@@ -87,6 +90,8 @@ impl Server {
             opened_source_units: HashSet::new(),
             root_source_unit: None,
             flycheck_task: None,
+            background_index: BackgroundIndex::new(),
+            index_tasks: HashMap::new(),
         }
     }
 }
@@ -158,7 +163,9 @@ impl LanguageServer for Server {
         if let Some(_) = self.root_source_unit {
             // set_source_rootでこのファイルはすでに解析されているはずなので、何もしない
         } else {
-            self.load_source_unit(&params.text_document.uri, &params.text_document.text);
+            let source_unit_id =
+                self.load_source_unit(&params.text_document.uri, &params.text_document.text);
+            self.enqueue_index_update(source_unit_id);
             self.spawn_update_diagnostics();
             self.spawn_flycheck(Some(&params.text_document.uri));
         }
@@ -170,7 +177,8 @@ impl LanguageServer for Server {
         tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
             if self.is_file_in_root_source_unit(&params.text_document.uri) {
-                self.load_source_unit(&params.text_document.uri, &change.text);
+                let source_unit_id = self.load_source_unit(&params.text_document.uri, &change.text);
+                self.enqueue_index_update(source_unit_id);
                 self.spawn_update_diagnostics();
             } else {
                 let path = UrlExt::to_file_path(&params.text_document.uri);
@@ -185,7 +193,15 @@ impl LanguageServer for Server {
     fn did_save(&mut self, params: DidSaveTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_save: {params:?}");
         if self.is_file_in_root_source_unit(&params.text_document.uri) {
+            // 保存された内容に対する flycheck と、より正確な index 再計算を優先的に実行する。
             self.spawn_flycheck(Some(&params.text_document.uri));
+
+            if let Some(source_unit_id) = self
+                .snapshot()
+                .current_source_unit(&params.text_document.uri)
+            {
+                self.enqueue_index_update(source_unit_id);
+            }
         }
         ControlFlow::Continue(())
     }
@@ -223,6 +239,7 @@ impl Server {
         };
         let source_unit_id = self.load_source_unit(&params.uri, &content);
         self.root_source_unit.replace(source_unit_id);
+        self.enqueue_index_update(source_unit_id);
         self.spawn_update_diagnostics();
         self.spawn_flycheck(Some(&params.uri));
         ControlFlow::Continue(())
@@ -247,6 +264,23 @@ impl Server {
             client: self.client.clone(),
             config: self.config.clone(),
             root_source_unit: self.root_source_unit,
+            background_index: self.background_index.clone(),
+        }
+    }
+
+    fn enqueue_index_update(&mut self, source_unit_id: SourceUnitId) {
+        let snap = self.snapshot();
+        let background_index = self.background_index.clone();
+        let handle = task::spawn_blocking(move || {
+            let Ok(index) = snap.analysis.index(source_unit_id) else {
+                // キャンセルされた
+                return;
+            };
+            background_index.set(source_unit_id, index);
+        });
+
+        if let Some(old) = self.index_tasks.insert(source_unit_id, handle) {
+            old.abort();
         }
     }
 
@@ -459,6 +493,7 @@ pub struct ServerSnapshot {
     pub client: ClientSocket,
     pub config: Arc<Config>,
     pub root_source_unit: Option<SourceUnitId>,
+    pub background_index: BackgroundIndex,
 }
 
 impl ServerSnapshot {
