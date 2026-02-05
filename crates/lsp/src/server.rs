@@ -36,9 +36,10 @@ pub struct Server {
     diagnostic_version: i32,
     opened_source_units: HashSet<SourceUnitId>,
     root_source_unit: Option<SourceUnitId>,
+
+    flycheck_task: Option<task::JoinHandle<()>>,
 }
 
-const DIAGNOSTICS_PROGRESS_TOKEN: &str = "tablegen-lsp/diagnostics";
 const FLYCHECK_PROGRESS_TOKEN: &str = "tablegen-lsp/flycheck";
 
 pub type Result<T> = std::result::Result<T, ResponseError>;
@@ -85,6 +86,7 @@ impl Server {
             diagnostic_version: 0,
             opened_source_units: HashSet::new(),
             root_source_unit: None,
+            flycheck_task: None,
         }
     }
 }
@@ -157,7 +159,7 @@ impl LanguageServer for Server {
             // set_source_rootでこのファイルはすでに解析されているはずなので、何もしない
         } else {
             self.load_source_unit(&params.text_document.uri, &params.text_document.text);
-            self.spawn_update_diagnostics(Some(&params.text_document.uri));
+            self.spawn_update_diagnostics();
             self.spawn_flycheck(Some(&params.text_document.uri));
         }
 
@@ -169,7 +171,7 @@ impl LanguageServer for Server {
         if let Some(change) = params.content_changes.first() {
             if self.is_file_in_root_source_unit(&params.text_document.uri) {
                 self.load_source_unit(&params.text_document.uri, &change.text);
-                self.spawn_update_diagnostics(Some(&params.text_document.uri));
+                self.spawn_update_diagnostics();
             } else {
                 let path = UrlExt::to_file_path(&params.text_document.uri);
                 let file_id = self.vfs.assign_or_get_file_id(path);
@@ -199,7 +201,7 @@ impl LanguageServer for Server {
             let source_unit_id = SourceUnitId::from_root_file(file_id);
             self.opened_source_units.remove(&source_unit_id);
         }
-        self.spawn_update_diagnostics(Some(&params.text_document.uri));
+        self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
 }
@@ -221,7 +223,7 @@ impl Server {
         };
         let source_unit_id = self.load_source_unit(&params.uri, &content);
         self.root_source_unit.replace(source_unit_id);
-        self.spawn_update_diagnostics(Some(&params.uri));
+        self.spawn_update_diagnostics();
         self.spawn_flycheck(Some(&params.uri));
         ControlFlow::Continue(())
     }
@@ -232,78 +234,57 @@ impl Server {
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("clear_source_root");
         self.root_source_unit.take();
-        self.spawn_update_diagnostics(None);
+        self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
 }
 
 impl Server {
+    fn snapshot(&self) -> ServerSnapshot {
+        ServerSnapshot {
+            analysis: self.host.analysis(),
+            vfs: self.vfs.clone(),
+            client: self.client.clone(),
+            config: self.config.clone(),
+            root_source_unit: self.root_source_unit,
+        }
+    }
+
     fn spawn_with_snapshot<P: Send + 'static, T: Send + 'static>(
         &mut self,
         params: P,
         f: impl FnOnce(ServerSnapshot, P) -> T + Send + 'static,
     ) -> task::JoinHandle<T> {
-        let snap = ServerSnapshot {
-            analysis: self.host.analysis(),
-            vfs: self.vfs.clone(),
-            root_source_unit: self.root_source_unit,
-        };
+        let snap = self.snapshot();
         task::spawn_blocking(move || f(snap, params))
     }
 
-    fn spawn_update_diagnostics(&mut self, trigger_uri: Option<&Url>) {
-        let file_name = trigger_uri.and_then(|uri| UrlExt::to_file_path(uri).file_name());
+    fn spawn_update_diagnostics(&mut self) {
         let diag_version = self.bump_diagnostic_version();
-        let client = self.client.clone();
         let opened_source_units = self.opened_source_units();
-        self.spawn_with_snapshot((), async move |snap, _| {
-            let progress = Progress::new(
-                client.clone(),
-                DIAGNOSTICS_PROGRESS_TOKEN,
-                "Analyzing diagnostics",
-                file_name,
-            )
-            .await;
-
+        self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
             for source_unit_id in opened_source_units {
                 let source_unit = snap.analysis.source_unit(source_unit_id);
                 lsp_diags.add_source_unit_files(&source_unit);
                 lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
             }
-            client
+            snap.client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
-
-            if let Some(progress) = progress {
-                progress.done();
-            }
         });
     }
 
     fn spawn_update_diagnostics_of(&mut self, source_unit_id: SourceUnitId) {
         let diag_version = self.bump_diagnostic_version();
-        let client = self.client.clone();
-        self.spawn_with_snapshot((), async move |snap, _| {
-            let progress = Progress::new(
-                client.clone(),
-                DIAGNOSTICS_PROGRESS_TOKEN,
-                "Analyzing diagnostics",
-                None,
-            )
-            .await;
-
+        self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
             let source_unit = snap.analysis.source_unit(source_unit_id);
             lsp_diags.add_source_unit_files(&source_unit);
             lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
-            client
+            snap.client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
-
-            if let Some(progress) = progress {
-                progress.done();
-            }
         });
     }
 
@@ -332,41 +313,55 @@ impl Server {
 
     fn spawn_flycheck(&mut self, trigger_uri: Option<&Url>) {
         let file_name = trigger_uri.and_then(|uri| UrlExt::to_file_path(uri).file_name());
-        let include_dirs = self.config.include_dirs.clone();
-        let client = self.client.clone();
-        let vfs = self.vfs.clone();
+        let snap = self.snapshot();
         let opened_source_units = self.opened_source_units();
-        self.spawn_with_snapshot(include_dirs, async move |snap, include_dirs| {
-            let progress = Progress::new(
-                client.clone(),
-                FLYCHECK_PROGRESS_TOKEN,
-                "Running flycheck",
-                file_name,
+        let task = task::spawn(async move {
+            let progress = match tokio::time::timeout(
+                std::time::Duration::from_secs(1),
+                Progress::new(
+                    snap.client.clone(),
+                    FLYCHECK_PROGRESS_TOKEN,
+                    "Running flycheck",
+                    file_name,
+                ),
             )
-            .await;
+            .await
+            {
+                Ok(p) => p,
+                Err(err) => {
+                    tracing::warn!("flycheck: progress create timed out: {err:?}");
+                    None
+                }
+            };
 
             for source_unit_id in opened_source_units {
                 let source_unit = snap.analysis.source_unit(source_unit_id);
-                let root_file = vfs.path_for_file(&source_unit.root());
+                let root_file = snap.vfs.path_for_file(&source_unit.root());
 
-                let result =
-                    match interop::parse_source_unit_with_tblgen(&root_file, &include_dirs, &vfs) {
-                        Ok(result) => result,
-                        Err(err) => {
-                            tracing::warn!("failed to parse source unit: {err:?}");
-                            continue;
-                        }
-                    };
+                let result = match interop::parse_source_unit_with_tblgen(
+                    &root_file,
+                    &snap.config.include_dirs,
+                    &snap.vfs,
+                ) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        tracing::warn!("failed to parse source unit: {err:?}");
+                        continue;
+                    }
+                };
 
-                client
+                snap.client
                     .emit(UpdateFlycheckEvent(source_unit_id, result))
-                    .expect("failed to emit updatet flycheck event");
+                    .expect("failed to emit update flycheck event");
             }
 
             if let Some(progress) = progress {
                 progress.done();
             }
         });
+        if let Some(old) = self.flycheck_task.replace(task) {
+            old.abort();
+        }
     }
 
     fn update_flycheck(
@@ -437,6 +432,8 @@ impl Server {
 pub struct ServerSnapshot {
     pub analysis: Analysis,
     pub vfs: SharedFs<Vfs>,
+    pub client: ClientSocket,
+    pub config: Arc<Config>,
     pub root_source_unit: Option<SourceUnitId>,
 }
 
@@ -492,6 +489,8 @@ impl Progress {
         message: Option<String>,
     ) -> Option<Self> {
         let token = ProgressToken::String(token.into());
+        tracing::info!("start work done progress: {:?}", token);
+
         if let Err(err) = client
             .request::<request::WorkDoneProgressCreate>(WorkDoneProgressCreateParams {
                 token: token.clone(),
@@ -513,7 +512,7 @@ impl Progress {
     }
 
     fn done(self) {
-        self.notify(WorkDoneProgress::End(WorkDoneProgressEnd { message: None }));
+        std::mem::drop(self);
     }
 
     fn notify(&self, progress: WorkDoneProgress) {
@@ -526,5 +525,12 @@ impl Progress {
         {
             tracing::warn!("failed to notify progress: {err:?}");
         }
+    }
+}
+
+impl Drop for Progress {
+    fn drop(&mut self) {
+        tracing::info!("end work done progress: {:?}", self.token);
+        self.notify(WorkDoneProgress::End(WorkDoneProgressEnd { message: None }));
     }
 }
