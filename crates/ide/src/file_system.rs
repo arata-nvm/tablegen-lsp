@@ -60,6 +60,13 @@ impl FilePath {
     pub fn to_str(&self) -> &str {
         self.0.to_str().expect("Invalid UTF-8 in file path")
     }
+
+    pub fn file_name(&self) -> Option<String> {
+        self.0
+            .file_name()
+            .and_then(|os_str| os_str.to_str())
+            .map(|s| s.to_string())
+    }
 }
 
 impl From<&Path> for FilePath {

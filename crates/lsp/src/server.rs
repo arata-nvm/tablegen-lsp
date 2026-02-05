@@ -36,8 +36,6 @@ pub struct Server {
     diagnostic_version: i32,
     opened_source_units: HashSet<SourceUnitId>,
     root_source_unit: Option<SourceUnitId>,
-    flycheck_counter: u64,
-    diagnostics_counter: u64,
 }
 
 const DIAGNOSTICS_PROGRESS_TOKEN: &str = "tablegen-lsp/diagnostics";
@@ -45,7 +43,7 @@ const FLYCHECK_PROGRESS_TOKEN: &str = "tablegen-lsp/flycheck";
 
 pub type Result<T> = std::result::Result<T, ResponseError>;
 
-struct UpdateDiagnosticsEvent(i32, DiagnosticCollection, ProgressToken);
+struct UpdateDiagnosticsEvent(i32, DiagnosticCollection);
 struct UpdateConfigEvent(Value);
 struct UpdateFlycheckEvent(SourceUnitId, TblgenParseResult);
 
@@ -87,8 +85,6 @@ impl Server {
             diagnostic_version: 0,
             opened_source_units: HashSet::new(),
             root_source_unit: None,
-            flycheck_counter: 0,
-            diagnostics_counter: 0,
         }
     }
 }
@@ -256,23 +252,19 @@ impl Server {
     }
 
     fn spawn_update_diagnostics(&mut self, trigger_uri: Option<&Url>) {
-        let diagnostics_id = self.diagnostics_counter;
-        self.diagnostics_counter += 1;
-        let token =
-            ProgressToken::String(format!("{}/{}", DIAGNOSTICS_PROGRESS_TOKEN, diagnostics_id));
-        let file_name = trigger_uri.and_then(|uri| {
-            let path = UrlExt::to_file_path(uri);
-            path.0
-                .file_name()
-                .and_then(|s| s.to_str())
-                .map(|s| s.to_string())
-        });
-        self.begin_work_done_progress(token.clone(), "Analyzing diagnostics", file_name);
-
+        let file_name = trigger_uri.and_then(|uri| UrlExt::to_file_path(uri).file_name());
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
         let opened_source_units = self.opened_source_units();
-        self.spawn_with_snapshot((), move |snap, _| {
+        self.spawn_with_snapshot((), async move |snap, _| {
+            let progress = Progress::new(
+                client.clone(),
+                DIAGNOSTICS_PROGRESS_TOKEN,
+                "Analyzing diagnostics",
+                file_name,
+            )
+            .await;
+
             let mut lsp_diags = DiagnosticCollection::default();
             for source_unit_id in opened_source_units {
                 let source_unit = snap.analysis.source_unit(source_unit_id);
@@ -280,28 +272,38 @@ impl Server {
                 lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
             }
             client
-                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags, token))
+                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
+
+            if let Some(progress) = progress {
+                progress.done();
+            }
         });
     }
 
     fn spawn_update_diagnostics_of(&mut self, source_unit_id: SourceUnitId) {
-        let diagnostics_id = self.diagnostics_counter;
-        self.diagnostics_counter += 1;
-        let token =
-            ProgressToken::String(format!("{}/{}", DIAGNOSTICS_PROGRESS_TOKEN, diagnostics_id));
-        self.begin_work_done_progress(token.clone(), "Analyzing diagnostics", None);
-
         let diag_version = self.bump_diagnostic_version();
         let client = self.client.clone();
-        self.spawn_with_snapshot((), move |snap, _| {
+        self.spawn_with_snapshot((), async move |snap, _| {
+            let progress = Progress::new(
+                client.clone(),
+                DIAGNOSTICS_PROGRESS_TOKEN,
+                "Analyzing diagnostics",
+                None,
+            )
+            .await;
+
             let mut lsp_diags = DiagnosticCollection::default();
             let source_unit = snap.analysis.source_unit(source_unit_id);
             lsp_diags.add_source_unit_files(&source_unit);
             lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
             client
-                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags, token))
+                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
+
+            if let Some(progress) = progress {
+                progress.done();
+            }
         });
     }
 
@@ -313,7 +315,7 @@ impl Server {
 
     fn update_diagnostics(
         &mut self,
-        UpdateDiagnosticsEvent(version, lsp_diags, token): UpdateDiagnosticsEvent,
+        UpdateDiagnosticsEvent(version, lsp_diags): UpdateDiagnosticsEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_diagnostics: {version:?}");
         for (file_id, lsp_diags_for_file) in lsp_diags {
@@ -325,28 +327,24 @@ impl Server {
                 .publish_diagnostics(params)
                 .expect("failed to publish diagnostics");
         }
-        self.end_work_done_progress(token, None);
         ControlFlow::Continue(())
     }
 
     fn spawn_flycheck(&mut self, trigger_uri: Option<&Url>) {
-        let flycheck_id = self.flycheck_counter;
-        self.flycheck_counter += 1;
-        let token = ProgressToken::String(format!("{}/{}", FLYCHECK_PROGRESS_TOKEN, flycheck_id));
-        let opened_source_units = self.opened_source_units();
-        let file_name = trigger_uri.and_then(|uri| {
-            let path = UrlExt::to_file_path(uri);
-            path.0
-                .file_name()
-                .and_then(|s| s.to_str())
-                .map(|s| s.to_string())
-        });
-        self.begin_work_done_progress(token.clone(), "Running flycheck", file_name);
-
-        let client = self.client.clone();
+        let file_name = trigger_uri.and_then(|uri| UrlExt::to_file_path(uri).file_name());
         let include_dirs = self.config.include_dirs.clone();
+        let client = self.client.clone();
         let vfs = self.vfs.clone();
-        self.spawn_with_snapshot(include_dirs, move |snap, include_dirs| {
+        let opened_source_units = self.opened_source_units();
+        self.spawn_with_snapshot(include_dirs, async move |snap, include_dirs| {
+            let progress = Progress::new(
+                client.clone(),
+                FLYCHECK_PROGRESS_TOKEN,
+                "Running flycheck",
+                file_name,
+            )
+            .await;
+
             for source_unit_id in opened_source_units {
                 let source_unit = snap.analysis.source_unit(source_unit_id);
                 let root_file = vfs.path_for_file(&source_unit.root());
@@ -365,13 +363,8 @@ impl Server {
                     .expect("failed to emit updatet flycheck event");
             }
 
-            if let Err(err) = client.notify::<notification::Progress>(ProgressParams {
-                token,
-                value: ProgressParamsValue::WorkDone(WorkDoneProgress::End(WorkDoneProgressEnd {
-                    message: None,
-                })),
-            }) {
-                tracing::warn!("failed to end work done progress: {err:?}");
+            if let Some(progress) = progress {
+                progress.done();
             }
         });
     }
@@ -439,50 +432,6 @@ impl Server {
             None => self.opened_source_units.clone(),
         }
     }
-
-    fn begin_work_done_progress(&self, token: ProgressToken, title: &str, message: Option<String>) {
-        let client = self.client.clone();
-        let title = title.to_string();
-        task::spawn(async move {
-            if let Err(err) = client
-                .request::<request::WorkDoneProgressCreate>(WorkDoneProgressCreateParams {
-                    token: token.clone(),
-                })
-                .await
-            {
-                tracing::warn!("failed to create work done progress: {err:?}");
-                return;
-            }
-
-            if let Err(err) = client.notify::<notification::Progress>(ProgressParams {
-                token,
-                value: ProgressParamsValue::WorkDone(WorkDoneProgress::Begin(
-                    WorkDoneProgressBegin {
-                        title,
-                        cancellable: Some(false),
-                        message,
-                        percentage: None,
-                    },
-                )),
-            }) {
-                tracing::warn!("failed to begin work done progress: {err:?}");
-            }
-        });
-    }
-
-    fn end_work_done_progress(&self, token: ProgressToken, message: Option<String>) {
-        let client = self.client.clone();
-        task::spawn(async move {
-            if let Err(err) = client.notify::<notification::Progress>(ProgressParams {
-                token,
-                value: ProgressParamsValue::WorkDone(WorkDoneProgress::End(WorkDoneProgressEnd {
-                    message,
-                })),
-            }) {
-                tracing::warn!("failed to end work done progress: {err:?}");
-            }
-        });
-    }
 }
 
 pub struct ServerSnapshot {
@@ -529,3 +478,53 @@ trait RouterExt: BorrowMut<Router<Server>> {
 }
 
 impl RouterExt for Router<Server> {}
+
+struct Progress {
+    client: ClientSocket,
+    token: ProgressToken,
+}
+
+impl Progress {
+    async fn new(
+        client: ClientSocket,
+        token: impl Into<String>,
+        title: impl Into<String>,
+        message: Option<String>,
+    ) -> Option<Self> {
+        let token = ProgressToken::String(token.into());
+        if let Err(err) = client
+            .request::<request::WorkDoneProgressCreate>(WorkDoneProgressCreateParams {
+                token: token.clone(),
+            })
+            .await
+        {
+            tracing::warn!("failed to create work done progress: {err:?}");
+            return None;
+        }
+
+        let this = Self { client, token };
+        this.notify(WorkDoneProgress::Begin(WorkDoneProgressBegin {
+            title: title.into(),
+            cancellable: None,
+            message: message,
+            percentage: None,
+        }));
+        Some(this)
+    }
+
+    fn done(self) {
+        self.notify(WorkDoneProgress::End(WorkDoneProgressEnd { message: None }));
+    }
+
+    fn notify(&self, progress: WorkDoneProgress) {
+        if let Err(err) = self
+            .client
+            .notify::<notification::Progress>(ProgressParams {
+                token: self.token.clone(),
+                value: ProgressParamsValue::WorkDone(progress),
+            })
+        {
+            tracing::warn!("failed to notify progress: {err:?}");
+        }
+    }
+}
