@@ -1,21 +1,19 @@
+use std::borrow::BorrowMut;
 use std::collections::HashSet;
 use std::ops::ControlFlow;
 use std::sync::Arc;
 
 use async_lsp::lsp_types::{
-    CompletionOptions, CompletionParams, CompletionResponse, DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentLink,
-    DocumentLinkOptions, DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse,
-    FoldingRange, FoldingRangeParams, FoldingRangeProviderCapability, GotoDefinitionParams,
-    GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
-    InitializeResult, InlayHint, InlayHintParams, Location, MessageType, OneOf, ProgressParams,
-    ProgressParamsValue, ProgressToken, PublishDiagnosticsParams, ReferenceParams,
-    ServerCapabilities, ServerInfo, ShowMessageParams, TextDocumentSyncCapability,
-    TextDocumentSyncKind, Url, WorkDoneProgress, WorkDoneProgressBegin,
+    CompletionOptions, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentLinkOptions,
+    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
+    MessageType, OneOf, ProgressParams, ProgressParamsValue, ProgressToken,
+    PublishDiagnosticsParams, ServerCapabilities, ServerInfo, ShowMessageParams,
+    TextDocumentSyncCapability, TextDocumentSyncKind, Url, WorkDoneProgress, WorkDoneProgressBegin,
     WorkDoneProgressCreateParams, WorkDoneProgressEnd, notification, request,
 };
 use async_lsp::router::Router;
-use async_lsp::{ClientSocket, LanguageClient, LanguageServer, ResponseError};
+use async_lsp::{ClientSocket, ErrorCode, LanguageClient, LanguageServer, ResponseError};
 use futures::future::{BoxFuture, ready};
 use ide::interop::{self, TblgenParseResult};
 use serde_json::Value;
@@ -27,7 +25,7 @@ use ide::file_system::{FileSystem, SourceUnitId};
 use crate::config::Config;
 use crate::diagnostics::DiagnosticCollection;
 use crate::vfs::{SharedFs, UrlExt, Vfs};
-use crate::{from_proto, lsp_ext, to_proto};
+use crate::{handlers, lsp_ext};
 
 pub struct Server {
     host: AnalysisHost,
@@ -45,10 +43,7 @@ pub struct Server {
 const DIAGNOSTICS_PROGRESS_TOKEN: &str = "tablegen-lsp/diagnostics";
 const FLYCHECK_PROGRESS_TOKEN: &str = "tablegen-lsp/flycheck";
 
-pub struct ServerSnapshot {
-    pub analysis: Analysis,
-    pub vfs: SharedFs<Vfs>,
-}
+pub type Result<T> = std::result::Result<T, ResponseError>;
 
 struct UpdateDiagnosticsEvent(i32, DiagnosticCollection, ProgressToken);
 struct UpdateConfigEvent(Value);
@@ -69,14 +64,14 @@ impl Server {
             .notification::<notification::DidCloseTextDocument>(Self::did_close)
             .notification::<lsp_ext::SetSourceRoot>(Self::set_source_root)
             .notification::<lsp_ext::ClearSourceRoot>(Self::clear_source_root)
-            .request::<request::DocumentSymbolRequest, _>(Self::document_symbol)
-            .request::<request::GotoDefinition, _>(Self::definition)
-            .request::<request::References, _>(Self::references)
-            .request::<request::HoverRequest, _>(Self::hover)
-            .request::<request::InlayHintRequest, _>(Self::inlay_hint)
-            .request::<request::Completion, _>(Self::completion)
-            .request::<request::DocumentLinkRequest, _>(Self::document_link)
-            .request::<request::FoldingRangeRequest, _>(Self::folding_range)
+            .request_snap::<request::DocumentSymbolRequest>(handlers::document_symbol)
+            .request_snap::<request::GotoDefinition>(handlers::definition)
+            .request_snap::<request::References>(handlers::references)
+            .request_snap::<request::HoverRequest>(handlers::hover)
+            .request_snap::<request::InlayHintRequest>(handlers::inlay_hint)
+            .request_snap::<request::Completion>(handlers::completion)
+            .request_snap::<request::DocumentLinkRequest>(handlers::document_link)
+            .request_snap::<request::FoldingRangeRequest>(handlers::folding_range)
             .event::<UpdateDiagnosticsEvent>(Self::update_diagnostics)
             .event::<UpdateConfigEvent>(Self::update_config)
             .event::<UpdateFlycheckEvent>(Self::update_flycheck);
@@ -106,7 +101,7 @@ impl LanguageServer for Server {
     fn initialize(
         &mut self,
         params: InitializeParams,
-    ) -> BoxFuture<'static, Result<InitializeResult, Self::Error>> {
+    ) -> BoxFuture<'static, Result<InitializeResult>> {
         tracing::info!("initialize: {params:?}");
 
         // NOTE: It seems that did_change_configuration is not called, so we need to update the config here.
@@ -142,172 +137,6 @@ impl LanguageServer for Server {
                 ..Default::default()
             },
         })))
-    }
-
-    fn folding_range(
-        &mut self,
-        params: FoldingRangeParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<FoldingRange>>, Self::Error>> {
-        tracing::info!("folding_range: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(folding_ranges) = snap.analysis.folding_range(file_id) else {
-                return Ok(None);
-            };
-
-            let lsp_folding_ranges = folding_ranges
-                .into_iter()
-                .map(|it| to_proto::folding_range(&line_index, it))
-                .collect();
-            Ok(Some(lsp_folding_ranges))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn inlay_hint(
-        &mut self,
-        params: InlayHintParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<InlayHint>>, Self::Error>> {
-        tracing::info!("inlay_hint: {params:?}");
-        let source_unit_id = self.current_source_unit(&params.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (range, line_index) =
-                from_proto::file_range(&snap, params.text_document, params.range);
-            let Some(inlay_hints) = snap.analysis.inlay_hint(source_unit_id, range) else {
-                return Ok(None);
-            };
-
-            let lsp_inlay_hints = inlay_hints
-                .into_iter()
-                .map(|it| to_proto::inlay_hint(&line_index, it))
-                .collect();
-            Ok(Some(lsp_inlay_hints))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn completion(
-        &mut self,
-        params: CompletionParams,
-    ) -> BoxFuture<'static, Result<Option<CompletionResponse>, Self::Error>> {
-        tracing::info!("completion: {params:?}");
-        let source_unit_id =
-            self.current_source_unit(&params.text_document_position.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
-            let trigger_char = params.context.and_then(|it| it.trigger_character);
-            let Some(completion_list) = snap.analysis.completion(source_unit_id, pos, trigger_char)
-            else {
-                return Ok(None);
-            };
-
-            let lsp_completion_list = completion_list
-                .into_iter()
-                .map(to_proto::completion_item)
-                .collect();
-            Ok(Some(CompletionResponse::Array(lsp_completion_list)))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn hover(
-        &mut self,
-        params: HoverParams,
-    ) -> BoxFuture<'static, Result<Option<Hover>, Self::Error>> {
-        tracing::info!("hover: {params:?}");
-        let source_unit_id =
-            self.current_source_unit(&params.text_document_position_params.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
-            let Some(hover) = snap.analysis.hover(source_unit_id, pos) else {
-                return Ok(None);
-            };
-            let lsp_hover = to_proto::hover(hover);
-            Ok(Some(lsp_hover))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn definition(
-        &mut self,
-        params: GotoDefinitionParams,
-    ) -> BoxFuture<'static, Result<Option<GotoDefinitionResponse>, Self::Error>> {
-        tracing::info!("goto_definition: {params:?}");
-        let source_unit_id =
-            self.current_source_unit(&params.text_document_position_params.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params);
-            let Some(location) = snap.analysis.goto_definition(source_unit_id, pos) else {
-                return Ok(None);
-            };
-
-            let lsp_location = to_proto::location(&snap, location);
-            Ok(Some(GotoDefinitionResponse::Scalar(lsp_location)))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn references(
-        &mut self,
-        params: ReferenceParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<Location>>, Self::Error>> {
-        tracing::info!("references: {params:?}");
-        let source_unit_id =
-            self.current_source_unit(&params.text_document_position.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (pos, _) = from_proto::file_pos(&snap, params.text_document_position);
-            let Some(location_list) = snap.analysis.references(source_unit_id, pos) else {
-                return Ok(None);
-            };
-
-            let lsp_location_list = location_list
-                .into_iter()
-                .map(|it| to_proto::location(&snap, it))
-                .collect();
-            Ok(Some(lsp_location_list))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn document_symbol(
-        &mut self,
-        params: DocumentSymbolParams,
-    ) -> BoxFuture<'static, Result<Option<DocumentSymbolResponse>, Self::Error>> {
-        tracing::info!("document_symbol: {params:?}");
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(symbols) = snap.analysis.document_symbol(file_id) else {
-                return Ok(None);
-            };
-
-            let lsp_symbols = symbols
-                .into_iter()
-                .map(|it| to_proto::document_symbol(&line_index, it))
-                .collect();
-            Ok(Some(DocumentSymbolResponse::Nested(lsp_symbols)))
-        });
-        Box::pin(async move { task.await.unwrap() })
-    }
-
-    fn document_link(
-        &mut self,
-        params: DocumentLinkParams,
-    ) -> BoxFuture<'static, Result<Option<Vec<DocumentLink>>, Self::Error>> {
-        tracing::info!("document link: {params:?}");
-        let source_unit_id = self.current_source_unit(&params.text_document.uri);
-        let task = self.spawn_with_snapshot(params, move |snap, params| {
-            let (file_id, line_index) = from_proto::file(&snap, params.text_document);
-            let Some(links) = snap.analysis.document_link(source_unit_id, file_id) else {
-                return Ok(None);
-            };
-
-            let lsp_links = links
-                .into_iter()
-                .map(|it| to_proto::document_link(&snap.vfs, &line_index, it))
-                .collect();
-            Ok(Some(lsp_links))
-        });
-        Box::pin(async move { task.await.unwrap() })
     }
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
@@ -421,6 +250,7 @@ impl Server {
         let snap = ServerSnapshot {
             analysis: self.host.analysis(),
             vfs: self.vfs.clone(),
+            root_source_unit: self.root_source_unit,
         };
         task::spawn_blocking(move || f(snap, params))
     }
@@ -610,17 +440,6 @@ impl Server {
         }
     }
 
-    fn current_source_unit(&mut self, uri: &Url) -> SourceUnitId {
-        match self.root_source_unit {
-            Some(source_unit_id) => source_unit_id,
-            None => {
-                let path = UrlExt::to_file_path(uri);
-                let file_id = self.vfs.assign_or_get_file_id(path);
-                SourceUnitId::from_root_file(file_id)
-            }
-        }
-    }
-
     fn begin_work_done_progress(&self, token: ProgressToken, title: &str, message: Option<String>) {
         let client = self.client.clone();
         let title = title.to_string();
@@ -665,3 +484,48 @@ impl Server {
         });
     }
 }
+
+pub struct ServerSnapshot {
+    pub analysis: Analysis,
+    pub vfs: SharedFs<Vfs>,
+    pub root_source_unit: Option<SourceUnitId>,
+}
+
+impl ServerSnapshot {
+    pub fn current_source_unit(&self, uri: &Url) -> Option<SourceUnitId> {
+        match self.root_source_unit {
+            Some(source_unit_id) => Some(source_unit_id),
+            None => {
+                let path = UrlExt::to_file_path(uri);
+                let Some(file_id) = self.vfs.file_for_path(&path) else {
+                    tracing::warn!("cannot find file id for {path:?}");
+                    return None;
+                };
+                Some(SourceUnitId::from_root_file(file_id))
+            }
+        }
+    }
+}
+
+trait RouterExt: BorrowMut<Router<Server>> {
+    fn request_snap<R: request::Request>(
+        &mut self,
+        f: impl Fn(ServerSnapshot, R::Params) -> Result<R::Result> + Send + Copy + 'static,
+    ) -> &mut Self
+    where
+        R::Params: Send + 'static,
+        R::Result: Send + 'static,
+    {
+        self.borrow_mut().request::<R, _>(move |this, params| {
+            let task = this.spawn_with_snapshot(params, move |snap, params| f(snap, params));
+            async move {
+                task.await.map_err(|e| {
+                    ResponseError::new(ErrorCode::REQUEST_FAILED, format!("request failed: {}", e))
+                })?
+            }
+        });
+        self
+    }
+}
+
+impl RouterExt for Router<Server> {}
