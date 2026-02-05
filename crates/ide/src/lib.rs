@@ -9,3 +9,7 @@ pub mod line_index;
 pub mod symbol_map;
 pub mod tests;
 pub mod utils;
+
+pub use salsa::Cancelled;
+
+pub type Cancellable<T> = Result<T, Cancelled>;

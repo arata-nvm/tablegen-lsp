@@ -1,13 +1,14 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
+use salsa::Setter as _;
 use syntax::parser::TextRange;
 
 use crate::{
-    db::{SourceDatabase, SourceDatabaseStorage},
+    db::{SetFileContent, SetSourceUnit, SetTblgenDiagnostics, SetTblgenSymbolTable, SourceDatabase},
     file_system::{
         self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem, SourceUnitId,
     },
-    index::IndexDatabaseStorage,
+    index::IndexDatabase,
     interop,
 };
 
@@ -38,13 +39,130 @@ pub fn load_single_file_with_tblgen(path: &str) -> (TestDatabase, Fixture) {
     (db, f)
 }
 
-#[salsa::database(SourceDatabaseStorage, IndexDatabaseStorage)]
-#[derive(Default)]
+#[salsa::db]
+#[derive(Clone, Default)]
 pub struct TestDatabase {
     storage: salsa::Storage<Self>,
+    file_contents: std::collections::HashMap<FileId, crate::db::FileContent>,
+    source_units: std::collections::HashMap<SourceUnitId, crate::db::SourceUnitInput>,
+    tblgen_diagnostics_map: std::collections::HashMap<SourceUnitId, crate::db::TblgenDiagnostics>,
+    tblgen_symbol_tables: std::collections::HashMap<SourceUnitId, crate::db::TblgenSymbolTableInput>,
 }
 
+#[salsa::db]
 impl salsa::Database for TestDatabase {}
+
+#[salsa::db]
+impl SourceDatabase for TestDatabase {
+    fn file_content(&self, file_id: FileId) -> Arc<str> {
+        self.file_contents
+            .get(&file_id)
+            .map(|fc| fc.content(self).clone())
+            .unwrap_or_else(|| Arc::from(""))
+    }
+
+    fn source_unit(&self, source_unit_id: SourceUnitId) -> Arc<crate::file_system::SourceUnit> {
+        self.source_units
+            .get(&source_unit_id)
+            .map(|su| su.source_unit(self).clone())
+            .unwrap_or_else(|| {
+                use std::collections::HashMap;
+                Arc::new(crate::file_system::SourceUnit {
+                    root: source_unit_id.root_file(),
+                    includes: HashMap::new(),
+                })
+            })
+    }
+
+    fn tblgen_diagnostics(
+        &self,
+        source_unit_id: SourceUnitId,
+    ) -> Option<Arc<Vec<crate::interop::TblgenDiagnostic>>> {
+        self.tblgen_diagnostics_map
+            .get(&source_unit_id)
+            .and_then(|td| td.diagnostics(self))
+    }
+
+    fn tblgen_symbol_table(
+        &self,
+        source_unit_id: SourceUnitId,
+    ) -> Option<Arc<crate::interop::TblgenSymbolTable>> {
+        self.tblgen_symbol_tables
+            .get(&source_unit_id)
+            .and_then(|ts| ts.symbol_table(self))
+    }
+}
+
+#[salsa::db]
+impl IndexDatabase for TestDatabase {
+    fn index(&self, source_unit_id: SourceUnitId) -> Arc<crate::index::Index> {
+        let source_unit_id_interned = crate::index::SourceUnitIdInterned::new(self, source_unit_id.root_file().0);
+        crate::index::index(self, source_unit_id_interned)
+    }
+}
+
+impl crate::db::ParseDatabase for TestDatabase {
+    fn parse(&self, file_id: FileId) -> syntax::Parse {
+        let file_id_interned = crate::db::FileIdInterned::new(self, file_id.0);
+        crate::db::parse(self, file_id_interned)
+    }
+}
+
+impl SetFileContent for TestDatabase {
+    fn set_file_content(&mut self, file_id: FileId, content: Arc<str>) {
+        if !self.file_contents.contains_key(&file_id) {
+            let file_content = crate::db::FileContent::new(self, content.clone());
+            self.file_contents.insert(file_id, file_content);
+        }
+        if let Some(file_content) = self.file_contents.get_mut(&file_id) {
+            file_content.set_content(self).to(content);
+        }
+    }
+}
+
+impl SetSourceUnit for TestDatabase {
+    fn set_source_unit(&mut self, source_unit_id: SourceUnitId, source_unit: Arc<crate::file_system::SourceUnit>) {
+        if !self.source_units.contains_key(&source_unit_id) {
+            let su_input = crate::db::SourceUnitInput::new(self, source_unit.clone());
+            self.source_units.insert(source_unit_id, su_input);
+        }
+        if let Some(su_input) = self.source_units.get_mut(&source_unit_id) {
+            su_input.set_source_unit(self).to(source_unit);
+        }
+    }
+}
+
+impl SetTblgenDiagnostics for TestDatabase {
+    fn set_tblgen_diagnostics(
+        &mut self,
+        source_unit_id: SourceUnitId,
+        diagnostics: Option<Arc<Vec<crate::interop::TblgenDiagnostic>>>,
+    ) {
+        if !self.tblgen_diagnostics_map.contains_key(&source_unit_id) {
+            let td_input = crate::db::TblgenDiagnostics::new(self, diagnostics.clone());
+            self.tblgen_diagnostics_map.insert(source_unit_id, td_input);
+        }
+        if let Some(td_input) = self.tblgen_diagnostics_map.get_mut(&source_unit_id) {
+            td_input.set_diagnostics(self).to(diagnostics);
+        }
+    }
+}
+
+impl SetTblgenSymbolTable for TestDatabase {
+    fn set_tblgen_symbol_table(
+        &mut self,
+        source_unit_id: SourceUnitId,
+        symbol_table: Option<Arc<crate::interop::TblgenSymbolTable>>,
+    ) {
+        if !self.tblgen_symbol_tables.contains_key(&source_unit_id) {
+            let ts_input = crate::db::TblgenSymbolTableInput::new(self, symbol_table.clone());
+            self.tblgen_symbol_tables.insert(source_unit_id, ts_input);
+        }
+        if let Some(ts_input) = self.tblgen_symbol_tables.get_mut(&source_unit_id) {
+            ts_input.set_symbol_table(self).to(symbol_table);
+        }
+    }
+}
 
 impl TestDatabase {
     fn new(f: &mut Fixture) -> Self {

@@ -2,6 +2,7 @@ use std::{collections::HashMap, path::Path};
 
 use async_lsp::lsp_types;
 use ide::{
+    Cancellable,
     file_system::{FileId, FilePath, FileSystem, SourceUnit},
     handlers::diagnostics::Diagnostic,
 };
@@ -20,11 +21,11 @@ impl DiagnosticCollection {
         }
     }
 
-    pub fn push(&mut self, snap: &ServerSnapshot, diag: Diagnostic) {
+    pub fn push(&mut self, snap: &ServerSnapshot, diag: Diagnostic) -> Cancellable<()> {
         match diag {
             ide::handlers::diagnostics::Diagnostic::Lsp(diag) => {
                 let file_id = diag.location.file;
-                let line_index = snap.analysis.line_index(file_id);
+                let line_index = snap.analysis.line_index(file_id)?;
 
                 let lsp_diag = to_proto::diagnostic(&line_index, diag);
                 self.diagnostics.entry(file_id).or_default().push(lsp_diag);
@@ -38,12 +39,15 @@ impl DiagnosticCollection {
                 self.diagnostics.entry(file_id).or_default().push(lsp_diag);
             }
         }
+
+        Ok(())
     }
 
-    pub fn extend(&mut self, snap: &ServerSnapshot, diags: Vec<Diagnostic>) {
+    pub fn extend(&mut self, snap: &ServerSnapshot, diags: Vec<Diagnostic>) -> Cancellable<()> {
         for diag in diags {
-            self.push(snap, diag);
+            self.push(snap, diag)?;
         }
+        Ok(())
     }
 }
 

@@ -19,7 +19,7 @@ use syntax::{
 use crate::{
     TY,
     db::SourceDatabase,
-    file_system::{FilePosition, FileRange, IncludeId, SourceUnitId},
+    file_system::{FileId, FilePosition, FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
     interop::TblgenSymbolTable,
     symbol_map::{
@@ -38,8 +38,8 @@ use crate::{
     utils::{self, DefNameType},
 };
 
-#[salsa::query_group(IndexDatabaseStorage)]
-pub trait IndexDatabase: SourceDatabase {
+#[salsa::db]
+pub trait IndexDatabase: SourceDatabase + crate::db::ParseDatabase {
     fn index(&self, source_unit_id: SourceUnitId) -> Arc<Index>;
 }
 
@@ -64,14 +64,24 @@ impl Index {
     }
 }
 
-fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Arc<Index> {
-    let source_unit = db.source_unit(source_unit_id);
+#[salsa::interned]
+pub struct SourceUnitIdInterned {
+    id: u32,
+}
+
+#[salsa::tracked]
+pub fn index<'db>(
+    db: &'db dyn IndexDatabase,
+    source_unit_id: SourceUnitIdInterned<'db>,
+) -> Arc<Index> {
+    let source_unit_id_value = SourceUnitId::from_root_file(FileId(source_unit_id.id(db)));
+    let source_unit = db.source_unit(source_unit_id_value);
 
     let parse = db.parse(source_unit.root());
     let source_file =
         ast::SourceFile::cast(parse.syntax_node()).expect("failed to SourceFile::cast");
 
-    let symtab = match db.tblgen_symbol_table(source_unit_id) {
+    let symtab = match db.tblgen_symbol_table(source_unit_id_value) {
         Some(symtab) => symtab,
         None => Arc::new(TblgenSymbolTable::default()),
     };

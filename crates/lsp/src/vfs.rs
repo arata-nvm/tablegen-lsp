@@ -99,12 +99,17 @@ impl UrlExt for Url {
         // TODO: Url::to_file_pathがErrを返したときの処理
         self.to_file_path()
             .expect("failed to convert url to file path")
-            .as_path()
+            .canonicalize()
+            .expect("failed to canonicalize file path")
             .into()
     }
 
     fn from_file_path(path: &FilePath) -> Self {
         // TODO: Url::from_file_pathがErrを返したときの処理
-        Url::from_file_path(&path.0).expect("failed to convert file path to url")
+        let path = path
+            .0
+            .canonicalize()
+            .expect("failed to canonicalize file path");
+        Url::from_file_path(&path).expect("failed to convert file path to url")
     }
 }

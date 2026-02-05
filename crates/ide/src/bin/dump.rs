@@ -55,25 +55,36 @@ pub fn main() {
             }
         }
         "diag" => {
-            let diags = analysis.diagnostics(source_unit_id);
+            let diags = analysis
+                .diagnostics(source_unit_id)
+                .expect("diagnostics cancelled");
             for diag in diags {
                 println!("{diag:?}");
             }
         }
         "doc-symbol" => {
-            let symbols = analysis.document_symbol(file_id).unwrap();
+            let symbols = analysis
+                .document_symbol(file_id)
+                .expect("document_symbol cancelled")
+                .unwrap();
             for symbol in symbols {
                 println!("{symbol:?}");
             }
         }
         "doc-link" => {
-            let links = analysis.document_link(source_unit_id, file_id).unwrap();
+            let links = analysis
+                .document_link(source_unit_id, file_id)
+                .expect("document_link cancelled")
+                .unwrap();
             for link in links {
                 println!("{link:?}");
             }
         }
         "doc-fold" => {
-            let ranges = analysis.folding_range(file_id).unwrap();
+            let ranges = analysis
+                .folding_range(file_id)
+                .expect("folding_range cancelled")
+                .unwrap();
             for range in ranges {
                 println!("{range:?}");
             }

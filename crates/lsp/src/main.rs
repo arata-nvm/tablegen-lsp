@@ -1,5 +1,6 @@
 use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
+use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::server::LifecycleLayer;
 use async_lsp::tracing::TracingLayer;
 use tower::ServiceBuilder;
@@ -27,6 +28,7 @@ async fn main() {
             .layer(LifecycleLayer::default())
             .layer(ConcurrencyLayer::default())
             .layer(ClientProcessMonitorLayer::new(client.clone()))
+            .layer(CatchUnwindLayer::default())
             .service(Server::new_router(client))
     });
 

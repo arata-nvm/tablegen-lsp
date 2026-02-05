@@ -1,9 +1,13 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use salsa::ParallelDatabase;
+use salsa::Cancelled;
 
-use crate::db::{RootDatabase, SourceDatabase};
+use crate::Cancellable;
+use crate::db::{
+    RootDatabase, SetFileContent, SetSourceUnit, SetTblgenDiagnostics, SetTblgenSymbolTable,
+    SourceDatabase,
+};
 use crate::file_system::{
     self, FileId, FilePath, FilePosition, FileRange, FileSystem, SourceUnit, SourceUnitId,
 };
@@ -83,56 +87,67 @@ impl AnalysisHost {
 }
 
 pub struct Analysis {
-    db: salsa::Snapshot<RootDatabase>,
+    db: RootDatabase,
 }
 
 impl Analysis {
-    pub fn line_index(&self, file_id: FileId) -> Arc<LineIndex> {
-        self.db.line_index(file_id)
+    fn with_db<F, T>(&self, f: F) -> Cancellable<T>
+    where
+        F: FnOnce(&RootDatabase) -> T + std::panic::UnwindSafe,
+    {
+        Cancelled::catch(|| f(&self.db))
     }
 
-    pub fn index(&self, source_unit_id: SourceUnitId) -> Arc<Index> {
-        self.db.index(source_unit_id)
+    pub fn line_index(&self, file_id: FileId) -> Cancellable<Arc<LineIndex>> {
+        self.with_db(|db| db.line_index(file_id))
     }
 
-    pub fn source_unit(&self, source_unit_id: SourceUnitId) -> Arc<SourceUnit> {
-        self.db.source_unit(source_unit_id)
+    pub fn index(&self, source_unit_id: SourceUnitId) -> Cancellable<Arc<Index>> {
+        self.with_db(|db| db.index(source_unit_id))
     }
 
-    pub fn diagnostics(&self, source_unit_id: SourceUnitId) -> Vec<Diagnostic> {
-        diagnostics::exec(&*self.db, source_unit_id)
+    pub fn source_unit(&self, source_unit_id: SourceUnitId) -> Cancellable<Arc<SourceUnit>> {
+        self.with_db(|db| db.source_unit(source_unit_id))
     }
 
-    pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
-        document_symbol::exec(&*self.db, file_id)
+    pub fn diagnostics(&self, source_unit_id: SourceUnitId) -> Cancellable<Vec<Diagnostic>> {
+        self.with_db(|db| diagnostics::exec(db, source_unit_id))
+    }
+
+    pub fn document_symbol(&self, file_id: FileId) -> Cancellable<Option<Vec<DocumentSymbol>>> {
+        self.with_db(|db| document_symbol::exec(db, file_id))
     }
 
     pub fn goto_definition(
         &self,
         source_unit_id: SourceUnitId,
         pos: FilePosition,
-    ) -> Option<FileRange> {
-        goto_definition::exec(&*self.db, source_unit_id, pos)
+    ) -> Cancellable<Option<FileRange>> {
+        self.with_db(|db| goto_definition::exec(db, source_unit_id, pos))
     }
 
     pub fn references(
         &self,
         source_unit_id: SourceUnitId,
         pos: FilePosition,
-    ) -> Option<Vec<FileRange>> {
-        references::exec(&*self.db, source_unit_id, pos)
+    ) -> Cancellable<Option<Vec<FileRange>>> {
+        self.with_db(|db| references::exec(db, source_unit_id, pos))
     }
 
-    pub fn hover(&self, source_unit_id: SourceUnitId, pos: FilePosition) -> Option<Hover> {
-        hover::exec(&*self.db, source_unit_id, pos)
+    pub fn hover(
+        &self,
+        source_unit_id: SourceUnitId,
+        pos: FilePosition,
+    ) -> Cancellable<Option<Hover>> {
+        self.with_db(|db| hover::exec(db, source_unit_id, pos))
     }
 
     pub fn inlay_hint(
         &self,
         source_unit_id: SourceUnitId,
         range: FileRange,
-    ) -> Option<Vec<InlayHint>> {
-        inlay_hint::exec(&*self.db, source_unit_id, range)
+    ) -> Cancellable<Option<Vec<InlayHint>>> {
+        self.with_db(|db| inlay_hint::exec(db, source_unit_id, range))
     }
 
     pub fn completion(
@@ -140,19 +155,19 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         pos: FilePosition,
         trigger_char: Option<String>,
-    ) -> Option<Vec<CompletionItem>> {
-        completion::exec(&*self.db, source_unit_id, pos, trigger_char)
+    ) -> Cancellable<Option<Vec<CompletionItem>>> {
+        self.with_db(|db| completion::exec(db, source_unit_id, pos, trigger_char))
     }
 
     pub fn document_link(
         &self,
         source_unit_id: SourceUnitId,
         file_id: FileId,
-    ) -> Option<Vec<DocumentLink>> {
-        document_link::exec(&*self.db, source_unit_id, file_id)
+    ) -> Cancellable<Option<Vec<DocumentLink>>> {
+        self.with_db(|db| document_link::exec(db, source_unit_id, file_id))
     }
 
-    pub fn folding_range(&self, file_id: FileId) -> Option<Vec<FoldingRange>> {
-        folding_range::exec(&*self.db, file_id)
+    pub fn folding_range(&self, file_id: FileId) -> Cancellable<Option<Vec<FoldingRange>>> {
+        self.with_db(|db| folding_range::exec(db, file_id))
     }
 }

@@ -265,9 +265,19 @@ impl Server {
         self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
             for source_unit_id in opened_source_units {
-                let source_unit = snap.analysis.source_unit(source_unit_id);
+                let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
+                    // キャンセルされた
+                    break;
+                };
                 lsp_diags.add_source_unit_files(&source_unit);
-                lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
+                let Ok(diags) = snap.analysis.diagnostics(source_unit_id) else {
+                    // キャンセルされた
+                    break;
+                };
+                if let Err(_) = lsp_diags.extend(&snap, diags) {
+                    // キャンセルされた
+                    break;
+                }
             }
             snap.client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
@@ -279,9 +289,19 @@ impl Server {
         let diag_version = self.bump_diagnostic_version();
         self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
-            let source_unit = snap.analysis.source_unit(source_unit_id);
+            let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
+                // キャンセルされた
+                return;
+            };
             lsp_diags.add_source_unit_files(&source_unit);
-            lsp_diags.extend(&snap, snap.analysis.diagnostics(source_unit_id));
+            let Ok(diags) = snap.analysis.diagnostics(source_unit_id) else {
+                // キャンセルされた
+                return;
+            };
+            if let Err(_) = lsp_diags.extend(&snap, diags) {
+                // キャンセルされた
+                return;
+            }
             snap.client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
@@ -316,6 +336,7 @@ impl Server {
         let snap = self.snapshot();
         let opened_source_units = self.opened_source_units();
         let task = task::spawn(async move {
+            // FIXME: 応答が返ってこないことがあるので、タイムアウトを設定
             let progress = match tokio::time::timeout(
                 std::time::Duration::from_secs(1),
                 Progress::new(
@@ -335,7 +356,10 @@ impl Server {
             };
 
             for source_unit_id in opened_source_units {
-                let source_unit = snap.analysis.source_unit(source_unit_id);
+                let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
+                    // キャンセルされた
+                    continue;
+                };
                 let root_file = snap.vfs.path_for_file(&source_unit.root());
 
                 let result = match interop::parse_source_unit_with_tblgen(
@@ -401,10 +425,10 @@ impl Server {
                 let Some(file_id) = self.vfs.file_for_path(&path) else {
                     return false;
                 };
-                self.host
-                    .analysis()
-                    .source_unit(root_id)
-                    .contains_file(file_id)
+                match self.host.analysis().source_unit(root_id) {
+                    Ok(source_unit) => source_unit.contains_file(file_id),
+                    Err(_) => false,
+                }
             }
         }
     }
@@ -456,7 +480,7 @@ impl ServerSnapshot {
 trait RouterExt: BorrowMut<Router<Server>> {
     fn request_snap<R: request::Request>(
         &mut self,
-        f: impl Fn(ServerSnapshot, R::Params) -> Result<R::Result> + Send + Copy + 'static,
+        f: impl Fn(ServerSnapshot, R::Params) -> ide::Cancellable<R::Result> + Send + Copy + 'static,
     ) -> &mut Self
     where
         R::Params: Send + 'static,
@@ -465,9 +489,23 @@ trait RouterExt: BorrowMut<Router<Server>> {
         self.borrow_mut().request::<R, _>(move |this, params| {
             let task = this.spawn_with_snapshot(params, move |snap, params| f(snap, params));
             async move {
-                task.await.map_err(|e| {
-                    ResponseError::new(ErrorCode::REQUEST_FAILED, format!("request failed: {}", e))
-                })?
+                match task.await {
+                    Ok(Ok(result)) => Ok(result),
+                    Ok(Err(e)) => {
+                        tracing::info!("request cancelled: method={}, error={}", R::METHOD, e);
+                        Err(ResponseError::new(
+                            ErrorCode::SERVER_CANCELLED,
+                            "request cancelled",
+                        ))
+                    }
+                    Err(e) => {
+                        tracing::warn!("request failed: method={} error={}", R::METHOD, e,);
+                        Err(ResponseError::new(
+                            ErrorCode::REQUEST_FAILED,
+                            format!("request failed: {}", 1),
+                        ))
+                    }
+                }
             }
         });
         self

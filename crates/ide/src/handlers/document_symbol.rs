@@ -2,10 +2,10 @@ use ecow::{EcoString, eco_format};
 use syntax::ast::{self, AstNode};
 use syntax::parser::TextRange;
 
-use crate::db::SourceDatabase;
+use crate::db::ParseDatabase;
 use crate::file_system::FileId;
 
-pub fn exec(db: &dyn SourceDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
+pub fn exec(db: &dyn ParseDatabase, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
     let parse = db.parse(file_id);
     let source_file = ast::SourceFile::cast(parse.syntax_node())?;
     let statement_list = source_file.statement_list()?;

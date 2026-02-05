@@ -1,0 +1,5 @@
+{
+    "tablegen-lsp.includePath": [
+        "/Users/user/ghq/github.com/arata-nvm/tablegen-lsp/testdata/llvm-project/llvm/include"
+    ]
+}

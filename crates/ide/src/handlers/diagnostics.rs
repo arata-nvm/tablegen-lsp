@@ -51,7 +51,7 @@ impl Diagnostic {
 mod tests {
     use std::sync::Arc;
 
-    use crate::{db::SourceDatabase, tests};
+    use crate::{db::SetFileContent, tests};
 
     use super::Diagnostic;
 

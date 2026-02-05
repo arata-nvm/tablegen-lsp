@@ -8,7 +8,7 @@ use syntax::ast::AstNode;
 use syntax::parser::{TextRange, TextSize};
 use syntax::{SyntaxNode, SyntaxNodePtr, ast};
 
-use crate::db::SourceDatabase;
+use crate::db::{SetFileContent, SourceDatabase};
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct FileId(pub u32);
@@ -75,6 +75,12 @@ impl From<&Path> for FilePath {
     }
 }
 
+impl From<PathBuf> for FilePath {
+    fn from(value: PathBuf) -> Self {
+        Self(value)
+    }
+}
+
 impl FromStr for FilePath {
     type Err = std::convert::Infallible;
 
@@ -137,9 +143,9 @@ impl SourceUnitId {
 
 #[derive(Debug)]
 pub struct SourceUnit {
-    root: FileId,
+    pub root: FileId,
     // SourceUnitに含まれるすべてのFileIdをキーに含むことを保証する
-    includes: HashMap<FileId, IncludeMap>,
+    pub includes: HashMap<FileId, IncludeMap>,
 }
 
 impl SourceUnit {
@@ -170,8 +176,11 @@ pub trait FileSystem {
     fn read_content(&self, file_path: &FilePath) -> Option<String>;
 }
 
-pub fn collect_sources<FS: FileSystem>(
-    db: &mut dyn SourceDatabase,
+pub fn collect_sources<
+    FS: FileSystem,
+    DB: SourceDatabase + SetFileContent + crate::db::ParseDatabase,
+>(
+    db: &mut DB,
     fs: &mut FS,
     root: FileId,
     include_dirs: &[FilePath],
@@ -235,8 +244,8 @@ fn list_includes(root_node: SyntaxNode) -> Vec<(IncludeId, EcoString)> {
     .unwrap_or_default()
 }
 
-fn resolve_include_file<FS: FileSystem>(
-    db: &mut dyn SourceDatabase,
+fn resolve_include_file<FS: FileSystem, DB: SourceDatabase + SetFileContent>(
+    db: &mut DB,
     fs: &mut FS,
     include_path: EcoString,
     include_dir_list: &[FilePath],
