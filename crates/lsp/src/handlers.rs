@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_lsp::lsp_types::{
     CompletionParams, CompletionResponse, DocumentLink, DocumentLinkParams, DocumentSymbolParams,
     DocumentSymbolResponse, FoldingRange, FoldingRangeParams, GotoDefinitionParams,
@@ -55,10 +57,16 @@ pub(crate) fn completion(
     };
     let (pos, _) = from_proto::file_pos(&snap, params.text_document_position)?;
     let trigger_char = params.context.and_then(|it| it.trigger_character);
-    let Some(completion_list) = snap
-        .analysis
-        .completion(source_unit_id, pos, trigger_char)?
-    else {
+
+    let completion_list = match snap.latest_indexes.get(&source_unit_id) {
+        Some(index) => snap
+            .analysis
+            .completion_with_index(pos, trigger_char, Arc::clone(index))?,
+        None => snap
+            .analysis
+            .completion(source_unit_id, pos, trigger_char)?,
+    };
+    let Some(completion_list) = completion_list else {
         return Ok(None);
     };
     let lsp_completion_list = completion_list

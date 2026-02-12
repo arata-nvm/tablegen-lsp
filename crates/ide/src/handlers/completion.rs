@@ -76,12 +76,22 @@ pub fn exec(
     pos: FilePosition,
     trigger_char: Option<String>,
 ) -> Option<Vec<CompletionItem>> {
+    let index = db.index(source_unit_id);
+    exec_with_index(db, pos, trigger_char, &index)
+}
+
+pub fn exec_with_index(
+    db: &dyn IndexDatabase,
+    pos: FilePosition,
+    trigger_char: Option<String>,
+    index: &Index,
+) -> Option<Vec<CompletionItem>> {
     let parse = db.parse(pos.file);
     let Index {
         symbol_map,
         resolved_types,
         ..
-    } = &*db.index(source_unit_id);
+    } = index;
 
     let root_node = parse.syntax_node();
     let token_at_pos = root_node.token_at_offset(pos.position).left_biased()?;

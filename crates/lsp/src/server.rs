@@ -1,5 +1,5 @@
 use std::borrow::BorrowMut;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::ops::ControlFlow;
 use std::sync::Arc;
 
@@ -21,6 +21,7 @@ use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost, Cancellable};
 use ide::file_system::{FileSystem, SourceUnitId};
+use ide::index::Index;
 
 use crate::config::Config;
 use crate::diagnostics::DiagnosticCollection;
@@ -36,6 +37,7 @@ pub struct Server {
     diagnostic_version: i32,
     opened_source_units: HashSet<SourceUnitId>,
     root_source_unit: Option<SourceUnitId>,
+    latest_indices: HashMap<SourceUnitId, Arc<Index>>,
 
     flycheck_task: Option<task::JoinHandle<()>>,
 }
@@ -47,6 +49,7 @@ pub type Result<T> = std::result::Result<T, ResponseError>;
 struct UpdateDiagnosticsEvent(i32, DiagnosticCollection);
 struct UpdateConfigEvent(Value);
 struct UpdateFlycheckEvent(SourceUnitId, TblgenParseResult);
+struct UpdateIndexEvent(SourceUnitId, Arc<Index>);
 
 impl Server {
     pub fn new_router(client: ClientSocket) -> Router<Self> {
@@ -73,7 +76,8 @@ impl Server {
             .request_snap::<request::FoldingRangeRequest>(handlers::folding_range)
             .event::<UpdateDiagnosticsEvent>(Self::update_diagnostics)
             .event::<UpdateConfigEvent>(Self::update_config)
-            .event::<UpdateFlycheckEvent>(Self::update_flycheck);
+            .event::<UpdateFlycheckEvent>(Self::update_flycheck)
+            .event::<UpdateIndexEvent>(Self::update_index);
         router
     }
 
@@ -86,6 +90,7 @@ impl Server {
             diagnostic_version: 0,
             opened_source_units: HashSet::new(),
             root_source_unit: None,
+            latest_indices: HashMap::new(),
             flycheck_task: None,
         }
     }
@@ -247,6 +252,7 @@ impl Server {
             client: self.client.clone(),
             config: self.config.clone(),
             root_source_unit: self.root_source_unit,
+            latest_indexes: self.latest_indices.clone(),
         }
     }
 
@@ -269,12 +275,15 @@ impl Server {
                     return;
                 };
                 lsp_diags.add_source_unit_files(&source_unit);
-                let Ok(diagnostics) = snap.analysis.diagnostics(source_unit_id) else {
+                let Ok(index) = snap.analysis.index(source_unit_id) else {
                     return;
                 };
-                let Ok(_) = lsp_diags.extend(&snap, diagnostics) else {
+                let Ok(_) = lsp_diags.extend(&snap, index.diagnostics.clone()) else {
                     return;
                 };
+                snap.client
+                    .emit(UpdateIndexEvent(source_unit_id, index))
+                    .expect("failed to emit update index event");
             }
             snap.client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
@@ -290,12 +299,17 @@ impl Server {
                 return;
             };
             lsp_diags.add_source_unit_files(&source_unit);
-            let Ok(diagnostics) = snap.analysis.diagnostics(source_unit_id) else {
+            let Ok(index) = snap.analysis.index(source_unit_id) else {
                 return;
             };
-            let Ok(_) = lsp_diags.extend(&snap, diagnostics) else {
+            let Ok(_) = lsp_diags.extend(&snap, index.diagnostics.clone()) else {
                 return;
             };
+
+            snap.client
+                .emit(UpdateIndexEvent(source_unit_id, index))
+                .expect("failed to emit update index event");
+
             snap.client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
                 .expect("failed to emit update diagnostics event");
@@ -306,6 +320,15 @@ impl Server {
         let version = self.diagnostic_version;
         self.diagnostic_version += 1;
         version
+    }
+
+    fn update_index(
+        &mut self,
+        UpdateIndexEvent(source_unit_id, index): UpdateIndexEvent,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        tracing::info!("update_index: {source_unit_id:?}");
+        self.latest_indices.insert(source_unit_id, index);
+        ControlFlow::Continue(())
     }
 
     fn update_diagnostics(
@@ -451,6 +474,7 @@ pub struct ServerSnapshot {
     pub client: ClientSocket,
     pub config: Arc<Config>,
     pub root_source_unit: Option<SourceUnitId>,
+    pub latest_indexes: HashMap<SourceUnitId, Arc<Index>>,
 }
 
 impl ServerSnapshot {
