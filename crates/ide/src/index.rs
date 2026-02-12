@@ -366,7 +366,7 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
 
     let current_file_id = ctx.current_file_id();
 
-    let (multiclass_parents, _) = split_parent_class_list(&parent_class_list, ctx);
+    let multiclass_parents = split_parent_class_list(&parent_class_list, ctx);
     if multiclass_parents.is_empty() {
         ctx.error_by_syntax(
             parent_class_list.syntax(),
@@ -397,7 +397,7 @@ fn index_global_defm(defm: &ast::Defm, ctx: &mut IndexCtx, define_loc: FileRange
         let base_def = ctx.symbol_map.def(base_def_id);
 
         // tblgenから取得した名前でDefを作成
-        let mut def = base_def.clone_with(tblgen_def.name.clone(), define_loc.clone());
+        let mut def = base_def.clone_with(tblgen_def.name.clone(), define_loc);
 
         // tblgenから取得した親クラスをDefに追加
         for parent_name in &tblgen_def.direct_super_classes {
@@ -727,7 +727,7 @@ impl IndexStatement for ast::ParentClassList {
                 }
             }
         } else if let Some(defm_id) = ctx.scopes.current_defm_id() {
-            let (multiclass_parents, _) = split_parent_class_list(self, ctx);
+            let multiclass_parents = split_parent_class_list(self, ctx);
             if multiclass_parents.is_empty() {
                 ctx.error_by_syntax(
                     self.syntax(),
@@ -761,10 +761,7 @@ impl IndexStatement for ast::ParentClassList {
 fn split_parent_class_list(
     list: &ast::ParentClassList,
     ctx: &mut IndexCtx,
-) -> (
-    Vec<(ast::ClassRef, MulticlassId)>,
-    Vec<(ast::ClassRef, ClassId)>,
-) {
+) -> Vec<(ast::ClassRef, MulticlassId)> {
     let mut classes = list.classes().peekable();
 
     let mut multiclass_parents = Vec::new();
@@ -779,13 +776,13 @@ fn split_parent_class_list(
     }
 
     let mut class_parents = Vec::new();
-    while let Some(class_ref) = classes.next() {
+    for class_ref in classes {
         if let Some(class_id) = resolve_class_ref_as_class(&class_ref, ctx) {
             class_parents.push((class_ref, class_id));
         }
     }
 
-    (multiclass_parents, class_parents)
+    multiclass_parents
 }
 
 fn resolve_class_ref_as_class(class_ref: &ast::ClassRef, ctx: &mut IndexCtx) -> Option<ClassId> {
@@ -1191,13 +1188,13 @@ impl IndexExpression for ast::CondOperator {
             let Some(condition) = clause.condition() else {
                 continue;
             };
-            if let Some(cond_typ) = condition.index_expression(ctx) {
-                if !cond_typ.can_be_casted_to(&ctx.symbol_map, &TY![bit]) {
-                    ctx.error_by_syntax(
-                        condition.syntax(),
-                        format!("expected bit; found {cond_typ}"),
-                    );
-                }
+            if let Some(cond_typ) = condition.index_expression(ctx)
+                && !cond_typ.can_be_casted_to(&ctx.symbol_map, &TY![bit])
+            {
+                ctx.error_by_syntax(
+                    condition.syntax(),
+                    format!("expected bit; found {cond_typ}"),
+                );
             }
 
             let Some(value) = clause.value() else {

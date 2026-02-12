@@ -286,7 +286,7 @@ impl SymbolMap {
             }
             None => {
                 let name = class.name().clone();
-                let define_loc = class.define_loc().clone();
+                let define_loc = *class.define_loc();
                 let id = self.class_list.alloc(class);
                 self.name_to_class.insert(name, id);
                 self.add_symbol_to_file(id, define_loc, true);
@@ -300,7 +300,7 @@ impl SymbolMap {
             return Err(SymbolMapError::DefAlreadyDefined(def.name().clone()));
         }
         let name = def.name().clone();
-        let define_loc = def.define_loc().clone();
+        let define_loc = *def.define_loc();
         let id = self.def_list.alloc(def);
         self.name_to_def.insert(name, id);
         self.add_symbol_to_file(id, define_loc, is_global);

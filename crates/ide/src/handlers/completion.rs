@@ -352,7 +352,7 @@ impl<'a> CompletionContext<'a> {
             let matches = item
                 .item_type
                 .as_ref()
-                .map_or(false, |t| t.can_be_casted_to(symbol_map, &expected_type));
+                .is_some_and(|t| t.can_be_casted_to(symbol_map, &expected_type));
             let prefix = if matches { "0" } else { "1" };
             item.sort_text = Some(prefix.to_string());
         }
@@ -620,36 +620,28 @@ fn collect_variables_from_ancestors(node: &SyntaxNode) -> Vec<(EcoString, Option
 
     // foreach can be nested, so we need to collect variables from each scope
     for ancestor in node.ancestors() {
-        if let Some(foreach) = ast::Foreach::cast(ancestor.clone()) {
-            if let Some(iterator) = foreach.iterator() {
-                if let Some(name) = iterator.name().and_then(|n| n.value()) {
-                    if seen_names.insert(name.clone()) {
-                        variables.push((name, None));
-                    }
-                }
-            }
+        if let Some(foreach) = ast::Foreach::cast(ancestor.clone())
+            && let Some(iterator) = foreach.iterator()
+            && let Some(name) = iterator.name().and_then(|n| n.value())
+            && seen_names.insert(name.clone())
+        {
+            variables.push((name, None));
         }
     }
 
     // collect defvar from record bodies (class/def)
-    for ancestor in node.ancestors() {
-        if let Some(body) = ast::Body::cast(ancestor.clone()) {
-            for item in body.items() {
-                if let ast::BodyItem::Defvar(defvar) = item {
-                    if let Some(name) = defvar.name().and_then(|n| n.value()) {
-                        let defvar_range = defvar.syntax().text_range();
-                        let node_range = node.text_range();
-                        if defvar_range.end() <= node_range.start() {
-                            if seen_names.insert(name.clone()) {
-                                variables.push((name, None));
-                            }
-                        }
-                    }
+    if let Some(body) = node.ancestor::<ast::Body>() {
+        for item in body.items() {
+            if let ast::BodyItem::Defvar(defvar) = item
+                && let Some(name) = defvar.name().and_then(|n| n.value())
+            {
+                // Only add if it's defined before the current position
+                let defvar_range = defvar.syntax().text_range();
+                let node_range = node.text_range();
+                if defvar_range.end() <= node_range.start() && seen_names.insert(name.clone()) {
+                    variables.push((name, None));
                 }
             }
-
-            // Stop at the first Body we encounter (current record body scope)
-            break;
         }
     }
 
@@ -657,16 +649,14 @@ fn collect_variables_from_ancestors(node: &SyntaxNode) -> Vec<(EcoString, Option
     for ancestor in node.ancestors() {
         if let Some(stmt_list) = ast::StatementList::cast(ancestor.clone()) {
             for stmt in stmt_list.statements() {
-                if let ast::Statement::Defvar(defvar) = stmt {
-                    if let Some(name) = defvar.name().and_then(|n| n.value()) {
-                        // Only add if it's defined before the current position
-                        let defvar_range = defvar.syntax().text_range();
-                        let node_range = node.text_range();
-                        if defvar_range.end() <= node_range.start() {
-                            if seen_names.insert(name.clone()) {
-                                variables.push((name, None));
-                            }
-                        }
+                if let ast::Statement::Defvar(defvar) = stmt
+                    && let Some(name) = defvar.name().and_then(|n| n.value())
+                {
+                    // Only add if it's defined before the current position
+                    let defvar_range = defvar.syntax().text_range();
+                    let node_range = node.text_range();
+                    if defvar_range.end() <= node_range.start() && seen_names.insert(name.clone()) {
+                        variables.push((name, None));
                     }
                 }
             }

@@ -160,7 +160,7 @@ impl LanguageServer for Server {
             return ControlFlow::Continue(());
         }
 
-        if let Some(_) = self.root_source_unit {
+        if self.root_source_unit.is_some() {
             // set_source_rootでこのファイルはすでに解析されているはずなので、何もしない
         } else {
             self.load_source_unit(&params.text_document.uri, &params.text_document.text);
@@ -503,7 +503,7 @@ trait RouterExt: BorrowMut<Router<Server>> {
         R::Result: Send + 'static,
     {
         self.borrow_mut().request::<R, _>(move |this, params| {
-            let task = this.spawn_with_snapshot(params, move |snap, params| f(snap, params));
+            let task = this.spawn_with_snapshot(params, f);
             async move {
                 match task.await {
                     Ok(Ok(result)) => Ok(result),
@@ -559,7 +559,7 @@ impl Progress {
         this.notify(WorkDoneProgress::Begin(WorkDoneProgressBegin {
             title: title.into(),
             cancellable: None,
-            message: message,
+            message,
             percentage: None,
         }));
         Some(this)

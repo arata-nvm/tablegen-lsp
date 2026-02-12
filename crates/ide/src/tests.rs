@@ -40,6 +40,7 @@ pub fn load_single_file_with_tblgen(path: &str) -> (RootDatabase, Fixture) {
 pub struct TestDatabase {}
 
 impl TestDatabase {
+    #[allow(clippy::new_ret_no_self)]
     fn new(f: &mut Fixture) -> RootDatabase {
         let mut db = RootDatabase::default();
         for (file_id, content) in f.files() {
