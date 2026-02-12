@@ -99,7 +99,6 @@ impl UrlExt for Url {
         // TODO: Url::to_file_pathがErrを返したときの処理
         self.to_file_path()
             .expect("failed to convert url to file path")
-            .as_path()
             .into()
     }
 

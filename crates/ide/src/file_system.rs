@@ -75,6 +75,12 @@ impl From<&Path> for FilePath {
     }
 }
 
+impl From<PathBuf> for FilePath {
+    fn from(value: PathBuf) -> Self {
+        Self(value)
+    }
+}
+
 impl FromStr for FilePath {
     type Err = std::convert::Infallible;
 
