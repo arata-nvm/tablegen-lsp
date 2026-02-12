@@ -6,10 +6,7 @@ pub mod scope;
 use context::IndexCtx;
 use ecow::EcoString;
 use scope::ScopeKind;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet};
 use syntax::{
     SyntaxNodePtr,
     ast::{self, AstNode},
@@ -18,7 +15,7 @@ use syntax::{
 
 use crate::{
     TY,
-    db::SourceDatabase,
+    db::IndexDatabase,
     file_system::{FilePosition, FileRange, IncludeId, SourceUnitId},
     handlers::diagnostics::Diagnostic,
     interop::TblgenSymbolTable,
@@ -38,47 +35,28 @@ use crate::{
     utils::{self, DefNameType},
 };
 
-#[salsa::query_group(IndexDatabaseStorage)]
-pub trait IndexDatabase: SourceDatabase {
-    fn index(&self, source_unit_id: SourceUnitId) -> Arc<Index>;
-}
-
 #[derive(Debug, Eq, PartialEq)]
 pub struct Index {
-    symbol_map: SymbolMap,
-    diagnostics: Vec<Diagnostic>,
-    resolved_types: HashMap<SyntaxNodePtr, Type>,
+    pub symbol_map: SymbolMap,
+    pub diagnostics: Vec<Diagnostic>,
+    pub resolved_types: HashMap<SyntaxNodePtr, Type>,
 }
 
-impl Index {
-    pub fn symbol_map(&self) -> &SymbolMap {
-        &self.symbol_map
-    }
-
-    pub fn diagnostics(&self) -> &[Diagnostic] {
-        &self.diagnostics
-    }
-
-    pub fn resolved_types(&self) -> &HashMap<SyntaxNodePtr, Type> {
-        &self.resolved_types
-    }
-}
-
-fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Arc<Index> {
-    let source_unit = db.source_unit(source_unit_id);
+pub(crate) fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Index {
+    let source_unit = db.source_unit(source_unit_id).source_unit(db);
 
     let parse = db.parse(source_unit.root());
     let source_file =
         ast::SourceFile::cast(parse.syntax_node()).expect("failed to SourceFile::cast");
 
-    let symtab = match db.tblgen_symbol_table(source_unit_id) {
-        Some(symtab) => symtab,
-        None => Arc::new(TblgenSymbolTable::default()),
+    let symtab = match db.tblgen_result(source_unit_id) {
+        Some(result) => result.symbol_table(db),
+        None => &TblgenSymbolTable::default(),
     };
 
     let mut ctx = IndexCtx::new(db, source_unit, symtab);
     source_file.index_statement(&mut ctx);
-    Arc::new(ctx.finish())
+    ctx.finish()
 }
 
 const PLACEHOLDER_DEF_NAME: &str = "placeholder";
@@ -1599,78 +1577,78 @@ mod tests {
     fn class() {
         let (db, f) = tests::load_single_file("testdata/class.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/class.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
     fn def() {
         let (db, f) = tests::load_single_file("testdata/def.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/def.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
     fn multiclass() {
         let (db, f) = tests::load_single_file("testdata/multiclass.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/multiclass.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
     fn typ() {
         let (db, f) = tests::load_single_file("testdata/type.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/type.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
     fn variables() {
         let (db, f) = tests::load_single_file("testdata/variables.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/variables.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
     fn errors() {
         let (db, f) = tests::load_single_file("testdata/errors.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/errors.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
@@ -1687,32 +1665,32 @@ class Bar;
             "#,
         );
         let index = db.index(f.source_unit_id());
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
     fn defm_parent_class() {
         let (db, f) = tests::load_single_file("testdata/defm_parent_class.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/defm_parent_class.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 
     #[test]
     fn value() {
         let (db, f) = tests::load_single_file("testdata/value.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/value.td");
         let index = db.index(f.source_unit_id());
-        insta::assert_snapshot!(dump_symbol_map(index.symbol_map()));
-        insta::assert_debug_snapshot!(dump_diagnostics(index.diagnostics()));
+        insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
     }
 }

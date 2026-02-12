@@ -5,8 +5,9 @@ use syntax::{
 };
 
 use crate::{
+    db::IndexDatabase,
     file_system::{FileRange, SourceUnitId},
-    index::IndexDatabase,
+    index::Index,
     symbol_map::{SymbolMap, class::Class, record::RecordField, symbol::Symbol},
 };
 
@@ -38,8 +39,7 @@ pub fn exec(
     source_unit_id: SourceUnitId,
     range: FileRange,
 ) -> Option<Vec<InlayHint>> {
-    let index = db.index(source_unit_id);
-    let symbol_map = index.symbol_map();
+    let Index { symbol_map, .. } = &*db.index(source_unit_id);
 
     let Some(iter) = symbol_map.iter_symbols_in_range(range) else {
         tracing::info!("no classes found in range: {range:?}");

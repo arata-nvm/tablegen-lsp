@@ -1,8 +1,9 @@
 use syntax::ast;
 
 use crate::bang_operator::get_metadata_for_syntax_kind;
+use crate::db::IndexDatabase;
 use crate::file_system::{FilePosition, FileRange, SourceUnitId};
-use crate::index::IndexDatabase;
+use crate::index::Index;
 use crate::symbol_map::symbol::Symbol;
 use crate::symbol_map::variable::VariableKind;
 use crate::symbol_map::{SymbolMap, record::AsRecordData};
@@ -24,8 +25,7 @@ pub fn exec(
     let token_at_pos = root_node.token_at_offset(pos.position).left_biased()?;
     let node_at_pos = token_at_pos.parent()?;
 
-    let index = db.index(source_unit_id);
-    let symbol_map = index.symbol_map();
+    let Index { symbol_map, .. } = &*db.index(source_unit_id);
 
     if let Some((signature, define_loc)) = extract_symbol_signature(symbol_map, pos) {
         let parse = db.parse(define_loc.file);

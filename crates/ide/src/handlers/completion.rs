@@ -6,8 +6,9 @@ use syntax::{
 
 use crate::{
     bang_operator,
+    db::IndexDatabase,
     file_system::{FilePosition, SourceUnitId},
-    index::IndexDatabase,
+    index::Index,
     symbol_map::{
         SymbolMap,
         record::{AsRecordData, RecordFieldId},
@@ -76,9 +77,11 @@ pub fn exec(
     trigger_char: Option<String>,
 ) -> Option<Vec<CompletionItem>> {
     let parse = db.parse(pos.file);
-    let index = db.index(source_unit_id);
-    let symbol_map = index.symbol_map();
-    let resolved_types = index.resolved_types();
+    let Index {
+        symbol_map,
+        resolved_types,
+        ..
+    } = &*db.index(source_unit_id);
 
     let root_node = parse.syntax_node();
     let token_at_pos = root_node.token_at_offset(pos.position).left_biased()?;

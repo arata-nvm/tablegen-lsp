@@ -1,13 +1,14 @@
 use crate::{
+    db::IndexDatabase,
     file_system::{FileRange, SourceUnitId},
-    index::IndexDatabase,
+    index::Index,
     interop::TblgenDiagnostic,
 };
 
 pub fn exec(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Vec<Diagnostic> {
     let mut diagnotics = Vec::new();
 
-    let source_unit = db.source_unit(source_unit_id);
+    let source_unit = db.source_unit(source_unit_id).source_unit(db);
     let parse = db.parse(source_unit.root());
     diagnotics.extend(parse.errors().iter().map(|err| {
         Diagnostic::new_lsp(
@@ -16,11 +17,17 @@ pub fn exec(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Vec<Diagnos
         )
     }));
 
-    let index = db.index(source_unit_id);
-    diagnotics.extend(index.diagnostics().iter().cloned());
+    let Index { diagnostics, .. } = &*db.index(source_unit_id);
+    diagnotics.extend(diagnostics.iter().cloned());
 
-    if let Some(tblgen_diags) = db.tblgen_diagnostics(source_unit_id) {
-        diagnotics.extend(tblgen_diags.iter().cloned().map(Diagnostic::Tblgen));
+    if let Some(result) = db.tblgen_result(source_unit_id) {
+        diagnotics.extend(
+            result
+                .diagnostics(db)
+                .iter()
+                .cloned()
+                .map(Diagnostic::Tblgen),
+        );
     }
 
     diagnotics
@@ -51,7 +58,7 @@ impl Diagnostic {
 mod tests {
     use std::sync::Arc;
 
-    use crate::{db::SourceDatabase, tests};
+    use crate::{db::Database, tests};
 
     use super::Diagnostic;
 
@@ -75,7 +82,7 @@ mod tests {
         let (mut db, f) = tests::single_file("class Foo");
         let diags1 = super::exec(&db, f.source_unit_id());
 
-        db.set_file_content(f.root_file(), Arc::from("class Foo;"));
+        db.set_file(f.root_file(), Arc::from("class Foo;"));
         let diags2 = super::exec(&db, f.source_unit_id());
 
         insta::assert_debug_snapshot!((diags1, diags2));

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use ecow::{EcoString, eco_format};
 use syntax::{
@@ -18,13 +17,13 @@ use super::{Index, IndexDatabase, scope::Scopes};
 
 pub struct IndexCtx<'a> {
     pub db: &'a dyn IndexDatabase,
-    pub source_unit: Arc<SourceUnit>,
+    pub source_unit: &'a SourceUnit,
     pub file_trace: Vec<FileId>,
     pub symbol_map: SymbolMap,
     pub diagnostics: Vec<Diagnostic>,
     pub scopes: Scopes,
     pub anonymous_def_index: u32,
-    pub tblgen_symtab: Arc<TblgenSymbolTable>,
+    pub tblgen_symtab: &'a TblgenSymbolTable,
     pub pos_to_multiclass_def_map: HashMap<FilePosition, DefId>,
     pub resolved_types: HashMap<SyntaxNodePtr, Type>,
 }
@@ -32,8 +31,8 @@ pub struct IndexCtx<'a> {
 impl<'a> IndexCtx<'a> {
     pub fn new(
         db: &'a dyn IndexDatabase,
-        source_unit: Arc<SourceUnit>,
-        tblgen_symtab: Arc<TblgenSymbolTable>,
+        source_unit: &'a SourceUnit,
+        tblgen_symtab: &'a TblgenSymbolTable,
     ) -> Self {
         let root = source_unit.root();
         Self {

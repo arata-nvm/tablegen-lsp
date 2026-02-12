@@ -5,8 +5,8 @@ use syntax::{
 };
 
 use crate::{
+    db::IndexDatabase,
     file_system::{FileId, IncludeId, SourceUnitId},
-    index::IndexDatabase,
     utils,
 };
 
@@ -15,7 +15,7 @@ pub fn exec(
     source_unit_id: SourceUnitId,
     file_id: FileId,
 ) -> Option<Vec<DocumentLink>> {
-    let source_unit = db.source_unit(source_unit_id);
+    let source_unit = db.source_unit(source_unit_id).source_unit(db);
     let include_map = source_unit.include_map(&file_id)?;
     let parse = db.parse(file_id);
     let root_node = parse.syntax_node();

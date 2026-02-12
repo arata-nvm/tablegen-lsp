@@ -1,9 +1,6 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
-use salsa::ParallelDatabase;
-
-use crate::db::{RootDatabase, SourceDatabase};
+use crate::db::{Database, IndexDatabase, RootDatabase, SourceDatabase};
 use crate::file_system::{
     self, FileId, FilePath, FilePosition, FileRange, FileSystem, SourceUnit, SourceUnitId,
 };
@@ -18,22 +15,13 @@ use crate::handlers::{
     diagnostics, document_link, document_symbol, folding_range, goto_definition, hover, inlay_hint,
     references,
 };
-use crate::index::{Index, IndexDatabase};
+use crate::index::Index;
 use crate::interop::TblgenParseResult;
 use crate::line_index::LineIndex;
 
+#[derive(Default)]
 pub struct AnalysisHost {
     db: RootDatabase,
-    initialized_tblgen_units: HashSet<SourceUnitId>,
-}
-
-impl Default for AnalysisHost {
-    fn default() -> Self {
-        Self {
-            db: RootDatabase::default(),
-            initialized_tblgen_units: HashSet::new(),
-        }
-    }
 }
 
 impl AnalysisHost {
@@ -43,12 +31,12 @@ impl AnalysisHost {
 
     pub fn analysis(&self) -> Analysis {
         Analysis {
-            db: self.db.snapshot(),
+            db: self.db.clone(),
         }
     }
 
     pub fn set_file_content(&mut self, file_id: FileId, text: Arc<str>) {
-        self.db.set_file_content(file_id, text);
+        self.db.set_file(file_id, text);
     }
 
     pub fn set_tblgen_parse_result(
@@ -56,10 +44,7 @@ impl AnalysisHost {
         source_unit_id: SourceUnitId,
         result: TblgenParseResult,
     ) {
-        self.db
-            .set_tblgen_diagnostics(source_unit_id, Some(Arc::new(result.diagnostics)));
-        self.db
-            .set_tblgen_symbol_table(source_unit_id, Some(Arc::new(result.symbol_table)));
+        self.db.set_tblgen_result(source_unit_id, result);
     }
 
     pub fn load_source_unit<FS: FileSystem>(
@@ -70,20 +55,13 @@ impl AnalysisHost {
     ) -> SourceUnitId {
         let id = SourceUnitId::from_root_file(root_file);
         let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
-        self.db.set_source_unit(id, Arc::new(source_unit));
-
-        // 存在しないデータにアクセスを試みるとクラッシュするので、初回のみNoneで初期化する
-        if !self.initialized_tblgen_units.contains(&id) {
-            self.db.set_tblgen_diagnostics(id, None);
-            self.db.set_tblgen_symbol_table(id, None);
-            self.initialized_tblgen_units.insert(id);
-        }
+        self.db.set_source_unit(id, Arc::from(source_unit));
         id
     }
 }
 
 pub struct Analysis {
-    db: salsa::Snapshot<RootDatabase>,
+    db: RootDatabase,
 }
 
 impl Analysis {
@@ -96,15 +74,15 @@ impl Analysis {
     }
 
     pub fn source_unit(&self, source_unit_id: SourceUnitId) -> Arc<SourceUnit> {
-        self.db.source_unit(source_unit_id)
+        Arc::clone(self.db.source_unit(source_unit_id).source_unit(&self.db))
     }
 
     pub fn diagnostics(&self, source_unit_id: SourceUnitId) -> Vec<Diagnostic> {
-        diagnostics::exec(&*self.db, source_unit_id)
+        diagnostics::exec(&self.db, source_unit_id)
     }
 
     pub fn document_symbol(&self, file_id: FileId) -> Option<Vec<DocumentSymbol>> {
-        document_symbol::exec(&*self.db, file_id)
+        document_symbol::exec(&self.db, file_id)
     }
 
     pub fn goto_definition(
@@ -112,7 +90,7 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         pos: FilePosition,
     ) -> Option<FileRange> {
-        goto_definition::exec(&*self.db, source_unit_id, pos)
+        goto_definition::exec(&self.db, source_unit_id, pos)
     }
 
     pub fn references(
@@ -120,11 +98,11 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         pos: FilePosition,
     ) -> Option<Vec<FileRange>> {
-        references::exec(&*self.db, source_unit_id, pos)
+        references::exec(&self.db, source_unit_id, pos)
     }
 
     pub fn hover(&self, source_unit_id: SourceUnitId, pos: FilePosition) -> Option<Hover> {
-        hover::exec(&*self.db, source_unit_id, pos)
+        hover::exec(&self.db, source_unit_id, pos)
     }
 
     pub fn inlay_hint(
@@ -132,7 +110,7 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         range: FileRange,
     ) -> Option<Vec<InlayHint>> {
-        inlay_hint::exec(&*self.db, source_unit_id, range)
+        inlay_hint::exec(&self.db, source_unit_id, range)
     }
 
     pub fn completion(
@@ -141,7 +119,7 @@ impl Analysis {
         pos: FilePosition,
         trigger_char: Option<String>,
     ) -> Option<Vec<CompletionItem>> {
-        completion::exec(&*self.db, source_unit_id, pos, trigger_char)
+        completion::exec(&self.db, source_unit_id, pos, trigger_char)
     }
 
     pub fn document_link(
@@ -149,10 +127,10 @@ impl Analysis {
         source_unit_id: SourceUnitId,
         file_id: FileId,
     ) -> Option<Vec<DocumentLink>> {
-        document_link::exec(&*self.db, source_unit_id, file_id)
+        document_link::exec(&self.db, source_unit_id, file_id)
     }
 
     pub fn folding_range(&self, file_id: FileId) -> Option<Vec<FoldingRange>> {
-        folding_range::exec(&*self.db, file_id)
+        folding_range::exec(&self.db, file_id)
     }
 }

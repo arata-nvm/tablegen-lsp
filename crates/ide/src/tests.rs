@@ -3,75 +3,64 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use syntax::parser::TextRange;
 
 use crate::{
-    db::{SourceDatabase, SourceDatabaseStorage},
+    db::{Database, RootDatabase},
     file_system::{
         self, FileId, FilePath, FilePosition, FileRange, FileSet, FileSystem, SourceUnitId,
     },
-    index::IndexDatabaseStorage,
     interop,
 };
 
 const DEFAULT_FILE_PATH: &str = "/main.td";
 const MARKER_INDICATOR: char = '$';
 
-pub fn single_file(fixture: &str) -> (TestDatabase, Fixture) {
+pub fn single_file(fixture: &str) -> (RootDatabase, Fixture) {
     let mut f = Fixture::single_file(fixture);
     let db = TestDatabase::new(&mut f);
     (db, f)
 }
 
-pub fn multiple_files(fixture: &str) -> (TestDatabase, Fixture) {
+pub fn multiple_files(fixture: &str) -> (RootDatabase, Fixture) {
     let mut f = Fixture::multiple_files(fixture);
     let db = TestDatabase::new(&mut f);
     (db, f)
 }
 
-pub fn load_single_file(path: &str) -> (TestDatabase, Fixture) {
+pub fn load_single_file(path: &str) -> (RootDatabase, Fixture) {
     let mut f = Fixture::load_single_file(path);
     let db = TestDatabase::new(&mut f);
     (db, f)
 }
 
-pub fn load_single_file_with_tblgen(path: &str) -> (TestDatabase, Fixture) {
+pub fn load_single_file_with_tblgen(path: &str) -> (RootDatabase, Fixture) {
     let mut f = Fixture::load_single_file(path);
     let db = TestDatabase::new_with_tblgen(&mut f);
     (db, f)
 }
 
-#[salsa::database(SourceDatabaseStorage, IndexDatabaseStorage)]
-#[derive(Default)]
-pub struct TestDatabase {
-    storage: salsa::Storage<Self>,
-}
-
-impl salsa::Database for TestDatabase {}
+pub struct TestDatabase {}
 
 impl TestDatabase {
-    fn new(f: &mut Fixture) -> Self {
-        let mut db = Self::default();
+    fn new(f: &mut Fixture) -> RootDatabase {
+        let mut db = RootDatabase::default();
         for (file_id, content) in f.files() {
-            db.set_file_content(file_id, Arc::from(content));
+            db.set_file(file_id, Arc::from(content));
         }
 
         let id = SourceUnitId::from_root_file(f.root_file());
         let source_unit = file_system::collect_sources(&mut db, f, f.root_file(), &[]);
         db.set_source_unit(id, Arc::new(source_unit));
-        db.set_tblgen_diagnostics(id, None);
-        db.set_tblgen_symbol_table(id, None);
-
         db
     }
 
-    fn new_with_tblgen(f: &mut Fixture) -> Self {
+    fn new_with_tblgen(f: &mut Fixture) -> RootDatabase {
         let mut db = Self::new(f);
         let root_file_id = f.root_file();
         let root_file_path = f.path_for_file(&root_file_id);
 
+        let id = SourceUnitId::from_root_file(root_file_id);
         let result = interop::parse_source_unit_with_tblgen(&root_file_path, &[], f)
             .expect("failed to parse source unit with tblgen");
-        let source_unit_id = SourceUnitId::from_root_file(root_file_id);
-        db.set_tblgen_diagnostics(source_unit_id, Some(Arc::new(result.diagnostics)));
-        db.set_tblgen_symbol_table(source_unit_id, Some(Arc::new(result.symbol_table)));
+        db.set_tblgen_result(id, result);
         db
     }
 }

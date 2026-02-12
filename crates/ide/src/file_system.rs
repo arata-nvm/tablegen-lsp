@@ -251,7 +251,7 @@ fn resolve_include_file<FS: FileSystem>(
         let candidate_file_path = include_dir.join(include_path.as_str());
         if let Some(file_content) = fs.read_content(&candidate_file_path) {
             let file_id = fs.assign_or_get_file_id(candidate_file_path.clone());
-            db.set_file_content(file_id, Arc::from(file_content.as_str()));
+            db.set_file(file_id, Arc::from(file_content.as_str()));
             return Some(file_id);
         }
     }
