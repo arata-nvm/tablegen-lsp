@@ -1,5 +1,6 @@
 use async_lsp::lsp_types;
 use ide::{
+    analysis::Cancellable,
     file_system::{FileRange, FileSystem},
     handlers::{
         completion::{CompletionItem, CompletionItemKind},
@@ -36,14 +37,14 @@ pub fn range(line_index: &LineIndex, range: TextRange) -> lsp_types::Range {
     )
 }
 
-pub fn location(snap: &ServerSnapshot, file_range: FileRange) -> lsp_types::Location {
-    let line_index = snap.analysis.line_index(file_range.file);
+pub fn location(snap: &ServerSnapshot, file_range: FileRange) -> Cancellable<lsp_types::Location> {
+    let line_index = snap.analysis.line_index(file_range.file)?;
     let path = snap.vfs.path_for_file(&file_range.file);
 
-    lsp_types::Location::new(
+    Ok(lsp_types::Location::new(
         UrlExt::from_file_path(&path),
         range(&line_index, file_range.range),
-    )
+    ))
 }
 
 pub fn diagnostic(line_index: &LineIndex, diag: LspDiagnostic) -> lsp_types::Diagnostic {
