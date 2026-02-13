@@ -272,14 +272,17 @@ impl Server {
             let mut lsp_diags = DiagnosticCollection::default();
             for source_unit_id in opened_source_units {
                 let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
-                    return;
+                    continue;
                 };
                 lsp_diags.add_source_unit_files(&source_unit);
-                let Ok(index) = snap.analysis.index(source_unit_id) else {
-                    return;
+                let Ok(diagnostics) = snap.analysis.diagnostics(source_unit_id) else {
+                    continue;
                 };
-                let Ok(_) = lsp_diags.extend(&snap, index.diagnostics.clone()) else {
-                    return;
+                let Ok(_) = lsp_diags.extend(&snap, diagnostics) else {
+                    continue;
+                };
+                let Ok(index) = snap.analysis.index(source_unit_id) else {
+                    continue;
                 };
                 snap.client
                     .emit(UpdateIndexEvent(source_unit_id, index))
@@ -299,13 +302,16 @@ impl Server {
                 return;
             };
             lsp_diags.add_source_unit_files(&source_unit);
-            let Ok(index) = snap.analysis.index(source_unit_id) else {
+            let Ok(diagnostics) = snap.analysis.diagnostics(source_unit_id) else {
                 return;
             };
-            let Ok(_) = lsp_diags.extend(&snap, index.diagnostics.clone()) else {
+            let Ok(_) = lsp_diags.extend(&snap, diagnostics) else {
                 return;
             };
 
+            let Ok(index) = snap.analysis.index(source_unit_id) else {
+                return;
+            };
             snap.client
                 .emit(UpdateIndexEvent(source_unit_id, index))
                 .expect("failed to emit update index event");
@@ -373,7 +379,7 @@ impl Server {
 
             for source_unit_id in opened_source_units {
                 let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
-                    return;
+                    continue;
                 };
                 let root_file = snap.vfs.path_for_file(&source_unit.root());
 
