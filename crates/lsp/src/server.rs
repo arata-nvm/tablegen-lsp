@@ -162,8 +162,10 @@ impl LanguageServer for Server {
 
         if self.root_source_unit.is_some() {
             // set_source_rootでこのファイルはすでに解析されているはずなので、何もしない
-        } else {
-            self.load_source_unit(&params.text_document.uri, &params.text_document.text);
+        } else if self
+            .load_source_unit(&params.text_document.uri, &params.text_document.text)
+            .is_ok()
+        {
             self.spawn_update_diagnostics();
             self.spawn_flycheck(Some(&params.text_document.uri));
         }
@@ -175,8 +177,12 @@ impl LanguageServer for Server {
         tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
             if self.is_file_in_root_source_unit(&params.text_document.uri) {
-                self.load_source_unit(&params.text_document.uri, &change.text);
-                self.spawn_update_diagnostics();
+                if self
+                    .load_source_unit(&params.text_document.uri, &change.text)
+                    .is_ok()
+                {
+                    self.spawn_update_diagnostics();
+                }
             } else {
                 let path = UrlExt::to_file_path(&params.text_document.uri);
                 let file_id = self.vfs.assign_or_get_file_id(path);
@@ -226,10 +232,11 @@ impl Server {
             };
             content
         };
-        let source_unit_id = self.load_source_unit(&params.uri, &content);
-        self.root_source_unit.replace(source_unit_id);
-        self.spawn_update_diagnostics();
-        self.spawn_flycheck(Some(&params.uri));
+        if let Ok(source_unit_id) = self.load_source_unit(&params.uri, &content) {
+            self.root_source_unit.replace(source_unit_id);
+            self.spawn_update_diagnostics();
+            self.spawn_flycheck(Some(&params.uri));
+        }
         ControlFlow::Continue(())
     }
 
@@ -454,16 +461,16 @@ impl Server {
         }
     }
 
-    fn load_source_unit(&mut self, uri: &Url, text: &str) -> SourceUnitId {
+    fn load_source_unit(&mut self, uri: &Url, text: &str) -> Cancellable<SourceUnitId> {
         let path = UrlExt::to_file_path(uri);
         let file_id = self.vfs.assign_or_get_file_id(path);
         let text = Arc::from(text);
         self.host.set_file_content(file_id, text);
         let source_unit_id =
             self.host
-                .load_source_unit(&mut self.vfs, file_id, &self.config.include_dirs);
+                .load_source_unit(&mut self.vfs, file_id, &self.config.include_dirs)?;
         self.opened_source_units.insert(source_unit_id);
-        source_unit_id
+        Ok(source_unit_id)
     }
 
     fn opened_source_units(&self) -> HashSet<SourceUnitId> {

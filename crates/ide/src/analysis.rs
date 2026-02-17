@@ -55,11 +55,15 @@ impl AnalysisHost {
         fs: &mut FS,
         root_file: FileId,
         include_dirs: &[FilePath],
-    ) -> SourceUnitId {
+    ) -> Cancellable<SourceUnitId> {
+        let mut db = AssertUnwindSafe(&mut self.db);
+        let mut fs = AssertUnwindSafe(fs);
+        let source_unit = Cancelled::catch(move || {
+            file_system::collect_sources(*db, *fs, root_file, include_dirs)
+        })?;
         let id = SourceUnitId::from_root_file(root_file);
-        let source_unit = file_system::collect_sources(&mut self.db, fs, root_file, include_dirs);
         self.db.set_source_unit(id, Arc::from(source_unit));
-        id
+        Ok(id)
     }
 }
 
