@@ -366,23 +366,13 @@ impl Server {
         let snap = self.snapshot();
         let opened_source_units = self.opened_source_units();
         let task = task::spawn(async move {
-            let progress = match tokio::time::timeout(
-                std::time::Duration::from_secs(1),
-                Progress::new(
-                    snap.client.clone(),
-                    FLYCHECK_PROGRESS_TOKEN,
-                    "Running flycheck",
-                    file_name,
-                ),
+            let progress = Progress::new(
+                snap.client.clone(),
+                FLYCHECK_PROGRESS_TOKEN,
+                "Running flycheck",
+                file_name,
             )
-            .await
-            {
-                Ok(p) => p,
-                Err(err) => {
-                    tracing::warn!("flycheck: progress create timed out: {err:?}");
-                    None
-                }
-            };
+            .await;
 
             for source_unit_id in opened_source_units {
                 let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
