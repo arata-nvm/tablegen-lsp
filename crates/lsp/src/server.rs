@@ -2,6 +2,7 @@ use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
 use std::ops::ControlFlow;
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_lsp::lsp_types::{
     CompletionOptions, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
@@ -20,7 +21,7 @@ use serde_json::Value;
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost, Cancellable};
-use ide::file_system::{FileSystem, SourceUnitId};
+use ide::file_system::{FileId, FileSystem, SourceUnitId};
 use ide::index::Index;
 
 use crate::config::Config;
@@ -40,6 +41,9 @@ pub struct Server {
     latest_indices: HashMap<SourceUnitId, Arc<Index>>,
 
     flycheck_task: Option<task::JoinHandle<()>>,
+    debounce_task: Option<task::JoinHandle<()>>,
+    pending_analysis_file_id: Option<FileId>,
+    pending_file_changes: HashMap<FileId, Arc<str>>,
 }
 
 const FLYCHECK_PROGRESS_TOKEN: &str = "tablegen-lsp/flycheck";
@@ -50,6 +54,7 @@ struct UpdateDiagnosticsEvent(i32, DiagnosticCollection);
 struct UpdateConfigEvent(Value);
 struct UpdateFlycheckEvent(SourceUnitId, TblgenParseResult);
 struct UpdateIndexEvent(SourceUnitId, Arc<Index>);
+struct DebounceTimerEvent;
 
 impl Server {
     pub fn new_router(client: ClientSocket) -> Router<Self> {
@@ -77,7 +82,8 @@ impl Server {
             .event::<UpdateDiagnosticsEvent>(Self::update_diagnostics)
             .event::<UpdateConfigEvent>(Self::update_config)
             .event::<UpdateFlycheckEvent>(Self::update_flycheck)
-            .event::<UpdateIndexEvent>(Self::update_index);
+            .event::<UpdateIndexEvent>(Self::update_index)
+            .event::<DebounceTimerEvent>(Self::handle_debounce_timer);
         router
     }
 
@@ -92,6 +98,9 @@ impl Server {
             root_source_unit: None,
             latest_indices: HashMap::new(),
             flycheck_task: None,
+            debounce_task: None,
+            pending_analysis_file_id: None,
+            pending_file_changes: HashMap::new(),
         }
     }
 }
@@ -176,18 +185,13 @@ impl LanguageServer for Server {
     fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
+            let path = UrlExt::to_file_path(&params.text_document.uri);
+            let file_id = self.vfs.assign_or_get_file_id(path);
+            self.pending_file_changes
+                .insert(file_id, Arc::from(change.text.as_str()));
+
             if self.is_file_in_root_source_unit(&params.text_document.uri) {
-                if self
-                    .load_source_unit(&params.text_document.uri, &change.text)
-                    .is_ok()
-                {
-                    self.spawn_update_diagnostics();
-                }
-            } else {
-                let path = UrlExt::to_file_path(&params.text_document.uri);
-                let file_id = self.vfs.assign_or_get_file_id(path);
-                self.host
-                    .set_file_content(file_id, Arc::from(change.text.as_str()));
+                self.schedule_analysis(file_id);
             }
         }
         ControlFlow::Continue(())
@@ -203,15 +207,22 @@ impl LanguageServer for Server {
 
     fn did_close(&mut self, params: DidCloseTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_close: {params:?}");
-        {
-            let path = UrlExt::to_file_path(&params.text_document.uri);
-            let Some(file_id) = self.vfs.file_for_path(&path) else {
-                tracing::warn!("cannot find file id: {path:?}");
-                return ControlFlow::Continue(());
-            };
-            let source_unit_id = SourceUnitId::from_root_file(file_id);
-            self.opened_source_units.remove(&source_unit_id);
+        let path = UrlExt::to_file_path(&params.text_document.uri);
+        let Some(file_id) = self.vfs.file_for_path(&path) else {
+            tracing::warn!("cannot find file id: {path:?}");
+            return ControlFlow::Continue(());
+        };
+
+        if self.pending_analysis_file_id == Some(file_id) {
+            self.pending_analysis_file_id = None;
+            self.pending_file_changes.remove(&file_id);
+            if let Some(task) = self.debounce_task.take() {
+                task.abort();
+            }
         }
+
+        let source_unit_id = SourceUnitId::from_root_file(file_id);
+        self.opened_source_units.remove(&source_unit_id);
         self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
@@ -275,35 +286,41 @@ impl Server {
     fn spawn_update_diagnostics(&mut self) {
         let diag_version = self.bump_diagnostic_version();
         let opened_source_units = self.opened_source_units();
-        self.spawn_with_snapshot((), move |snap, _| {
+        let task = self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
+            // NOTE: cancelでreturnしないとデッドロックが発生しうるので注意
             for source_unit_id in opened_source_units {
                 let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
-                    continue;
+                    return;
                 };
                 lsp_diags.add_source_unit_files(&source_unit);
                 let Ok(diagnostics) = snap.analysis.diagnostics(source_unit_id) else {
-                    continue;
+                    return;
                 };
                 let Ok(_) = lsp_diags.extend(&snap, diagnostics) else {
-                    continue;
+                    return;
                 };
                 let Ok(index) = snap.analysis.index(source_unit_id) else {
-                    continue;
+                    return;
                 };
-                snap.client
-                    .emit(UpdateIndexEvent(source_unit_id, index))
-                    .expect("failed to emit update index event");
+                if let Err(err) = snap.client.emit(UpdateIndexEvent(source_unit_id, index)) {
+                    tracing::warn!("failed to emit update index event: {err:?}");
+                    return;
+                }
             }
-            snap.client
+            if let Err(err) = snap
+                .client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
-                .expect("failed to emit update diagnostics event");
+            {
+                tracing::warn!("failed to emit update diagnostics event: {err:?}");
+            }
         });
+        drop(task);
     }
 
     fn spawn_update_diagnostics_of(&mut self, source_unit_id: SourceUnitId) {
         let diag_version = self.bump_diagnostic_version();
-        self.spawn_with_snapshot((), move |snap, _| {
+        let task = self.spawn_with_snapshot((), move |snap, _| {
             let mut lsp_diags = DiagnosticCollection::default();
             let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
                 return;
@@ -319,14 +336,19 @@ impl Server {
             let Ok(index) = snap.analysis.index(source_unit_id) else {
                 return;
             };
-            snap.client
-                .emit(UpdateIndexEvent(source_unit_id, index))
-                .expect("failed to emit update index event");
+            if let Err(err) = snap.client.emit(UpdateIndexEvent(source_unit_id, index)) {
+                tracing::warn!("failed to emit update index event: {err:?}");
+                return;
+            }
 
-            snap.client
+            if let Err(err) = snap
+                .client
                 .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
-                .expect("failed to emit update diagnostics event");
+            {
+                tracing::warn!("failed to emit update diagnostics event: {err:?}");
+            }
         });
+        drop(task);
     }
 
     fn bump_diagnostic_version(&mut self) -> i32 {
@@ -392,9 +414,12 @@ impl Server {
                     }
                 };
 
-                snap.client
+                if let Err(err) = snap
+                    .client
                     .emit(UpdateFlycheckEvent(source_unit_id, result))
-                    .expect("failed to emit update flycheck event");
+                {
+                    tracing::warn!("failed to emit update flycheck event: {err:?}");
+                }
             }
 
             if let Some(progress) = progress {
@@ -463,6 +488,63 @@ impl Server {
         Ok(source_unit_id)
     }
 
+    fn schedule_analysis(&mut self, file_id: FileId) {
+        self.pending_analysis_file_id = Some(file_id);
+        if let Some(old) = self.debounce_task.take() {
+            old.abort();
+        }
+        let client = self.client.clone();
+        self.debounce_task = Some(task::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            if let Err(err) = client.emit(DebounceTimerEvent) {
+                tracing::warn!("failed to emit debounce timer event: {err:?}");
+            }
+        }));
+    }
+
+    fn flush_pending_changes(&mut self) {
+        if !self.pending_file_changes.is_empty() {
+            tracing::info!(
+                "flushing {} pending file change(s)",
+                self.pending_file_changes.len()
+            );
+        }
+        for (file_id, content) in self.pending_file_changes.drain() {
+            self.host.set_file_content(file_id, content);
+        }
+    }
+
+    fn handle_debounce_timer(
+        &mut self,
+        _: DebounceTimerEvent,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        let had_pending = !self.pending_file_changes.is_empty();
+        self.flush_pending_changes();
+
+        if let Some(file_id) = self.pending_analysis_file_id.take() {
+            if had_pending {
+                // まだflushされていない
+                match self
+                    .host
+                    .load_source_unit(&mut self.vfs, file_id, &self.config.include_dirs)
+                {
+                    Ok(source_unit_id) => {
+                        self.opened_source_units.insert(source_unit_id);
+                        self.spawn_update_diagnostics();
+                    }
+                    Err(e) => {
+                        tracing::warn!("debounced load_source_unit cancelled: {e:?}");
+                    }
+                }
+            } else {
+                // すでにflushされている
+                tracing::info!("debounce: skipping load_source_unit (no pending changes)");
+                self.spawn_update_diagnostics();
+            }
+        }
+        ControlFlow::Continue(())
+    }
+
     fn opened_source_units(&self) -> HashSet<SourceUnitId> {
         match self.root_source_unit {
             Some(source_unit_id) => HashSet::from([source_unit_id]),
@@ -506,6 +588,7 @@ trait RouterExt: BorrowMut<Router<Server>> {
         R::Result: Send + 'static,
     {
         self.borrow_mut().request::<R, _>(move |this, params| {
+            this.flush_pending_changes();
             let task = this.spawn_with_snapshot(params, f);
             async move {
                 match task.await {
