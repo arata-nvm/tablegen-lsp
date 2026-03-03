@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use dashmap::{DashMap, Entry};
+use dashmap::DashMap;
 use salsa::Setter;
 use syntax::Parse;
 
@@ -78,15 +78,12 @@ impl Database for RootDatabase {
     }
 
     fn set_file(&mut self, id: FileId, content: Arc<str>) {
-        let files = Arc::clone(&self.files);
-        match files.entry(id) {
-            Entry::Vacant(entry) => {
-                let input = FileInput::new(self, content);
-                entry.insert(input);
-            }
-            Entry::Occupied(mut entry) => {
-                entry.get_mut().set_content(self).to(content);
-            }
+        // NOTE: DashMapのロックを保持したままsalsa::Setterを呼ぶとデッドロックすることに注意
+        if let Some(existing) = self.files.get(&id).map(|r| *r) {
+            existing.set_content(self).to(content);
+        } else {
+            let input = FileInput::new(self, content);
+            self.files.insert(id, input);
         }
     }
 
