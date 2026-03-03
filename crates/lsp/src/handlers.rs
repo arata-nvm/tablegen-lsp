@@ -15,7 +15,9 @@ pub(crate) fn folding_range(
     params: FoldingRangeParams,
 ) -> Cancellable<Option<Vec<FoldingRange>>> {
     tracing::info!("folding_range: {params:?}");
-    let (file_id, line_index) = from_proto::file(&snap, params.text_document)?;
+    let Some((file_id, line_index)) = from_proto::file(&snap, params.text_document)? else {
+        return Ok(None);
+    };
     let Some(folding_ranges) = snap.analysis.folding_range(file_id)? else {
         return Ok(None);
     };
@@ -34,7 +36,11 @@ pub(crate) fn inlay_hint(
     let Some(source_unit_id) = snap.current_source_unit(&params.text_document.uri) else {
         return Ok(None);
     };
-    let (range, line_index) = from_proto::file_range(&snap, params.text_document, params.range)?;
+    let Some((range, line_index)) =
+        from_proto::file_range(&snap, params.text_document, params.range)?
+    else {
+        return Ok(None);
+    };
     let Some(inlay_hints) = snap.analysis.inlay_hint(source_unit_id, range)? else {
         return Ok(None);
     };
@@ -55,7 +61,9 @@ pub(crate) fn completion(
     else {
         return Ok(None);
     };
-    let (pos, _) = from_proto::file_pos(&snap, params.text_document_position)?;
+    let Some((pos, _)) = from_proto::file_pos(&snap, params.text_document_position)? else {
+        return Ok(None);
+    };
     let trigger_char = params.context.and_then(|it| it.trigger_character);
 
     let completion_list = match snap.latest_indexes.get(&source_unit_id) {
@@ -83,7 +91,9 @@ pub(crate) fn hover(snap: ServerSnapshot, params: HoverParams) -> Cancellable<Op
     else {
         return Ok(None);
     };
-    let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params)?;
+    let Some((pos, _)) = from_proto::file_pos(&snap, params.text_document_position_params)? else {
+        return Ok(None);
+    };
     let Some(hover) = snap.analysis.hover(source_unit_id, pos)? else {
         return Ok(None);
     };
@@ -101,7 +111,9 @@ pub(crate) fn definition(
     else {
         return Ok(None);
     };
-    let (pos, _) = from_proto::file_pos(&snap, params.text_document_position_params)?;
+    let Some((pos, _)) = from_proto::file_pos(&snap, params.text_document_position_params)? else {
+        return Ok(None);
+    };
     let Some(location) = snap.analysis.goto_definition(source_unit_id, pos)? else {
         return Ok(None);
     };
@@ -119,7 +131,9 @@ pub(crate) fn references(
     else {
         return Ok(None);
     };
-    let (pos, _) = from_proto::file_pos(&snap, params.text_document_position)?;
+    let Some((pos, _)) = from_proto::file_pos(&snap, params.text_document_position)? else {
+        return Ok(None);
+    };
     let Some(location_list) = snap.analysis.references(source_unit_id, pos)? else {
         return Ok(None);
     };
@@ -135,7 +149,9 @@ pub(crate) fn document_symbol(
     params: DocumentSymbolParams,
 ) -> Cancellable<Option<DocumentSymbolResponse>> {
     tracing::info!("document_symbol: {params:?}");
-    let (file_id, line_index) = from_proto::file(&snap, params.text_document)?;
+    let Some((file_id, line_index)) = from_proto::file(&snap, params.text_document)? else {
+        return Ok(None);
+    };
     let Some(symbols) = snap.analysis.document_symbol(file_id)? else {
         return Ok(None);
     };
@@ -154,7 +170,9 @@ pub(crate) fn document_link(
     let Some(source_unit_id) = snap.current_source_unit(&params.text_document.uri) else {
         return Ok(None);
     };
-    let (file_id, line_index) = from_proto::file(&snap, params.text_document)?;
+    let Some((file_id, line_index)) = from_proto::file(&snap, params.text_document)? else {
+        return Ok(None);
+    };
     let Some(links) = snap.analysis.document_link(source_unit_id, file_id)? else {
         return Ok(None);
     };

@@ -26,32 +26,41 @@ pub fn range(line_index: &LineIndex, range: lsp_types::Range) -> TextRange {
 pub fn file_pos(
     snap: &ServerSnapshot,
     doc: lsp_types::TextDocumentPositionParams,
-) -> Cancellable<(FilePosition, Arc<LineIndex>)> {
+) -> Cancellable<Option<(FilePosition, Arc<LineIndex>)>> {
     let path = UrlExt::to_file_path(&doc.text_document.uri);
-    let file_id = snap.vfs.file_for_path(&path).unwrap();
+    let Some(file_id) = snap.vfs.file_for_path(&path) else {
+        tracing::warn!("file not found in VFS: {path:?}");
+        return Ok(None);
+    };
     let line_index = snap.analysis.line_index(file_id)?;
     let pos = FilePosition::new(file_id, position(&line_index, doc.position));
-    Ok((pos, line_index))
+    Ok(Some((pos, line_index)))
 }
 
 pub fn file_range(
     snap: &ServerSnapshot,
     doc: lsp_types::TextDocumentIdentifier,
     lsp_range: lsp_types::Range,
-) -> Cancellable<(FileRange, Arc<LineIndex>)> {
+) -> Cancellable<Option<(FileRange, Arc<LineIndex>)>> {
     let path = UrlExt::to_file_path(&doc.uri);
-    let file_id = snap.vfs.file_for_path(&path).unwrap();
+    let Some(file_id) = snap.vfs.file_for_path(&path) else {
+        tracing::warn!("file not found in VFS: {path:?}");
+        return Ok(None);
+    };
     let line_index = snap.analysis.line_index(file_id)?;
     let range = FileRange::new(file_id, range(&line_index, lsp_range));
-    Ok((range, line_index))
+    Ok(Some((range, line_index)))
 }
 
 pub fn file(
     snap: &ServerSnapshot,
     doc: lsp_types::TextDocumentIdentifier,
-) -> Cancellable<(FileId, Arc<LineIndex>)> {
+) -> Cancellable<Option<(FileId, Arc<LineIndex>)>> {
     let path = UrlExt::to_file_path(&doc.uri);
-    let file_id = snap.vfs.file_for_path(&path).unwrap();
+    let Some(file_id) = snap.vfs.file_for_path(&path) else {
+        tracing::warn!("file not found in VFS: {path:?}");
+        return Ok(None);
+    };
     let line_index = snap.analysis.line_index(file_id)?;
-    Ok((file_id, line_index))
+    Ok(Some((file_id, line_index)))
 }
