@@ -73,19 +73,31 @@ impl<FS: FileSystem> Clone for SharedFs<FS> {
 
 impl<FS: FileSystem> FileSystem for SharedFs<FS> {
     fn assign_or_get_file_id(&mut self, path: FilePath) -> FileId {
-        self.fs.write().unwrap().assign_or_get_file_id(path)
+        self.fs
+            .write()
+            .unwrap_or_else(|e| e.into_inner())
+            .assign_or_get_file_id(path)
     }
 
     fn file_for_path(&self, path: &FilePath) -> Option<FileId> {
-        self.fs.read().unwrap().file_for_path(path)
+        self.fs
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .file_for_path(path)
     }
 
     fn path_for_file(&self, file_id: &FileId) -> FilePath {
-        self.fs.read().unwrap().path_for_file(file_id)
+        self.fs
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .path_for_file(file_id)
     }
 
     fn read_content(&self, file_path: &FilePath) -> Option<String> {
-        self.fs.read().unwrap().read_content(file_path)
+        self.fs
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .read_content(file_path)
     }
 }
 
