@@ -92,8 +92,12 @@ impl Database for RootDatabase {
     }
 
     fn set_source_unit(&mut self, id: SourceUnitId, source_unit: Arc<SourceUnit>) {
-        let input = SourceUnitInput::new(self, id, source_unit);
-        self.source_units.insert(id, input);
+        if let Some(existing) = self.source_units.get(&id).map(|r| *r) {
+            existing.set_source_unit(self).to(source_unit);
+        } else {
+            let input = SourceUnitInput::new(self, id, source_unit);
+            self.source_units.insert(id, input);
+        }
     }
 
     fn tblgen_result(&self, id: SourceUnitId) -> Option<TblgenResultInput> {

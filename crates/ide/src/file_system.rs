@@ -141,7 +141,7 @@ impl SourceUnitId {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SourceUnit {
     root: FileId,
     // SourceUnitに含まれるすべてのFileIdをキーに含むことを保証する
