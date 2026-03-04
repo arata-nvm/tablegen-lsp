@@ -421,7 +421,7 @@ impl<'a> CompletionContext<'a> {
                 format!("{name}<${{1}}>({args})$0", name = meta.name)
             } else {
                 let args = (0..meta.min_args)
-                    .map(|i| format!("${{{}}}", i + 2))
+                    .map(|i| format!("${{{}}}", i + 1))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{name}({args})$0", name = meta.name)

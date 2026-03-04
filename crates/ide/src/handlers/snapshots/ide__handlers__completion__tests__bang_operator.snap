@@ -6,7 +6,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "add",
         insert_text_snippet: Some(
-            "add(${2}, ${3})$0",
+            "add(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -19,7 +19,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "and",
         insert_text_snippet: Some(
-            "and(${2}, ${3})$0",
+            "and(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -45,7 +45,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "concat",
         insert_text_snippet: Some(
-            "concat(${2}, ${3})$0",
+            "concat(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -58,7 +58,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "cond",
         insert_text_snippet: Some(
-            "cond(${2}, ${3})$0",
+            "cond(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -71,7 +71,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "dag",
         insert_text_snippet: Some(
-            "dag(${2}, ${3}, ${4})$0",
+            "dag(${1}, ${2}, ${3})$0",
         ),
         detail: "",
         documentation: Some(
@@ -84,7 +84,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "div",
         insert_text_snippet: Some(
-            "div(${2}, ${3})$0",
+            "div(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -97,7 +97,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "empty",
         insert_text_snippet: Some(
-            "empty(${2})$0",
+            "empty(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -110,7 +110,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "eq",
         insert_text_snippet: Some(
-            "eq(${2}, ${3})$0",
+            "eq(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -136,7 +136,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "filter",
         insert_text_snippet: Some(
-            "filter(${2}, ${3}, ${4})$0",
+            "filter(${1}, ${2}, ${3})$0",
         ),
         detail: "",
         documentation: Some(
@@ -149,7 +149,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "find",
         insert_text_snippet: Some(
-            "find(${2}, ${3})$0",
+            "find(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -162,7 +162,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "foldl",
         insert_text_snippet: Some(
-            "foldl(${2}, ${3}, ${4}, ${5}, ${6})$0",
+            "foldl(${1}, ${2}, ${3}, ${4}, ${5})$0",
         ),
         detail: "",
         documentation: Some(
@@ -175,7 +175,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "foreach",
         insert_text_snippet: Some(
-            "foreach(${2}, ${3}, ${4})$0",
+            "foreach(${1}, ${2}, ${3})$0",
         ),
         detail: "",
         documentation: Some(
@@ -188,7 +188,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "ge",
         insert_text_snippet: Some(
-            "ge(${2}, ${3})$0",
+            "ge(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -214,7 +214,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "getdagname",
         insert_text_snippet: Some(
-            "getdagname(${2}, ${3})$0",
+            "getdagname(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -240,7 +240,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "gt",
         insert_text_snippet: Some(
-            "gt(${2}, ${3})$0",
+            "gt(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -253,7 +253,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "head",
         insert_text_snippet: Some(
-            "head(${2})$0",
+            "head(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -266,7 +266,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "if",
         insert_text_snippet: Some(
-            "if(${2}, ${3}, ${4})$0",
+            "if(${1}, ${2}, ${3})$0",
         ),
         detail: "",
         documentation: Some(
@@ -279,7 +279,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "initialized",
         insert_text_snippet: Some(
-            "initialized(${2})$0",
+            "initialized(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -305,7 +305,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "interleave",
         insert_text_snippet: Some(
-            "interleave(${2}, ${3})$0",
+            "interleave(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -331,7 +331,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "le",
         insert_text_snippet: Some(
-            "le(${2}, ${3})$0",
+            "le(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -344,7 +344,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "listconcat",
         insert_text_snippet: Some(
-            "listconcat(${2}, ${3})$0",
+            "listconcat(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -357,7 +357,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "listflatten",
         insert_text_snippet: Some(
-            "listflatten(${2})$0",
+            "listflatten(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -370,7 +370,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "listremove",
         insert_text_snippet: Some(
-            "listremove(${2}, ${3})$0",
+            "listremove(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -383,7 +383,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "listsplat",
         insert_text_snippet: Some(
-            "listsplat(${2}, ${3})$0",
+            "listsplat(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -396,7 +396,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "log2",
         insert_text_snippet: Some(
-            "log2(${2})$0",
+            "log2(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -409,7 +409,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "lt",
         insert_text_snippet: Some(
-            "lt(${2}, ${3})$0",
+            "lt(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -422,7 +422,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "match",
         insert_text_snippet: Some(
-            "match(${2}, ${3})$0",
+            "match(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -435,7 +435,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "mul",
         insert_text_snippet: Some(
-            "mul(${2}, ${3})$0",
+            "mul(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -448,7 +448,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "ne",
         insert_text_snippet: Some(
-            "ne(${2}, ${3})$0",
+            "ne(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -461,7 +461,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "not",
         insert_text_snippet: Some(
-            "not(${2})$0",
+            "not(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -474,7 +474,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "or",
         insert_text_snippet: Some(
-            "or(${2}, ${3})$0",
+            "or(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -487,7 +487,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "range",
         insert_text_snippet: Some(
-            "range(${2})$0",
+            "range(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -500,7 +500,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "repr",
         insert_text_snippet: Some(
-            "repr(${2})$0",
+            "repr(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -513,7 +513,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "setdagarg",
         insert_text_snippet: Some(
-            "setdagarg(${2}, ${3}, ${4})$0",
+            "setdagarg(${1}, ${2}, ${3})$0",
         ),
         detail: "",
         documentation: Some(
@@ -526,7 +526,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "setdagname",
         insert_text_snippet: Some(
-            "setdagname(${2}, ${3}, ${4})$0",
+            "setdagname(${1}, ${2}, ${3})$0",
         ),
         detail: "",
         documentation: Some(
@@ -539,7 +539,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "setdagop",
         insert_text_snippet: Some(
-            "setdagop(${2}, ${3})$0",
+            "setdagop(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -552,7 +552,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "shl",
         insert_text_snippet: Some(
-            "shl(${2}, ${3})$0",
+            "shl(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -565,7 +565,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "size",
         insert_text_snippet: Some(
-            "size(${2})$0",
+            "size(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -578,7 +578,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "sra",
         insert_text_snippet: Some(
-            "sra(${2}, ${3})$0",
+            "sra(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -591,7 +591,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "srl",
         insert_text_snippet: Some(
-            "srl(${2}, ${3})$0",
+            "srl(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -604,7 +604,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "strconcat",
         insert_text_snippet: Some(
-            "strconcat(${2}, ${3})$0",
+            "strconcat(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -617,7 +617,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "sub",
         insert_text_snippet: Some(
-            "sub(${2}, ${3})$0",
+            "sub(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -630,7 +630,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "subst",
         insert_text_snippet: Some(
-            "subst(${2}, ${3}, ${4})$0",
+            "subst(${1}, ${2}, ${3})$0",
         ),
         detail: "",
         documentation: Some(
@@ -643,7 +643,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "substr",
         insert_text_snippet: Some(
-            "substr(${2}, ${3})$0",
+            "substr(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -656,7 +656,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "tail",
         insert_text_snippet: Some(
-            "tail(${2})$0",
+            "tail(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -669,7 +669,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "tolower",
         insert_text_snippet: Some(
-            "tolower(${2})$0",
+            "tolower(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -682,7 +682,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "toupper",
         insert_text_snippet: Some(
-            "toupper(${2})$0",
+            "toupper(${1})$0",
         ),
         detail: "",
         documentation: Some(
@@ -695,7 +695,7 @@ expression: "check_trigger(\"!$\", \"!\")"
     CompletionItem {
         label: "xor",
         insert_text_snippet: Some(
-            "xor(${2}, ${3})$0",
+            "xor(${1}, ${2})$0",
         ),
         detail: "",
         documentation: Some(
