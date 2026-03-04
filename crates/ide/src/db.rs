@@ -105,8 +105,13 @@ impl Database for RootDatabase {
     }
 
     fn set_tblgen_result(&mut self, id: SourceUnitId, result: TblgenParseResult) {
-        let input = TblgenResultInput::new(self, result.diagnostics, result.symbol_table);
-        self.tblgen_results.insert(id, input);
+        if let Some(existing) = self.tblgen_results.get(&id).map(|r| *r) {
+            existing.set_diagnostics(self).to(result.diagnostics);
+            existing.set_symbol_table(self).to(result.symbol_table);
+        } else {
+            let input = TblgenResultInput::new(self, result.diagnostics, result.symbol_table);
+            self.tblgen_results.insert(id, input);
+        }
     }
 }
 
