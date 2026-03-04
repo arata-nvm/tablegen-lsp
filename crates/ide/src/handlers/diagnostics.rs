@@ -9,13 +9,15 @@ pub fn exec(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Vec<Diagnos
     let mut diagnotics = Vec::new();
 
     let source_unit = db.source_unit(source_unit_id).source_unit(db);
-    let parse = db.parse(source_unit.root());
-    diagnotics.extend(parse.errors().iter().map(|err| {
-        Diagnostic::new_lsp(
-            FileRange::new(source_unit.root(), err.range),
-            err.message.to_string(),
-        )
-    }));
+    for file_id in source_unit.iter_files() {
+        let parse = db.parse(file_id);
+        diagnotics.extend(parse.errors().iter().map(|err| {
+            Diagnostic::new_lsp(
+                FileRange::new(file_id, err.range),
+                err.message.to_string(),
+            )
+        }));
+    }
 
     let Index { diagnostics, .. } = &*db.index(source_unit_id);
     diagnotics.extend(diagnostics.iter().cloned());
