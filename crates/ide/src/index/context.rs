@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use ecow::{EcoString, eco_format};
 use syntax::{
@@ -26,6 +26,7 @@ pub struct IndexCtx<'a> {
     pub tblgen_symtab: &'a TblgenSymbolTable,
     pub pos_to_multiclass_def_map: HashMap<FilePosition, DefId>,
     pub resolved_types: HashMap<SyntaxNodePtr, Type>,
+    pub macros: HashSet<EcoString>,
 }
 
 impl<'a> IndexCtx<'a> {
@@ -33,6 +34,7 @@ impl<'a> IndexCtx<'a> {
         db: &'a dyn IndexDatabase,
         source_unit: &'a SourceUnit,
         tblgen_symtab: &'a TblgenSymbolTable,
+        macros: HashSet<EcoString>,
     ) -> Self {
         let root = source_unit.root();
         Self {
@@ -46,6 +48,7 @@ impl<'a> IndexCtx<'a> {
             tblgen_symtab,
             pos_to_multiclass_def_map: HashMap::new(),
             resolved_types: HashMap::new(),
+            macros,
         }
     }
 

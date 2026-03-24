@@ -54,7 +54,8 @@ pub(crate) fn index(db: &dyn IndexDatabase, source_unit_id: SourceUnitId) -> Ind
         None => &TblgenSymbolTable::default(),
     };
 
-    let mut ctx = IndexCtx::new(db, source_unit, symtab);
+    // TODO: ctx uses macro definitions at EOF, but should consider macros defined at the point of use
+    let mut ctx = IndexCtx::new(db, source_unit, symtab, parse.macros().clone());
     source_file.index_statement(&mut ctx);
     ctx.finish()
 }
@@ -139,7 +140,10 @@ impl IndexStatement for ast::Include {
             return;
         }
 
-        let parse = ctx.db.parse(include_file_id);
+        // TODO: cache parse result
+        let content = ctx.db.file(include_file_id).content(ctx.db);
+        let parse = syntax::parse_with_macros(content, ctx.macros.clone());
+        ctx.macros = parse.macros().clone();
         let Some(source_file) = ast::SourceFile::cast(parse.syntax_node()) else {
             return;
         };

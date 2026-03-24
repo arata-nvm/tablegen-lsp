@@ -59,8 +59,8 @@ impl<T: TokenStream> ParserBase<T> {
     }
 
     #[inline]
-    pub(crate) fn finish(self) -> (GreenNode, Vec<SyntaxError>) {
-        (self.builder.finish(), self.errors)
+    pub(crate) fn finish(self) -> (GreenNode, Vec<SyntaxError>, T) {
+        (self.builder.finish(), self.errors, self.token_stream)
     }
 
     #[inline]

@@ -45,12 +45,24 @@ impl<T: TokenStream> PreProcessor<T> {
         }
     }
 
+    pub fn new_with_macros(token_stream: T, macros: HashSet<EcoString>) -> Self {
+        Self {
+            token_stream,
+            macros,
+            error: None,
+        }
+    }
+
     pub fn define_macro(&mut self, macro_name: EcoString) {
         self.macros.insert(macro_name);
     }
 
     pub fn macros(&self) -> &HashSet<EcoString> {
         &self.macros
+    }
+
+    pub fn finish(self) -> HashSet<EcoString> {
+        self.macros
     }
 
     fn next_token(&mut self) -> TokenKind {
@@ -284,6 +296,22 @@ mod tests {
         assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat endif
         assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Id);
+        assert_eq!(prep.eat(), TokenKind::Eof);
+    }
+
+    #[test]
+    fn new_with_macros() {
+        let mut initial = std::collections::HashSet::new();
+        initial.insert(EcoString::from("PREDEF"));
+        let lexer = Lexer::new("#ifdef PREDEF\ntext\n#endif\n");
+        let mut prep = PreProcessor::new_with_macros(lexer, initial);
+        assert!(prep.macros().contains("PREDEF"));
+        assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat ifdef
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::Id); // text is included
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
+        assert_eq!(prep.eat(), TokenKind::PreProcessor); // eat endif
+        assert_eq!(prep.eat(), TokenKind::Whitespace);
         assert_eq!(prep.eat(), TokenKind::Eof);
     }
 
