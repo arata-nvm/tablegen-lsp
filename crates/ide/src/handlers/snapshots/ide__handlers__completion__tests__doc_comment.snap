@@ -14,6 +14,7 @@ expression: "check(r#\"\n// doc comment for class\nclass Foo;\nclass Bar : F$\n 
         ),
         kind: Class,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Record {
                 data: DefinedRecord(

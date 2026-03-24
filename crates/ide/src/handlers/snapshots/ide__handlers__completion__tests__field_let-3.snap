@@ -10,6 +10,7 @@ expression: "check(\"class Foo { int field1; } def foo : Foo { let f$\")"
         documentation: None,
         kind: Field,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Int {
                 _priv: (),

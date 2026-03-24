@@ -10,6 +10,7 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),
@@ -23,6 +24,7 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         documentation: None,
         kind: Variable,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -32,6 +34,7 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         documentation: None,
         kind: Variable,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -41,6 +44,7 @@ expression: "check(\"defvar outer = 1; foreach i = 0...2 in { defvar inner = out
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),

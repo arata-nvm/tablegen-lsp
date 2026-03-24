@@ -12,6 +12,7 @@ expression: "check(\"class Base { int base_field; } class Derived : Base { int d
         sort_text: Some(
             "0",
         ),
+        trigger_signature_help: false,
         item_type: Some(
             Int {
                 _priv: (),
@@ -27,6 +28,7 @@ expression: "check(\"class Base { int base_field; } class Derived : Base { int d
         sort_text: Some(
             "0",
         ),
+        trigger_signature_help: false,
         item_type: Some(
             Int {
                 _priv: (),

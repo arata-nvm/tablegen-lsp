@@ -12,6 +12,7 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         documentation: None,
         kind: Class,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Record {
                 data: DefinedRecord(
@@ -33,6 +34,7 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),
@@ -46,6 +48,7 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         documentation: None,
         kind: Defset,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             List {
                 elm: Record {
@@ -70,6 +73,7 @@ expression: "check(\"class Foo; defset list<Foo> foo = {} defvar tmp = f$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),

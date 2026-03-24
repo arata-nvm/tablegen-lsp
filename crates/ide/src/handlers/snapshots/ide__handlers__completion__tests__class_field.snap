@@ -12,6 +12,7 @@ expression: "check(\"class Foo { int field1; int field2 = f$\")"
         sort_text: Some(
             "0",
         ),
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),
@@ -27,6 +28,7 @@ expression: "check(\"class Foo { int field1; int field2 = f$\")"
         sort_text: Some(
             "0",
         ),
+        trigger_signature_help: false,
         item_type: Some(
             Int {
                 _priv: (),
@@ -42,6 +44,7 @@ expression: "check(\"class Foo { int field1; int field2 = f$\")"
         sort_text: Some(
             "0",
         ),
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),
@@ -59,6 +62,7 @@ expression: "check(\"class Foo { int field1; int field2 = f$\")"
         sort_text: Some(
             "1",
         ),
+        trigger_signature_help: false,
         item_type: Some(
             Record {
                 data: DefinedRecord(

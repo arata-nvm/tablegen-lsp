@@ -177,6 +177,13 @@ pub fn completion_item(item: CompletionItem) -> lsp_types::CompletionItem {
         ));
     }
     lsp_item.sort_text = item.sort_text;
+    if item.trigger_signature_help {
+        lsp_item.command = Some(lsp_types::Command {
+            title: "triggerSignatureHelp".to_string(),
+            command: "editor.action.triggerParameterHints".to_string(),
+            arguments: None,
+        });
+    }
     lsp_item
 }
 

@@ -12,6 +12,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Class,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Record {
                 data: DefinedRecord(
@@ -33,6 +34,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Type,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -44,6 +46,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Type,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -53,6 +56,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Type,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -62,6 +66,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Type,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -71,6 +76,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Type,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -82,6 +88,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Type,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -91,6 +98,7 @@ expression: "check(\"class Foo<i$\")"
         documentation: None,
         kind: Type,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
 ]

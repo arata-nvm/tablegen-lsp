@@ -12,6 +12,7 @@ expression: "check(\"multiclass Base<int x>; multiclass Derived<int y>; defm tes
         documentation: None,
         kind: Multiclass,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -23,6 +24,7 @@ expression: "check(\"multiclass Base<int x>; multiclass Derived<int y>; defm tes
         documentation: None,
         kind: Multiclass,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
 ]

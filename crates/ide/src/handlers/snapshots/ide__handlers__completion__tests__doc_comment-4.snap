@@ -14,6 +14,7 @@ expression: "check(r#\"\n// doc comment for multiclass\nmulticlass Foo;\ndefm ba
         ),
         kind: Multiclass,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
 ]

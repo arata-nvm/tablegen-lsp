@@ -10,6 +10,7 @@ expression: "check(\"foreach i = 0...4 in { defvar x = i$ }\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),
@@ -23,6 +24,7 @@ expression: "check(\"foreach i = 0...4 in { defvar x = i$ }\")"
         documentation: None,
         kind: Variable,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -32,6 +34,7 @@ expression: "check(\"foreach i = 0...4 in { defvar x = i$ }\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: Some(
             Bit {
                 _priv: (),

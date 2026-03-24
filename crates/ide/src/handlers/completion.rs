@@ -31,6 +31,7 @@ pub struct CompletionItem {
     pub documentation: Option<String>,
     pub kind: CompletionItemKind,
     pub sort_text: Option<String>,
+    pub trigger_signature_help: bool,
     pub(crate) item_type: Option<Type>,
 }
 
@@ -47,6 +48,7 @@ impl CompletionItem {
             documentation: None,
             kind,
             sort_text: None,
+            trigger_signature_help: false,
             item_type: None,
         }
     }
@@ -430,6 +432,7 @@ impl<'a> CompletionContext<'a> {
             let mut item = CompletionItem::new_simple(meta.name, "", CompletionItemKind::Keyword);
             item.insert_text_snippet = Some(snippet);
             item.documentation = Some(meta.documentation.into());
+            item.trigger_signature_help = true;
             self.items.push(item);
         }
     }
@@ -469,6 +472,7 @@ impl<'a> CompletionContext<'a> {
             );
             item.insert_text_snippet = Some(snippet);
             item.documentation = documentation;
+            item.trigger_signature_help = !arg_snippet.is_empty();
             item.item_type = Some(Type::record(class_id.into(), class.name().clone()));
             self.items.push(item);
         }
@@ -508,6 +512,7 @@ impl<'a> CompletionContext<'a> {
             );
             item.insert_text_snippet = Some(snippet);
             item.documentation = documentation;
+            item.trigger_signature_help = !arg_snippet.is_empty();
             self.items.push(item);
         }
     }

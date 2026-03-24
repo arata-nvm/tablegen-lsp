@@ -14,6 +14,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -27,6 +28,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -40,6 +42,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -53,6 +56,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -66,6 +70,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -79,6 +84,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -92,6 +98,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -105,6 +112,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -118,6 +126,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -131,6 +140,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -144,6 +154,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -157,6 +168,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -170,6 +182,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -183,6 +196,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -196,6 +210,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -209,6 +224,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -222,6 +238,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -235,6 +252,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -248,6 +266,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -261,6 +280,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -274,6 +294,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -287,6 +308,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -300,6 +322,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -313,6 +336,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -326,6 +350,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -339,6 +364,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -352,6 +378,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -365,6 +392,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -378,6 +406,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -391,6 +420,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -404,6 +434,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -417,6 +448,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -430,6 +462,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -443,6 +476,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -456,6 +490,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -469,6 +504,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -482,6 +518,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -495,6 +532,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -508,6 +546,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -521,6 +560,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -534,6 +574,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -547,6 +588,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -560,6 +602,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -573,6 +616,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -586,6 +630,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -599,6 +644,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -612,6 +658,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -625,6 +672,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -638,6 +686,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -651,6 +700,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -664,6 +714,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -677,6 +728,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -690,6 +742,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
     CompletionItem {
@@ -703,6 +756,7 @@ expression: "check_trigger(\"!$\", \"!\")"
         ),
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: true,
         item_type: None,
     },
 ]

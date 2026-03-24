@@ -10,6 +10,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -19,6 +20,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -28,6 +30,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -37,6 +40,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -46,6 +50,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -55,6 +60,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -64,6 +70,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -73,6 +80,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -82,6 +90,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -91,6 +100,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -100,6 +110,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -109,6 +120,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
     CompletionItem {
@@ -118,6 +130,7 @@ expression: "check(\"c$\")"
         documentation: None,
         kind: Keyword,
         sort_text: None,
+        trigger_signature_help: false,
         item_type: None,
     },
 ]
