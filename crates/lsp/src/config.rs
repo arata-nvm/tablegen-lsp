@@ -8,7 +8,7 @@ pub const CONFIG_SECTION: &str = "tablegen-lsp";
 #[derive(Debug, Default)]
 pub struct Config {
     pub include_dirs: Vec<FilePath>,
-    pub source_root_path: Option<FilePath>,
+    pub default_source_root_path: Option<FilePath>,
 }
 
 impl Config {
@@ -25,13 +25,13 @@ impl Config {
                 .collect();
         }
 
-        if let Some(v) = v.pointer_mut("/sourceRootPath") {
+        if let Some(v) = v.pointer_mut("/defaultSourceRootPath") {
             let v: Option<String> = match serde_json::from_value(v.take()) {
                 Ok(v) => v,
-                Err(_) => return Err("invalid value of tablegen-lsp.sourceRootPath".into()),
+                Err(_) => return Err("invalid value of tablegen-lsp.defaultSourceRootPath".into()),
             };
 
-            self.source_root_path = v.map(|s| FilePath::from(Path::new(&s)));
+            self.default_source_root_path = v.map(|s| FilePath::from(Path::new(&s)));
         }
 
         Ok(())

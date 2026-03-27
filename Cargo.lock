@@ -668,6 +668,7 @@ dependencies = [
  "serde",
  "serde_json",
  "text-size",
+ "thiserror",
  "tokio",
  "tokio-util",
  "tower",

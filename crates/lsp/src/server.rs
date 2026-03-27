@@ -16,9 +16,10 @@ use async_lsp::{ClientSocket, ErrorCode, LanguageClient, LanguageServer, Respons
 use futures::future::{BoxFuture, ready};
 use ide::interop::{self, TblgenParseResult};
 use serde_json::Value;
+use thiserror::Error;
 use tokio::task::{self};
 
-use ide::analysis::{Analysis, AnalysisHost, Cancellable};
+use ide::analysis::{Analysis, AnalysisHost, Cancellable, Cancelled};
 use ide::file_system::{FileId, FileSystem, SourceUnitId};
 use ide::index::Index;
 
@@ -42,6 +43,14 @@ pub struct Server {
 }
 
 const FLYCHECK_PROGRESS_TOKEN: &str = "tablegen-lsp/flycheck";
+
+#[derive(Error, Debug)]
+enum SetSourceRootError {
+    #[error("failed to read content of source root file: {0}")]
+    FailedToReadContent(String),
+    #[error(transparent)]
+    Cancelled(#[from] Cancelled),
+}
 
 pub type Result<T> = std::result::Result<T, ResponseError>;
 
@@ -228,8 +237,8 @@ impl Server {
         params: lsp_ext::SetSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("set_source_root: {params:?}");
-        if self.set_source_root_impl(&params.uri).is_err() {
-            tracing::warn!("failed to set source root: {}", params.uri);
+        if let Err(err) = self.set_source_root_impl(&params.uri) {
+            tracing::warn!("failed to set source root to {}: {}", params.uri, err);
         }
         ControlFlow::Continue(())
     }
@@ -415,10 +424,10 @@ impl Server {
             return ControlFlow::Continue(());
         }
 
-        if let Some(ref source_root_path) = config.source_root_path {
+        if let Some(ref source_root_path) = config.default_source_root_path {
             let source_root = UrlExt::from_file_path(source_root_path);
-            if self.set_source_root_impl(&source_root).is_err() {
-                tracing::warn!("failed to set source root: {}", source_root);
+            if let Err(err) = self.set_source_root_impl(&source_root) {
+                tracing::warn!("failed to set source root to {}: {}", source_root, err);
             }
         }
 
@@ -479,20 +488,20 @@ impl Server {
         ControlFlow::Continue(())
     }
 
-    fn set_source_root_impl(&mut self, uri: &Url) -> std::result::Result<(), ()> {
+    fn set_source_root_impl(&mut self, uri: &Url) -> std::result::Result<(), SetSourceRootError> {
         let content = {
             let path = UrlExt::to_file_path(uri);
             let Some(content) = self.vfs.read_content(&path) else {
-                tracing::warn!("failed to read file: {path:?}");
-                return Err(());
+                let path = path.to_str().to_string();
+                return Err(SetSourceRootError::FailedToReadContent(path));
             };
             content
         };
-        if let Ok(source_unit_id) = self.load_source_unit(uri, &content) {
-            self.source_units.set_root(source_unit_id);
-            self.spawn_update_diagnostics();
-            self.spawn_flycheck(Some(uri));
-        }
+
+        let source_unit_id = self.load_source_unit(uri, &content)?;
+        self.source_units.set_root(source_unit_id);
+        self.spawn_update_diagnostics();
+        self.spawn_flycheck(Some(uri));
         Ok(())
     }
 }

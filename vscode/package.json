@@ -80,10 +80,10 @@
                     "default": [],
                     "description": "An array of paths to workspace folders containing tablegen files."
                 },
-                "tablegen-lsp.sourceRootPath": {
+                "tablegen-lsp.defaultSourceRootPath": {
                     "type": "string",
                     "default": "",
-                    "description": "A path to source root file."
+                    "description": "A path to the default source root."
                 }
             }
         }

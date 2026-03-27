@@ -1,8 +1,6 @@
 use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 
-use salsa::Cancelled;
-
 use crate::db::{Database, IndexDatabase, RootDatabase, SourceDatabase};
 use crate::file_system::{
     self, FileId, FilePath, FilePosition, FileRange, FileSystem, SourceUnit, SourceUnitId,
@@ -71,6 +69,7 @@ pub struct Analysis {
     db: RootDatabase,
 }
 
+pub type Cancelled = salsa::Cancelled;
 pub type Cancellable<T> = Result<T, Cancelled>;
 
 impl Analysis {

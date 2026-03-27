@@ -156,7 +156,7 @@ function initStatusBarItem(): vscode.StatusBarItem {
     statusBarItem.tooltip = "Go to TableGen source root";
     statusBarItem.show();
 
-    const sourceRootPath = vscode.workspace.getConfiguration("tablegen-lsp").get("sourceRootPath")
+    const sourceRootPath = vscode.workspace.getConfiguration("tablegen-lsp").get("defaultSourceRootPath");
     if (sourceRootPath && typeof sourceRootPath === "string") {
         sourceRoot = vscode.Uri.file(sourceRootPath);
     }
