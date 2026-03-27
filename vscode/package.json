@@ -79,6 +79,11 @@
                     },
                     "default": [],
                     "description": "An array of paths to workspace folders containing tablegen files."
+                },
+                "tablegen-lsp.sourceRootPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "A path to source root file."
                 }
             }
         }

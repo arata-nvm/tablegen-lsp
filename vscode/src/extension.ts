@@ -16,7 +16,6 @@ const lspNotificationSetSourceRoot = "tablegenLsp/setSourceRoot";
 const lspNotificationClearSourceRoot = "tablegenLsp/clearSourceRoot";
 
 let client: LanguageClient | undefined;
-let statusBarItem: vscode.StatusBarItem | undefined;
 let sourceRoot: vscode.Uri | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -27,11 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function initialize(context: vscode.ExtensionContext): Promise<void> {
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
-    statusBarItem.command = commandOpenSourceRoot;
-    statusBarItem.tooltip = "Go to TableGen source root";
-    updateStatusBarItem();
-    statusBarItem.show();
+    const statusBarItem = initStatusBarItem();
 
     context.subscriptions.push(
         vscode.commands.registerCommand(commandRestartServer, async () => {
@@ -51,12 +46,12 @@ async function initialize(context: vscode.ExtensionContext): Promise<void> {
                 return;
             }
 
-            updateStatusBarItem();
+            updateStatusBarItem(statusBarItem);
             await client?.sendNotification(lspNotificationSetSourceRoot, { uri: sourceRoot.toString() });
         }),
         vscode.commands.registerCommand(commandClearSourceRoot, async () => {
             sourceRoot = null;
-            updateStatusBarItem();
+            updateStatusBarItem(statusBarItem);
             await client?.sendNotification(lspNotificationClearSourceRoot, {});
         }),
         vscode.commands.registerCommand(commandOpenSourceRoot, async () => {
@@ -155,13 +150,26 @@ function getServer(): string {
     throw new Error("This platform is currently not supported");
 }
 
-function updateStatusBarItem() {
-    if (statusBarItem) {
-        if (sourceRoot) {
-            const sourceRootFileName = sourceRoot.fsPath.split(path.sep).pop();
-            statusBarItem.text = `$(root-folder) ${sourceRootFileName}`;
-        } else {
-            statusBarItem.text = "$(root-folder) No Source Root";
-        }
+function initStatusBarItem(): vscode.StatusBarItem {
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+    statusBarItem.command = commandOpenSourceRoot;
+    statusBarItem.tooltip = "Go to TableGen source root";
+    statusBarItem.show();
+
+    const sourceRootPath = vscode.workspace.getConfiguration("tablegen-lsp").get("sourceRootPath")
+    if (sourceRootPath && typeof sourceRootPath === "string") {
+        sourceRoot = vscode.Uri.file(sourceRootPath);
+    }
+    updateStatusBarItem(statusBarItem);
+
+    return statusBarItem;
+}
+
+function updateStatusBarItem(statusBarItem: vscode.StatusBarItem) {
+    if (sourceRoot) {
+        const sourceRootFileName = sourceRoot.fsPath.split(path.sep).pop();
+        statusBarItem.text = `$(root-folder) ${sourceRootFileName}`;
+    } else {
+        statusBarItem.text = "$(root-folder) No Source Root";
     }
 }

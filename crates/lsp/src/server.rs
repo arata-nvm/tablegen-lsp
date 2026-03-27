@@ -111,7 +111,10 @@ impl LanguageServer for Server {
         if let Some(options) = params.initialization_options
             && options.as_object().filter(|it| !it.is_empty()).is_some()
         {
-            let _ = self.update_config(UpdateConfigEvent(options));
+            let result = self.client.emit(UpdateConfigEvent(options));
+            if let Err(err) = result {
+                tracing::warn!("failed to emit update config event: {err:?}");
+            }
         }
 
         Box::pin(ready(Ok(InitializeResult {
@@ -225,18 +228,8 @@ impl Server {
         params: lsp_ext::SetSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("set_source_root: {params:?}");
-        let content = {
-            let path = UrlExt::to_file_path(&params.uri);
-            let Some(content) = self.vfs.read_content(&path) else {
-                tracing::warn!("failed to read file: {path:?}");
-                return ControlFlow::Continue(());
-            };
-            content
-        };
-        if let Ok(source_unit_id) = self.load_source_unit(&params.uri, &content) {
-            self.source_units.set_root(source_unit_id);
-            self.spawn_update_diagnostics();
-            self.spawn_flycheck(Some(&params.uri));
+        if self.set_source_root_impl(&params.uri).is_err() {
+            tracing::warn!("failed to set source root: {}", params.uri);
         }
         ControlFlow::Continue(())
     }
@@ -419,6 +412,14 @@ impl Server {
                     message: format!("failed to reload config: {err}"),
                 })
                 .expect("failed to show message");
+            return ControlFlow::Continue(());
+        }
+
+        if let Some(ref source_root_path) = config.source_root_path {
+            let source_root = UrlExt::from_file_path(source_root_path);
+            if self.set_source_root_impl(&source_root).is_err() {
+                tracing::warn!("failed to set source root: {}", source_root);
+            }
         }
 
         ControlFlow::Continue(())
@@ -476,6 +477,23 @@ impl Server {
             }
         }
         ControlFlow::Continue(())
+    }
+
+    fn set_source_root_impl(&mut self, uri: &Url) -> std::result::Result<(), ()> {
+        let content = {
+            let path = UrlExt::to_file_path(uri);
+            let Some(content) = self.vfs.read_content(&path) else {
+                tracing::warn!("failed to read file: {path:?}");
+                return Err(());
+            };
+            content
+        };
+        if let Ok(source_unit_id) = self.load_source_unit(uri, &content) {
+            self.source_units.set_root(source_unit_id);
+            self.spawn_update_diagnostics();
+            self.spawn_flycheck(Some(uri));
+        }
+        Ok(())
     }
 }
 
