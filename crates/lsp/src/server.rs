@@ -485,27 +485,20 @@ impl Server {
         &mut self,
         _: DebounceTimerEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
-        let had_pending = self.pending.apply_to(&mut self.host);
+        self.pending.apply_to(&mut self.host);
 
         if let Some(file_id) = self.pending.take_debounce_file_id() {
-            if had_pending {
-                // ファイル変更をこのタイマーでflushしたため、ソースユニットを再解析する
-                match self
-                    .host
-                    .load_source_unit(&mut self.vfs, file_id, &self.config.include_dirs)
-                {
-                    Ok(source_unit_id) => {
-                        self.source_units.open(source_unit_id);
-                        self.spawn_update_diagnostics();
-                    }
-                    Err(e) => {
-                        tracing::warn!("debounced load_source_unit cancelled: {e:?}");
-                    }
+            match self
+                .host
+                .load_source_unit(&mut self.vfs, file_id, &self.config.include_dirs)
+            {
+                Ok(source_unit_id) => {
+                    self.source_units.open(source_unit_id);
+                    self.spawn_update_diagnostics();
                 }
-            } else {
-                // リクエスト処理時にすでにflushされていたため、再解析をスキップする
-                tracing::info!("debounce: skipping load_source_unit (no pending changes)");
-                self.spawn_update_diagnostics();
+                Err(e) => {
+                    tracing::warn!("debounced load_source_unit cancelled: {e:?}");
+                }
             }
         }
         ControlFlow::Continue(())
