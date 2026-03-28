@@ -8,7 +8,7 @@ use ide::{
 };
 use text_size::{TextRange, TextSize};
 
-use crate::{server::ServerSnapshot, vfs::UrlExt};
+use crate::{server::ServerSnapshot, vfs::url_to_file_path};
 
 pub fn position(line_index: &LineIndex, position: lsp_types::Position) -> TextSize {
     let pos_size = line_index.line_to_pos(position.line.try_into().unwrap());
@@ -27,7 +27,11 @@ pub fn file_pos(
     snap: &ServerSnapshot,
     doc: lsp_types::TextDocumentPositionParams,
 ) -> Cancellable<Option<(FilePosition, Arc<LineIndex>)>> {
-    let path = UrlExt::to_file_path(&doc.text_document.uri);
+    let Ok(path) =
+        url_to_file_path(&doc.text_document.uri).inspect_err(|e| tracing::warn!("file_pos: {e}"))
+    else {
+        return Ok(None);
+    };
     let Some(file_id) = snap.vfs.file_for_path(&path) else {
         tracing::warn!("file not found in VFS: {path:?}");
         return Ok(None);
@@ -42,7 +46,10 @@ pub fn file_range(
     doc: lsp_types::TextDocumentIdentifier,
     lsp_range: lsp_types::Range,
 ) -> Cancellable<Option<(FileRange, Arc<LineIndex>)>> {
-    let path = UrlExt::to_file_path(&doc.uri);
+    let Ok(path) = url_to_file_path(&doc.uri).inspect_err(|e| tracing::warn!("file_range: {e}"))
+    else {
+        return Ok(None);
+    };
     let Some(file_id) = snap.vfs.file_for_path(&path) else {
         tracing::warn!("file not found in VFS: {path:?}");
         return Ok(None);
@@ -56,7 +63,9 @@ pub fn file(
     snap: &ServerSnapshot,
     doc: lsp_types::TextDocumentIdentifier,
 ) -> Cancellable<Option<(FileId, Arc<LineIndex>)>> {
-    let path = UrlExt::to_file_path(&doc.uri);
+    let Ok(path) = url_to_file_path(&doc.uri).inspect_err(|e| tracing::warn!("file: {e}")) else {
+        return Ok(None);
+    };
     let Some(file_id) = snap.vfs.file_for_path(&path) else {
         tracing::warn!("file not found in VFS: {path:?}");
         return Ok(None);

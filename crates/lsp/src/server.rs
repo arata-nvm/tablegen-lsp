@@ -20,7 +20,7 @@ use thiserror::Error;
 use tokio::task::{self};
 
 use ide::analysis::{Analysis, AnalysisHost, Cancellable, Cancelled};
-use ide::file_system::{FileId, FileSystem, SourceUnitId};
+use ide::file_system::{FileId, FilePath, FileSystem, SourceUnitId};
 use ide::index::Index;
 
 use crate::config::Config;
@@ -28,7 +28,7 @@ use crate::diagnostics::DiagnosticCollection;
 use crate::pending_changes::PendingChanges;
 use crate::progress::Progress;
 use crate::source_unit_manager::SourceUnitManager;
-use crate::vfs::{SharedFs, UrlExt, Vfs};
+use crate::vfs::{SharedFs, Vfs, file_path_to_url, url_to_file_path};
 use crate::{handlers, lsp_ext};
 
 pub struct Server {
@@ -156,7 +156,12 @@ impl LanguageServer for Server {
 
     fn did_open(&mut self, params: DidOpenTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_open: {params:?}");
-        let path = UrlExt::to_file_path(&params.text_document.uri);
+        let Ok(path) = url_to_file_path(&params.text_document.uri)
+            .inspect_err(|e| tracing::warn!("did_open: {e}"))
+        else {
+            return ControlFlow::Continue(());
+        };
+        let file_name = path.file_name();
         let file_id = self.vfs.assign_or_get_file_id(path);
         self.host
             .set_file_content(file_id, Arc::from(params.text_document.text.as_str()));
@@ -177,12 +182,9 @@ impl LanguageServer for Server {
             return ControlFlow::Continue(());
         }
 
-        if self
-            .load_source_unit(&params.text_document.uri, &params.text_document.text)
-            .is_ok()
-        {
+        if self.load_source_unit(file_id).is_ok() {
             self.spawn_update_diagnostics();
-            self.spawn_flycheck(Some(&params.text_document.uri));
+            self.spawn_flycheck(file_name);
         }
 
         ControlFlow::Continue(())
@@ -191,7 +193,11 @@ impl LanguageServer for Server {
     fn did_change(&mut self, params: DidChangeTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_change: {params:?}");
         if let Some(change) = params.content_changes.first() {
-            let path = UrlExt::to_file_path(&params.text_document.uri);
+            let Ok(path) = url_to_file_path(&params.text_document.uri)
+                .inspect_err(|e| tracing::warn!("did_change: {e}"))
+            else {
+                return ControlFlow::Continue(());
+            };
             let file_id = self.vfs.assign_or_get_file_id(path);
             self.pending
                 .enqueue(file_id, Arc::from(change.text.as_str()));
@@ -205,17 +211,26 @@ impl LanguageServer for Server {
 
     fn did_save(&mut self, params: DidSaveTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_save: {params:?}");
-        let path = UrlExt::to_file_path(&params.text_document.uri);
+        let Ok(path) = url_to_file_path(&params.text_document.uri)
+            .inspect_err(|e| tracing::warn!("did_save: {e}"))
+        else {
+            return ControlFlow::Continue(());
+        };
+        let file_name = path.file_name();
         let file_id = self.vfs.assign_or_get_file_id(path);
         if self.should_analyze_file(file_id) {
-            self.spawn_flycheck(Some(&params.text_document.uri));
+            self.spawn_flycheck(file_name);
         }
         ControlFlow::Continue(())
     }
 
     fn did_close(&mut self, params: DidCloseTextDocumentParams) -> Self::NotifyResult {
         tracing::info!("did_close: {params:?}");
-        let path = UrlExt::to_file_path(&params.text_document.uri);
+        let Ok(path) = url_to_file_path(&params.text_document.uri)
+            .inspect_err(|e| tracing::warn!("did_close: {e}"))
+        else {
+            return ControlFlow::Continue(());
+        };
         let Some(file_id) = self.vfs.file_for_path(&path) else {
             tracing::warn!("cannot find file id: {path:?}");
             return ControlFlow::Continue(());
@@ -237,7 +252,12 @@ impl Server {
         params: lsp_ext::SetSourceRootParams,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("set_source_root: {params:?}");
-        if let Err(err) = self.set_source_root_impl(&params.uri) {
+        let Ok(path) =
+            url_to_file_path(&params.uri).inspect_err(|e| tracing::warn!("set_source_root: {e}"))
+        else {
+            return ControlFlow::Continue(());
+        };
+        if let Err(err) = self.set_source_root_impl(path) {
             tracing::warn!("failed to set source root to {}: {}", params.uri, err);
         }
         ControlFlow::Continue(())
@@ -343,7 +363,11 @@ impl Server {
         tracing::info!("update_diagnostics: {version:?}");
         for (file_id, lsp_diags_for_file) in lsp_diags {
             let file_path = self.vfs.path_for_file(&file_id);
-            let file_uri = UrlExt::from_file_path(&file_path);
+            let Ok(file_uri) = file_path_to_url(&file_path)
+                .inspect_err(|e| tracing::warn!("update_diagnostics: {e}"))
+            else {
+                continue;
+            };
 
             let params = PublishDiagnosticsParams::new(file_uri, lsp_diags_for_file, Some(version));
             if let Err(err) = self.client.publish_diagnostics(params) {
@@ -353,8 +377,7 @@ impl Server {
         ControlFlow::Continue(())
     }
 
-    fn spawn_flycheck(&mut self, trigger_uri: Option<&Url>) {
-        let file_name = trigger_uri.and_then(|uri| UrlExt::to_file_path(uri).file_name());
+    fn spawn_flycheck(&mut self, trigger_file_name: Option<String>) {
         let opened_source_units = self.source_units.active();
         let client = self.client.clone();
         let config = self.config.clone();
@@ -389,7 +412,7 @@ impl Server {
                 client.clone(),
                 FLYCHECK_PROGRESS_TOKEN,
                 "Running flycheck",
-                file_name,
+                trigger_file_name,
             )
             .await;
 
@@ -447,10 +470,16 @@ impl Server {
             return ControlFlow::Continue(());
         }
 
-        if let Some(ref source_root_path) = config.default_source_root_path {
-            let source_root = UrlExt::from_file_path(source_root_path);
-            if let Err(err) = self.set_source_root_impl(&source_root) {
-                tracing::warn!("failed to set source root to {}: {}", source_root, err);
+        if let Some(source_root_path) = config.default_source_root_path.clone()
+            && let Err(err) = self.set_source_root_impl(source_root_path)
+        {
+            let message = format!("tablegen-lsp: failed to set source root: {err}");
+            tracing::warn!("{message}");
+            if let Err(err) = self.client.show_message(ShowMessageParams {
+                typ: MessageType::ERROR,
+                message,
+            }) {
+                tracing::warn!("failed to show message: {err:?}");
             }
         }
 
@@ -469,11 +498,7 @@ impl Server {
         }
     }
 
-    fn load_source_unit(&mut self, uri: &Url, text: &str) -> Cancellable<SourceUnitId> {
-        let path = UrlExt::to_file_path(uri);
-        let file_id = self.vfs.assign_or_get_file_id(path);
-        let text = Arc::from(text);
-        self.host.set_file_content(file_id, text);
+    fn load_source_unit(&mut self, file_id: FileId) -> Cancellable<SourceUnitId> {
         let source_unit_id =
             self.host
                 .load_source_unit(&mut self.vfs, file_id, &self.config.include_dirs)?;
@@ -504,20 +529,23 @@ impl Server {
         ControlFlow::Continue(())
     }
 
-    fn set_source_root_impl(&mut self, uri: &Url) -> std::result::Result<(), SetSourceRootError> {
-        let content = {
-            let path = UrlExt::to_file_path(uri);
-            let Some(content) = self.vfs.read_content(&path) else {
-                let path = path.to_str().to_string();
-                return Err(SetSourceRootError::FailedToReadContent(path));
-            };
-            content
-        };
+    fn set_source_root_impl(
+        &mut self,
+        path: FilePath,
+    ) -> std::result::Result<(), SetSourceRootError> {
+        let content = self
+            .vfs
+            .read_content(&path)
+            .ok_or_else(|| SetSourceRootError::FailedToReadContent(path.to_str().to_string()))?;
 
-        let source_unit_id = self.load_source_unit(uri, &content)?;
+        let file_name = path.file_name();
+        let file_id = self.vfs.assign_or_get_file_id(path);
+        self.host
+            .set_file_content(file_id, Arc::from(content.as_str()));
+        let source_unit_id = self.load_source_unit(file_id)?;
         self.source_units.set_root(source_unit_id);
         self.spawn_update_diagnostics();
-        self.spawn_flycheck(Some(uri));
+        self.spawn_flycheck(file_name);
         Ok(())
     }
 }
@@ -535,7 +563,11 @@ impl ServerSnapshot {
         match self.root_source_unit {
             Some(source_unit_id) => Some(source_unit_id),
             None => {
-                let path = UrlExt::to_file_path(uri);
+                let Ok(path) = url_to_file_path(uri)
+                    .inspect_err(|e| tracing::warn!("current_source_unit: {e}"))
+                else {
+                    return None;
+                };
                 let Some(file_id) = self.vfs.file_for_path(&path) else {
                     tracing::warn!("cannot find file id for {path:?}");
                     return None;

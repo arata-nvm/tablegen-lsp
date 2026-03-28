@@ -101,21 +101,12 @@ impl<FS: FileSystem> FileSystem for SharedFs<FS> {
     }
 }
 
-pub(crate) trait UrlExt: Sized {
-    fn to_file_path(&self) -> FilePath;
-    fn from_file_path(path: &FilePath) -> Self;
+pub(crate) fn url_to_file_path(url: &Url) -> Result<FilePath, String> {
+    url.to_file_path()
+        .map(Into::into)
+        .map_err(|()| format!("invalid url: {url}"))
 }
 
-impl UrlExt for Url {
-    fn to_file_path(&self) -> FilePath {
-        // TODO: Url::to_file_pathがErrを返したときの処理
-        self.to_file_path()
-            .expect("failed to convert url to file path")
-            .into()
-    }
-
-    fn from_file_path(path: &FilePath) -> Self {
-        // TODO: Url::from_file_pathがErrを返したときの処理
-        Url::from_file_path(&path.0).expect("failed to convert file path to url")
-    }
+pub(crate) fn file_path_to_url(path: &FilePath) -> Result<Url, String> {
+    Url::from_file_path(&path.0).map_err(|()| format!("invalid file path: {}", path.to_str()))
 }

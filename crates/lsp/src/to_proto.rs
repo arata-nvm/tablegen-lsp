@@ -16,7 +16,7 @@ use ide::{
 use text_size::{TextRange, TextSize};
 
 use crate::server::ServerSnapshot;
-use crate::vfs::UrlExt;
+use crate::vfs::file_path_to_url;
 use ide::handlers::document_symbol::DocumentSymbol;
 use ide::line_index::LineIndex;
 
@@ -37,14 +37,22 @@ pub fn range(line_index: &LineIndex, range: TextRange) -> lsp_types::Range {
     )
 }
 
-pub fn location(snap: &ServerSnapshot, file_range: FileRange) -> Cancellable<lsp_types::Location> {
+pub fn location(
+    snap: &ServerSnapshot,
+    file_range: FileRange,
+) -> Cancellable<Option<lsp_types::Location>> {
     let line_index = snap.analysis.line_index(file_range.file)?;
     let path = snap.vfs.path_for_file(&file_range.file);
+    let Ok(url) = file_path_to_url(&path)
+        .inspect_err(|e| tracing::warn!("location: {e}"))
+    else {
+        return Ok(None);
+    };
 
-    Ok(lsp_types::Location::new(
-        UrlExt::from_file_path(&path),
+    Ok(Some(lsp_types::Location::new(
+        url,
         range(&line_index, file_range.range),
-    ))
+    )))
 }
 
 pub fn diagnostic(line_index: &LineIndex, diag: LspDiagnostic) -> lsp_types::Diagnostic {
@@ -195,7 +203,9 @@ pub fn document_link<FS: FileSystem>(
     let file_path = vfs.path_for_file(&link.target);
     lsp_types::DocumentLink {
         range: range(line_index, link.range),
-        target: Some(UrlExt::from_file_path(&file_path)),
+        target: file_path_to_url(&file_path)
+            .inspect_err(|e| tracing::warn!("document_link: {e}"))
+            .ok(),
         tooltip: None,
         data: None,
     }

@@ -117,7 +117,9 @@ pub(crate) fn definition(
     let Some(location) = snap.analysis.goto_definition(source_unit_id, pos)? else {
         return Ok(None);
     };
-    let lsp_location = to_proto::location(&snap, location)?;
+    let Some(lsp_location) = to_proto::location(&snap, location)? else {
+        return Ok(None);
+    };
     Ok(Some(GotoDefinitionResponse::Scalar(lsp_location)))
 }
 
@@ -137,10 +139,12 @@ pub(crate) fn references(
     let Some(location_list) = snap.analysis.references(source_unit_id, pos)? else {
         return Ok(None);
     };
-    let lsp_location_list = location_list
-        .into_iter()
-        .map(|it| to_proto::location(&snap, it))
-        .collect::<Cancellable<_>>()?;
+    let mut lsp_location_list = vec![];
+    for location in location_list {
+        if let Some(lsp_location) = to_proto::location(&snap, location)? {
+            lsp_location_list.push(lsp_location);
+        }
+    }
     Ok(Some(lsp_location_list))
 }
 
