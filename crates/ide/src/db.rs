@@ -97,10 +97,16 @@ impl Database for RootDatabase {
         } else {
             let input = SourceUnitInput::new(self, id, source_unit);
             self.source_units.insert(id, input);
+            // tblgen_resultがNoneを返すとsalsaが依存関係を把握できない
+            // デフォルトのTblgenResultInputを挿入しておき、依存関係が記録されるようにする
+            self.tblgen_results.entry(id).or_insert_with(|| {
+                TblgenResultInput::new(self, vec![], TblgenSymbolTable::default())
+            });
         }
     }
 
     fn tblgen_result(&self, id: SourceUnitId) -> Option<TblgenResultInput> {
+        // TODO: set_source_unit後に呼び出された場合には常にSomeを返すはずだが、Optionのままにしている
         self.tblgen_results.get(&id).as_deref().copied()
     }
 

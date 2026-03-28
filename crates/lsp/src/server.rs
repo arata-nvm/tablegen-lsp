@@ -173,7 +173,7 @@ impl LanguageServer for Server {
         }
 
         if self.source_units.root().is_some() {
-            // set_source_rootでこのファイルはすでに解析されているはずなので、何もしない
+            self.spawn_update_diagnostics();
             return ControlFlow::Continue(());
         }
 
