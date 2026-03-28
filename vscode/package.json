@@ -83,7 +83,7 @@
                 "tablegen-lsp.defaultSourceRootPath": {
                     "type": "string",
                     "default": "",
-                    "description": "A path to the default source root."
+                    "description": "Defines a source root `.td` file used at startup. If you manually set the source root using the `Set Source Root` menu, this configuration is ignored."
                 }
             }
         }
