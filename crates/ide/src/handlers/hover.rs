@@ -42,7 +42,7 @@ pub fn exec(
         let metadata = get_metadata_for_syntax_kind(operator_kind)?;
 
         return Some(Hover {
-            signature: format!("!{}", metadata.name),
+            signature: metadata.signature.to_string(),
             document: Some(metadata.documentation.to_string()),
         });
     }

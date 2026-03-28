@@ -1,10 +1,11 @@
 ---
 source: crates/ide/src/handlers/hover.rs
+assertion_line: 175
 expression: "check(\"defvar a = !add$(1, 2);\")"
 ---
 Hover {
-    signature: "!add",
+    signature: "!add(a, b, ...)",
     document: Some(
-        "`!add(` *a* `,` *b* `, ...)`\n\nThis operator adds *a*, *b*, etc., and produces the sum.",
+        "This operator adds *a*, *b*, etc., and produces the sum.",
     ),
 }
