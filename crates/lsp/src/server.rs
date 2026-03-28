@@ -255,23 +255,18 @@ impl Server {
 }
 
 impl Server {
-    fn snapshot(&self) -> ServerSnapshot {
-        ServerSnapshot {
-            analysis: self.host.analysis(),
-            vfs: self.vfs.clone(),
-            client: self.client.clone(),
-            config: self.config.clone(),
-            root_source_unit: self.source_units.root(),
-            latest_indexes: self.source_units.latest_indices().clone(),
-        }
-    }
-
     fn spawn_with_snapshot<P: Send + 'static, T: Send + 'static>(
         &mut self,
         params: P,
-        f: impl FnOnce(ServerSnapshot, P) -> T + Send + 'static,
-    ) -> task::JoinHandle<T> {
-        let snap = self.snapshot();
+        f: impl FnOnce(ServerSnapshot, P) -> Cancellable<T> + Send + 'static,
+    ) -> task::JoinHandle<Cancellable<T>> {
+        let snap = ServerSnapshot {
+            analysis: self.host.analysis(),
+            vfs: self.vfs.clone(),
+            config: self.config.clone(),
+            root_source_unit: self.source_units.root(),
+            latest_indexes: self.source_units.latest_indices().clone(),
+        };
         task::spawn_blocking(move || f(snap, params))
     }
 
@@ -285,36 +280,45 @@ impl Server {
 
     fn spawn_update_diagnostics_for(&mut self, source_unit_ids: HashSet<SourceUnitId>) {
         let diag_version = self.bump_diagnostic_version();
+        let client = self.client.clone();
         let task = self.spawn_with_snapshot(source_unit_ids, move |snap, source_unit_ids| {
             let mut lsp_diags = DiagnosticCollection::default();
-            // NOTE: cancelでreturnしないとデッドロックが発生しうるので注意
+            let mut indices = Vec::new();
             for source_unit_id in source_unit_ids {
-                let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
-                    return;
-                };
+                let source_unit = snap.analysis.source_unit(source_unit_id)?;
                 lsp_diags.add_source_unit_files(&source_unit);
-                let Ok(diagnostics) = snap.analysis.diagnostics(source_unit_id) else {
-                    return;
-                };
-                let Ok(_) = lsp_diags.extend(&snap, diagnostics) else {
-                    return;
-                };
-                let Ok(index) = snap.analysis.index(source_unit_id) else {
-                    return;
-                };
-                if let Err(err) = snap.client.emit(UpdateIndexEvent(source_unit_id, index)) {
-                    tracing::warn!("failed to emit update index event: {err:?}");
+                let diagnostics = snap.analysis.diagnostics(source_unit_id)?;
+                lsp_diags.extend(&snap, diagnostics)?;
+                let index = snap.analysis.index(source_unit_id)?;
+                indices.push((source_unit_id, index));
+            }
+            Ok((lsp_diags, indices))
+        });
+        let task = task::spawn(async move {
+            let result = match task.await {
+                Ok(result) => result,
+                Err(e) => {
+                    tracing::warn!("diagnostics task failed: {e}");
                     return;
                 }
-            }
-            if let Err(err) = snap
-                .client
-                .emit(UpdateDiagnosticsEvent(diag_version, lsp_diags))
-            {
-                tracing::warn!("failed to emit update diagnostics event: {err:?}");
+            };
+            match result {
+                Ok((lsp_diags, indices)) => {
+                    for (source_unit_id, index) in indices {
+                        if let Err(err) = client.emit(UpdateIndexEvent(source_unit_id, index)) {
+                            tracing::warn!("failed to emit update index event: {err:?}");
+                            return;
+                        }
+                    }
+                    if let Err(err) = client.emit(UpdateDiagnosticsEvent(diag_version, lsp_diags)) {
+                        tracing::warn!("failed to emit update diagnostics event: {err:?}");
+                    }
+                }
+                Err(e) => tracing::info!("diagnostics cancelled: {e}"),
             }
         });
-        drop(task);
+        // fire-and-forgetでバックグラウンドで実行させる
+        std::mem::drop(task);
     }
 
     fn bump_diagnostic_version(&mut self) -> i32 {
@@ -351,27 +355,49 @@ impl Server {
 
     fn spawn_flycheck(&mut self, trigger_uri: Option<&Url>) {
         let file_name = trigger_uri.and_then(|uri| UrlExt::to_file_path(uri).file_name());
-        let snap = self.snapshot();
         let opened_source_units = self.source_units.active();
+        let client = self.client.clone();
+        let config = self.config.clone();
+        let vfs = self.vfs.clone();
+
+        let prep = self.spawn_with_snapshot(opened_source_units, |snap, ids| {
+            let mut jobs = Vec::new();
+            for id in ids {
+                let source_unit = snap.analysis.source_unit(id)?;
+                jobs.push((id, snap.vfs.path_for_file(&source_unit.root())));
+            }
+            Ok(jobs)
+        });
+
         let task = task::spawn(async move {
+            let result = match prep.await {
+                Ok(result) => result,
+                Err(e) => {
+                    tracing::warn!("flycheck prep task failed: {e}");
+                    return;
+                }
+            };
+            let jobs = match result {
+                Ok(jobs) => jobs,
+                Err(e) => {
+                    tracing::info!("flycheck prep cancelled: {e}");
+                    return;
+                }
+            };
+
             let progress = Progress::new(
-                snap.client.clone(),
+                client.clone(),
                 FLYCHECK_PROGRESS_TOKEN,
                 "Running flycheck",
                 file_name,
             )
             .await;
 
-            for source_unit_id in opened_source_units {
-                let Ok(source_unit) = snap.analysis.source_unit(source_unit_id) else {
-                    continue;
-                };
-                let root_file = snap.vfs.path_for_file(&source_unit.root());
-
+            for (source_unit_id, root_file) in jobs {
                 let result = match interop::parse_source_unit_with_tblgen(
                     &root_file,
-                    &snap.config.include_dirs,
-                    &snap.vfs,
+                    &config.include_dirs,
+                    &vfs,
                 ) {
                     Ok(result) => result,
                     Err(err) => {
@@ -380,10 +406,7 @@ impl Server {
                     }
                 };
 
-                if let Err(err) = snap
-                    .client
-                    .emit(UpdateFlycheckEvent(source_unit_id, result))
-                {
+                if let Err(err) = client.emit(UpdateFlycheckEvent(source_unit_id, result)) {
                     tracing::warn!("failed to emit update flycheck event: {err:?}");
                 }
             }
@@ -509,7 +532,6 @@ impl Server {
 pub struct ServerSnapshot {
     pub analysis: Analysis,
     pub vfs: SharedFs<Vfs>,
-    pub client: ClientSocket,
     pub config: Arc<Config>,
     pub root_source_unit: Option<SourceUnitId>,
     pub latest_indexes: HashMap<SourceUnitId, Arc<Index>>,
