@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
 
 const extensionName = "tablegen-lsp";
+const extensionDisplayName = "TableGen Language Server";
 const extensionId = `arata-nvm.${extensionName}`;
 const languageId = "tablegen";
 
@@ -16,6 +17,7 @@ const lspNotificationSetSourceRoot = "tablegenLsp/setSourceRoot";
 const lspNotificationClearSourceRoot = "tablegenLsp/clearSourceRoot";
 
 let client: LanguageClient | undefined;
+let outputChannel: vscode.OutputChannel | undefined;
 let sourceRoot: vscode.Uri | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -26,11 +28,12 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function initialize(context: vscode.ExtensionContext): Promise<void> {
+    outputChannel = vscode.window.createOutputChannel(extensionDisplayName);
     const statusBarItem = initStatusBarItem();
 
     context.subscriptions.push(
+        outputChannel,
         vscode.commands.registerCommand(commandRestartServer, async () => {
-            // FIXME: OUTPUTのtablegen-lspの項目が増殖する
             await client?.dispose();
             client = createClient(context);
             await client.start();
@@ -108,11 +111,12 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: "file", language: languageId }],
         initializationOptions: config,
+        outputChannel,
     };
 
     return new LanguageClient(
         extensionName,
-        "TableGen Language Server",
+        extensionDisplayName,
         serverOptions,
         clientOptions,
     );
