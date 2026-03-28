@@ -239,6 +239,19 @@ fn index_multiclass_def(def: &ast::Def, ctx: &mut IndexCtx, multiclass_id: Multi
 
 fn index_global_def(def: &ast::Def, ctx: &mut IndexCtx) {
     let Some((def_names, define_loc, is_anonymous)) = lookup_def_name(def, ctx) else {
+        let def_kw_loc = def
+            .syntax()
+            .first_token()
+            .expect("def should have Def keyword")
+            .text_range();
+        let define_loc = FileRange::new(ctx.current_file_id(), def_kw_loc);
+        let placeholder = Def::new(EcoString::from(PLACEHOLDER_DEF_NAME), define_loc);
+        let def_id = ctx.symbol_map.add_temporary_def(placeholder);
+        ctx.scopes.push(ScopeKind::Def(def_id));
+        if let Some(record_body) = def.record_body() {
+            record_body.index_statement(ctx);
+        }
+        ctx.scopes.pop();
         return;
     };
     if def_names.is_empty() {
