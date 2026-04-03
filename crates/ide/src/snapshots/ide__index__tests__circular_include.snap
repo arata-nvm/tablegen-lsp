@@ -1,17 +1,8 @@
 ---
 source: crates/ide/src/index.rs
-expression: dump_diagnostics(index.diagnostics())
+expression: "dump_diagnostics(&index.diagnostics, &f)"
 ---
-[
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    1,
-                ),
-                range: 0..18,
-            },
-            message: "circular include detected: file1.td",
-        },
-    ),
-]
+file2.td
+circular include detected: file1.td
+include "file1.td"
+^^^^^^^^^^^^^^^^^^

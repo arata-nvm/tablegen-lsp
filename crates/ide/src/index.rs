@@ -1553,13 +1553,36 @@ mod common {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write;
+
     use crate::{
+        file_system::FileSystem,
         handlers::diagnostics::Diagnostic,
         index::{IndexDatabase, dump::dump_symbol_map},
         tests,
     };
 
-    fn dump_diagnostics(diags: &[Diagnostic]) -> Vec<Diagnostic> {
+    fn render_range(content: &str, start: usize, end: usize) -> (String, String) {
+        let clamped_start = start.min(content.len());
+        let clamped_end = end.min(content.len());
+
+        let line_start = content[..clamped_start].rfind('\n').map_or(0, |i| i + 1);
+        let line_end = content[clamped_end..]
+            .find('\n')
+            .map_or(content.len(), |i| clamped_end + i);
+
+        let line = content[line_start..line_end].to_string();
+        let start_col = content[line_start..clamped_start].chars().count();
+        let end_col = content[line_start..clamped_end].chars().count();
+        let marker = format!(
+            "{}{}",
+            " ".repeat(start_col),
+            "^".repeat((end_col.saturating_sub(start_col)).max(1))
+        );
+        (line, marker)
+    }
+
+    fn dump_diagnostics(diags: &[Diagnostic], fixture: &tests::Fixture) -> String {
         let mut lsp_diags = diags
             .iter()
             .filter_map(|d| match d {
@@ -1580,11 +1603,27 @@ mod tests {
             .collect::<Vec<_>>();
         tblgen_diags.sort_by_key(|d| (d.line, d.column, d.message.clone()));
 
-        lsp_diags
-            .into_iter()
-            .map(Diagnostic::Lsp)
-            .chain(tblgen_diags.into_iter().map(Diagnostic::Tblgen))
-            .collect()
+        let mut out = String::new();
+
+        for d in lsp_diags {
+            let path = fixture.path_for_file(&d.location.file);
+            let content = fixture.file_content(&d.location.file);
+            let start = u32::from(d.location.range.start()) as usize;
+            let end = u32::from(d.location.range.end()) as usize;
+            let (line, marker) = render_range(&content, start, end);
+
+            let _ = writeln!(out, "{}", path.to_str());
+            let _ = writeln!(out, "{}", d.message);
+            let _ = writeln!(out, "{}", line);
+            let _ = writeln!(out, "{}", marker);
+            out.push('\n');
+        }
+
+        for d in tblgen_diags {
+            let _ = writeln!(out, "tblgen:{}:{} {}", d.line, d.column, d.message);
+        }
+
+        out
     }
 
     #[test]
@@ -1592,12 +1631,12 @@ mod tests {
         let (db, f) = tests::load_single_file("testdata/class.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/class.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1605,12 +1644,12 @@ mod tests {
         let (db, f) = tests::load_single_file("testdata/def.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/def.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1618,12 +1657,12 @@ mod tests {
         let (db, f) = tests::load_single_file("testdata/multiclass.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/multiclass.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1631,12 +1670,12 @@ mod tests {
         let (db, f) = tests::load_single_file("testdata/type.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/type.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1644,12 +1683,12 @@ mod tests {
         let (db, f) = tests::load_single_file("testdata/variables.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/variables.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1657,12 +1696,12 @@ mod tests {
         let (db, f) = tests::load_single_file("testdata/errors.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/errors.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1679,7 +1718,7 @@ class Bar;
             "#,
         );
         let index = db.index(f.source_unit_id());
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1687,12 +1726,12 @@ class Bar;
         let (db, f) = tests::load_single_file("testdata/defm_parent_class.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/defm_parent_class.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 
     #[test]
@@ -1700,11 +1739,11 @@ class Bar;
         let (db, f) = tests::load_single_file("testdata/value.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
 
         let (db, f) = tests::load_single_file_with_tblgen("testdata/value.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
-        insta::assert_debug_snapshot!(dump_diagnostics(&index.diagnostics));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 }

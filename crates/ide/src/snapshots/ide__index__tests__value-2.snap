@@ -1,28 +1,13 @@
 ---
 source: crates/ide/src/index.rs
-expression: dump_diagnostics(index.diagnostics())
+expression: "dump_diagnostics(&index.diagnostics, &f)"
 ---
-[
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 209..214,
-            },
-            message: "expected bit; found string",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 271..276,
-            },
-            message: "inconsistent types int and string for !cond",
-        },
-    ),
-]
+testdata/value.td
+expected bit; found string
+    int bad_cond = !cond("str": 1, false: 2);
+                         ^^^^^
+
+testdata/value.td
+inconsistent types int and string for !cond
+    int bad_value = !cond(true: 1, true: "str");
+                                         ^^^^^

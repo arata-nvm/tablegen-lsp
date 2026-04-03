@@ -1,380 +1,173 @@
 ---
 source: crates/ide/src/index.rs
-expression: dump_diagnostics(index.diagnostics())
+expression: "dump_diagnostics(&index.diagnostics, &f)"
 ---
-[
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 92..106,
-            },
-            message: "class not found: UndefinedClass",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 165..183,
-            },
-            message: "symbol not found: undefined_variable",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 318..336,
-            },
-            message: "field 'nonexistent_field' not found in record",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 397..424,
-            },
-            message: "field 'nonexistent_field' not found in record",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 475..490,
-            },
-            message: "symbol not found: nonexistent_var",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 504..519,
-            },
-            message: "symbol not found: nonexistent_var",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 539..554,
-            },
-            message: "symbol not found: nonexistent_var",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 630..642,
-            },
-            message: "field 'int_field' of type 'int' is incompatible with type 'string'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 668..669,
-            },
-            message: "field 'string_field' of type 'string' is incompatible with type 'int'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 694..714,
-            },
-            message: "field 'int_list' of type 'list<int>' is incompatible with type 'list<string>'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 849..862,
-            },
-            message: "def 'duplicate_def' already defined",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 923..924,
-            },
-            message: "template argument 'x' is already defined",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1001..1002,
-            },
-            message: "field 'x' is already defined in record",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1060..1073,
-            },
-            message: "variable 'duplicate_var' is already defined in the current scope",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1109..1122,
-            },
-            message: "variable 'duplicate_def' is already defined in the current scope",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1247..1263,
-            },
-            message: "defset 'duplicate_defset' already defined",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1335..1355,
-            },
-            message: "multiclass 'duplicate_multiclass' already defined",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1452..1459,
-            },
-            message: "class 'CyclicA' has cyclic inheritance",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1536..1543,
-            },
-            message: "class 'CyclicB' has cyclic inheritance",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1708..1720,
-            },
-            message: "value not specified for template argument 'x'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1708..1720,
-            },
-            message: "value not specified for template argument 'y'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1763..1779,
-            },
-            message: "value not specified for template argument 'y'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 1824..1845,
-            },
-            message: "too many arguments: 3",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2023..2029,
-            },
-            message: "field 'derived_field1' of type 'Derived' is incompatible with type 'Base'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2058..2069,
-            },
-            message: "field 'derived_field2' of type 'Derived' is incompatible with type 'Unrelated'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2184..2203,
-            },
-            message: "value not specified for template argument 'y'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2199..2202,
-            },
-            message: "we can only specify the template argument 'x' once",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2252..2266,
-            },
-            message: "value not specified for template argument 'x'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2252..2266,
-            },
-            message: "value not specified for template argument 'y'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2262..2265,
-            },
-            message: "template argument 'z' doesn't exist",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2327..2330,
-            },
-            message: "expected bits type, got 'string'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2364..2367,
-            },
-            message: "expected list type, got 'string'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2451..2452,
-            },
-            message: "list element '2' is incompatible with list element type 'string'",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 2484..2490,
-            },
-            message: "list element '\"hoge\"' is incompatible with list element type 'int'",
-        },
-    ),
-]
+testdata/errors.td
+class not found: UndefinedClass
+ def undefined_class_ref : UndefinedClass;
+                           ^^^^^^^^^^^^^^
+
+testdata/errors.td
+symbol not found: undefined_variable
+defvar uses_undefined = undefined_variable;
+                        ^^^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+field 'nonexistent_field' not found in record
+defvar bad_field_access = HasField<>.nonexistent_field;
+                                    ^^^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+field 'nonexistent_field' not found in record
+  let nonexistent_field = 10;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+symbol not found: nonexistent_var
+class Foo<int a = nonexistent_var> {
+                  ^^^^^^^^^^^^^^^
+
+testdata/errors.td
+symbol not found: nonexistent_var
+  int b = nonexistent_var;
+          ^^^^^^^^^^^^^^^
+
+testdata/errors.td
+symbol not found: nonexistent_var
+class Bar: Foo<nonexistent_var>;
+               ^^^^^^^^^^^^^^^
+
+testdata/errors.td
+field 'int_field' of type 'int' is incompatible with type 'string'
+  int int_field = "not_an_int";
+                  ^^^^^^^^^^^^
+
+testdata/errors.td
+field 'string_field' of type 'string' is incompatible with type 'int'
+  string string_field = 1;
+                        ^
+
+testdata/errors.td
+field 'int_list' of type 'list<int>' is incompatible with type 'list<string>'
+  list<int> int_list = ["string", "values"];
+                       ^^^^^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+def 'duplicate_def' already defined
+def duplicate_def;  // Duplicate def
+    ^^^^^^^^^^^^^
+
+testdata/errors.td
+template argument 'x' is already defined
+class duplicate_template_arg<int x, int x>; // Duplicate template argument
+                                        ^
+
+testdata/errors.td
+field 'x' is already defined in record
+  string x; // Duplicate field
+         ^
+
+testdata/errors.td
+variable 'duplicate_var' is already defined in the current scope
+defvar duplicate_var = 10; // Duplicate variable
+       ^^^^^^^^^^^^^
+
+testdata/errors.td
+variable 'duplicate_def' is already defined in the current scope
+defvar duplicate_def = 10; // Duplicate variable
+       ^^^^^^^^^^^^^
+
+testdata/errors.td
+defset 'duplicate_defset' already defined
+defset list<for_dup_test> duplicate_defset = {}; // Duplicate defset
+                          ^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+multiclass 'duplicate_multiclass' already defined
+multiclass duplicate_multiclass; // Duplicate multiclass
+           ^^^^^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+class 'CyclicA' has cyclic inheritance
+class CyclicA : CyclicA;
+                ^^^^^^^
+
+testdata/errors.td
+class 'CyclicB' has cyclic inheritance
+class CyclicC : CyclicB;
+                ^^^^^^^
+
+testdata/errors.td
+value not specified for template argument 'x'
+def missing_args : RequiresArgs;
+                   ^^^^^^^^^^^^
+
+testdata/errors.td
+value not specified for template argument 'y'
+def missing_args : RequiresArgs;
+                   ^^^^^^^^^^^^
+
+testdata/errors.td
+value not specified for template argument 'y'
+def partial_args : RequiresArgs<10>;
+                   ^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+too many arguments: 3
+def too_many_args : RequiresArgs<1, 2, 3>;
+                    ^^^^^^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+field 'derived_field1' of type 'Derived' is incompatible with type 'Base'
+  Derived derived_field1 = Base<>;
+                           ^^^^^^
+
+testdata/errors.td
+field 'derived_field2' of type 'Derived' is incompatible with type 'Unrelated'
+  Derived derived_field2 = Unrelated<>;
+                           ^^^^^^^^^^^
+
+testdata/errors.td
+value not specified for template argument 'y'
+def dup_named : NamedArgs<x=1, x=2>;
+                ^^^^^^^^^^^^^^^^^^^
+
+testdata/errors.td
+we can only specify the template argument 'x' once
+def dup_named : NamedArgs<x=1, x=2>;
+                               ^^^
+
+testdata/errors.td
+value not specified for template argument 'x'
+def unknown_named : NamedArgs<z=1>;
+                    ^^^^^^^^^^^^^^
+
+testdata/errors.td
+value not specified for template argument 'y'
+def unknown_named : NamedArgs<z=1>;
+                    ^^^^^^^^^^^^^^
+
+testdata/errors.td
+template argument 'z' doesn't exist
+def unknown_named : NamedArgs<z=1>;
+                              ^^^
+
+testdata/errors.td
+expected bits type, got 'string'
+defvar bad_range_suffix = "hoge"{0};
+                                ^^^
+
+testdata/errors.td
+expected list type, got 'string'
+defvar bad_slice_suffix = "hoge"[0];
+                                ^^^
+
+testdata/errors.td
+list element '2' is incompatible with list element type 'string'
+defvar list_incompatible1 = ["hoge", 2];
+                                     ^
+
+testdata/errors.td
+list element '"hoge"' is incompatible with list element type 'int'
+defvar list_incompatible2 = ["hoge"]<int>;
+                             ^^^^^^

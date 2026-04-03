@@ -1,39 +1,18 @@
 ---
 source: crates/ide/src/index.rs
-expression: dump_diagnostics(index.diagnostics())
+expression: "dump_diagnostics(&index.diagnostics, &f)"
 ---
-[
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 3134..3142,
-            },
-            message: "duplicate bit index 3",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 3166..3167,
-            },
-            message: "cannot set bit index 8 for bits<4>",
-        },
-    ),
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 3220..3221,
-            },
-            message: "expected bits type, got 'string'",
-        },
-    ),
-]
+testdata/type.td
+duplicate bit index 3
+  let bits_field{3...0, 3} = 1;
+                 ^^^^^^^^
+
+testdata/type.td
+cannot set bit index 8 for bits<4>
+  let bits_field{8} = 1;
+                 ^
+
+testdata/type.td
+expected bits type, got 'string'
+  let str_field{0} = "fuga";
+                ^
