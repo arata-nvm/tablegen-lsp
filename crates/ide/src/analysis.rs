@@ -12,9 +12,10 @@ use crate::handlers::document_symbol::DocumentSymbol;
 use crate::handlers::folding_range::FoldingRange;
 use crate::handlers::hover::Hover;
 use crate::handlers::inlay_hint::InlayHint;
+use crate::handlers::signature_help::SignatureHelp;
 use crate::handlers::{
     diagnostics, document_link, document_symbol, folding_range, goto_definition, hover, inlay_hint,
-    references,
+    references, signature_help,
 };
 use crate::index::Index;
 use crate::interop::TblgenParseResult;
@@ -134,6 +135,14 @@ impl Analysis {
         range: FileRange,
     ) -> Cancellable<Option<Vec<InlayHint>>> {
         self.with_db(|db| inlay_hint::exec(db, source_unit_id, range))
+    }
+
+    pub fn signature_help(
+        &self,
+        source_unit_id: SourceUnitId,
+        pos: FilePosition,
+    ) -> Cancellable<Option<SignatureHelp>> {
+        self.with_db(|db| signature_help::exec(db, source_unit_id, pos))
     }
 
     pub fn completion(

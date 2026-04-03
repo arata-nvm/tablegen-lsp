@@ -1,0 +1,12 @@
+---
+source: crates/ide/src/handlers/signature_help.rs
+expression: "check(r#\"\nclass Foo {\n  string x = !substr($\"hello\", 1, 3);\n}\n\"#)"
+---
+!substr(string, start[, length])
+        ^^^^^^  -----   ------
+------
+This operator extracts a substring of the given *string*. The starting
+position of the substring is specified by *start*, which can range
+between 0 and the length of the string. The length of the substring
+is specified by *length*; if not specified, the rest of the string is
+extracted. The *start* and *length* arguments must be integers.

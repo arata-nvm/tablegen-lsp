@@ -1,0 +1,9 @@
+---
+source: crates/ide/src/handlers/signature_help.rs
+expression: "check(r#\"\n// A base class for instructions.\n// It has template arguments.\nclass Inst<int opcode, string mnemonic>;\nclass Add: Inst<$1, \"add\">;\n\"#)"
+---
+Inst<int opcode, string mnemonic>
+     ^^^^^^^^^^  ---------------
+------
+A base class for instructions.
+It has template arguments.

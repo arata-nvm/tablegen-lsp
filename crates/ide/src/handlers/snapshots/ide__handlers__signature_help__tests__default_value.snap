@@ -1,0 +1,6 @@
+---
+source: crates/ide/src/handlers/signature_help.rs
+expression: "check_visualized(r#\"\nclass Foo<int a, int b = 0>;\nclass Bar: Foo<$1>;\n\"#)"
+---
+Foo<int a, int b = ...>
+    ^^^^^  -----------

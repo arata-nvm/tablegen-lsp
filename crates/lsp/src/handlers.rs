@@ -4,7 +4,7 @@ use async_lsp::lsp_types::{
     CompletionParams, CompletionResponse, DocumentLink, DocumentLinkParams, DocumentSymbolParams,
     DocumentSymbolResponse, FoldingRange, FoldingRangeParams, GotoDefinitionParams,
     GotoDefinitionResponse, Hover, HoverParams, InlayHint, InlayHintParams, Location,
-    ReferenceParams,
+    ReferenceParams, SignatureHelp, SignatureHelpParams,
 };
 use ide::analysis::Cancellable;
 
@@ -82,6 +82,26 @@ pub(crate) fn completion(
         .map(to_proto::completion_item)
         .collect();
     Ok(Some(CompletionResponse::Array(lsp_completion_list)))
+}
+
+pub(crate) fn signature_help(
+    snap: ServerSnapshot,
+    params: SignatureHelpParams,
+) -> Cancellable<Option<SignatureHelp>> {
+    tracing::info!("signature_help: {params:?}");
+    let Some(source_unit_id) =
+        snap.current_source_unit(&params.text_document_position_params.text_document.uri)
+    else {
+        return Ok(None);
+    };
+    let Some((pos, _)) = from_proto::file_pos(&snap, params.text_document_position_params)? else {
+        return Ok(None);
+    };
+    let Some(sig_help) = snap.analysis.signature_help(source_unit_id, pos)? else {
+        return Ok(None);
+    };
+    let lsp_sig_help = to_proto::signature_help(sig_help);
+    Ok(Some(lsp_sig_help))
 }
 
 pub(crate) fn hover(snap: ServerSnapshot, params: HoverParams) -> Cancellable<Option<Hover>> {

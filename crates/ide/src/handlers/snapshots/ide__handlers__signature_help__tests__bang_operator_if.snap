@@ -1,0 +1,10 @@
+---
+source: crates/ide/src/handlers/signature_help.rs
+expression: "check(r#\"\nclass Foo {\n  int x = !if($1, 2, 3);\n}\n\"#)"
+---
+!if(test, then, else)
+    ^^^^  ----  ----
+------
+This operator evaluates the *test*, which must produce a `bit` or
+`int`. If the result is not 0, the *then* expression is produced; otherwise
+the *else* expression is produced.

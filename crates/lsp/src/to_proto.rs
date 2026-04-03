@@ -10,6 +10,7 @@ use ide::{
         folding_range::FoldingRange,
         hover::Hover,
         inlay_hint::{InlayHint, InlayHintKind},
+        signature_help::SignatureHelp,
     },
     interop,
 };
@@ -208,6 +209,37 @@ pub fn document_link<FS: FileSystem>(
             .ok(),
         tooltip: None,
         data: None,
+    }
+}
+
+pub fn signature_help(sig_help: SignatureHelp) -> lsp_types::SignatureHelp {
+    let parameters = sig_help
+        .parameters
+        .into_iter()
+        .map(|p| lsp_types::ParameterInformation {
+            label: lsp_types::ParameterLabel::LabelOffsets([p.label_start, p.label_end]),
+            documentation: None,
+        })
+        .collect();
+
+    let documentation = sig_help.document.map(|doc| {
+        lsp_types::Documentation::MarkupContent(lsp_types::MarkupContent {
+            kind: lsp_types::MarkupKind::Markdown,
+            value: doc,
+        })
+    });
+
+    let signature = lsp_types::SignatureInformation {
+        label: sig_help.label,
+        documentation,
+        parameters: Some(parameters),
+        active_parameter: sig_help.active_parameter.map(|i| i as u32),
+    };
+
+    lsp_types::SignatureHelp {
+        signatures: vec![signature],
+        active_signature: Some(0),
+        active_parameter: None,
     }
 }
 

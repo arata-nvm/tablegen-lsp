@@ -1,0 +1,5 @@
+---
+source: crates/ide/src/handlers/signature_help.rs
+expression: "check(r#\"\nclass Foo;\nclass Bar: Foo<$>;\n\"#)"
+---
+

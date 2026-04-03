@@ -1,0 +1,8 @@
+---
+source: crates/ide/src/handlers/signature_help.rs
+expression: "check(r#\"\nclass Foo {\n  int x = !add(1, $2);\n}\n\"#)"
+---
+!add(a, b, ...)
+     -  ^
+------
+This operator adds *a*, *b*, etc., and produces the sum.

@@ -8,8 +8,8 @@ use async_lsp::lsp_types::{
     DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentLinkOptions,
     FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
     MessageType, OneOf, PublishDiagnosticsParams, ServerCapabilities, ServerInfo,
-    ShowMessageParams, TextDocumentSyncCapability, TextDocumentSyncKind, Url, notification,
-    request,
+    ShowMessageParams, SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
+    Url, notification, request,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, ErrorCode, LanguageClient, LanguageServer, ResponseError};
@@ -79,6 +79,7 @@ impl Server {
             .request_snap::<request::GotoDefinition>(handlers::definition)
             .request_snap::<request::References>(handlers::references)
             .request_snap::<request::HoverRequest>(handlers::hover)
+            .request_snap::<request::SignatureHelpRequest>(handlers::signature_help)
             .request_snap::<request::InlayHintRequest>(handlers::inlay_hint)
             .request_snap::<request::Completion>(handlers::completion)
             .request_snap::<request::DocumentLinkRequest>(handlers::document_link)
@@ -140,6 +141,14 @@ impl LanguageServer for Server {
                 references_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 inlay_hint_provider: Some(OneOf::Left(true)),
+                signature_help_provider: Some(SignatureHelpOptions {
+                    trigger_characters: Some(vec![
+                        "<".to_string(),
+                        "(".to_string(),
+                        ",".to_string(),
+                    ]),
+                    ..Default::default()
+                }),
                 completion_provider: Some(CompletionOptions {
                     trigger_characters: Some(vec![".".to_string(), "!".to_string()]),
                     ..Default::default()

@@ -7,3 +7,4 @@ pub mod goto_definition;
 pub mod hover;
 pub mod inlay_hint;
 pub mod references;
+pub mod signature_help;

@@ -1,0 +1,9 @@
+---
+source: crates/ide/src/handlers/signature_help.rs
+expression: "check(r#\"\nclass Foo {\n  string x = !strconcat($\"a\", \"b\");\n}\n\"#)"
+---
+!strconcat(str1, str2, ...)
+           ^^^^  ----
+------
+This operator concatenates the string arguments *str1*, *str2*, etc., and
+produces the resulting string.
