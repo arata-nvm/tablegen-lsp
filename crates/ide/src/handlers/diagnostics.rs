@@ -51,6 +51,13 @@ impl Diagnostic {
             message: message.into(),
         })
     }
+
+    pub fn is_include_error(&self) -> bool {
+        match self {
+            Self::Lsp(diag) => diag.message.starts_with("include file not found:"),
+            Self::Tblgen(diag) => diag.message.contains("could not find include file"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -96,6 +103,20 @@ mod tests {
     #[test]
     fn eval() {
         insta::assert_snapshot!(check(r#"include "not_exist.td""#));
+    }
+
+    #[test]
+    fn is_include_error() {
+        let (db, f) = tests::single_file(r#"include "not_exist.td""#);
+        let diagnostics = super::exec(&db, f.source_unit_id());
+        assert!(diagnostics.iter().any(Diagnostic::is_include_error));
+    }
+
+    #[test]
+    fn is_not_include_error() {
+        let (db, f) = tests::single_file("class Foo : Bar;");
+        let diagnostics = super::exec(&db, f.source_unit_id());
+        assert!(!diagnostics.iter().any(Diagnostic::is_include_error));
     }
 
     #[test]

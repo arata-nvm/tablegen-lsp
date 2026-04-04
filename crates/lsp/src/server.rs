@@ -37,6 +37,7 @@ pub struct Server {
     client: ClientSocket,
     config: Arc<Config>,
     diagnostic_version: i32,
+    include_hint_shown: bool,
     source_units: SourceUnitManager,
     pending: PendingChanges,
     flycheck_task: Option<task::JoinHandle<()>>,
@@ -99,6 +100,7 @@ impl Server {
             client,
             config: Arc::new(Config::default()),
             diagnostic_version: 0,
+            include_hint_shown: false,
             source_units: SourceUnitManager::new(),
             pending: PendingChanges::new(),
             flycheck_task: None,
@@ -370,6 +372,7 @@ impl Server {
         UpdateDiagnosticsEvent(version, lsp_diags): UpdateDiagnosticsEvent,
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_diagnostics: {version:?}");
+        let has_include_error = lsp_diags.has_include_error();
         for (file_id, lsp_diags_for_file) in lsp_diags {
             let file_path = self.vfs.path_for_file(&file_id);
             let Ok(file_uri) = file_path_to_url(&file_path)
@@ -383,6 +386,17 @@ impl Server {
                 tracing::warn!("failed to publish diagnostics: {err:?}");
             }
         }
+
+        if has_include_error && !self.include_hint_shown {
+            self.include_hint_shown = true;
+            if let Err(err) = self.client.show_message(ShowMessageParams {
+                typ: MessageType::WARNING,
+                message: "Some include files could not be resolved. You can specify include directories in `tablegen-lsp.includePaths` setting.".into(),
+            }) {
+                tracing::warn!("failed to show message: {err:?}");
+            }
+        }
+
         ControlFlow::Continue(())
     }
 

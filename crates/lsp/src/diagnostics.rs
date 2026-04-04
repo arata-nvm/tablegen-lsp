@@ -12,6 +12,7 @@ use crate::{server::ServerSnapshot, to_proto};
 #[derive(Debug, Default)]
 pub struct DiagnosticCollection {
     diagnostics: HashMap<FileId, Vec<lsp_types::Diagnostic>>,
+    has_include_error: bool,
 }
 
 impl DiagnosticCollection {
@@ -22,6 +23,9 @@ impl DiagnosticCollection {
     }
 
     pub fn push(&mut self, snap: &ServerSnapshot, diag: Diagnostic) -> Cancellable<()> {
+        if diag.is_include_error() {
+            self.has_include_error = true;
+        }
         match diag {
             ide::handlers::diagnostics::Diagnostic::Lsp(diag) => {
                 let file_id = diag.location.file;
@@ -47,6 +51,10 @@ impl DiagnosticCollection {
             self.push(snap, diag)?;
         }
         Ok(())
+    }
+
+    pub fn has_include_error(&self) -> bool {
+        self.has_include_error
     }
 }
 
