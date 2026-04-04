@@ -1,0 +1,5 @@
+---
+source: crates/ide/src/handlers/diagnostics.rs
+expression: "check(r#\"class Foo<int i>; foreach i = [1, 2] in def : Foo<i>;\"#)"
+---
+

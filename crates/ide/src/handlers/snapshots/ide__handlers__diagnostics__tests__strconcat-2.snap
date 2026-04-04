@@ -2,16 +2,7 @@
 source: crates/ide/src/handlers/diagnostics.rs
 expression: "check(\"class Foo<string suffix> { string Name = PREFIX_ # suffix; } \")"
 ---
-[
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 41..48,
-            },
-            message: "symbol not found: PREFIX_",
-        },
-    ),
-]
+/main.td
+symbol not found: PREFIX_
+class Foo<string suffix> { string Name = PREFIX_ # suffix; } 
+                                         ^^^^^^^

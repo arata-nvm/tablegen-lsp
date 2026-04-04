@@ -2,16 +2,7 @@
 source: crates/ide/src/handlers/diagnostics.rs
 expression: "check(\"class Foo : Foo;\")"
 ---
-[
-    Lsp(
-        LspDiagnostic {
-            location: FileRange {
-                file: FileId(
-                    0,
-                ),
-                range: 12..15,
-            },
-            message: "class 'Foo' has cyclic inheritance",
-        },
-    ),
-]
+/main.td
+class 'Foo' has cyclic inheritance
+class Foo : Foo;
+            ^^^
