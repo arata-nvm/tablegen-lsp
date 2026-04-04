@@ -23,6 +23,23 @@ use crate::{
 };
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum CompletionPriority {
+    Default,
+    ClassValue,
+    Defset,
+    Def,
+    TemplateArgument,
+    Field,
+    Variable,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct DedupEntry {
+    index: usize,
+    priority: CompletionPriority,
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct CompletionItem {
     pub label: String,
@@ -163,27 +180,50 @@ pub fn exec_with_index(
             ctx.set_expected_type(expected_type);
         }
         ctx.complete_primitive_values();
-        ctx.complete_classes(symbol_map, &HashSet::new(), true);
-        ctx.complete_defs(symbol_map);
-        ctx.complete_defsets(symbol_map);
+        ctx.complete_classes_with_priority(
+            symbol_map,
+            &HashSet::new(),
+            true,
+            CompletionPriority::ClassValue,
+        );
 
         let variables = collect_variables_from_ancestors(&node_at_pos);
-        ctx.complete_variables(symbol_map, variables);
+        ctx.complete_variables_with_priority(variables, CompletionPriority::Variable);
+
+        let exclude = find_field_name_to_exclude(&node_at_pos);
 
         if let Some(class_id) = find_class(&node_at_pos, symbol_map) {
-            ctx.complete_template_arguments(symbol_map, class_id);
-
-            let exclude = find_field_name_to_exclude(&node_at_pos);
-            ctx.complete_record_fields(symbol_map, &[class_id.into()], exclude);
+            ctx.complete_template_arguments_with_priority(
+                symbol_map,
+                class_id,
+                CompletionPriority::TemplateArgument,
+            );
+            ctx.complete_record_fields_with_priority(
+                symbol_map,
+                &[class_id.into()],
+                exclude.clone(),
+                CompletionPriority::Field,
+            );
         }
 
         if let Some(def_id) = find_def(&node_at_pos, symbol_map) {
-            let exclude = find_field_name_to_exclude(&node_at_pos);
-            ctx.complete_record_fields(symbol_map, &[def_id.into()], exclude);
+            ctx.complete_record_fields_with_priority(
+                symbol_map,
+                &[def_id.into()],
+                exclude.clone(),
+                CompletionPriority::Field,
+            );
         } else if let Some(parents) = find_def_parent_classes(&node_at_pos, symbol_map) {
-            let exclude = find_field_name_to_exclude(&node_at_pos);
-            ctx.complete_record_fields(symbol_map, &parents, exclude);
+            ctx.complete_record_fields_with_priority(
+                symbol_map,
+                &parents,
+                exclude,
+                CompletionPriority::Field,
+            );
         }
+
+        ctx.complete_defs_with_priority(symbol_map, CompletionPriority::Def);
+        ctx.complete_defsets_with_priority(symbol_map, CompletionPriority::Defset);
 
         return Some(ctx.finish(symbol_map));
     }
@@ -332,6 +372,7 @@ fn find_expected_type_for_inner_value(node: &SyntaxNode, symbol_map: &SymbolMap)
 
 struct CompletionContext<'a> {
     items: Vec<CompletionItem>,
+    dedup: HashMap<String, DedupEntry>,
     db: &'a dyn IndexDatabase,
     expected_type: Option<Type>,
 }
@@ -340,6 +381,7 @@ impl<'a> CompletionContext<'a> {
     fn new(db: &'a dyn IndexDatabase) -> Self {
         Self {
             items: Vec::new(),
+            dedup: HashMap::new(),
             db,
             expected_type: None,
         }
@@ -347,6 +389,40 @@ impl<'a> CompletionContext<'a> {
 
     fn set_expected_type(&mut self, expected_type: Type) {
         self.expected_type = Some(expected_type);
+    }
+
+    fn push_item(&mut self, item: CompletionItem) {
+        self.push_item_with_priority(item, CompletionPriority::Default);
+    }
+
+    fn push_item_with_priority(&mut self, item: CompletionItem, priority: CompletionPriority) {
+        if matches!(
+            item.kind,
+            CompletionItemKind::Keyword | CompletionItemKind::Type
+        ) {
+            self.items.push(item);
+            return;
+        }
+
+        let key = item.label.clone();
+        match self.dedup.get(&key).copied() {
+            Some(entry) if entry.priority >= priority => {}
+            Some(entry) => {
+                self.dedup.insert(
+                    key,
+                    DedupEntry {
+                        index: entry.index,
+                        priority,
+                    },
+                );
+                self.items[entry.index] = item;
+            }
+            None => {
+                let index = self.items.len();
+                self.dedup.insert(key, DedupEntry { index, priority });
+                self.items.push(item);
+            }
+        }
     }
 
     fn finish(mut self, symbol_map: &SymbolMap) -> Vec<CompletionItem> {
@@ -383,7 +459,7 @@ impl<'a> CompletionContext<'a> {
         ];
 
         for &keyword in &TOPLEVEL_KEYWORDS {
-            self.items.push(CompletionItem::new_simple(
+            self.push_item(CompletionItem::new_simple(
                 keyword,
                 "",
                 CompletionItemKind::Keyword,
@@ -394,23 +470,22 @@ impl<'a> CompletionContext<'a> {
     fn complete_primitive_types(&mut self) {
         const PRIMITIVE_TYPES: [&str; 5] = ["bit", "code", "dag", "int", "string"];
         for &ty in &PRIMITIVE_TYPES {
-            self.items
-                .push(CompletionItem::new_simple(ty, "", CompletionItemKind::Type));
+            self.push_item(CompletionItem::new_simple(ty, "", CompletionItemKind::Type));
         }
 
         let mut item = CompletionItem::new_simple("bits", "", CompletionItemKind::Type);
         item.insert_text_snippet = Some("bits<$1> $0".to_string());
-        self.items.push(item);
+        self.push_item(item);
 
         let mut item = CompletionItem::new_simple("list", "", CompletionItemKind::Type);
         item.insert_text_snippet = Some("list<$1> $0".to_string());
-        self.items.push(item);
+        self.push_item(item);
     }
 
     fn complete_primitive_values(&mut self) {
         const BOOLEAN_VALUES: [&str; 2] = ["false", "true"];
         for &value in &BOOLEAN_VALUES {
-            self.items.push(
+            self.push_item(
                 CompletionItem::new_simple(value, "", CompletionItemKind::Keyword)
                     .with_type(Type::bit()),
             );
@@ -437,7 +512,7 @@ impl<'a> CompletionContext<'a> {
             item.insert_text_snippet = Some(snippet);
             item.documentation = Some(meta.documentation.into());
             item.trigger_signature_help = true;
-            self.items.push(item);
+            self.push_item(item);
         }
     }
 
@@ -446,6 +521,21 @@ impl<'a> CompletionContext<'a> {
         symbol_map: &SymbolMap,
         exclude: &HashSet<EcoString>,
         need_brackets: bool,
+    ) {
+        self.complete_classes_with_priority(
+            symbol_map,
+            exclude,
+            need_brackets,
+            CompletionPriority::Default,
+        );
+    }
+
+    fn complete_classes_with_priority(
+        &mut self,
+        symbol_map: &SymbolMap,
+        exclude: &HashSet<EcoString>,
+        need_brackets: bool,
+        priority: CompletionPriority,
     ) {
         for class_id in symbol_map.iter_class() {
             let class = symbol_map.class(class_id);
@@ -478,7 +568,7 @@ impl<'a> CompletionContext<'a> {
             item.documentation = documentation;
             item.trigger_signature_help = !arg_snippet.is_empty();
             item.item_type = Some(Type::record(class_id.into(), class.name().clone()));
-            self.items.push(item);
+            self.push_item_with_priority(item, priority);
         }
     }
 
@@ -517,11 +607,16 @@ impl<'a> CompletionContext<'a> {
             item.insert_text_snippet = Some(snippet);
             item.documentation = documentation;
             item.trigger_signature_help = !arg_snippet.is_empty();
-            self.items.push(item);
+            self.push_item(item);
         }
     }
 
-    fn complete_template_arguments(&mut self, symbol_map: &SymbolMap, class_id: ClassId) {
+    fn complete_template_arguments_with_priority(
+        &mut self,
+        symbol_map: &SymbolMap,
+        class_id: ClassId,
+        priority: CompletionPriority,
+    ) {
         let class = symbol_map.class(class_id);
         for arg_id in class.iter_template_arg() {
             let arg = symbol_map.template_arg(arg_id);
@@ -537,7 +632,7 @@ impl<'a> CompletionContext<'a> {
             );
             item.documentation = documentation;
             item.item_type = Some(arg.typ.clone());
-            self.items.push(item);
+            self.push_item_with_priority(item, priority);
         }
     }
 
@@ -546,6 +641,21 @@ impl<'a> CompletionContext<'a> {
         symbol_map: &SymbolMap,
         record_ids: &[RecordId],
         exclude_field_name: Option<EcoString>,
+    ) {
+        self.complete_record_fields_with_priority(
+            symbol_map,
+            record_ids,
+            exclude_field_name,
+            CompletionPriority::Default,
+        );
+    }
+
+    fn complete_record_fields_with_priority(
+        &mut self,
+        symbol_map: &SymbolMap,
+        record_ids: &[RecordId],
+        exclude_field_name: Option<EcoString>,
+        priority: CompletionPriority,
     ) {
         for record_id in record_ids {
             let record = symbol_map.record(*record_id);
@@ -568,12 +678,16 @@ impl<'a> CompletionContext<'a> {
                 );
                 item.documentation = documentation;
                 item.item_type = Some(field.typ.clone());
-                self.items.push(item);
+                self.push_item_with_priority(item, priority);
             }
         }
     }
 
-    fn complete_defs(&mut self, symbol_map: &SymbolMap) {
+    fn complete_defs_with_priority(
+        &mut self,
+        symbol_map: &SymbolMap,
+        priority: CompletionPriority,
+    ) {
         for def_id in symbol_map.iter_def() {
             let def = symbol_map.def(def_id);
 
@@ -585,11 +699,15 @@ impl<'a> CompletionContext<'a> {
                 CompletionItem::new_simple(def.name().clone(), "def", CompletionItemKind::Def);
             item.documentation = documentation;
             item.item_type = Some(Type::record(def_id.into(), def.name().clone()));
-            self.items.push(item);
+            self.push_item_with_priority(item, priority);
         }
     }
 
-    fn complete_defsets(&mut self, symbol_map: &SymbolMap) {
+    fn complete_defsets_with_priority(
+        &mut self,
+        symbol_map: &SymbolMap,
+        priority: CompletionPriority,
+    ) {
         for defset_id in symbol_map.iter_defset() {
             let defset = symbol_map.defset(defset_id);
 
@@ -604,20 +722,20 @@ impl<'a> CompletionContext<'a> {
             );
             item.documentation = documentation;
             item.item_type = Some(defset.typ.clone());
-            self.items.push(item);
+            self.push_item_with_priority(item, priority);
         }
     }
 
-    fn complete_variables(
+    fn complete_variables_with_priority(
         &mut self,
-        _symbol_map: &SymbolMap,
         variables: Vec<(EcoString, Option<Type>)>,
+        priority: CompletionPriority,
     ) {
         for (name, typ) in variables {
             let detail = typ.as_ref().map(|t| t.to_string()).unwrap_or_default();
             let mut item = CompletionItem::new_simple(name, detail, CompletionItemKind::Variable);
             item.item_type = typ;
-            self.items.push(item);
+            self.push_item_with_priority(item, priority);
         }
     }
 }
@@ -678,7 +796,7 @@ fn collect_variables_from_ancestors(node: &SyntaxNode) -> Vec<(EcoString, Option
 mod tests {
     use crate::tests;
 
-    use super::CompletionItem;
+    use super::{CompletionItem, CompletionItemKind};
 
     fn check(s: &str) -> Vec<CompletionItem> {
         let (db, f) = tests::single_file(s);
@@ -699,6 +817,19 @@ mod tests {
         .expect("completion failed");
         result.sort_by(|a, b| a.label.cmp(&b.label));
         result
+    }
+
+    fn assert_single_label_kind(
+        result: &[CompletionItem],
+        label: &str,
+        expected_kind: CompletionItemKind,
+    ) {
+        let matched = result
+            .iter()
+            .filter(|it| it.label == label)
+            .collect::<Vec<_>>();
+        assert_eq!(matched.len(), 1);
+        assert_eq!(matched[0].kind, expected_kind);
     }
 
     #[test]
@@ -778,7 +909,43 @@ mod tests {
     #[test]
     fn field_let_override() {
         let result = check("class Foo { int a; } def f : Foo { let a = 1; let a$");
-        assert_eq!(result.iter().filter(|it| it.label == "a").count(), 1);
+        assert_single_label_kind(&result, "a", CompletionItemKind::Field);
+    }
+
+    #[test]
+    fn variable_shadows_field() {
+        let result = check("class Foo { int a; } def f : Foo { defvar a = 1; int x = a$");
+        assert_single_label_kind(&result, "a", CompletionItemKind::Variable);
+    }
+
+    #[test]
+    fn variable_shadows_def() {
+        let result = check("def foo; def bar { defvar foo = 1; int x = foo$");
+        assert_single_label_kind(&result, "foo", CompletionItemKind::Variable);
+    }
+
+    #[test]
+    fn def_shadows_class() {
+        let result = check("class foo; def foo; defvar tmp = foo$");
+        assert_single_label_kind(&result, "foo", CompletionItemKind::Def);
+    }
+
+    #[test]
+    fn variable_shadows_class() {
+        let result = check("class foo; def bar { defvar foo = 1; int x = foo$");
+        assert_single_label_kind(&result, "foo", CompletionItemKind::Variable);
+    }
+
+    #[test]
+    fn variable_shadows_template_argument() {
+        let result = check("class Foo<int a> { defvar a = 1; int x = a$");
+        assert_single_label_kind(&result, "a", CompletionItemKind::Variable);
+    }
+
+    #[test]
+    fn field_shadows_template_argument() {
+        let result = check("class Foo<int a> { int a; int x = a$");
+        assert_single_label_kind(&result, "a", CompletionItemKind::Field);
     }
 
     #[test]
