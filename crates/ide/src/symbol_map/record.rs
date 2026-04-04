@@ -71,6 +71,10 @@ pub trait AsRecordData: Sized {
         collect_all_fields(self, symbol_map).into_iter()
     }
 
+    fn iter_visible_field(&self, symbol_map: &SymbolMap) -> impl Iterator<Item = RecordFieldId> {
+        collect_visible_fields(self, symbol_map).into_iter()
+    }
+
     fn find_field(&self, symbol_map: &SymbolMap, name: &EcoString) -> Option<RecordFieldId> {
         let RecordData {
             name_to_record_field,
@@ -140,6 +144,35 @@ fn collect_all_fields<T: AsRecordData>(
         found_fields.extend(collect_all_fields(parent, symbol_map));
     }
     found_fields
+}
+
+fn collect_visible_fields<T: AsRecordData>(
+    record: &T,
+    symbol_map: &SymbolMap,
+) -> Vec<RecordFieldId> {
+    let mut seen_names = HashSet::new();
+    let mut out = Vec::new();
+    collect_visible_fields_into(record, symbol_map, &mut seen_names, &mut out);
+    out
+}
+
+fn collect_visible_fields_into<T: AsRecordData>(
+    record: &T,
+    symbol_map: &SymbolMap,
+    seen_names: &mut HashSet<EcoString>,
+    out: &mut Vec<RecordFieldId>,
+) {
+    for field_id in record.iter_direct_field() {
+        let field = symbol_map.record_field(field_id);
+        if seen_names.insert(field.name.clone()) {
+            out.push(field_id);
+        }
+    }
+
+    for parent_id in record.parent_classes() {
+        let parent = symbol_map.class(*parent_id);
+        collect_visible_fields_into(parent, symbol_map, seen_names, out);
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

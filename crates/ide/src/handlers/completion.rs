@@ -549,14 +549,13 @@ impl<'a> CompletionContext<'a> {
     ) {
         for record_id in record_ids {
             let record = symbol_map.record(*record_id);
-            for field_id in record.iter_field(symbol_map) {
+            for field_id in record.iter_visible_field(symbol_map) {
                 let field = symbol_map.record_field(field_id);
                 if let Some(ref exclude_field_name) = exclude_field_name
                     && exclude_field_name == &field.name
                 {
                     continue;
                 }
-
                 let define_loc = &field.define_loc;
                 let parse = self.db.parse(define_loc.file);
                 let documentation =
@@ -774,6 +773,12 @@ mod tests {
             "class Foo { int Bar; int Baz; } class Foo2 : Foo { let B$"
         ));
         insta::assert_debug_snapshot!(check("class Foo { int field1; } def foo : Foo { let f$"));
+    }
+
+    #[test]
+    fn field_let_override() {
+        let result = check("class Foo { int a; } def f : Foo { let a = 1; let a$");
+        assert_eq!(result.iter().filter(|it| it.label == "a").count(), 1);
     }
 
     #[test]
