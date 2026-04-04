@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, fmt::Write, path::Path, sync::Arc};
 
 use syntax::parser::TextRange;
 
@@ -35,6 +35,88 @@ pub fn load_single_file_with_tblgen(path: &str) -> (RootDatabase, Fixture) {
     let mut f = Fixture::load_single_file(path);
     let db = TestDatabase::new_with_tblgen(&mut f);
     (db, f)
+}
+
+pub fn render_file_range_block<S, I>(
+    fixture: &Fixture,
+    file_range: FileRange,
+    prefix_lines: I,
+) -> String
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let path = fixture.path_for_file(&file_range.file);
+    let content = fixture.file_content(&file_range.file);
+    let (line, marker) = render_line_marker(&content, file_range.range);
+
+    let mut out = String::new();
+    let _ = writeln!(out, "{}", path.to_str());
+    for line_prefix in prefix_lines {
+        let _ = writeln!(out, "{}", line_prefix.as_ref());
+    }
+    let _ = writeln!(out, "{line}");
+    let _ = writeln!(out, "{marker}");
+    out
+}
+
+fn render_line_marker(content: &str, range: TextRange) -> (String, String) {
+    let start = usize::try_from(u32::from(range.start())).unwrap();
+    let end = usize::try_from(u32::from(range.end())).unwrap();
+    assert!(start <= content.len());
+    assert!(end <= content.len());
+
+    let line_start = content[..start].rfind('\n').map_or(0, |i| i + 1);
+    let line_end = content[end..].find('\n').map_or(content.len(), |i| end + i);
+
+    let line = content[line_start..line_end].to_string();
+    let start_col = content[line_start..start].chars().count();
+    let end_col = content[line_start..end].chars().count();
+    let marker = format!(
+        "{}{}",
+        " ".repeat(start_col),
+        "^".repeat((end_col - start_col).max(1))
+    );
+    (line, marker)
+}
+
+pub fn render_inline_ranges(content: &str, ranges: impl IntoIterator<Item = TextRange>) -> String {
+    const START_MARKER: &str = "{|";
+    const END_MARKER: &str = "|}";
+
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    enum EventKind {
+        End,
+        Start,
+    }
+
+    let mut events = Vec::new();
+    for range in ranges {
+        let start = usize::try_from(u32::from(range.start())).unwrap();
+        let end = usize::try_from(u32::from(range.end())).unwrap();
+        assert!(start <= end);
+        assert!(start <= content.len());
+        assert!(end <= content.len());
+
+        events.push((start, EventKind::Start));
+        events.push((end, EventKind::End));
+    }
+    events.sort_by_key(|&(pos, kind)| (pos, kind));
+
+    let mut out = String::new();
+    let mut cursor = 0;
+    for (pos, kind) in events {
+        if cursor < pos {
+            out.push_str(&content[cursor..pos]);
+        }
+        out.push_str(match kind {
+            EventKind::Start => START_MARKER,
+            EventKind::End => END_MARKER,
+        });
+        cursor = pos;
+    }
+    out.push_str(&content[cursor..]);
+    out
 }
 
 pub struct TestDatabase {}

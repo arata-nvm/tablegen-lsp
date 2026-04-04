@@ -1556,31 +1556,10 @@ mod tests {
     use std::fmt::Write;
 
     use crate::{
-        file_system::FileSystem,
         handlers::diagnostics::Diagnostic,
         index::{IndexDatabase, dump::dump_symbol_map},
         tests,
     };
-
-    fn render_range(content: &str, start: usize, end: usize) -> (String, String) {
-        let clamped_start = start.min(content.len());
-        let clamped_end = end.min(content.len());
-
-        let line_start = content[..clamped_start].rfind('\n').map_or(0, |i| i + 1);
-        let line_end = content[clamped_end..]
-            .find('\n')
-            .map_or(content.len(), |i| clamped_end + i);
-
-        let line = content[line_start..line_end].to_string();
-        let start_col = content[line_start..clamped_start].chars().count();
-        let end_col = content[line_start..clamped_end].chars().count();
-        let marker = format!(
-            "{}{}",
-            " ".repeat(start_col),
-            "^".repeat((end_col.saturating_sub(start_col)).max(1))
-        );
-        (line, marker)
-    }
 
     fn dump_diagnostics(diags: &[Diagnostic], fixture: &tests::Fixture) -> String {
         let mut lsp_diags = diags
@@ -1606,16 +1585,11 @@ mod tests {
         let mut out = String::new();
 
         for d in lsp_diags {
-            let path = fixture.path_for_file(&d.location.file);
-            let content = fixture.file_content(&d.location.file);
-            let start = u32::from(d.location.range.start()) as usize;
-            let end = u32::from(d.location.range.end()) as usize;
-            let (line, marker) = render_range(&content, start, end);
-
-            let _ = writeln!(out, "{}", path.to_str());
-            let _ = writeln!(out, "{}", d.message);
-            let _ = writeln!(out, "{}", line);
-            let _ = writeln!(out, "{}", marker);
+            out.push_str(&tests::render_file_range_block(
+                fixture,
+                d.location,
+                [d.message.as_str()],
+            ));
             out.push('\n');
         }
 
