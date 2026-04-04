@@ -1,6 +1,6 @@
 use ecow::EcoString;
 use syntax::{
-    SyntaxNode, SyntaxNodePtr,
+    SyntaxNode, SyntaxNodePtr, SyntaxToken,
     ast::{self, AstNode},
 };
 
@@ -101,7 +101,11 @@ pub fn exec_with_index(
 
     let mut ctx = CompletionContext::new(db);
 
-    if trigger_char == Some("!".into()) {
+    let at_bang_op_name = node_at_pos
+        .text()
+        .char_at(0.into())
+        .is_some_and(|c| c == '!');
+    if trigger_char == Some("!".into()) || at_bang_op_name {
         ctx.complete_bang_operators();
         return Some(ctx.finish(symbol_map));
     }
@@ -760,6 +764,7 @@ mod tests {
     #[test]
     fn bang_operator() {
         insta::assert_debug_snapshot!(check_trigger("!$", "!"));
+        insta::assert_debug_snapshot!(check("!str$"));
     }
 
     #[test]

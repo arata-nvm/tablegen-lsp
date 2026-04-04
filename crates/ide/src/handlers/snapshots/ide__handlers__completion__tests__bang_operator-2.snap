@@ -1,0 +1,776 @@
+---
+source: crates/ide/src/handlers/completion.rs
+expression: "check(\"!str$\")"
+---
+[
+    CompletionItem {
+        label: "add",
+        insert_text_snippet: Some(
+            "add(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator adds *a*, *b*, etc., and produces the sum.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "and",
+        insert_text_snippet: Some(
+            "and(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator does a bitwise AND on *a*, *b*, etc., and produces the\nresult. A logical AND can be performed if all the arguments are either\n0 or 1. This operator is short-circuit to 0 when the left-most operand\nis 0.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "cast",
+        insert_text_snippet: Some(
+            "cast<${1}>(${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator performs a cast on *a* and produces the result.\nIf *a* is not a string, then a straightforward cast is performed, say\nbetween an `int` and a `bit`, or between record types. This allows\ncasting a record to a class. If a record is cast to `string`, the\nrecord's name is produced.\n\nIf *a* is a string, then it is treated as a record name and looked up in\nthe list of all defined records. The resulting record is expected to be of\nthe specified *type*.\n\nFor example, if `!cast<` *type* `>(` *name* `)`\nappears in a multiclass definition, or in a\nclass instantiated inside a multiclass definition, and the *name* does not\nreference any template arguments of the multiclass, then a record by\nthat name must have been instantiated earlier\nin the source file. If *name* does reference\na template argument, then the lookup is delayed until `defm` statements\ninstantiating the multiclass (or later, if the defm occurs in another\nmulticlass and template arguments of the inner multiclass that are\nreferenced by *name* are substituted by values that themselves contain\nreferences to template arguments of the outer multiclass).\n\nIf the type of *a* does not match *type*, TableGen raises an error.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "concat",
+        insert_text_snippet: Some(
+            "concat(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator concatenates the DAG nodes *a*, *b*, etc. Their operations\nmust equal.\n\n`!con((op a1:$name1, a2:$name2), (op b1:$name3))`\n\nresults in the DAG node `(op a1:$name1, a2:$name2, b1:$name3)`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "cond",
+        insert_text_snippet: Some(
+            "cond(${1}, ${2}, ${3}, ${4}, ${5}, ${6})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator tests *cond1* and returns *val1* if the result is true.\nIf false, the operator tests *cond2* and returns *val2* if the result is\ntrue. And so forth. An error is reported if no conditions are true.\n\nThis example produces the sign word for an integer:\n\n```\n!cond(!lt(x, 0) : \"negative\", !eq(x, 0) : \"zero\", true : \"positive\")\n```",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "dag",
+        insert_text_snippet: Some(
+            "dag(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator creates a DAG node with the given operator and\narguments. The *arguments* and *names* arguments must be lists\nof equal length or uninitialized (`?`). The *names* argument\nmust be of type `list<string>`.\n\nDue to limitations of the type system, *arguments* must be a list of items\nof a common type. In practice, this means that they should either have the\nsame type or be records with a common parent class. Mixing `dag` and\nnon-`dag` items is not possible. However, `?` can be used.\n\nExample: `!dag(op, [a1, a2, ?], [\"name1\", \"name2\", \"name3\"])` results in\n`(op a1-value:$name1, a2-value:$name2, ?:$name3)`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "div",
+        insert_text_snippet: Some(
+            "div(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator performs signed division of *a* by *b*, and produces the quotient.\nDivision by 0 produces an error. Division of INT64_MIN by -1 produces an error.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "empty",
+        insert_text_snippet: Some(
+            "empty(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if the string, list, or DAG *a* is empty; 0 otherwise.\nA dag is empty if it has no arguments; the operator does not count.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "eq",
+        insert_text_snippet: Some(
+            "eq(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if *a* is equal to *b*; 0 otherwise.\nThe arguments must be `bit`, `bits`, `int`, `string`, or\nrecord values. Use `!cast<string>` to compare other types of objects.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "exists",
+        insert_text_snippet: Some(
+            "exists<${1}>(${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if a record of the given *type* whose name is *name*\nexists; 0 otherwise. *name* should be of type *string*.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "filter",
+        insert_text_snippet: Some(
+            "filter(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator creates a new `list` by filtering the elements in\n*list*. To perform the filtering, TableGen binds the variable *var* to each\nelement and then evaluates the *predicate* expression, which presumably\nrefers to *var*. The predicate must\nproduce a boolean value (`bit`, `bits`, or `int`). The value is\ninterpreted as with `!if`:\nif the value is 0, the element is not included in the new list. If the value\nis anything else, the element is included.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "find",
+        insert_text_snippet: Some(
+            "find(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator searches for *string2* in *string1* and produces its\nposition. The starting position of the search may be specified by *start*,\nwhich can range between 0 and the length of *string1*; the default is 0.\nIf the string is not found, the result is -1.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "foldl",
+        insert_text_snippet: Some(
+            "foldl(${1}, ${2}, ${3}, ${4}, ${5})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator performs a left-fold over the items in *list*. The\nvariable *acc* acts as the accumulator and is initialized to *init*.\nThe variable *var* is bound to each element in the *list*. The\nexpression is evaluated for each element and presumably uses *acc* and\n*var* to calculate the accumulated value, which `!foldl` stores back in\n*acc*. The type of *acc* is the same as *init*; the type of *var* is the\nsame as the elements of *list*; *expr* must have the same type as *init*.\n\nThe following example computes the total of the `Number` field in the\nlist of records in `RecList`:\n\n```\nint x = !foldl(0, RecList, total, rec, !add(total, rec.Number));\n```\nIf your goal is to filter the list and produce a new list that includes only\nsome of the elements, see `!filter`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "foreach",
+        insert_text_snippet: Some(
+            "foreach(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator creates a new `list`/`dag` in which each element is a\nfunction of the corresponding element in the *sequence* `list`/`dag`.\nTo perform the function, TableGen binds the variable *var* to an element\nand then evaluates the expression. The expression presumably refers\nto the variable *var* and calculates the result value.\n\nIf you simply want to create a list of a certain length containing\nthe same value repeated multiple times, see `!listsplat`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "ge",
+        insert_text_snippet: Some(
+            "ge(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if *a* is greater than or equal to *b*; 0 otherwise.\nThe arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "getdagarg",
+        insert_text_snippet: Some(
+            "getdagarg<${1}>(${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator retrieves the argument from the given *dag* node by the\nspecified *key*, which is either an integer index or a string name. If that\nargument is not convertible to the specified *type*, `?` is returned.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "getdagname",
+        insert_text_snippet: Some(
+            "getdagname(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator retrieves the argument name from the given *dag* node by the\nspecified *index*. If that argument has no name associated, `?` is\nreturned.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "getdagop",
+        insert_text_snippet: Some(
+            "getdagop<${1}>(${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces the operator of the given *dag* node.\nExample: `!getdagop((foo 1, 2))` results in `foo`. Recall that\nDAG operators are always records.\n\nThe result of `!getdagop` can be used directly in a context where\nany record class at all is acceptable (typically placing it into\nanother dag value). But in other contexts, it must be explicitly\ncast to a particular class. The `<` *type* `>` syntax is\nprovided to make this easy.\n\nFor example, to assign the result to a value of type `BaseClass`, you\ncould write either of these:\n\n```\nBaseClass b = !getdagop<BaseClass>(someDag);\nBaseClass b = !cast<BaseClass>(!getdagop(someDag));\n```\nBut to create a new DAG node that reuses the operator from another, no\ncast is necessary:\n\n```\ndag d = !dag(!getdagop(someDag), args, names);\n```",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "gt",
+        insert_text_snippet: Some(
+            "gt(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if *a* is greater than *b*; 0 otherwise.\nThe arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "head",
+        insert_text_snippet: Some(
+            "head(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces the zeroth element of the list *a*.\n(See also `!tail`.)",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "if",
+        insert_text_snippet: Some(
+            "if(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator evaluates the *test*, which must produce a `bit` or\n`int`. If the result is not 0, the *then* expression is produced; otherwise\nthe *else* expression is produced.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "initialized",
+        insert_text_snippet: Some(
+            "initialized(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if *a* is not the uninitialized value (`?`) and 0\notherwise.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "instances",
+        insert_text_snippet: Some(
+            "instances<${1}>()$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces a list of records whose type is *type*. If *regex*\nis provided, only records whose name matches the regular expression *regex*\nwill be included. The format of *regex* is ERE (Extended POSIX Regular\nExpressions).\n\nIf `!instances` is in a class/multiclass/foreach, only these records of\n*type* that have been instantiated will be considered.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "interleave",
+        insert_text_snippet: Some(
+            "interleave(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator concatenates the items in the *list*, interleaving the\n*delim* string between each pair, and produces the resulting string.\nThe list can be a list of string, int, bits, or bit. An empty list\nresults in an empty string. The delimiter can be the empty string.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "isa",
+        insert_text_snippet: Some(
+            "isa<${1}>(${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if the type of *a* is a subtype of the given *type*; 0\notherwise.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "le",
+        insert_text_snippet: Some(
+            "le(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if *a* is less than or equal to *b*; 0 otherwise.\nThe arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "listconcat",
+        insert_text_snippet: Some(
+            "listconcat(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator concatenates the list arguments *list1*, *list2*, etc., and\nproduces the resulting list. The lists must have the same element type.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "listflatten",
+        insert_text_snippet: Some(
+            "listflatten(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator flattens a list of lists *list* and produces a list with all\nelements of the constituent lists concatenated. If *list* is of type\n`list<list<X>>` the resulting list is of type `list<X>`. If *list*'s\nelement type is not a list, the result is *list* itself.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "listremove",
+        insert_text_snippet: Some(
+            "listremove(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator returns a copy of *list1* removing all elements that also occur in\n*list2*. The lists must have the same element type.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "listsplat",
+        insert_text_snippet: Some(
+            "listsplat(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces a list of length *count* whose elements are all\nequal to the *value*. For example, `!listsplat(42, 3)` results in\n`[42, 42, 42]`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "log2",
+        insert_text_snippet: Some(
+            "log2(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces the base 2 log of *a* and produces the integer\nresult. The log of 0 or a negative number produces an error. This\nis a flooring operation.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "lt",
+        insert_text_snippet: Some(
+            "lt(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if *a* is less than *b*; 0 otherwise.\nThe arguments must be `bit`, `bits`, `int`, or `string` values.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "match",
+        insert_text_snippet: Some(
+            "match(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if the *str* matches the regular expression\n*regex*. The format of *regex* is ERE (Extended POSIX Regular Expressions).",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "mul",
+        insert_text_snippet: Some(
+            "mul(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator multiplies *a*, *b*, etc., and produces the product.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "ne",
+        insert_text_snippet: Some(
+            "ne(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces 1 if *a* is not equal to *b*; 0 otherwise.\nThe arguments must be `bit`, `bits`, `int`, `string`,\nor record values. Use `!cast<string>` to compare other types of objects.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "not",
+        insert_text_snippet: Some(
+            "not(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator performs a logical NOT on *a*, which must be\nan integer. The argument 0 results in 1 (true); any other\nargument results in 0 (false).",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "or",
+        insert_text_snippet: Some(
+            "or(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator does a bitwise OR on *a*, *b*, etc., and produces the\nresult. A logical OR can be performed if all the arguments are either\n0 or 1. This operator is short-circuit to -1 (all ones) the left-most\noperand is -1.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "range",
+        insert_text_snippet: Some(
+            "range(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces half-open range sequence `[start : end : step)` as\n`list<int>`. *start* is `0` and *step* is `1` by default. *step* can\nbe negative and cannot be 0. If *start* `<` *end* and *step* is negative,\nor *start* `>` *end* and *step* is positive, the result is an empty list\n`[]<list<int>>`.\n\nFor example:\n\n* `!range(4)` is equivalent to `!range(0, 4, 1)` and the result is\n  `[0, 1, 2, 3]`.\n* `!range(1, 4)` is equivalent to `!range(1, 4, 1)` and the result is\n  `[1, 2, 3]`.\n* The result of `!range(0, 4, 2)` is `[0, 2]`.\n* The results of `!range(0, 4, -1)` and `!range(4, 0, 1)` are empty.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "range",
+        insert_text_snippet: Some(
+            "range(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "Equivalent to `!range(0, !size(list))`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "repr",
+        insert_text_snippet: Some(
+            "repr(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "Represents *value* as a string. String format for the value is not\nguaranteed to be stable. Intended for debugging purposes only.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "setdagarg",
+        insert_text_snippet: Some(
+            "setdagarg(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces a DAG node with the same operator and arguments as\n*dag*, but replacing the value of the argument specified by the *key* with\n*arg*. That *key* could be either an integer index or a string name.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "setdagname",
+        insert_text_snippet: Some(
+            "setdagname(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces a DAG node with the same operator and arguments as\n*dag*, but replacing the name of the argument specified by the *key* with\n*name*. That *key* could be either an integer index or a string name.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "setdagop",
+        insert_text_snippet: Some(
+            "setdagop(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces a DAG node with the same arguments as *dag*, but with its\noperator replaced with *op*.\n\nExample: `!setdagop((foo 1, 2), bar)` results in `(bar 1, 2)`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "shl",
+        insert_text_snippet: Some(
+            "shl(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator shifts *a* left logically by *count* bits and produces the resulting\nvalue. The operation is performed on a 64-bit integer; the result\nis undefined for shift counts outside 0...63.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "size",
+        insert_text_snippet: Some(
+            "size(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces the size of the string, list, or dag *a*.\nThe size of a DAG is the number of arguments; the operator does not count.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "sra",
+        insert_text_snippet: Some(
+            "sra(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator shifts *a* right arithmetically by *count* bits and produces the resulting\nvalue. The operation is performed on a 64-bit integer; the result\nis undefined for shift counts outside 0...63.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "srl",
+        insert_text_snippet: Some(
+            "srl(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator shifts *a* right logically by *count* bits and produces the resulting\nvalue. The operation is performed on a 64-bit integer; the result\nis undefined for shift counts outside 0...63.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "strconcat",
+        insert_text_snippet: Some(
+            "strconcat(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator concatenates the string arguments *str1*, *str2*, etc., and\nproduces the resulting string.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "sub",
+        insert_text_snippet: Some(
+            "sub(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator subtracts *b* from *a* and produces the arithmetic difference.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "subst",
+        insert_text_snippet: Some(
+            "subst(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator replaces all occurrences of the *target* in the *value* with\nthe *repl* and produces the resulting value. The *value* can\nbe a string, in which case substring substitution is performed.\n\nThe *value* can be a record name, in which case the operator produces the *repl*\nrecord if the *target* record name equals the *value* record name; otherwise it\nproduces the *value*.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "substr",
+        insert_text_snippet: Some(
+            "substr(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator extracts a substring of the given *string*. The starting\nposition of the substring is specified by *start*, which can range\nbetween 0 and the length of the string. The length of the substring\nis specified by *length*; if not specified, the rest of the string is\nextracted. The *start* and *length* arguments must be integers.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "tail",
+        insert_text_snippet: Some(
+            "tail(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces a new list with all the elements\nof the list *a* except for the zeroth one. (See also `!head`.)",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "tolower",
+        insert_text_snippet: Some(
+            "tolower(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator converts a string input *a* to lower case.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "toupper",
+        insert_text_snippet: Some(
+            "toupper(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator converts a string input *a* to upper case.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "xor",
+        insert_text_snippet: Some(
+            "xor(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator does a bitwise EXCLUSIVE OR on *a*, *b*, etc., and produces\nthe result. A logical XOR can be performed if all the arguments are either\n0 or 1.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+]
