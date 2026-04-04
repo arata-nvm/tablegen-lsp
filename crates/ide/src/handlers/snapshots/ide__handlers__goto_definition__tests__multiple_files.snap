@@ -1,12 +1,7 @@
 ---
 source: crates/ide/src/handlers/goto_definition.rs
-expression: symbols
+expression: "check_multi(r#\"\n; main.td\ninclude \"sub.td\"\nclass Foo : $Bar;\n\n; sub.td\nclass Bar;\n            \"#,)"
 ---
-Some(
-    FileRange {
-        file: FileId(
-            1,
-        ),
-        range: 6..9,
-    },
-)
+sub.td
+class Bar;
+      ^^^

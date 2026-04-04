@@ -23,43 +23,49 @@ mod tests {
         let (db, f) = tests::single_file(s);
         let definition =
             super::exec(&db, f.source_unit_id(), f.marker(0)).expect("definition not found");
-        let content = f.file_content(&f.root_file());
-        content[definition.range].to_string()
+        tests::render_file_range_block(&f, definition, std::iter::empty::<&str>())
+    }
+
+    fn check_multi(s: &str) -> String {
+        let (db, f) = tests::multiple_files(s);
+        let definition =
+            super::exec(&db, f.source_unit_id(), f.marker(0)).expect("definition not found");
+        tests::render_file_range_block(&f, definition, std::iter::empty::<&str>())
     }
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(check("class Foo; class $Bar : Foo;"));
+        insta::assert_snapshot!(check("class Foo; class $Bar : Foo;"));
     }
 
     #[test]
     fn class_template_arg() {
-        insta::assert_debug_snapshot!(check("class Foo<int $foo>;"));
+        insta::assert_snapshot!(check("class Foo<int $foo>;"));
     }
 
     #[test]
     fn class_parent() {
-        insta::assert_debug_snapshot!(check("class Foo; class Bar : $Foo;"));
+        insta::assert_snapshot!(check("class Foo; class Bar : $Foo;"));
     }
 
     #[test]
     fn class_parent_arg() {
-        insta::assert_debug_snapshot!(check("class Foo<int x>; class Bar<int y> : Foo<$y>;"));
+        insta::assert_snapshot!(check("class Foo<int x>; class Bar<int y> : Foo<$y>;"));
     }
 
     #[test]
     fn class_field() {
-        insta::assert_debug_snapshot!(check("class Foo {int $foo}"));
+        insta::assert_snapshot!(check("class Foo {int $foo}"));
     }
 
     #[test]
     fn def() {
-        insta::assert_debug_snapshot!(check("def $foo;"));
+        insta::assert_snapshot!(check("def $foo;"));
     }
 
     #[test]
     fn multiple_files() {
-        let (db, f) = tests::multiple_files(
+        insta::assert_snapshot!(check_multi(
             r#"
 ; main.td
 include "sub.td"
@@ -68,8 +74,6 @@ class Foo : $Bar;
 ; sub.td
 class Bar;
             "#,
-        );
-        let symbols = super::exec(&db, f.source_unit_id(), f.marker(0));
-        insta::assert_debug_snapshot!(symbols);
+        ));
     }
 }
