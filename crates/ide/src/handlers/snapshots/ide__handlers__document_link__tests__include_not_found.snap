@@ -1,5 +1,5 @@
 ---
 source: crates/ide/src/handlers/document_link.rs
-expression: "check(\"include \\\"hoge.td\\\";\")"
+expression: "check(r#\"\n; file1.id\ninclude \"file2.td\";\n        \"#)"
 ---
-[]
+

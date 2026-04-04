@@ -40,18 +40,30 @@ pub struct DocumentLink {
 
 #[cfg(test)]
 mod tests {
+    use crate::file_system::{FileRange, FileSystem};
     use crate::tests;
 
-    use super::DocumentLink;
-
-    fn check(s: &str) -> Vec<DocumentLink> {
+    fn check(s: &str) -> String {
         let (db, f) = tests::multiple_files(s);
-        super::exec(&db, f.source_unit_id(), f.root_file()).unwrap_or_default()
+        let links = super::exec(&db, f.source_unit_id(), f.root_file()).unwrap();
+
+        let mut out = String::new();
+        for link in links {
+            let range = FileRange::new(f.root_file(), link.range);
+            let target = f.path_for_file(&link.target);
+            out.push_str(&tests::render_file_range_block(
+                &f,
+                range,
+                [format!("target: {target}")],
+            ));
+            out.push('\n');
+        }
+        out
     }
 
     #[test]
     fn include_not_found() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 ; file1.id
 include "file2.td";
@@ -61,7 +73,7 @@ include "file2.td";
 
     #[test]
     fn include_found() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 ; file1.td
 include "file2.td";
