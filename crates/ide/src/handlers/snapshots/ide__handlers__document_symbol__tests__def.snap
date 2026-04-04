@@ -2,31 +2,11 @@
 source: crates/ide/src/handlers/document_symbol.rs
 expression: "check(r#\"\nclass Foo;\ndef foo : Foo {\n  int a\n};\n\"#)"
 ---
-Some(
-    [
-        DocumentSymbol {
-            name: "class Foo",
-            typ: None,
-            range: 0..11,
-            kind: Class,
-            children: [],
-        },
-        DocumentSymbol {
-            name: "def foo",
-            typ: None,
-            range: 11..36,
-            kind: Def,
-            children: [
-                DocumentSymbol {
-                    name: "a",
-                    typ: Some(
-                        "int",
-                    ),
-                    range: 29..35,
-                    kind: Field,
-                    children: [],
-                },
-            ],
-        },
-    ],
-)
+Class class Foo
+Def def foo
+  Field a
+
+{|class Foo;
+|}{|def foo : Foo {
+  {|int a
+|}}|};

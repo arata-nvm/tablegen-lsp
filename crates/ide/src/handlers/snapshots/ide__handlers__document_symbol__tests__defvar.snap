@@ -2,14 +2,6 @@
 source: crates/ide/src/handlers/document_symbol.rs
 expression: "check(r#\"\ndefvar foo = 1;\n\"#)"
 ---
-Some(
-    [
-        DocumentSymbol {
-            name: "defvar foo",
-            typ: None,
-            range: 0..15,
-            kind: Variable,
-            children: [],
-        },
-    ],
-)
+Variable defvar foo
+
+{|defvar foo = 1;|}

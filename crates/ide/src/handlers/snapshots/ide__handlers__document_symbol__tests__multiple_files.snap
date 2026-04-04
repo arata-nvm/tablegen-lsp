@@ -1,15 +1,9 @@
 ---
 source: crates/ide/src/handlers/document_symbol.rs
-expression: symbols
+expression: out
 ---
-Some(
-    [
-        DocumentSymbol {
-            name: "class Foo",
-            typ: None,
-            range: 17..28,
-            kind: Class,
-            children: [],
-        },
-    ],
-)
+Class class Foo
+
+include "sub.td"
+{|class Foo;
+|}

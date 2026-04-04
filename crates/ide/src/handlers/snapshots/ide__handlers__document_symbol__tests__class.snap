@@ -2,94 +2,26 @@
 source: crates/ide/src/handlers/document_symbol.rs
 expression: "check(r#\"\nclass Bar;\nclass Foo {\n    bit a;\n    int b;\n    string c;\n    dag d;\n    bits<4> e;\n    list<int> f;\n    Bar g;\n    code h;\n}\n            \"#,)"
 ---
-Some(
-    [
-        DocumentSymbol {
-            name: "class Bar",
-            typ: None,
-            range: 0..11,
-            kind: Class,
-            children: [],
-        },
-        DocumentSymbol {
-            name: "class Foo",
-            typ: None,
-            range: 11..139,
-            kind: Class,
-            children: [
-                DocumentSymbol {
-                    name: "a",
-                    typ: Some(
-                        "bit",
-                    ),
-                    range: 27..38,
-                    kind: Field,
-                    children: [],
-                },
-                DocumentSymbol {
-                    name: "b",
-                    typ: Some(
-                        "int",
-                    ),
-                    range: 38..49,
-                    kind: Field,
-                    children: [],
-                },
-                DocumentSymbol {
-                    name: "c",
-                    typ: Some(
-                        "string",
-                    ),
-                    range: 49..63,
-                    kind: Field,
-                    children: [],
-                },
-                DocumentSymbol {
-                    name: "d",
-                    typ: Some(
-                        "dag",
-                    ),
-                    range: 63..74,
-                    kind: Field,
-                    children: [],
-                },
-                DocumentSymbol {
-                    name: "e",
-                    typ: Some(
-                        "bits<4>",
-                    ),
-                    range: 74..89,
-                    kind: Field,
-                    children: [],
-                },
-                DocumentSymbol {
-                    name: "f",
-                    typ: Some(
-                        "list<int>",
-                    ),
-                    range: 89..106,
-                    kind: Field,
-                    children: [],
-                },
-                DocumentSymbol {
-                    name: "g",
-                    typ: Some(
-                        "Bar",
-                    ),
-                    range: 106..117,
-                    kind: Field,
-                    children: [],
-                },
-                DocumentSymbol {
-                    name: "h",
-                    typ: Some(
-                        "code",
-                    ),
-                    range: 117..125,
-                    kind: Field,
-                    children: [],
-                },
-            ],
-        },
-    ],
-)
+Class class Bar
+Class class Foo
+  Field a
+  Field b
+  Field c
+  Field d
+  Field e
+  Field f
+  Field g
+  Field h
+
+{|class Bar;
+|}{|class Foo {
+    {|bit a;
+    |}{|int b;
+    |}{|string c;
+    |}{|dag d;
+    |}{|bits<4> e;
+    |}{|list<int> f;
+    |}{|Bar g;
+    |}{|code h;
+|}}
+            |}

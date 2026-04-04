@@ -2,29 +2,11 @@
 source: crates/ide/src/handlers/document_symbol.rs
 expression: "check(r#\"\nclass Foo;\ndefset list<Foo> foos = {\n    def foo: Foo;\n}\n\"#)"
 ---
-Some(
-    [
-        DocumentSymbol {
-            name: "class Foo",
-            typ: None,
-            range: 0..11,
-            kind: Class,
-            children: [],
-        },
-        DocumentSymbol {
-            name: "defset foos",
-            typ: None,
-            range: 11..56,
-            kind: Defset,
-            children: [
-                DocumentSymbol {
-                    name: "def foo",
-                    typ: None,
-                    range: 41..55,
-                    kind: Def,
-                    children: [],
-                },
-            ],
-        },
-    ],
-)
+Class class Foo
+Defset defset foos
+  Def def foo
+
+{|class Foo;
+|}{|defset list<Foo> foos = {
+    {|def foo: Foo;
+|}}|}

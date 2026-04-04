@@ -253,18 +253,57 @@ pub enum DocumentSymbolKind {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write;
+
+    use syntax::parser::TextRange;
+
     use crate::tests;
 
     use super::DocumentSymbol;
 
-    fn check(s: &str) -> Option<Vec<DocumentSymbol>> {
+    fn render_symbols(
+        symbols: &[DocumentSymbol],
+        depth: usize,
+        out: &mut String,
+        ranges: &mut Vec<TextRange>,
+    ) {
+        for symbol in symbols {
+            ranges.push(symbol.range);
+            let indent = "  ".repeat(depth);
+            let _ = writeln!(out, "{}{:?} {}", indent, symbol.kind, symbol.name);
+            render_symbols(&symbol.children, depth + 1, out, ranges);
+        }
+    }
+
+    fn check(s: &str) -> String {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.root_file())
+        let content = f.file_content(&f.root_file());
+        let symbols = super::exec(&db, f.root_file()).unwrap();
+
+        let mut out = String::new();
+        let mut ranges = Vec::new();
+        render_symbols(&symbols, 0, &mut out, &mut ranges);
+        out.push('\n');
+        out.push_str(&tests::render_inline_ranges(&content, ranges));
+        out
+    }
+
+    fn check_multi(s: &str) -> String {
+        let (db, f) = tests::multiple_files(s);
+        let content = f.file_content(&f.root_file());
+        let symbols = super::exec(&db, f.root_file()).unwrap();
+
+        let mut out = String::new();
+        let mut ranges = Vec::new();
+        render_symbols(&symbols, 0, &mut out, &mut ranges);
+        out.push('\n');
+        out.push_str(&tests::render_inline_ranges(&content, ranges));
+        out
     }
 
     #[test]
     fn single_file() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 class Foo<int size> {
     int field;
@@ -277,7 +316,7 @@ class Bar;
 
     #[test]
     fn multiple_files() {
-        let (db, f) = tests::multiple_files(
+        insta::assert_snapshot!(check_multi(
             r#"
 ; main.td
 include "sub.td"
@@ -286,14 +325,12 @@ class Foo;
 ; sub.td
 class Bar;
             "#,
-        );
-        let symbols = super::exec(&db, f.root_file());
-        insta::assert_debug_snapshot!(symbols);
+        ));
     }
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 class Bar;
 class Foo {
@@ -312,12 +349,12 @@ class Foo {
 
     #[test]
     fn recursive_class() {
-        insta::assert_debug_snapshot!(check(r#" class Foo { Foo g; } "#));
+        insta::assert_snapshot!(check(r#" class Foo { Foo g; } "#));
     }
 
     #[test]
     fn def() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 class Foo;
 def foo : Foo {
@@ -329,7 +366,7 @@ def foo : Foo {
 
     #[test]
     fn defset() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 class Foo;
 defset list<Foo> foos = {
@@ -341,7 +378,7 @@ defset list<Foo> foos = {
 
     #[test]
     fn defvar() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 defvar foo = 1;
 "#
@@ -350,7 +387,7 @@ defvar foo = 1;
 
     #[test]
     fn multiclass() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 multiclass Foo {
     def a;
