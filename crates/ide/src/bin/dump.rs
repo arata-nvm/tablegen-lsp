@@ -203,7 +203,10 @@ pub fn main() {
         "inlay-hint" => {
             let file_range = FileRange::new(
                 file_id,
-                TextRange::new(TextSize::from(0), TextSize::try_from(file_content.len()).unwrap()),
+                TextRange::new(
+                    TextSize::from(0),
+                    TextSize::try_from(file_content.len()).unwrap(),
+                ),
             );
             match analysis
                 .inlay_hint(source_unit_id, file_range)
@@ -225,7 +228,10 @@ pub fn main() {
             };
             let file_range = FileRange::new(
                 file_id,
-                TextRange::new(TextSize::from(0), TextSize::try_from(file_content.len()).unwrap()),
+                TextRange::new(
+                    TextSize::from(0),
+                    TextSize::try_from(file_content.len()).unwrap(),
+                ),
             );
 
             println!("=== diag ===");

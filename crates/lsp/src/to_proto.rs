@@ -44,9 +44,7 @@ pub fn location(
 ) -> Cancellable<Option<lsp_types::Location>> {
     let line_index = snap.analysis.line_index(file_range.file)?;
     let path = snap.vfs.path_for_file(&file_range.file);
-    let Ok(url) = file_path_to_url(&path)
-        .inspect_err(|e| tracing::warn!("location: {e}"))
-    else {
+    let Ok(url) = file_path_to_url(&path).inspect_err(|e| tracing::warn!("location: {e}")) else {
         return Ok(None);
     };
 

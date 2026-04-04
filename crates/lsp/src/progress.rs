@@ -1,8 +1,8 @@
+use async_lsp::ClientSocket;
 use async_lsp::lsp_types::{
     ProgressParams, ProgressParamsValue, ProgressToken, WorkDoneProgress, WorkDoneProgressBegin,
     WorkDoneProgressCreateParams, WorkDoneProgressEnd, notification, request,
 };
-use async_lsp::ClientSocket;
 
 pub struct Progress {
     client: ClientSocket,

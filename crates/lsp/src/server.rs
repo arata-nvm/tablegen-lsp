@@ -8,8 +8,8 @@ use async_lsp::lsp_types::{
     DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentLinkOptions,
     FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
     MessageType, OneOf, PublishDiagnosticsParams, ServerCapabilities, ServerInfo,
-    ShowMessageParams, SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
-    Url, notification, request,
+    ShowMessageParams, SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    notification, request,
 };
 use async_lsp::router::Router;
 use async_lsp::{ClientSocket, ErrorCode, LanguageClient, LanguageServer, ResponseError};

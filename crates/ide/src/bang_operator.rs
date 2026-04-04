@@ -33,7 +33,20 @@ pub const OPS: &[BangOperatorMetadata] = &[
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XAdd,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 8,
+                label_end: 9,
+            },
+        ],
         documentation: r#"This operator adds *a*, *b*, etc., and produces the sum."#,
     },
     BangOperatorMetadata {
@@ -43,7 +56,20 @@ pub const OPS: &[BangOperatorMetadata] = &[
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XAnd,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 8,
+                label_end: 9,
+            },
+        ],
         documentation: r#"This operator does a bitwise AND on *a*, *b*, etc., and produces the
 result. A logical AND can be performed if all the arguments are either
 0 or 1. This operator is short-circuit to 0 when the left-most operand
@@ -56,7 +82,12 @@ is 0."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XCast,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 12, label_end: 13 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 12,
+            label_end: 13,
+        }],
         documentation: r#"This operator performs a cast on *a* and produces the result.
 If *a* is not a string, then a straightforward cast is performed, say
 between an `int` and a `bit`, or between record types. This allows
@@ -88,7 +119,20 @@ If the type of *a* does not match *type*, TableGen raises an error."#,
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XCon,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 8,
+                label_end: 9,
+            },
+        ],
         documentation: r#"This operator concatenates the DAG nodes *a*, *b*, etc. Their operations
 must equal.
 
@@ -103,7 +147,44 @@ results in the DAG node `(op a1:$name1, a2:$name2, b1:$name3)`."#,
         min_args: 6,
         max_args: None,
         syntax_kind: SyntaxKind::XCond,
-        signature_params: &[BangSignatureParamMetadata { name: "cond1", optional: false, label_start: 6, label_end: 11 }, BangSignatureParamMetadata { name: "val1", optional: false, label_start: 12, label_end: 16 }, BangSignatureParamMetadata { name: "cond2", optional: false, label_start: 18, label_end: 23 }, BangSignatureParamMetadata { name: "val2", optional: false, label_start: 24, label_end: 28 }, BangSignatureParamMetadata { name: "condn", optional: false, label_start: 35, label_end: 40 }, BangSignatureParamMetadata { name: "valn", optional: false, label_start: 41, label_end: 45 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "cond1",
+                optional: false,
+                label_start: 6,
+                label_end: 11,
+            },
+            BangSignatureParamMetadata {
+                name: "val1",
+                optional: false,
+                label_start: 12,
+                label_end: 16,
+            },
+            BangSignatureParamMetadata {
+                name: "cond2",
+                optional: false,
+                label_start: 18,
+                label_end: 23,
+            },
+            BangSignatureParamMetadata {
+                name: "val2",
+                optional: false,
+                label_start: 24,
+                label_end: 28,
+            },
+            BangSignatureParamMetadata {
+                name: "condn",
+                optional: false,
+                label_start: 35,
+                label_end: 40,
+            },
+            BangSignatureParamMetadata {
+                name: "valn",
+                optional: false,
+                label_start: 41,
+                label_end: 45,
+            },
+        ],
         documentation: r#"This operator tests *cond1* and returns *val1* if the result is true.
 If false, the operator tests *cond2* and returns *val2* if the result is
 true. And so forth. An error is reported if no conditions are true.
@@ -121,7 +202,26 @@ This example produces the sign word for an integer:
         min_args: 3,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XDag,
-        signature_params: &[BangSignatureParamMetadata { name: "op", optional: false, label_start: 5, label_end: 7 }, BangSignatureParamMetadata { name: "arguments", optional: false, label_start: 9, label_end: 18 }, BangSignatureParamMetadata { name: "names", optional: false, label_start: 20, label_end: 25 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "op",
+                optional: false,
+                label_start: 5,
+                label_end: 7,
+            },
+            BangSignatureParamMetadata {
+                name: "arguments",
+                optional: false,
+                label_start: 9,
+                label_end: 18,
+            },
+            BangSignatureParamMetadata {
+                name: "names",
+                optional: false,
+                label_start: 20,
+                label_end: 25,
+            },
+        ],
         documentation: r#"This operator creates a DAG node with the given operator and
 arguments. The *arguments* and *names* arguments must be lists
 of equal length or uninitialized (`?`). The *names* argument
@@ -142,7 +242,20 @@ Example: `!dag(op, [a1, a2, ?], ["name1", "name2", "name3"])` results in
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XDiv,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 8,
+                label_end: 9,
+            },
+        ],
         documentation: r#"This operator performs signed division of *a* by *b*, and produces the quotient.
 Division by 0 produces an error. Division of INT64_MIN by -1 produces an error."#,
     },
@@ -153,7 +266,12 @@ Division by 0 produces an error. Division of INT64_MIN by -1 produces an error."
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XEmpty,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 7,
+            label_end: 8,
+        }],
         documentation: r#"This operator produces 1 if the string, list, or DAG *a* is empty; 0 otherwise.
 A dag is empty if it has no arguments; the operator does not count."#,
     },
@@ -164,7 +282,20 @@ A dag is empty if it has no arguments; the operator does not count."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XEq,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 4, label_end: 5 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 4,
+                label_end: 5,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 7,
+                label_end: 8,
+            },
+        ],
         documentation: r#"This operator produces 1 if *a* is equal to *b*; 0 otherwise.
 The arguments must be `bit`, `bits`, `int`, `string`, or
 record values. Use `!cast<string>` to compare other types of objects."#,
@@ -176,7 +307,12 @@ record values. Use `!cast<string>` to compare other types of objects."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XExists,
-        signature_params: &[BangSignatureParamMetadata { name: "name", optional: false, label_start: 14, label_end: 18 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "name",
+            optional: false,
+            label_start: 14,
+            label_end: 18,
+        }],
         documentation: r#"This operator produces 1 if a record of the given *type* whose name is *name*
 exists; 0 otherwise. *name* should be of type *string*."#,
     },
@@ -187,7 +323,26 @@ exists; 0 otherwise. *name* should be of type *string*."#,
         min_args: 3,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XFilter,
-        signature_params: &[BangSignatureParamMetadata { name: "var", optional: false, label_start: 8, label_end: 11 }, BangSignatureParamMetadata { name: "list", optional: false, label_start: 13, label_end: 17 }, BangSignatureParamMetadata { name: "predicate", optional: false, label_start: 19, label_end: 28 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "var",
+                optional: false,
+                label_start: 8,
+                label_end: 11,
+            },
+            BangSignatureParamMetadata {
+                name: "list",
+                optional: false,
+                label_start: 13,
+                label_end: 17,
+            },
+            BangSignatureParamMetadata {
+                name: "predicate",
+                optional: false,
+                label_start: 19,
+                label_end: 28,
+            },
+        ],
         documentation: r#"This operator creates a new `list` by filtering the elements in
 *list*. To perform the filtering, TableGen binds the variable *var* to each
 element and then evaluates the *predicate* expression, which presumably
@@ -204,7 +359,26 @@ is anything else, the element is included."#,
         min_args: 2,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XFind,
-        signature_params: &[BangSignatureParamMetadata { name: "string1", optional: false, label_start: 6, label_end: 13 }, BangSignatureParamMetadata { name: "string2", optional: false, label_start: 15, label_end: 22 }, BangSignatureParamMetadata { name: "start", optional: true, label_start: 25, label_end: 30 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "string1",
+                optional: false,
+                label_start: 6,
+                label_end: 13,
+            },
+            BangSignatureParamMetadata {
+                name: "string2",
+                optional: false,
+                label_start: 15,
+                label_end: 22,
+            },
+            BangSignatureParamMetadata {
+                name: "start",
+                optional: true,
+                label_start: 25,
+                label_end: 30,
+            },
+        ],
         documentation: r#"This operator searches for *string2* in *string1* and produces its
 position. The starting position of the search may be specified by *start*,
 which can range between 0 and the length of *string1*; the default is 0.
@@ -217,7 +391,38 @@ If the string is not found, the result is -1."#,
         min_args: 5,
         max_args: Some(5),
         syntax_kind: SyntaxKind::XFoldl,
-        signature_params: &[BangSignatureParamMetadata { name: "init", optional: false, label_start: 7, label_end: 11 }, BangSignatureParamMetadata { name: "list", optional: false, label_start: 13, label_end: 17 }, BangSignatureParamMetadata { name: "acc", optional: false, label_start: 19, label_end: 22 }, BangSignatureParamMetadata { name: "var", optional: false, label_start: 24, label_end: 27 }, BangSignatureParamMetadata { name: "expr", optional: false, label_start: 29, label_end: 33 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "init",
+                optional: false,
+                label_start: 7,
+                label_end: 11,
+            },
+            BangSignatureParamMetadata {
+                name: "list",
+                optional: false,
+                label_start: 13,
+                label_end: 17,
+            },
+            BangSignatureParamMetadata {
+                name: "acc",
+                optional: false,
+                label_start: 19,
+                label_end: 22,
+            },
+            BangSignatureParamMetadata {
+                name: "var",
+                optional: false,
+                label_start: 24,
+                label_end: 27,
+            },
+            BangSignatureParamMetadata {
+                name: "expr",
+                optional: false,
+                label_start: 29,
+                label_end: 33,
+            },
+        ],
         documentation: r#"This operator performs a left-fold over the items in *list*. The
 variable *acc* acts as the accumulator and is initialized to *init*.
 The variable *var* is bound to each element in the *list*. The
@@ -242,7 +447,26 @@ some of the elements, see `!filter`."#,
         min_args: 3,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XForEach,
-        signature_params: &[BangSignatureParamMetadata { name: "var", optional: false, label_start: 9, label_end: 12 }, BangSignatureParamMetadata { name: "sequence", optional: false, label_start: 14, label_end: 22 }, BangSignatureParamMetadata { name: "expr", optional: false, label_start: 24, label_end: 28 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "var",
+                optional: false,
+                label_start: 9,
+                label_end: 12,
+            },
+            BangSignatureParamMetadata {
+                name: "sequence",
+                optional: false,
+                label_start: 14,
+                label_end: 22,
+            },
+            BangSignatureParamMetadata {
+                name: "expr",
+                optional: false,
+                label_start: 24,
+                label_end: 28,
+            },
+        ],
         documentation: r#"This operator creates a new `list`/`dag` in which each element is a
 function of the corresponding element in the *sequence* `list`/`dag`.
 To perform the function, TableGen binds the variable *var* to an element
@@ -259,7 +483,20 @@ the same value repeated multiple times, see `!listsplat`."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XGe,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 4, label_end: 5 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 4,
+                label_end: 5,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 7,
+                label_end: 8,
+            },
+        ],
         documentation: r#"This operator produces 1 if *a* is greater than or equal to *b*; 0 otherwise.
 The arguments must be `bit`, `bits`, `int`, or `string` values."#,
     },
@@ -270,7 +507,20 @@ The arguments must be `bit`, `bits`, `int`, or `string` values."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XGetDagArg,
-        signature_params: &[BangSignatureParamMetadata { name: "dag", optional: false, label_start: 17, label_end: 20 }, BangSignatureParamMetadata { name: "key", optional: false, label_start: 22, label_end: 25 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "dag",
+                optional: false,
+                label_start: 17,
+                label_end: 20,
+            },
+            BangSignatureParamMetadata {
+                name: "key",
+                optional: false,
+                label_start: 22,
+                label_end: 25,
+            },
+        ],
         documentation: r#"This operator retrieves the argument from the given *dag* node by the
 specified *key*, which is either an integer index or a string name. If that
 argument is not convertible to the specified *type*, `?` is returned."#,
@@ -282,7 +532,20 @@ argument is not convertible to the specified *type*, `?` is returned."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XGetDagName,
-        signature_params: &[BangSignatureParamMetadata { name: "dag", optional: false, label_start: 12, label_end: 15 }, BangSignatureParamMetadata { name: "index", optional: false, label_start: 17, label_end: 22 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "dag",
+                optional: false,
+                label_start: 12,
+                label_end: 15,
+            },
+            BangSignatureParamMetadata {
+                name: "index",
+                optional: false,
+                label_start: 17,
+                label_end: 22,
+            },
+        ],
         documentation: r#"This operator retrieves the argument name from the given *dag* node by the
 specified *index*. If that argument has no name associated, `?` is
 returned."#,
@@ -294,7 +557,12 @@ returned."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XGetDagOp,
-        signature_params: &[BangSignatureParamMetadata { name: "dag", optional: false, label_start: 10, label_end: 13 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "dag",
+            optional: false,
+            label_start: 10,
+            label_end: 13,
+        }],
         documentation: r#"This operator produces the operator of the given *dag* node.
 Example: `!getdagop((foo 1, 2))` results in `foo`. Recall that
 DAG operators are always records.
@@ -326,7 +594,20 @@ dag d = !dag(!getdagop(someDag), args, names);
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XGt,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 4, label_end: 5 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 4,
+                label_end: 5,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 7,
+                label_end: 8,
+            },
+        ],
         documentation: r#"This operator produces 1 if *a* is greater than *b*; 0 otherwise.
 The arguments must be `bit`, `bits`, `int`, or `string` values."#,
     },
@@ -337,7 +618,12 @@ The arguments must be `bit`, `bits`, `int`, or `string` values."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XHead,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 6, label_end: 7 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 6,
+            label_end: 7,
+        }],
         documentation: r#"This operator produces the zeroth element of the list *a*.
 (See also `!tail`.)"#,
     },
@@ -348,7 +634,26 @@ The arguments must be `bit`, `bits`, `int`, or `string` values."#,
         min_args: 3,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XIf,
-        signature_params: &[BangSignatureParamMetadata { name: "test", optional: false, label_start: 4, label_end: 8 }, BangSignatureParamMetadata { name: "then", optional: false, label_start: 10, label_end: 14 }, BangSignatureParamMetadata { name: "else", optional: false, label_start: 16, label_end: 20 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "test",
+                optional: false,
+                label_start: 4,
+                label_end: 8,
+            },
+            BangSignatureParamMetadata {
+                name: "then",
+                optional: false,
+                label_start: 10,
+                label_end: 14,
+            },
+            BangSignatureParamMetadata {
+                name: "else",
+                optional: false,
+                label_start: 16,
+                label_end: 20,
+            },
+        ],
         documentation: r#"This operator evaluates the *test*, which must produce a `bit` or
 `int`. If the result is not 0, the *then* expression is produced; otherwise
 the *else* expression is produced."#,
@@ -360,7 +665,12 @@ the *else* expression is produced."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XInitialized,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 13, label_end: 14 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 13,
+            label_end: 14,
+        }],
         documentation: r#"This operator produces 1 if *a* is not the uninitialized value (`?`) and 0
 otherwise."#,
     },
@@ -371,7 +681,12 @@ otherwise."#,
         min_args: 0,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XInstances,
-        signature_params: &[BangSignatureParamMetadata { name: "regex", optional: true, label_start: 18, label_end: 23 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "regex",
+            optional: true,
+            label_start: 18,
+            label_end: 23,
+        }],
         documentation: r#"This operator produces a list of records whose type is *type*. If *regex*
 is provided, only records whose name matches the regular expression *regex*
 will be included. The format of *regex* is ERE (Extended POSIX Regular
@@ -387,7 +702,20 @@ If `!instances` is in a class/multiclass/foreach, only these records of
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XInterleave,
-        signature_params: &[BangSignatureParamMetadata { name: "list", optional: false, label_start: 12, label_end: 16 }, BangSignatureParamMetadata { name: "delim", optional: false, label_start: 18, label_end: 23 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "list",
+                optional: false,
+                label_start: 12,
+                label_end: 16,
+            },
+            BangSignatureParamMetadata {
+                name: "delim",
+                optional: false,
+                label_start: 18,
+                label_end: 23,
+            },
+        ],
         documentation: r#"This operator concatenates the items in the *list*, interleaving the
 *delim* string between each pair, and produces the resulting string.
 The list can be a list of string, int, bits, or bit. An empty list
@@ -400,7 +728,12 @@ results in an empty string. The delimiter can be the empty string."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XIsA,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 11, label_end: 12 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 11,
+            label_end: 12,
+        }],
         documentation: r#"This operator produces 1 if the type of *a* is a subtype of the given *type*; 0
 otherwise."#,
     },
@@ -411,7 +744,20 @@ otherwise."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XLe,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 4, label_end: 5 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 4,
+                label_end: 5,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 7,
+                label_end: 8,
+            },
+        ],
         documentation: r#"This operator produces 1 if *a* is less than or equal to *b*; 0 otherwise.
 The arguments must be `bit`, `bits`, `int`, or `string` values."#,
     },
@@ -422,7 +768,20 @@ The arguments must be `bit`, `bits`, `int`, or `string` values."#,
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XListConcat,
-        signature_params: &[BangSignatureParamMetadata { name: "list1", optional: false, label_start: 12, label_end: 17 }, BangSignatureParamMetadata { name: "list2", optional: false, label_start: 19, label_end: 24 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "list1",
+                optional: false,
+                label_start: 12,
+                label_end: 17,
+            },
+            BangSignatureParamMetadata {
+                name: "list2",
+                optional: false,
+                label_start: 19,
+                label_end: 24,
+            },
+        ],
         documentation: r#"This operator concatenates the list arguments *list1*, *list2*, etc., and
 produces the resulting list. The lists must have the same element type."#,
     },
@@ -433,7 +792,12 @@ produces the resulting list. The lists must have the same element type."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XListFlatten,
-        signature_params: &[BangSignatureParamMetadata { name: "list", optional: false, label_start: 13, label_end: 17 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "list",
+            optional: false,
+            label_start: 13,
+            label_end: 17,
+        }],
         documentation: r#"This operator flattens a list of lists *list* and produces a list with all
 elements of the constituent lists concatenated. If *list* is of type
 `list<list<X>>` the resulting list is of type `list<X>`. If *list*'s
@@ -446,7 +810,20 @@ element type is not a list, the result is *list* itself."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XListRemove,
-        signature_params: &[BangSignatureParamMetadata { name: "list1", optional: false, label_start: 12, label_end: 17 }, BangSignatureParamMetadata { name: "list2", optional: false, label_start: 19, label_end: 24 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "list1",
+                optional: false,
+                label_start: 12,
+                label_end: 17,
+            },
+            BangSignatureParamMetadata {
+                name: "list2",
+                optional: false,
+                label_start: 19,
+                label_end: 24,
+            },
+        ],
         documentation: r#"This operator returns a copy of *list1* removing all elements that also occur in
 *list2*. The lists must have the same element type."#,
     },
@@ -457,7 +834,20 @@ element type is not a list, the result is *list* itself."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XListSplat,
-        signature_params: &[BangSignatureParamMetadata { name: "value", optional: false, label_start: 11, label_end: 16 }, BangSignatureParamMetadata { name: "count", optional: false, label_start: 18, label_end: 23 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "value",
+                optional: false,
+                label_start: 11,
+                label_end: 16,
+            },
+            BangSignatureParamMetadata {
+                name: "count",
+                optional: false,
+                label_start: 18,
+                label_end: 23,
+            },
+        ],
         documentation: r#"This operator produces a list of length *count* whose elements are all
 equal to the *value*. For example, `!listsplat(42, 3)` results in
 `[42, 42, 42]`."#,
@@ -469,7 +859,12 @@ equal to the *value*. For example, `!listsplat(42, 3)` results in
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XLog2,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 8,
+            label_end: 9,
+        }],
         documentation: r#"This operator produces the base 2 log of *a* and produces the integer
 result. The log of 0 or a negative number produces an error. This
 is a flooring operation."#,
@@ -481,7 +876,20 @@ is a flooring operation."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XLt,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 4, label_end: 5 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 4,
+                label_end: 5,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 7,
+                label_end: 8,
+            },
+        ],
         documentation: r#"This operator produces 1 if *a* is less than *b*; 0 otherwise.
 The arguments must be `bit`, `bits`, `int`, or `string` values."#,
     },
@@ -492,7 +900,20 @@ The arguments must be `bit`, `bits`, `int`, or `string` values."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XMatch,
-        signature_params: &[BangSignatureParamMetadata { name: "str", optional: false, label_start: 7, label_end: 10 }, BangSignatureParamMetadata { name: "regex", optional: false, label_start: 12, label_end: 17 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "str",
+                optional: false,
+                label_start: 7,
+                label_end: 10,
+            },
+            BangSignatureParamMetadata {
+                name: "regex",
+                optional: false,
+                label_start: 12,
+                label_end: 17,
+            },
+        ],
         documentation: r#"This operator produces 1 if the *str* matches the regular expression
 *regex*. The format of *regex* is ERE (Extended POSIX Regular Expressions)."#,
     },
@@ -503,7 +924,20 @@ The arguments must be `bit`, `bits`, `int`, or `string` values."#,
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XMul,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 8,
+                label_end: 9,
+            },
+        ],
         documentation: r#"This operator multiplies *a*, *b*, etc., and produces the product."#,
     },
     BangOperatorMetadata {
@@ -513,7 +947,20 @@ The arguments must be `bit`, `bits`, `int`, or `string` values."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XNe,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 4, label_end: 5 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 4,
+                label_end: 5,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 7,
+                label_end: 8,
+            },
+        ],
         documentation: r#"This operator produces 1 if *a* is not equal to *b*; 0 otherwise.
 The arguments must be `bit`, `bits`, `int`, `string`,
 or record values. Use `!cast<string>` to compare other types of objects."#,
@@ -525,7 +972,12 @@ or record values. Use `!cast<string>` to compare other types of objects."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XNot,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 5,
+            label_end: 6,
+        }],
         documentation: r#"This operator performs a logical NOT on *a*, which must be
 an integer. The argument 0 results in 1 (true); any other
 argument results in 0 (false)."#,
@@ -537,7 +989,20 @@ argument results in 0 (false)."#,
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XOr,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 4, label_end: 5 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 7, label_end: 8 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 4,
+                label_end: 5,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 7,
+                label_end: 8,
+            },
+        ],
         documentation: r#"This operator does a bitwise OR on *a*, *b*, etc., and produces the
 result. A logical OR can be performed if all the arguments are either
 0 or 1. This operator is short-circuit to -1 (all ones) the left-most
@@ -550,7 +1015,26 @@ operand is -1."#,
         min_args: 1,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XRange,
-        signature_params: &[BangSignatureParamMetadata { name: "start", optional: true, label_start: 8, label_end: 13 }, BangSignatureParamMetadata { name: "end", optional: false, label_start: 16, label_end: 19 }, BangSignatureParamMetadata { name: "step", optional: true, label_start: 22, label_end: 26 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "start",
+                optional: true,
+                label_start: 8,
+                label_end: 13,
+            },
+            BangSignatureParamMetadata {
+                name: "end",
+                optional: false,
+                label_start: 16,
+                label_end: 19,
+            },
+            BangSignatureParamMetadata {
+                name: "step",
+                optional: true,
+                label_start: 22,
+                label_end: 26,
+            },
+        ],
         documentation: r#"This operator produces half-open range sequence `[start : end : step)` as
 `list<int>`. *start* is `0` and *step* is `1` by default. *step* can
 be negative and cannot be 0. If *start* `<` *end* and *step* is negative,
@@ -573,7 +1057,12 @@ For example:
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XRange,
-        signature_params: &[BangSignatureParamMetadata { name: "list", optional: false, label_start: 7, label_end: 11 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "list",
+            optional: false,
+            label_start: 7,
+            label_end: 11,
+        }],
         documentation: r#"Equivalent to `!range(0, !size(list))`."#,
     },
     BangOperatorMetadata {
@@ -583,7 +1072,12 @@ For example:
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XRepr,
-        signature_params: &[BangSignatureParamMetadata { name: "value", optional: false, label_start: 6, label_end: 11 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "value",
+            optional: false,
+            label_start: 6,
+            label_end: 11,
+        }],
         documentation: r#"Represents *value* as a string. String format for the value is not
 guaranteed to be stable. Intended for debugging purposes only."#,
     },
@@ -594,7 +1088,26 @@ guaranteed to be stable. Intended for debugging purposes only."#,
         min_args: 3,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XSetDagArg,
-        signature_params: &[BangSignatureParamMetadata { name: "dag", optional: false, label_start: 11, label_end: 14 }, BangSignatureParamMetadata { name: "key", optional: false, label_start: 16, label_end: 19 }, BangSignatureParamMetadata { name: "arg", optional: false, label_start: 21, label_end: 24 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "dag",
+                optional: false,
+                label_start: 11,
+                label_end: 14,
+            },
+            BangSignatureParamMetadata {
+                name: "key",
+                optional: false,
+                label_start: 16,
+                label_end: 19,
+            },
+            BangSignatureParamMetadata {
+                name: "arg",
+                optional: false,
+                label_start: 21,
+                label_end: 24,
+            },
+        ],
         documentation: r#"This operator produces a DAG node with the same operator and arguments as
 *dag*, but replacing the value of the argument specified by the *key* with
 *arg*. That *key* could be either an integer index or a string name."#,
@@ -606,7 +1119,26 @@ guaranteed to be stable. Intended for debugging purposes only."#,
         min_args: 3,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XSetDagName,
-        signature_params: &[BangSignatureParamMetadata { name: "dag", optional: false, label_start: 12, label_end: 15 }, BangSignatureParamMetadata { name: "key", optional: false, label_start: 17, label_end: 20 }, BangSignatureParamMetadata { name: "name", optional: false, label_start: 22, label_end: 26 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "dag",
+                optional: false,
+                label_start: 12,
+                label_end: 15,
+            },
+            BangSignatureParamMetadata {
+                name: "key",
+                optional: false,
+                label_start: 17,
+                label_end: 20,
+            },
+            BangSignatureParamMetadata {
+                name: "name",
+                optional: false,
+                label_start: 22,
+                label_end: 26,
+            },
+        ],
         documentation: r#"This operator produces a DAG node with the same operator and arguments as
 *dag*, but replacing the name of the argument specified by the *key* with
 *name*. That *key* could be either an integer index or a string name."#,
@@ -618,7 +1150,20 @@ guaranteed to be stable. Intended for debugging purposes only."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XSetDagOp,
-        signature_params: &[BangSignatureParamMetadata { name: "dag", optional: false, label_start: 10, label_end: 13 }, BangSignatureParamMetadata { name: "op", optional: false, label_start: 15, label_end: 17 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "dag",
+                optional: false,
+                label_start: 10,
+                label_end: 13,
+            },
+            BangSignatureParamMetadata {
+                name: "op",
+                optional: false,
+                label_start: 15,
+                label_end: 17,
+            },
+        ],
         documentation: r#"This operator produces a DAG node with the same arguments as *dag*, but with its
 operator replaced with *op*.
 
@@ -631,7 +1176,20 @@ Example: `!setdagop((foo 1, 2), bar)` results in `(bar 1, 2)`."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XShl,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "count", optional: false, label_start: 8, label_end: 13 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "count",
+                optional: false,
+                label_start: 8,
+                label_end: 13,
+            },
+        ],
         documentation: r#"This operator shifts *a* left logically by *count* bits and produces the resulting
 value. The operation is performed on a 64-bit integer; the result
 is undefined for shift counts outside 0...63."#,
@@ -643,7 +1201,12 @@ is undefined for shift counts outside 0...63."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XSize,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 6, label_end: 7 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 6,
+            label_end: 7,
+        }],
         documentation: r#"This operator produces the size of the string, list, or dag *a*.
 The size of a DAG is the number of arguments; the operator does not count."#,
     },
@@ -654,7 +1217,20 @@ The size of a DAG is the number of arguments; the operator does not count."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XSra,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "count", optional: false, label_start: 8, label_end: 13 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "count",
+                optional: false,
+                label_start: 8,
+                label_end: 13,
+            },
+        ],
         documentation: r#"This operator shifts *a* right arithmetically by *count* bits and produces the resulting
 value. The operation is performed on a 64-bit integer; the result
 is undefined for shift counts outside 0...63."#,
@@ -666,7 +1242,20 @@ is undefined for shift counts outside 0...63."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XSrl,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "count", optional: false, label_start: 8, label_end: 13 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "count",
+                optional: false,
+                label_start: 8,
+                label_end: 13,
+            },
+        ],
         documentation: r#"This operator shifts *a* right logically by *count* bits and produces the resulting
 value. The operation is performed on a 64-bit integer; the result
 is undefined for shift counts outside 0...63."#,
@@ -678,7 +1267,20 @@ is undefined for shift counts outside 0...63."#,
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XStrConcat,
-        signature_params: &[BangSignatureParamMetadata { name: "str1", optional: false, label_start: 11, label_end: 15 }, BangSignatureParamMetadata { name: "str2", optional: false, label_start: 17, label_end: 21 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "str1",
+                optional: false,
+                label_start: 11,
+                label_end: 15,
+            },
+            BangSignatureParamMetadata {
+                name: "str2",
+                optional: false,
+                label_start: 17,
+                label_end: 21,
+            },
+        ],
         documentation: r#"This operator concatenates the string arguments *str1*, *str2*, etc., and
 produces the resulting string."#,
     },
@@ -689,7 +1291,20 @@ produces the resulting string."#,
         min_args: 2,
         max_args: Some(2),
         syntax_kind: SyntaxKind::XSub,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 8,
+                label_end: 9,
+            },
+        ],
         documentation: r#"This operator subtracts *b* from *a* and produces the arithmetic difference."#,
     },
     BangOperatorMetadata {
@@ -699,7 +1314,26 @@ produces the resulting string."#,
         min_args: 3,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XSubst,
-        signature_params: &[BangSignatureParamMetadata { name: "target", optional: false, label_start: 7, label_end: 13 }, BangSignatureParamMetadata { name: "repl", optional: false, label_start: 15, label_end: 19 }, BangSignatureParamMetadata { name: "value", optional: false, label_start: 21, label_end: 26 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "target",
+                optional: false,
+                label_start: 7,
+                label_end: 13,
+            },
+            BangSignatureParamMetadata {
+                name: "repl",
+                optional: false,
+                label_start: 15,
+                label_end: 19,
+            },
+            BangSignatureParamMetadata {
+                name: "value",
+                optional: false,
+                label_start: 21,
+                label_end: 26,
+            },
+        ],
         documentation: r#"This operator replaces all occurrences of the *target* in the *value* with
 the *repl* and produces the resulting value. The *value* can
 be a string, in which case substring substitution is performed.
@@ -715,7 +1349,26 @@ produces the *value*."#,
         min_args: 2,
         max_args: Some(3),
         syntax_kind: SyntaxKind::XSubstr,
-        signature_params: &[BangSignatureParamMetadata { name: "string", optional: false, label_start: 8, label_end: 14 }, BangSignatureParamMetadata { name: "start", optional: false, label_start: 16, label_end: 21 }, BangSignatureParamMetadata { name: "length", optional: true, label_start: 24, label_end: 30 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "string",
+                optional: false,
+                label_start: 8,
+                label_end: 14,
+            },
+            BangSignatureParamMetadata {
+                name: "start",
+                optional: false,
+                label_start: 16,
+                label_end: 21,
+            },
+            BangSignatureParamMetadata {
+                name: "length",
+                optional: true,
+                label_start: 24,
+                label_end: 30,
+            },
+        ],
         documentation: r#"This operator extracts a substring of the given *string*. The starting
 position of the substring is specified by *start*, which can range
 between 0 and the length of the string. The length of the substring
@@ -729,7 +1382,12 @@ extracted. The *start* and *length* arguments must be integers."#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XTail,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 6, label_end: 7 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 6,
+            label_end: 7,
+        }],
         documentation: r#"This operator produces a new list with all the elements
 of the list *a* except for the zeroth one. (See also `!head`.)"#,
     },
@@ -740,7 +1398,12 @@ of the list *a* except for the zeroth one. (See also `!head`.)"#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XToLower,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 9, label_end: 10 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 9,
+            label_end: 10,
+        }],
         documentation: r#"This operator converts a string input *a* to lower case."#,
     },
     BangOperatorMetadata {
@@ -750,7 +1413,12 @@ of the list *a* except for the zeroth one. (See also `!head`.)"#,
         min_args: 1,
         max_args: Some(1),
         syntax_kind: SyntaxKind::XToUpper,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 9, label_end: 10 }],
+        signature_params: &[BangSignatureParamMetadata {
+            name: "a",
+            optional: false,
+            label_start: 9,
+            label_end: 10,
+        }],
         documentation: r#"This operator converts a string input *a* to upper case."#,
     },
     BangOperatorMetadata {
@@ -760,10 +1428,22 @@ of the list *a* except for the zeroth one. (See also `!head`.)"#,
         min_args: 2,
         max_args: None,
         syntax_kind: SyntaxKind::XXor,
-        signature_params: &[BangSignatureParamMetadata { name: "a", optional: false, label_start: 5, label_end: 6 }, BangSignatureParamMetadata { name: "b", optional: false, label_start: 8, label_end: 9 }],
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "a",
+                optional: false,
+                label_start: 5,
+                label_end: 6,
+            },
+            BangSignatureParamMetadata {
+                name: "b",
+                optional: false,
+                label_start: 8,
+                label_end: 9,
+            },
+        ],
         documentation: r#"This operator does a bitwise EXCLUSIVE OR on *a*, *b*, etc., and produces
 the result. A logical XOR can be performed if all the arguments are either
 0 or 1."#,
     },
 ];
-  
