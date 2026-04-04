@@ -1,6 +1,6 @@
 use ecow::EcoString;
 use syntax::{
-    SyntaxNode, SyntaxNodePtr, SyntaxToken,
+    SyntaxNode, SyntaxNodePtr,
     ast::{self, AstNode},
 };
 
