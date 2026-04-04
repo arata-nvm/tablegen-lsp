@@ -31,9 +31,45 @@ impl Config {
                 Err(_) => return Err("invalid value of tablegen-lsp.defaultSourceRootPath".into()),
             };
 
-            self.default_source_root_path = v.map(|s| FilePath::from(Path::new(&s)));
+            self.default_source_root_path = v
+                .filter(|s| !s.is_empty())
+                .map(|s| FilePath::from(Path::new(&s)));
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::Config;
+
+    #[test]
+    fn empty_default_source_root_path() {
+        let mut config = Config::default();
+        config
+            .update(json!({
+                "defaultSourceRootPath": "",
+            }))
+            .unwrap();
+
+        assert!(config.default_source_root_path.is_none());
+    }
+
+    #[test]
+    fn non_empty_default_source_root_path() {
+        let mut config = Config::default();
+        config
+            .update(json!({
+                "defaultSourceRootPath": "/root.td",
+            }))
+            .unwrap();
+
+        assert_eq!(
+            config.default_source_root_path.unwrap().to_str(),
+            "/root.td"
+        );
     }
 }
