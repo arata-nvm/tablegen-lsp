@@ -31,16 +31,16 @@ pub struct FoldingRange {
 mod tests {
     use crate::tests;
 
-    use super::FoldingRange;
-
-    fn check(s: &str) -> Option<Vec<FoldingRange>> {
+    fn check(s: &str) -> String {
         let (db, f) = tests::single_file(s);
-        super::exec(&db, f.root_file())
+        let ranges = super::exec(&db, f.root_file()).unwrap();
+        let content = f.file_content(&f.root_file());
+        tests::render_inline_ranges(&content, ranges.iter().map(|range| range.range))
     }
 
     #[test]
     fn class() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 class Foo {
   int a;
@@ -53,7 +53,7 @@ class Bar;
 
     #[test]
     fn multiclass() {
-        insta::assert_debug_snapshot!(check(
+        insta::assert_snapshot!(check(
             r#"
 multiclass Foo {
     def foo {
