@@ -101,7 +101,7 @@ function createClient(context: vscode.ExtensionContext): LanguageClient {
                     // eslint-disable-next-line @typescript-eslint/naming-convention
                     RUST_BACKTRACE: "1",
                     // eslint-disable-next-line @typescript-eslint/naming-convention
-                    RUST_LOG: "DEBUG",
+                    RUST_LOG: "INFO",
                 }),
             },
         },
