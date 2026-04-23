@@ -5,7 +5,7 @@ use serde_json::Value;
 
 pub const CONFIG_SECTION: &str = "tablegen-lsp";
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Config {
     pub include_dirs: Vec<FilePath>,
     pub default_source_root_path: Option<FilePath>,
