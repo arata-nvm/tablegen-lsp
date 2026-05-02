@@ -4,10 +4,10 @@ use std::ops::ControlFlow;
 use std::sync::Arc;
 
 use async_lsp::lsp_types::{
-    CompletionOptions, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentLinkOptions,
-    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
-    MessageType, OneOf, PublishDiagnosticsParams, ServerCapabilities, ServerInfo,
+    CompletionOptions, DidChangeConfigurationParams, DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+    DocumentLinkOptions, FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams,
+    InitializeResult, MessageType, OneOf, PublishDiagnosticsParams, ServerCapabilities, ServerInfo,
     ShowMessageParams, SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     notification, request,
 };
@@ -23,7 +23,7 @@ use ide::analysis::{Analysis, AnalysisHost, Cancellable, Cancelled};
 use ide::file_system::{FileId, FilePath, FileSystem, SourceUnitId};
 use ide::index::Index;
 
-use crate::config::Config;
+use crate::config::{Config, CONFIG_SECTION};
 use crate::diagnostics::DiagnosticCollection;
 use crate::pending_changes::PendingChanges;
 use crate::progress::Progress;
@@ -76,6 +76,7 @@ impl Server {
             .notification::<notification::DidCloseTextDocument>(Self::did_close)
             .notification::<lsp_ext::SetSourceRoot>(Self::set_source_root)
             .notification::<lsp_ext::ClearSourceRoot>(Self::clear_source_root)
+            .notification::<notification::DidChangeConfiguration>(Self::did_change_configuration)
             .request_snap::<request::DocumentSymbolRequest>(handlers::document_symbol)
             .request_snap::<request::GotoDefinition>(handlers::definition)
             .request_snap::<request::References>(handlers::references)
@@ -283,6 +284,24 @@ impl Server {
         self.spawn_update_diagnostics();
         ControlFlow::Continue(())
     }
+
+    fn did_change_configuration(
+        &mut self,
+        params: DidChangeConfigurationParams,
+    ) -> <Self as LanguageServer>::NotifyResult {
+        tracing::info!("did_change_configuration: {params:?}");
+        // Eglot (and some other clients) nest settings under the config section key.
+        let settings = params
+            .settings
+            .get(CONFIG_SECTION)
+            .cloned()
+            .unwrap_or(params.settings);
+        let result = self.client.emit(UpdateConfigEvent(settings));
+        if let Err(err) = result {
+            tracing::warn!("failed to emit update config event: {err:?}");
+        }
+        ControlFlow::Continue(())
+    }
 }
 
 impl Server {
@@ -482,7 +501,8 @@ impl Server {
     ) -> <Self as LanguageServer>::NotifyResult {
         tracing::info!("update_config: {v:?}");
 
-        let config = Arc::get_mut(&mut self.config).expect("cannot get mutable reference");
+        // Clone-and-replace so this works even when snapshots hold Arc<Config> clones.
+        let mut config = (*self.config).clone();
         if let Err(err) = config.update(v) {
             self.client
                 .show_message(ShowMessageParams {
@@ -493,7 +513,10 @@ impl Server {
             return ControlFlow::Continue(());
         }
 
-        if let Some(source_root_path) = config.default_source_root_path.clone()
+        let source_root_path = config.default_source_root_path.clone();
+        self.config = Arc::new(config);
+
+        if let Some(source_root_path) = source_root_path
             && let Err(err) = self.set_source_root_impl(source_root_path)
         {
             let message = format!("tablegen-lsp: failed to set source root: {err}");
