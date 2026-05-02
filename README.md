@@ -20,14 +20,22 @@ See [`docs/configuration.md`](docs/configuration.md) for configuration options.
 
 ## Development
 
+### Dependencies
+
+- LLVM 21
+
 ### Building from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/arata-nvm/tablegen-lsp
+git clone --recurse-submodules https://github.com/arata-nvm/tablegen-lsp
 cd tablegen-lsp
 
-# Build the project
+# Linux
+TABLEGEN_210_PREFIX=/usr/lib/llvm-21 cargo build
+
+# macOS
+brew install llvm@21
 cargo build
 ```
 
