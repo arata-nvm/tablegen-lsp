@@ -1092,9 +1092,10 @@ impl IndexStatement for ast::FieldLet {
             return;
         };
 
-        if let Some(range_list) = self.range_list()
-            && let Some(bits) = get_bit_list_in_range_list(&range_list)
-        {
+        if let Some(range_list) = self.range_list() {
+            let Some(bits) = get_bit_list_in_range_list(&range_list) else {
+                return;
+            };
             match field_typ.bits_with_selected_indices(bits) {
                 Ok(typ) => field_typ = typ,
                 Err(err) => {
