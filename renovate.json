@@ -12,5 +12,8 @@
   "vulnerabilityAlerts": {
     "labels": ["type:security"],
     "minimumReleaseAge": null
+  },
+  "git-submodules": {
+    "enabled": true
   }
 }
