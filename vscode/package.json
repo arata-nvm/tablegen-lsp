@@ -1,116 +1,116 @@
 {
-    "name": "tablegen-lsp",
-    "displayName": "tablegen-lsp",
-    "description": "",
-    "publisher": "arata-nvm",
-    "repository": {
-        "url": "https://github.com/arata-nvm/tablegen-lsp"
-    },
-    "version": "0.6.3",
-    "engines": {
-        "vscode": "^1.82.0"
-    },
-    "categories": [
-        "Programming Languages"
+  "name": "tablegen-lsp",
+  "displayName": "tablegen-lsp",
+  "description": "",
+  "publisher": "arata-nvm",
+  "repository": {
+    "url": "https://github.com/arata-nvm/tablegen-lsp"
+  },
+  "version": "0.6.3",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "tablegen",
+        "aliases": [
+          "TableGen",
+          "td"
+        ],
+        "extensions": [
+          ".td"
+        ],
+        "configuration": "./third-party/language-configuration.json"
+      }
     ],
-    "activationEvents": [],
-    "main": "./out/extension.js",
-    "contributes": {
-        "languages": [
-            {
-                "id": "tablegen",
-                "aliases": [
-                    "TableGen",
-                    "td"
-                ],
-                "extensions": [
-                    ".td"
-                ],
-                "configuration": "./third-party/language-configuration.json"
-            }
-        ],
-        "grammars": [
-            {
-                "language": "tablegen",
-                "scopeName": "source.tablegen",
-                "path": "./third-party/language-grammar.json"
-            }
-        ],
-        "commands": [
-            {
-                "command": "tablegen-lsp.restartServer",
-                "title": "Restart server",
-                "category": "tablegen-lsp"
-            },
-            {
-                "command": "tablegen-lsp.setSourceRoot",
-                "title": "Set Source Root",
-                "category": "tablegen-lsp"
-            },
-            {
-                "command": "tablegen-lsp.clearSourceRoot",
-                "title": "Clear Source Root",
-                "category": "tablegen-lsp"
-            }
-        ],
-        "menus": {
-            "explorer/context": [
-                {
-                    "command": "tablegen-lsp.setSourceRoot",
-                    "group": "tablegen-lsp",
-                    "when": "resourceScheme == file && resourceExtname == .td"
-                }
-            ],
-            "editor/title/context": [
-                {
-                    "command": "tablegen-lsp.setSourceRoot",
-                    "group": "tablegen-lsp",
-                    "when": "resourceScheme == file && resourceExtname == .td"
-                }
-            ]
-        },
-        "configuration": {
-            "title": "tablegen-lsp",
-            "properties": {
-                "tablegen-lsp.includePath": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [],
-                    "description": "An array of paths to workspace folders containing tablegen files."
-                },
-                "tablegen-lsp.defaultSourceRootPath": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Defines a source root `.td` file used at startup. If you manually set the source root using the `Set Source Root` menu, this configuration is ignored."
-                }
-            }
+    "grammars": [
+      {
+        "language": "tablegen",
+        "scopeName": "source.tablegen",
+        "path": "./third-party/language-grammar.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "tablegen-lsp.restartServer",
+        "title": "Restart server",
+        "category": "tablegen-lsp"
+      },
+      {
+        "command": "tablegen-lsp.setSourceRoot",
+        "title": "Set Source Root",
+        "category": "tablegen-lsp"
+      },
+      {
+        "command": "tablegen-lsp.clearSourceRoot",
+        "title": "Clear Source Root",
+        "category": "tablegen-lsp"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "tablegen-lsp.setSourceRoot",
+          "group": "tablegen-lsp",
+          "when": "resourceScheme == file && resourceExtname == .td"
         }
+      ],
+      "editor/title/context": [
+        {
+          "command": "tablegen-lsp.setSourceRoot",
+          "group": "tablegen-lsp",
+          "when": "resourceScheme == file && resourceExtname == .td"
+        }
+      ]
     },
-    "scripts": {
-        "vscode:prepublish": "npm run build-base -- --minify",
-        "package": "vsce package",
-        "build-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node20",
-        "build": "npm run build-base -- --sourcemap",
-        "watch": "npm run build-base -- --sourcemap --watch",
-        "check": "biome check ./src",
-        "check:fix": "biome check --write ./src",
-        "test": "node ./out/test/runTest.js"
-    },
-    "devDependencies": {
-        "@biomejs/biome": "2.4.16",
-        "@types/mocha": "^10.0.1",
-        "@types/node": "24.x",
-        "@types/vscode": "^1.82.0",
-        "@vscode/test-electron": "^2.3.4",
-        "@vscode/vsce": "^3.4.2",
-        "esbuild": "^0.27.0",
-        "glob": "^13.0.0",
-        "mocha": "^11.0.0",
-        "typescript": "^5.1.6"
-    },
-    "dependencies": {
-        "vscode-languageclient": "^9.0.0"
+    "configuration": {
+      "title": "tablegen-lsp",
+      "properties": {
+        "tablegen-lsp.includePath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "An array of paths to workspace folders containing tablegen files."
+        },
+        "tablegen-lsp.defaultSourceRootPath": {
+          "type": "string",
+          "default": "",
+          "description": "Defines a source root `.td` file used at startup. If you manually set the source root using the `Set Source Root` menu, this configuration is ignored."
+        }
+      }
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build-base -- --minify",
+    "package": "vsce package",
+    "build-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node20",
+    "build": "npm run build-base -- --sourcemap",
+    "watch": "npm run build-base -- --sourcemap --watch",
+    "check": "biome check ./src",
+    "check:fix": "biome check --write ./src",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.16",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "24.x",
+    "@types/vscode": "^1.82.0",
+    "@vscode/test-electron": "^2.3.4",
+    "@vscode/vsce": "^3.4.2",
+    "esbuild": "^0.27.0",
+    "glob": "^13.0.0",
+    "mocha": "^11.0.0",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
 }
