@@ -96,12 +96,13 @@
     "watch": "npm run build-base -- --sourcemap --watch",
     "check": "biome check ./src",
     "check:fix": "biome check --write ./src",
+    "typecheck": "tsc --noEmit",
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.16",
     "@types/mocha": "^10.0.1",
-    "@types/node": "24.x",
+    "@types/node": "18.x",
     "@types/vscode": "^1.82.0",
     "@vscode/test-electron": "^2.3.4",
     "@vscode/vsce": "^3.4.2",

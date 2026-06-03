@@ -45,3 +45,5 @@ jobs:
         working-directory: ./vscode
       - run: npm run check
         working-directory: ./vscode
+      - run: npm run typecheck
+        working-directory: ./vscode
