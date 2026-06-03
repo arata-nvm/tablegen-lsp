@@ -94,25 +94,21 @@
         "build-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node20",
         "build": "npm run build-base -- --sourcemap",
         "watch": "npm run build-base -- --sourcemap --watch",
-        "format:fix": "prettier --write ./src",
-        "format:check": "prettier --check ./src",
-        "lint:fix": "eslint --fix ./src",
-        "lint:check": "eslint ./src",
+        "check": "biome check ./src",
+        "check:fix": "biome check --write ./src",
         "test": "node ./out/test/runTest.js"
     },
     "devDependencies": {
+        "@biomejs/biome": "2.4.16",
         "@types/mocha": "^10.0.1",
         "@types/node": "24.x",
         "@types/vscode": "^1.82.0",
-        "@vscode/vsce": "^3.4.2",
         "@vscode/test-electron": "^2.3.4",
+        "@vscode/vsce": "^3.4.2",
         "esbuild": "^0.27.0",
-        "eslint": "^9.0.0",
         "glob": "^13.0.0",
         "mocha": "^11.0.0",
-        "prettier": "^3.4.2",
-        "typescript": "^5.1.6",
-        "typescript-eslint": "^8.22.0"
+        "typescript": "^5.1.6"
     },
     "dependencies": {
         "vscode-languageclient": "^9.0.0"

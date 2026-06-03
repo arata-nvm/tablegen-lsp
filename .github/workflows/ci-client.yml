@@ -27,7 +27,7 @@ jobs:
       - run: npm run build
         working-directory: ./vscode
 
-  lint:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -38,19 +38,5 @@ jobs:
           node-version: 24
       - run: npm ci
         working-directory: ./vscode
-      - run: npm run lint:check
-        working-directory: ./vscode
-
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: true
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-      - run: npm ci
-        working-directory: ./vscode
-      - run: npm run format:check
+      - run: npm run check
         working-directory: ./vscode
