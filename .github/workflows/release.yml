@@ -228,3 +228,15 @@ jobs:
         run: |
           version="${{ needs.prepare-release.outputs.version }}"
           gh release edit "${version}" --draft=false
+
+      - name: Delete draft release on failure
+        if: failure()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ needs.prepare-release.outputs.version }}"
+          is_draft="$(gh release view "${version}" --json isDraft --jq .isDraft 2>/dev/null || true)"
+          if [[ "${is_draft}" == "true" ]]; then
+            gh release delete "${version}" --yes
+          fi
