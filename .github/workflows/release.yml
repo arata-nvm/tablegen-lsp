@@ -84,7 +84,7 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          cargo build --release --target ${{ matrix.target }} --verbose
+          cargo build --release --locked --target ${{ matrix.target }} --verbose
           bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}"
           mv target/${{ matrix.target }}/release/lsp ${bin}
           echo "BIN=${bin}" >> $GITHUB_ENV
@@ -93,7 +93,7 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          cargo build --release --target ${{ matrix.target }} --verbose
+          cargo build --release --locked --target ${{ matrix.target }} --verbose
           bin="target/${{ matrix.target }}/release/tablegen-lsp-${{ github.ref_name }}-${{ matrix.target }}"
           mv target/${{ matrix.target }}/release/lsp ${bin}
           echo "BIN=${bin}" >> $GITHUB_ENV
