@@ -62,12 +62,12 @@ jobs:
           cd llvm-project
           
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            generator="Visual Studio 17 2022"
+            generator_args=()
           else
-            generator="Ninja"
+            generator_args=(-G Ninja)
           fi
 
-          cmake -S llvm -B build -G "$generator" \
+          cmake -S llvm -B build "${generator_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
             -DLLVM_ENABLE_PROJECTS="" \
