@@ -136,9 +136,11 @@ If the type of *a* does not match *type*, TableGen raises an error."#,
         documentation: r#"This operator concatenates the DAG nodes *a*, *b*, etc. Their operations
 must equal.
 
-`!con((op a1:$name1, a2:$name2), (op b1:$name3))`
+`!con((op:$lhs a1:$name1, a2:$name2), (op:$rhs b1:$name3))`
 
-results in the DAG node `(op a1:$name1, a2:$name2, b1:$name3)`."#,
+results in the DAG node `(op:$lhs a1:$name1, a2:$name2, b1:$name3)`.
+The name of the dag operator is derived from the LHS DAG node if it is
+set, otherwise from the RHS DAG node."#,
     },
     BangOperatorMetadata {
         name: "cond",
@@ -257,7 +259,7 @@ Example: `!dag(op, [a1, a2, ?], ["name1", "name2", "name3"])` results in
             },
         ],
         documentation: r#"This operator performs signed division of *a* by *b*, and produces the quotient.
-Division by 0 produces an error. Division of INT64_MIN by -1 produces an error."#,
+Division by 0 produces an error. Division of `INT64_MIN` by -1 produces an error."#,
     },
     BangOperatorMetadata {
         name: "empty",
@@ -586,6 +588,22 @@ cast is necessary:
 ```
 dag d = !dag(!getdagop(someDag), args, names);
 ```"#,
+    },
+    BangOperatorMetadata {
+        name: "getdagopname",
+        signature: r#"!getdagopname(dag)"#,
+        needs_type_annotation: false,
+        min_args: 1,
+        max_args: Some(1),
+        syntax_kind: SyntaxKind::XGetDagOpName,
+        signature_params: &[BangSignatureParamMetadata {
+            name: "dag",
+            optional: false,
+            label_start: 14,
+            label_end: 17,
+        }],
+        documentation: r#"This operator retrieves the name of the given *dag* operator. If the operator
+has no name associated, `?` is returned."#,
     },
     BangOperatorMetadata {
         name: "gt",
@@ -1005,7 +1023,7 @@ argument results in 0 (false)."#,
         ],
         documentation: r#"This operator does a bitwise OR on *a*, *b*, etc., and produces the
 result. A logical OR can be performed if all the arguments are either
-0 or 1. This operator is short-circuit to -1 (all ones) the left-most
+0 or 1. This operator is short-circuit to -1 (all ones) when the left-most
 operand is -1."#,
     },
     BangOperatorMetadata {
@@ -1039,7 +1057,7 @@ operand is -1."#,
 `list<int>`. *start* is `0` and *step* is `1` by default. *step* can
 be negative and cannot be 0. If *start* `<` *end* and *step* is negative,
 or *start* `>` *end* and *step* is positive, the result is an empty list
-`[]<list<int>>`.
+`[]<int>`.
 
 For example:
 
@@ -1078,7 +1096,7 @@ For example:
             label_start: 6,
             label_end: 11,
         }],
-        documentation: r#"Represents *value* as a string. String format for the value is not
+        documentation: r#"Represents *value* as a string. The string format for the value is not
 guaranteed to be stable. Intended for debugging purposes only."#,
     },
     BangOperatorMetadata {
@@ -1168,6 +1186,30 @@ guaranteed to be stable. Intended for debugging purposes only."#,
 operator replaced with *op*.
 
 Example: `!setdagop((foo 1, 2), bar)` results in `(bar 1, 2)`."#,
+    },
+    BangOperatorMetadata {
+        name: "setdagopname",
+        signature: r#"!setdagopname(dag, name)"#,
+        needs_type_annotation: false,
+        min_args: 2,
+        max_args: Some(2),
+        syntax_kind: SyntaxKind::XSetDagOpName,
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "dag",
+                optional: false,
+                label_start: 14,
+                label_end: 17,
+            },
+            BangSignatureParamMetadata {
+                name: "name",
+                optional: false,
+                label_start: 19,
+                label_end: 23,
+            },
+        ],
+        documentation: r#"This operator produces a DAG node with the same operator and arguments as
+*dag*, but replacing the name of the operator with *name*."#,
     },
     BangOperatorMetadata {
         name: "shl",
