@@ -3,8 +3,8 @@ use std::{collections::HashMap, str::Utf8Error};
 
 use ecow::EcoString;
 pub use tblgen::diagnostic::DiagnosticKind;
-use tblgen::error::{LocPosition, SourceLoc};
-use tblgen::{Record, RecordKeeper, TableGenParser};
+use tblgen::error::{SourceLoc, SourceLocationPosition};
+use tblgen::{Record, RecordKeeper, SourceInfo, TableGenParser};
 
 use crate::file_system::{FilePath, FilePosition, FileSystem};
 
@@ -35,7 +35,7 @@ pub fn parse_source_unit_with_tblgen(
     for include_dir in include_dirs {
         parser = parser.add_include_directory(include_dir.to_str());
     }
-    let result = parser.parse();
+    let result = parser.parse_with_diagnostics();
 
     Ok(TblgenParseResult {
         diagnostics: result
@@ -76,34 +76,36 @@ pub struct TblgenDef {
 impl TblgenSymbolTable {
     pub fn with_record_keeper(record_keeper: &RecordKeeper, fs: &impl FileSystem) -> Self {
         fn convert_tblgen_pos(
-            pos: LocPosition,
+            pos: SourceLocationPosition,
             record: Record,
-            record_keeper: &RecordKeeper,
+            source_info: SourceInfo<'_>,
             fs: &impl FileSystem,
         ) -> Option<FilePosition> {
-            let tblgen_pos = record.file_position_with_pos(record_keeper, pos)?;
-            let tblgen_filepath = tblgen_pos.filepath();
-            let filepath_str = tblgen_filepath.as_str().ok()?;
-            let filepath = FilePath::from_str(filepath_str).ok()?;
+            let tblgen_pos = record.source_location().file_position(source_info, pos)?;
+            let filepath = FilePath::from_str(tblgen_pos.filename()).ok()?;
             let file_id = fs.file_for_path(&filepath)?;
-            Some(FilePosition::new(file_id, tblgen_pos.pos().into()))
+            Some(FilePosition::new(file_id, tblgen_pos.offset().into()))
         }
 
         let mut defs = HashMap::new();
+        let source_info = record_keeper.source_info();
         for (name, record) in record_keeper.defs() {
             let Ok(name) = name else {
                 continue;
             };
 
             let Some(define_loc_original) =
-                convert_tblgen_pos(LocPosition::Original, record, record_keeper, fs)
+                convert_tblgen_pos(SourceLocationPosition::Primary, record, source_info, fs)
             else {
                 continue;
             };
 
-            let Some(define_loc_instantiated) =
-                convert_tblgen_pos(LocPosition::Instantiated, record, record_keeper, fs)
-            else {
+            let Some(define_loc_instantiated) = convert_tblgen_pos(
+                SourceLocationPosition::Instantiation,
+                record,
+                source_info,
+                fs,
+            ) else {
                 continue;
             };
 
