@@ -21,7 +21,7 @@ const lspNotificationSetSourceRoot = "tablegenLsp/setSourceRoot";
 const lspNotificationClearSourceRoot = "tablegenLsp/clearSourceRoot";
 
 let client: LanguageClient | undefined;
-let outputChannel: vscode.OutputChannel | undefined;
+let outputChannel: vscode.LogOutputChannel | undefined;
 let sourceRoot: vscode.Uri | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -32,7 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function initialize(context: vscode.ExtensionContext): Promise<void> {
-	outputChannel = vscode.window.createOutputChannel(extensionDisplayName);
+	outputChannel = vscode.window.createOutputChannel(extensionDisplayName, {
+		log: true,
+	});
 	const statusBarItem = initStatusBarItem();
 
 	context.subscriptions.push(
