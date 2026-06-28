@@ -3,12 +3,14 @@ name: Build LLVM
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build-llvm:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     strategy:
       fail-fast: false
       matrix:
@@ -96,19 +98,90 @@ jobs:
           cmake --install build --config Release
 
       - name: Package
+        id: package
         shell: bash
         run: |
           cd llvm-project/install
           version="${{ steps.llvm_version.outputs.version }}"
           filename="LLVM-${version}-${{ runner.os }}-${{ runner.arch }}.tar.xz"
           tar -cJf "../${filename}" *
-          echo "ASSET_PATH=$(realpath ../${filename})" >> $GITHUB_ENV
+          echo "asset_path=$(realpath ../${filename})" >> $GITHUB_OUTPUT
 
-      - name: Create Release and Upload Asset
+      - name: Generate attestation
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-path: ${{ steps.package.outputs.asset_path }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: llvm-${{ matrix.target }}
+          path: ${{ steps.package.outputs.asset_path }}
+          if-no-files-found: error
+
+  publish:
+    needs: ["build-llvm"]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      attestations: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Read LLVM version
+        id: llvm_version
+        shell: bash
+        run: |
+          version=$(cat .github/LLVM_VERSION | tr -d '\r\n')
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Download artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: llvm-*
+          path: ./dist
+          merge-multiple: true
+
+      - name: Verify attestations
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          signer_workflow="${GITHUB_SERVER_URL#https://}/${GITHUB_REPOSITORY}/.github/workflows/build-llvm.yml"
+          for file in dist/*.tar.xz; do
+            gh attestation verify "${file}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --signer-workflow "${signer_workflow}" \
+              --source-ref "${GITHUB_REF}"
+          done
+
+      - name: Create draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           tag="llvm-${{ steps.llvm_version.outputs.version }}"
-          gh release create "$tag" --title "LLVM ${{ steps.llvm_version.outputs.version }}" || true
-          gh release upload "$tag" "${{ env.ASSET_PATH }}" --clobber
+          gh release create "${tag}" dist/*.tar.xz --draft --title "LLVM ${{ steps.llvm_version.outputs.version }}"
+
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="llvm-${{ steps.llvm_version.outputs.version }}"
+          gh release edit "${tag}" --draft=false
+
+      - name: Delete draft release on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="llvm-${{ steps.llvm_version.outputs.version }}"
+          is_draft="$(gh release view "${tag}" --json isDraft --jq .isDraft 2>/dev/null || true)"
+          if [[ "${is_draft}" == "true" ]]; then
+            gh release delete "${tag}" --yes
+          fi
