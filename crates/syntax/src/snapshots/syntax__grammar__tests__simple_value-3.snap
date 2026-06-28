@@ -1,0 +1,67 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(r#\"defvar OpName = !getdagopname((foo)); defvar NamedOp = !setdagopname((foo), \"name\");\"#)"
+---
+(
+    SourceFile@0..84
+      StatementList@0..84
+        Defvar@0..38
+          DefvarKw@0..6 "defvar"
+          Whitespace@6..7 " "
+          Identifier@7..14
+            Id@7..13 "OpName"
+            Whitespace@13..14 " "
+          Equal@14..15 "="
+          Whitespace@15..16 " "
+          Value@16..36
+            InnerValue@16..36
+              BangOperator@16..36
+                XGetDagOpName@16..29 "!getdagopname"
+                LParen@29..30 "("
+                Value@30..35
+                  InnerValue@30..35
+                    Dag@30..35
+                      LParen@30..31 "("
+                      DagArg@31..34
+                        Value@31..34
+                          InnerValue@31..34
+                            Identifier@31..34
+                              Id@31..34 "foo"
+                      RParen@34..35 ")"
+                RParen@35..36 ")"
+          Semi@36..37 ";"
+          Whitespace@37..38 " "
+        Defvar@38..84
+          DefvarKw@38..44 "defvar"
+          Whitespace@44..45 " "
+          Identifier@45..53
+            Id@45..52 "NamedOp"
+            Whitespace@52..53 " "
+          Equal@53..54 "="
+          Whitespace@54..55 " "
+          Value@55..83
+            InnerValue@55..83
+              BangOperator@55..83
+                XSetDagOpName@55..68 "!setdagopname"
+                LParen@68..69 "("
+                Value@69..74
+                  InnerValue@69..74
+                    Dag@69..74
+                      LParen@69..70 "("
+                      DagArg@70..73
+                        Value@70..73
+                          InnerValue@70..73
+                            Identifier@70..73
+                              Id@70..73 "foo"
+                      RParen@73..74 ")"
+                Comma@74..75 ","
+                Whitespace@75..76 " "
+                Value@76..82
+                  InnerValue@76..82
+                    String@76..82
+                      StrVal@76..82 "\"name\""
+                RParen@82..83 ")"
+          Semi@83..84 ";"
+    ,
+    [],
+)
