@@ -15,5 +15,6 @@
   },
   "git-submodules": {
     "enabled": true
-  }
+  },
+  "rebaseWhen": "conflicted"
 }
