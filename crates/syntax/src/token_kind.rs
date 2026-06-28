@@ -73,7 +73,7 @@ pub enum TokenKind {
     XGetDagArg,
     XGetDagName,
     XGetDagOp,
-    XGetOp,
+    XGetDagOpName,
     XGt,
     XHead,
     XIf,
@@ -98,7 +98,7 @@ pub enum TokenKind {
     XSetDagArg,
     XSetDagName,
     XSetDagOp,
-    XSetOp,
+    XSetDagOpName,
     XShl,
     XSize,
     XSra,
@@ -161,7 +161,7 @@ impl TokenKind {
                 | Self::XGetDagArg
                 | Self::XGetDagName
                 | Self::XGetDagOp
-                | Self::XGetOp
+                | Self::XGetDagOpName
                 | Self::XGt
                 | Self::XHead
                 | Self::XIf
@@ -186,7 +186,7 @@ impl TokenKind {
                 | Self::XSetDagArg
                 | Self::XSetDagName
                 | Self::XSetDagOp
-                | Self::XSetOp
+                | Self::XSetDagOpName
                 | Self::XShl
                 | Self::XSize
                 | Self::XSra
@@ -272,7 +272,7 @@ macro_rules! T {
     [!getdagarg] => {$crate::token_kind::TokenKind::XGetDagArg};
     [!getdagname] => {$crate::token_kind::TokenKind::XGetDagName};
     [!getdagop] => {$crate::token_kind::TokenKind::XGetDagOp};
-    [!getop] => {$crate::token_kind::TokenKind::XGetOp};
+    [!getdagopname] => {$crate::token_kind::TokenKind::XGetDagOpName};
     [!gt] => {$crate::token_kind::TokenKind::XGt};
     [!head] => {$crate::token_kind::TokenKind::XHead};
     [!if] => {$crate::token_kind::TokenKind::XIf};
@@ -297,7 +297,7 @@ macro_rules! T {
     [!setdagarg] => {$crate::token_kind::TokenKind::XSetDagArg};
     [!setdagname] => {$crate::token_kind::TokenKind::XSetDagName};
     [!setdagop] => {$crate::token_kind::TokenKind::XSetDagOp};
-    [!setop] => {$crate::token_kind::TokenKind::XSetOp};
+    [!setdagopname] => {$crate::token_kind::TokenKind::XSetDagOpName};
     [!shl] => {$crate::token_kind::TokenKind::XShl};
     [!size] => {$crate::token_kind::TokenKind::XSize};
     [!sra] => {$crate::token_kind::TokenKind::XSra};

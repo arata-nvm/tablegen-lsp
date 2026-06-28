@@ -376,6 +376,19 @@ impl IndexExpression for ast::BangOperator {
 
                 Some(typ.unwrap_or(Type::unknown()))
             }
+            SyntaxKind::XGetDagOpName => {
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
+                let mut value_types = common::index_values(ctx, values).into_iter();
+
+                if let Some((dag_range, Some(dag_typ))) = value_types.next()
+                    && !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag])
+                {
+                    ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
+                }
+
+                Some(TY![string])
+            }
             SyntaxKind::XHead => {
                 common::check_type_annotation(ctx, self, meta);
                 let values = common::expect_values(ctx, self, meta);
@@ -721,6 +734,28 @@ impl IndexExpression for ast::BangOperator {
                     && !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag])
                 {
                     ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
+                }
+
+                Some(TY![dag])
+            }
+            SyntaxKind::XSetDagOpName => {
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
+                let mut value_types = common::index_values(ctx, values).into_iter();
+
+                if let Some((dag_range, Some(dag_typ))) = value_types.next()
+                    && !dag_typ.can_be_casted_to(&ctx.symbol_map, &TY![dag])
+                {
+                    ctx.error_by_textrange(dag_range, format!("expected dag, found {dag_typ}"));
+                }
+
+                if let Some((name_range, Some(name_typ))) = value_types.next()
+                    && !name_typ.can_be_casted_to(&ctx.symbol_map, &TY![string])
+                {
+                    ctx.error_by_textrange(
+                        name_range,
+                        format!("expected string, found {name_typ}"),
+                    );
                 }
 
                 Some(TY![dag])
