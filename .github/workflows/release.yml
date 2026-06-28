@@ -219,7 +219,7 @@ jobs:
           VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
         run: |
           version="${{ needs.prepare-release.outputs.version }}"
-          npm --prefix ./vscode exec -- vsce publish --pat "${VSCE_TOKEN}" --packagePath "../dist/client/tablegen-lsp-${version}.vsix"
+          npm --prefix ./vscode exec -- vsce publish --pat "${VSCE_TOKEN}" --packagePath "dist/client/tablegen-lsp-${version}.vsix"
 
       - name: Publish release
         shell: bash
