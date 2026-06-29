@@ -72,6 +72,7 @@ jobs:
           cmake -S llvm -B build "${generator_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+            -DLLVM_ENABLE_DUMP=ON \
             -DLLVM_ENABLE_PROJECTS="" \
             -DLLVM_TARGETS_TO_BUILD="" \
             -DLLVM_INCLUDE_EXAMPLES=OFF \
