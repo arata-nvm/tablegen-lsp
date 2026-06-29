@@ -42,7 +42,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: ./.github/actions/setup-llvm
       - name: Build
-        run: cargo build --verbose --locked
+        run: cargo build --verbose --locked --release
       - name: Check dependencies
         run: |
           chmod +x ci/list-elf-needed.sh
