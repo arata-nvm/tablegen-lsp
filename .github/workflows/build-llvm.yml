@@ -105,7 +105,7 @@ jobs:
           version="${{ steps.llvm_version.outputs.version }}"
           filename="LLVM-${version}-${{ runner.os }}-${{ runner.arch }}.tar.xz"
           tar -cJf "../${filename}" *
-          echo "asset_path=$(realpath ../${filename})" >> $GITHUB_OUTPUT
+          echo "asset_path=llvm-project/${filename}" >> $GITHUB_OUTPUT
 
       - name: Generate attestation
         uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
