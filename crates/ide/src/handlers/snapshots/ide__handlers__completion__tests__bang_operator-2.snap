@@ -52,7 +52,7 @@ expression: "check(\"!str$\")"
         ),
         detail: "",
         documentation: Some(
-            "This operator concatenates the DAG nodes *a*, *b*, etc. Their operations\nmust equal.\n\n`!con((op a1:$name1, a2:$name2), (op b1:$name3))`\n\nresults in the DAG node `(op a1:$name1, a2:$name2, b1:$name3)`.",
+            "This operator concatenates the DAG nodes *a*, *b*, etc. Their operations\nmust equal.\n\n`!con((op:$lhs a1:$name1, a2:$name2), (op:$rhs b1:$name3))`\n\nresults in the DAG node `(op:$lhs a1:$name1, a2:$name2, b1:$name3)`.\nThe name of the dag operator is derived from the LHS DAG node if it is\nset, otherwise from the RHS DAG node.",
         ),
         kind: Keyword,
         sort_text: None,
@@ -94,7 +94,7 @@ expression: "check(\"!str$\")"
         ),
         detail: "",
         documentation: Some(
-            "This operator performs signed division of *a* by *b*, and produces the quotient.\nDivision by 0 produces an error. Division of INT64_MIN by -1 produces an error.",
+            "This operator performs signed division of *a* by *b*, and produces the quotient.\nDivision by 0 produces an error. Division of `INT64_MIN` by -1 produces an error.",
         ),
         kind: Keyword,
         sort_text: None,
@@ -249,6 +249,20 @@ expression: "check(\"!str$\")"
         detail: "",
         documentation: Some(
             "This operator produces the operator of the given *dag* node.\nExample: `!getdagop((foo 1, 2))` results in `foo`. Recall that\nDAG operators are always records.\n\nThe result of `!getdagop` can be used directly in a context where\nany record class at all is acceptable (typically placing it into\nanother dag value). But in other contexts, it must be explicitly\ncast to a particular class. The `<` *type* `>` syntax is\nprovided to make this easy.\n\nFor example, to assign the result to a value of type `BaseClass`, you\ncould write either of these:\n\n```\nBaseClass b = !getdagop<BaseClass>(someDag);\nBaseClass b = !cast<BaseClass>(!getdagop(someDag));\n```\nBut to create a new DAG node that reuses the operator from another, no\ncast is necessary:\n\n```\ndag d = !dag(!getdagop(someDag), args, names);\n```",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "getdagopname",
+        insert_text_snippet: Some(
+            "getdagopname(${1})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator retrieves the name of the given *dag* operator. If the operator\nhas no name associated, `?` is returned.",
         ),
         kind: Keyword,
         sort_text: None,
@@ -514,7 +528,7 @@ expression: "check(\"!str$\")"
         ),
         detail: "",
         documentation: Some(
-            "This operator does a bitwise OR on *a*, *b*, etc., and produces the\nresult. A logical OR can be performed if all the arguments are either\n0 or 1. This operator is short-circuit to -1 (all ones) the left-most\noperand is -1.",
+            "This operator does a bitwise OR on *a*, *b*, etc., and produces the\nresult. A logical OR can be performed if all the arguments are either\n0 or 1. This operator is short-circuit to -1 (all ones) when the left-most\noperand is -1.",
         ),
         kind: Keyword,
         sort_text: None,
@@ -528,7 +542,7 @@ expression: "check(\"!str$\")"
         ),
         detail: "",
         documentation: Some(
-            "This operator produces half-open range sequence `[start : end : step)` as\n`list<int>`. *start* is `0` and *step* is `1` by default. *step* can\nbe negative and cannot be 0. If *start* `<` *end* and *step* is negative,\nor *start* `>` *end* and *step* is positive, the result is an empty list\n`[]<list<int>>`.\n\nFor example:\n\n* `!range(4)` is equivalent to `!range(0, 4, 1)` and the result is\n  `[0, 1, 2, 3]`.\n* `!range(1, 4)` is equivalent to `!range(1, 4, 1)` and the result is\n  `[1, 2, 3]`.\n* The result of `!range(0, 4, 2)` is `[0, 2]`.\n* The results of `!range(0, 4, -1)` and `!range(4, 0, 1)` are empty.",
+            "This operator produces half-open range sequence `[start : end : step)` as\n`list<int>`. *start* is `0` and *step* is `1` by default. *step* can\nbe negative and cannot be 0. If *start* `<` *end* and *step* is negative,\nor *start* `>` *end* and *step* is positive, the result is an empty list\n`[]<int>`.\n\nFor example:\n\n* `!range(4)` is equivalent to `!range(0, 4, 1)` and the result is\n  `[0, 1, 2, 3]`.\n* `!range(1, 4)` is equivalent to `!range(1, 4, 1)` and the result is\n  `[1, 2, 3]`.\n* The result of `!range(0, 4, 2)` is `[0, 2]`.\n* The results of `!range(0, 4, -1)` and `!range(4, 0, 1)` are empty.",
         ),
         kind: Keyword,
         sort_text: None,
@@ -556,7 +570,7 @@ expression: "check(\"!str$\")"
         ),
         detail: "",
         documentation: Some(
-            "Represents *value* as a string. String format for the value is not\nguaranteed to be stable. Intended for debugging purposes only.",
+            "Represents *value* as a string. The string format for the value is not\nguaranteed to be stable. Intended for debugging purposes only.",
         ),
         kind: Keyword,
         sort_text: None,
@@ -599,6 +613,20 @@ expression: "check(\"!str$\")"
         detail: "",
         documentation: Some(
             "This operator produces a DAG node with the same arguments as *dag*, but with its\noperator replaced with *op*.\n\nExample: `!setdagop((foo 1, 2), bar)` results in `(bar 1, 2)`.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "setdagopname",
+        insert_text_snippet: Some(
+            "setdagopname(${1}, ${2})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator produces a DAG node with the same operator and arguments as\n*dag*, but replacing the name of the operator with *name*.",
         ),
         kind: Keyword,
         sort_text: None,
