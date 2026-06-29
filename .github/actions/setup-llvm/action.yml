@@ -1,10 +1,13 @@
 name: Setup LLVM
+description: Download and verify the prebuilt LLVM package for the current runner.
 
 runs:
   using: composite
   steps:
     - name: Setup LLVM
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         llvm_version=$(cat ".github/LLVM_VERSION" | tr -d '\r\n')
         
@@ -16,6 +19,10 @@ runs:
         cd "$llvm_prefix"
         
         curl -LO "${base_url}/${filename}"
+        signer_workflow="${GITHUB_SERVER_URL#https://}/${GITHUB_REPOSITORY}/.github/workflows/build-llvm.yml"
+        gh attestation verify "$filename" \
+          --repo "${GITHUB_REPOSITORY}" \
+          --signer-workflow "${signer_workflow}"
         tar -xf "$filename"
         
         llvm_version_suffix=$(echo "$llvm_version" | awk -F. '{print $1"0"}')

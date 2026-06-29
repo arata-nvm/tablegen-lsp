@@ -260,7 +260,7 @@ impl<'a> Lexer<'a> {
             "getdagarg" => T![!getdagarg],
             "getdagname" => T![!getdagname],
             "getdagop" => T![!getdagop],
-            "getop" => T![!getop],
+            "getdagopname" => T![!getdagopname],
             "gt" => T![!gt],
             "head" => T![!head],
             "if" => T![!if],
@@ -285,7 +285,7 @@ impl<'a> Lexer<'a> {
             "setdagarg" => T![!setdagarg],
             "setdagname" => T![!setdagname],
             "setdagop" => T![!setdagop],
-            "setop" => T![!setop],
+            "setdagopname" => T![!setdagopname],
             "shl" => T![!shl],
             "size" => T![!size],
             "sra" => T![!sra],
@@ -401,7 +401,7 @@ mod tests {
     #[test]
     fn bangoperator() {
         insta::assert_debug_snapshot!(tokenize(
-            "!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !getdagop !getop !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !setop !repr !match"
+            "!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !setdagopname !getdagop !getdagopname !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !repr !match"
         ));
     }
 

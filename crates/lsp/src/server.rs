@@ -23,7 +23,7 @@ use ide::analysis::{Analysis, AnalysisHost, Cancellable, Cancelled};
 use ide::file_system::{FileId, FilePath, FileSystem, SourceUnitId};
 use ide::index::Index;
 
-use crate::config::{Config, CONFIG_SECTION};
+use crate::config::{CONFIG_SECTION, Config};
 use crate::diagnostics::DiagnosticCollection;
 use crate::pending_changes::PendingChanges;
 use crate::progress::Progress;
