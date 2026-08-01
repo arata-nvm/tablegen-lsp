@@ -46,7 +46,7 @@ jobs:
       - name: Check dependencies
         run: |
           chmod +x ci/list-elf-needed.sh
-          diff -u ci/linux-x86_64-ubuntu24.04-lsp.dt-needed.txt <(ci/list-elf-needed.sh target/debug/lsp)
+          diff -u ci/linux-x86_64-ubuntu24.04-lsp.dt-needed.txt <(ci/list-elf-needed.sh target/release/lsp)
 
   test:
     runs-on: ubuntu-latest
