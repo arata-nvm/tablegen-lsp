@@ -7,14 +7,10 @@ use syntax::{
 
 pub fn range_excluding_trivia(node: &SyntaxNode) -> TextRange {
     let start = node.text_range().start();
-    let mut end_token = node.last_token();
-    while let Some(token) = end_token {
-        if !token.kind().is_trivia() {
-            return TextRange::new(start, token.text_range().end());
-        }
-        end_token = token.prev_token();
-    }
-    TextRange::empty(start)
+    let end = last_non_trivia_token(node)
+        .map(|token| token.text_range().end())
+        .unwrap_or(start);
+    TextRange::new(start, end)
 }
 
 pub fn extract_doc_comments(root: SyntaxNode, range: TextRange) -> Option<String> {
@@ -34,35 +30,101 @@ pub fn extract_doc_comments(root: SyntaxNode, range: TextRange) -> Option<String
         parent_node = value_node.parent()?;
     }
 
-    let mut cur_token = parent_node.first_token()?;
+    let mut comments = collect_leading_doc_comments(&parent_node);
+    comments.extend(collect_trailing_doc_comments(&parent_node));
+
+    let doc = comments.join("\n");
+    if doc.is_empty() { None } else { Some(doc) }
+}
+
+fn collect_leading_doc_comments(node: &SyntaxNode) -> Vec<String> {
+    let Some(mut cur_token) = node.first_token() else {
+        return Vec::new();
+    };
     let mut comments = Vec::new();
+
     loop {
-        cur_token = match cur_token.prev_token() {
-            Some(t) => t,
-            None => break,
+        let Some(whitespace) = cur_token.prev_token() else {
+            break;
         };
-        if cur_token.kind() != SyntaxKind::Whitespace || cur_token.text().matches('\n').count() != 1
-        {
+        if !is_single_line_whitespace(&whitespace) {
             break;
         }
 
-        cur_token = match cur_token.prev_token() {
-            Some(t) => t,
-            None => break,
+        let Some(comment) = whitespace.prev_token() else {
+            break;
         };
-        if cur_token.kind() != SyntaxKind::LineComment {
+        if comment.kind() != SyntaxKind::LineComment || !is_line_start(&comment) {
             break;
         }
 
-        let comment = cur_token.text();
-        if !comment.starts_with("//") {
-            break;
-        }
-        comments.push(comment.trim_start_matches('/').trim_start().to_string());
+        comments.push(strip_line_comment(comment.text()));
+        cur_token = comment;
     }
 
-    let doc = comments.into_iter().rev().collect::<Vec<_>>().join("\n");
-    if doc.is_empty() { None } else { Some(doc) }
+    comments.into_iter().rev().collect()
+}
+
+fn collect_trailing_doc_comments(node: &SyntaxNode) -> Vec<String> {
+    let mut comments = Vec::new();
+
+    if let Some(body) = node
+        .descendants()
+        .find(|descendant| descendant.kind() == SyntaxKind::Body)
+        && let Some(token) = body.first_token()
+        && token.kind() == SyntaxKind::LBrace
+        && let Some(comment) = line_comment_after(token)
+    {
+        comments.push(comment);
+    }
+
+    if let Some(token) = last_non_trivia_token(node)
+        && let Some(comment) = line_comment_after(token)
+    {
+        comments.push(comment);
+    }
+
+    comments
+}
+
+fn line_comment_after(token: syntax::SyntaxToken) -> Option<String> {
+    let mut cur_token = token.next_token()?;
+
+    loop {
+        match cur_token.kind() {
+            SyntaxKind::Whitespace if !cur_token.text().contains('\n') => {
+                cur_token = cur_token.next_token()?;
+            }
+            SyntaxKind::LineComment => return Some(strip_line_comment(cur_token.text())),
+            _ => return None,
+        }
+    }
+}
+
+fn last_non_trivia_token(node: &SyntaxNode) -> Option<syntax::SyntaxToken> {
+    let mut token = node.last_token();
+    while let Some(current) = token {
+        if !current.kind().is_trivia() {
+            return Some(current);
+        }
+        token = current.prev_token();
+    }
+    None
+}
+
+fn is_single_line_whitespace(token: &syntax::SyntaxToken) -> bool {
+    token.kind() == SyntaxKind::Whitespace && token.text().matches('\n').count() == 1
+}
+
+fn is_line_start(comment: &syntax::SyntaxToken) -> bool {
+    match comment.prev_token() {
+        None => true,
+        Some(token) => token.kind() == SyntaxKind::Whitespace && token.text().contains('\n'),
+    }
+}
+
+fn strip_line_comment(comment: &str) -> String {
+    comment.trim_start_matches('/').trim_start().to_string()
 }
 
 #[derive(Debug)]
@@ -114,5 +176,95 @@ impl SyntaxNodeExt for SyntaxNode {
         max_depth: usize,
     ) -> Option<N> {
         self.ancestors().take(max_depth).find_map(N::cast)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use syntax::parser::{TextRange, TextSize};
+
+    use crate::tests;
+
+    use super::extract_doc_comments;
+
+    fn check(fixture: &str, marker_count: usize) -> Vec<Option<String>> {
+        let (_, fixture) = tests::single_file(fixture);
+        let content = fixture.file_content(&fixture.root_file());
+        let parse = syntax::parse(&content);
+        let root = parse.syntax_node();
+
+        (0..marker_count)
+            .map(|index| {
+                let position = fixture.marker(index).position;
+                let range = TextRange::new(position, position + TextSize::from(1));
+                extract_doc_comments(root.clone(), range)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn trailing_comments() {
+        let comments = check(
+            r#"
+class Foo {
+    int $first; // first comment
+    int $second; // second comment
+    int $without_comment;
+}
+            "#,
+            3,
+        );
+
+        assert_eq!(comments[0].as_deref(), Some("first comment"));
+        assert_eq!(comments[1].as_deref(), Some("second comment"));
+        assert_eq!(comments[2], None);
+    }
+
+    #[test]
+    fn leading_comments() {
+        let comments = check(
+            r#"
+// attached comment
+class $Attached;
+
+// separated comment
+
+class $Separated;
+            "#,
+            2,
+        );
+
+        assert_eq!(comments[0].as_deref(), Some("attached comment"));
+        assert_eq!(comments[1], None);
+    }
+
+    #[test]
+    fn block_comments() {
+        let comments = check(
+            r#"
+class Foo {
+    int $block; /* not documentation */
+    int $line; // documentation
+}
+            "#,
+            2,
+        );
+
+        assert_eq!(comments[0], None);
+        assert_eq!(comments[1].as_deref(), Some("documentation"));
+    }
+
+    #[test]
+    fn comment_after_brace() {
+        let comments = check(
+            r#"
+def $foo : Bar { // comment
+    let name = "foo";
+}
+            "#,
+            1,
+        );
+
+        assert_eq!(comments[0].as_deref(), Some("comment"));
     }
 }
