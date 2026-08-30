@@ -10,7 +10,8 @@ Def ::= "def" Value? RecordBody
 
 Let ::= "let" LetList "in" ( "{" Statement* "}" | Statement )
 LetList ::= LetItem ( "," LetItem )*
-LetItem ::= Identifier ( "<" RangeList ">" )? "=" Value
+LetItem ::= LetMode? Identifier ( "{" RangeList "}" | "<" RangeList ">" )? "=" Value
+LetMode ::= "append" | "prepend"
 
 MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList ( ";" | "{" MultiClassStatement+ "}" )
 MultiClassStatement ::= Assert | Def | Defm | Defvar | Dump | Foreach | Let | If
@@ -45,12 +46,11 @@ PositionalArgValue ::= Value
 NamedArgValue ::= Value "=" Value
 
 Body ::= ";" | "{" BodyItem* "}"
-BodyItem ::= FieldDef | FieldLet | Defvar | Assert
-FieldDef ::= ( Type | CodeType ) Identifier ( "=" Value )? ";"
-CodeType ::= "code"
-FieldLet ::= "let" Identifier ( "{" RangeList "}" )? "=" Value ";"
+BodyItem ::= FieldDef | FieldLet | Defvar | Assert | Dump
+FieldDef ::= "field"? Type Identifier ( "=" Value )? ";"
+FieldLet ::= "let" LetMode? Identifier ( "{" RangeList "}" )? "=" Value ";"
 
-Type ::= BitType | IntType | StringType | DagType | BitsType | ListType | ClassId
+Type ::= BitType | IntType | StringType | DagType | BitsType | ListType | ClassId | CodeType
 BitType ::= "bit"
 IntType ::= "int"
 StringType ::= "string"
@@ -58,6 +58,7 @@ DagType ::= "dag"
 BitsType ::= "bits" "<" Integer ">"
 ListType ::= "list" "<" Type ">"
 ClassId ::= Identifier
+CodeType ::= "code"
 
 Value ::= InnerValue ( "#" InnerValue )*
 InnerValue ::= SimpleValue ValueSuffix*
@@ -70,21 +71,23 @@ SliceElements ::= ( SliceElement "," )* SliceElement ","?
 SliceElement ::= Value | Value "..." Value | Value "-" Value | Value Integer
 FieldSuffix ::= "." Identifier
 
-SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator
+SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator | SwitchOperator
 Integer ::= INT
 String ::= STRING
 Code ::= CODE
 Boolean ::= "true" | "false"
 Uninitialized ::= "?"
 Bits ::= "{" ValueList "}"
-ValueList ::= Value ( "," Value )*
+ValueList ::= ( Value ( "," Value )* )?
 List ::= "[" ValueList "]" ( "<" Type ">" )?
-Dag ::= ( DagArg DagArgList? )
+Dag ::= "(" DagArg DagArgList? ")"
 DagArgList ::= DagArg ( "," DagArg )*
 DagArg ::= Value ( ":" VARNAME ) | VARNAME
 VarName ::= VARNAME
 Identifier ::= ID
-ClassValue ::= ClassID "<" ArgValueList ">"
-BangOperator ::= BANGOP "(" ValueList ")"
+ClassValue ::= Identifier "<" ArgValueList ">"
+BangOperator ::= BANGOP ( "<" Type ">" )? "(" ValueList ")"
 CondOperator ::= CONDOP "(" CondClause ( "," CondClause )* ")"
 CondClause ::= Value ":" Value
+SwitchOperator ::= SWITCHOP "(" Value "," SwitchCase ( "," SwitchCase )* "," Value ")"
+SwitchCase ::= Value ":" Value

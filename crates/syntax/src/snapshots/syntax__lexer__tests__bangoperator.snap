@@ -1,6 +1,6 @@
 ---
 source: crates/syntax/src/lexer.rs
-expression: "tokenize(\"!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !setdagopname !getdagop !getdagopname !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !repr !match\")"
+expression: "tokenize(\"!con !add !sub !mul !div !not !log2 !and !or !xor !sra !srl !shl !listconcat !listflatten !listsplat !strconcat !initialized !instances !interleave !substr !find !cast !subst !foreach !filter !foldl !head !tail !size !sort !switch !empty !if !cond !eq !isa !dag !ne !le !lt !ge !gt !setdagop !setdagopname !getdagop !getdagopname !exists !listremove !tolower !toupper !range !getdagarg !getdagname !setdagarg !setdagname !repr !match\")"
 ---
 [
     XCon,
@@ -63,6 +63,10 @@ expression: "tokenize(\"!con !add !sub !mul !div !not !log2 !and !or !xor !sra !
     XTail,
     Whitespace,
     XSize,
+    Whitespace,
+    XSort,
+    Whitespace,
+    XSwitch,
     Whitespace,
     XEmpty,
     Whitespace,

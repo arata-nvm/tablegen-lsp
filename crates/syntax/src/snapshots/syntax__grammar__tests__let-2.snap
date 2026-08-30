@@ -1,36 +1,92 @@
 ---
 source: crates/syntax/src/grammar.rs
-expression: "parse(\"let A = 1\")"
+expression: "parse(\"let append A = [1], prepend B = \\\"x\\\", C{1...3} = 0b101 in { class Foo; }\")"
 ---
 (
-    SourceFile@0..9
-      StatementList@0..9
-        Let@0..9
+    SourceFile@0..71
+      StatementList@0..71
+        Let@0..71
           LetKw@0..3 "let"
           Whitespace@3..4 " "
-          LetList@4..9
-            LetItem@4..9
-              Identifier@4..6
-                Id@4..5 "A"
-                Whitespace@5..6 " "
-              Equal@6..7 "="
-              Whitespace@7..8 " "
-              Value@8..9
-                InnerValue@8..9
-                  Integer@8..9
-                    IntVal@8..9 "1"
-          StatementList@9..9
-            Error@9..9
-              Eof@9..9 ""
+          LetList@4..54
+            LetItem@4..18
+              LetMode@4..11
+                Identifier@4..11
+                  Id@4..10 "append"
+                  Whitespace@10..11 " "
+              Identifier@11..13
+                Id@11..12 "A"
+                Whitespace@12..13 " "
+              Equal@13..14 "="
+              Whitespace@14..15 " "
+              Value@15..18
+                InnerValue@15..18
+                  List@15..18
+                    ValueList@15..18
+                      LSquare@15..16 "["
+                      Value@16..17
+                        InnerValue@16..17
+                          Integer@16..17
+                            IntVal@16..17 "1"
+                      RSquare@17..18 "]"
+            Comma@18..19 ","
+            Whitespace@19..20 " "
+            LetItem@20..35
+              LetMode@20..28
+                Identifier@20..28
+                  Id@20..27 "prepend"
+                  Whitespace@27..28 " "
+              Identifier@28..30
+                Id@28..29 "B"
+                Whitespace@29..30 " "
+              Equal@30..31 "="
+              Whitespace@31..32 " "
+              Value@32..35
+                InnerValue@32..35
+                  String@32..35
+                    StrVal@32..35 "\"x\""
+            Comma@35..36 ","
+            Whitespace@36..37 " "
+            LetItem@37..54
+              Identifier@37..38
+                Id@37..38 "C"
+              LBrace@38..39 "{"
+              RangeList@39..44
+                RangePiece@39..44
+                  Value@39..40
+                    InnerValue@39..40
+                      Integer@39..40
+                        IntVal@39..40 "1"
+                  DotDotDot@40..43 "..."
+                  Value@43..44
+                    InnerValue@43..44
+                      Integer@43..44
+                        IntVal@43..44 "3"
+              RBrace@44..45 "}"
+              Whitespace@45..46 " "
+              Equal@46..47 "="
+              Whitespace@47..48 " "
+              Value@48..54
+                InnerValue@48..54
+                  Integer@48..54
+                    BinaryIntVal@48..53 "0b101"
+                    Whitespace@53..54 " "
+          In@54..56 "in"
+          Whitespace@56..57 " "
+          StatementList@57..71
+            LBrace@57..58 "{"
+            Whitespace@58..59 " "
+            Class@59..70
+              ClassKw@59..64 "class"
+              Whitespace@64..65 " "
+              Identifier@65..68
+                Id@65..68 "Foo"
+              RecordBody@68..70
+                ParentClassList@68..68
+                Body@68..70
+                  Semi@68..69 ";"
+                  Whitespace@69..70 " "
+            RBrace@70..71 "}"
     ,
-    [
-        SyntaxError {
-            range: 9..9,
-            message: "expected 'in' at end of top-level 'let'",
-        },
-        SyntaxError {
-            range: 9..9,
-            message: "expected class, def, defm, defset, dump, multiclass, let or foreach",
-        },
-    ],
+    [],
 )

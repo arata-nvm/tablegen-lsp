@@ -80,6 +80,9 @@ mod tests {
     #[test]
     fn r#let() {
         insta::assert_debug_snapshot!(parse("let A = 1, B<1...3> = 0b101 in { class Foo; }"));
+        insta::assert_debug_snapshot!(parse(
+            "let append A = [1], prepend B = \"x\", C{1...3} = 0b101 in { class Foo; }"
+        ));
 
         insta::assert_debug_snapshot!(parse("let A = 1"));
         insta::assert_debug_snapshot!(parse("let A = 1 {"));
@@ -199,6 +202,9 @@ mod tests {
         insta::assert_debug_snapshot!(parse("class Foo { let"));
         insta::assert_debug_snapshot!(parse("class Foo { let A"));
         insta::assert_debug_snapshot!(parse("class Foo { let A = 1"));
+        insta::assert_debug_snapshot!(parse(
+            "class Foo { let append A = [1]; let prepend B = \"x\"; let append = 1; }"
+        ));
     }
 
     #[test]
@@ -222,5 +228,8 @@ mod tests {
             }"
         ));
         insta::assert_debug_snapshot!(parse("defvar A = [[1], [1,], [1,2]];"));
+        insta::assert_debug_snapshot!(parse(
+            "defvar A = !sort(x, [3, 1, 2], x); defvar B = !switch(A, 1: \"one\", 2: \"two\", \"other\");"
+        ));
     }
 }
