@@ -16,5 +16,6 @@
   "git-submodules": {
     "enabled": true
   },
+  "cloneSubmodules": true,
   "rebaseWhen": "conflicted"
 }

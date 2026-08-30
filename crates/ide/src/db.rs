@@ -19,6 +19,7 @@ pub struct FileInput {
 
 #[salsa::input]
 pub struct SourceUnitInput {
+    #[returns(copy)]
     pub id: SourceUnitId,
     #[returns(ref)]
     pub source_unit: Arc<SourceUnit>,
@@ -132,13 +133,13 @@ impl SourceDatabase for RootDatabase {
     }
 }
 
-#[salsa::tracked]
+#[salsa::tracked(returns(clone))]
 fn line_index(db: &dyn SourceDatabase, file: FileInput) -> Arc<LineIndex> {
     let content = file.content(db);
     Arc::new(LineIndex::new(content))
 }
 
-#[salsa::tracked]
+#[salsa::tracked(returns(clone))]
 fn parse(db: &dyn SourceDatabase, file: FileInput) -> Arc<Parse> {
     let content = file.content(db);
     Arc::new(syntax::parse(content))
@@ -151,7 +152,7 @@ impl IndexDatabase for RootDatabase {
     }
 }
 
-#[salsa::tracked]
+#[salsa::tracked(returns(clone))]
 fn index(db: &dyn IndexDatabase, source_unit: SourceUnitInput) -> Arc<Index> {
     Arc::new(crate::index::index(db, source_unit.id(db)))
 }
