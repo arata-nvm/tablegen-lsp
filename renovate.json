@@ -5,7 +5,6 @@
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],
-      "matchCurrentVersion": "!/^0/",
       "automerge": true
     }
   ],
@@ -16,6 +15,5 @@
   "git-submodules": {
     "enabled": true
   },
-  "cloneSubmodules": true,
-  "rebaseWhen": "conflicted"
+  "cloneSubmodules": true
 }
