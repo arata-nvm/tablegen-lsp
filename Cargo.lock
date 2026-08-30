@@ -594,9 +594,9 @@ dependencies = [
 
 [[package]]
 name = "iset"
-version = "0.3.1"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "855de4169757ca6b92b396d7a0380ef234e9a1ec2ec603c80779453ed0ab45e4"
+checksum = "a4d5f8699985a95af72fe8d67484b0b036df7500e0d68e769adc198180da2011"
 
 [[package]]
 name = "itertools"
