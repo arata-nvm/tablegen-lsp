@@ -5,6 +5,21 @@ use crate::parser::TextRange;
 use crate::syntax_kind::SyntaxKind;
 use crate::{Language, SyntaxNode, lexer};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LetModeKind {
+    Append,
+    Prepend,
+}
+
+impl LetModeKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Append => "append",
+            Self::Prepend => "prepend",
+        }
+    }
+}
+
 macro_rules! asts {
     () => {};
     ($name:ident $body:tt; $($rest:tt)*) => {
@@ -136,9 +151,19 @@ asts! {
         items: [LetItem],
     };
     LetItem {
+        mode: LetMode,
         name: Identifier,
         range_list: RangeList,
         value: Value,
+    };
+    LetMode {
+        pub fn kind(&self) -> Option<LetModeKind> {
+            match self.0.first_token()?.text() {
+                "append" => Some(LetModeKind::Append),
+                "prepend" => Some(LetModeKind::Prepend),
+                _ => None,
+            }
+        }
     };
     MultiClass {
         name: Identifier,
@@ -237,6 +262,7 @@ asts! {
         value: Value,
     };
     FieldLet {
+        mode: LetMode,
         name: Identifier,
         range_list: RangeList,
         value: Value,
@@ -328,6 +354,7 @@ asts! {
         ClassValue,
         BangOperator,
         CondOperator,
+        SwitchOperator,
     ];
     Integer {
         pub fn value(&self) -> Option<i64> {
@@ -435,6 +462,15 @@ asts! {
     };
     CondClause {
         condition[0]: Value,
+        value[1]: Value,
+    };
+    SwitchOperator {
+        key[0]: Value,
+        cases: [SwitchCase],
+        default_value[1]: Value,
+    };
+    SwitchCase {
+        key[0]: Value,
         value[1]: Value,
     };
 }
@@ -551,7 +587,7 @@ mod tests {
 
     #[test]
     fn r#let() {
-        let node = parse::<Let>("let foo<1> = 1 {}");
+        let node = parse::<Let>("let append foo{1} = [1] in {}");
         assert!(node.let_list().is_some());
         assert!(node.statement_list().is_some());
 
@@ -561,6 +597,10 @@ mod tests {
 
         // let_item
         let item = items.first().unwrap();
+        assert_eq!(
+            item.mode().and_then(|mode| mode.kind()),
+            Some(LetModeKind::Append)
+        );
         assert!(item.name().is_some());
         assert!(item.range_list().is_some());
         assert!(item.value().is_some());
@@ -849,5 +889,26 @@ mod tests {
         let clause = clauses.first().unwrap();
         assert!(clause.condition().is_some());
         assert!(clause.value().is_some());
+
+        // sort_operator
+        let SimpleValue::BangOperator(sort_operator) = parse_simple_value("!sort(x, [3, 1, 2], x)")
+        else {
+            panic!();
+        };
+        assert_eq!(sort_operator.kind(), Some(SyntaxKind::XSort));
+        assert_eq!(sort_operator.values().count(), 3);
+
+        // switch_operator
+        let SimpleValue::SwitchOperator(switch_operator) =
+            parse_simple_value("!switch(x, 1: \"one\", 2: \"two\", \"other\")")
+        else {
+            panic!();
+        };
+        assert!(switch_operator.key().is_some());
+        assert!(switch_operator.default_value().is_some());
+        let cases: Vec<SwitchCase> = switch_operator.cases().collect();
+        assert_eq!(cases.len(), 2);
+        assert!(cases[0].key().is_some());
+        assert!(cases[0].value().is_some());
     }
 }

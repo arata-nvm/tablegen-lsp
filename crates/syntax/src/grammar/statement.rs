@@ -120,17 +120,34 @@ pub(super) fn let_list(p: &mut Parser) {
     p.finish_node();
 }
 
-// LetItem ::= Identifier ( "<" RangeList ">" )? "=" Value
+// LetItem ::= LetMode? Identifier ( "{" RangeList "}" )? "=" Value
 pub(super) fn let_item(p: &mut Parser) {
     p.start_node(SyntaxKind::LetItem);
-    value::identifier(p).or_error(p, "expected identifier in let expression");
-    if p.eat_if(T![<]) {
+    let_target(p, "expected identifier in let expression");
+    if p.eat_if(T!['{']) {
+        value::range_list(p);
+        p.expect_with_msg(T!['}'], "expected '}' at end of range list");
+    } else if p.eat_if(T![<]) {
+        // Keep accepting the pre-LLVM 23 spelling for compatibility.
         value::range_list(p);
         p.expect_with_msg(T![>], "expected '>' at end of range list");
     }
     p.expect_with_msg(T![=], "expected '=' in let expression");
     value::value(p);
     p.finish_node();
+}
+
+fn let_target(p: &mut Parser, error: &str) {
+    let checkpoint = p.checkpoint();
+    let is_mode =
+        p.at(crate::token_kind::TokenKind::Id) && matches!(p.current_text(), "append" | "prepend");
+    value::identifier(p).or_error(p, error);
+
+    if is_mode && p.at(crate::token_kind::TokenKind::Id) {
+        p.start_node_at(checkpoint, SyntaxKind::LetMode);
+        p.finish_node();
+        value::identifier(p).or_error(p, error);
+    }
 }
 
 // MultiClass ::= "multiclass" Identifier TemplateArgList? ParentClassList ( ";" | "{" MultiClassStatement+ "}" )
@@ -445,11 +462,11 @@ pub(super) fn field_def(p: &mut Parser) {
     p.finish_node();
 }
 
-// FieldLet ::= "let" Identitfer ( "{" RangeList "}" )? "=" Value ";"
+// FieldLet ::= "let" LetMode? Identifier ( "{" RangeList "}" )? "=" Value ";"
 pub(super) fn field_let(p: &mut Parser) {
     p.start_node(SyntaxKind::FieldLet);
     p.assert(T![let]);
-    value::identifier(p).or_error(p, "expected field identifier after let");
+    let_target(p, "expected field identifier after let");
     if p.eat_if(T!['{']) {
         value::range_list(p);
         p.expect_with_msg(T!['}'], "expected '}' at end of bit list");

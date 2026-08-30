@@ -74,6 +74,34 @@ pub fn exec(
         return Some(build_bang_operator_signature_help(metadata, active));
     }
 
+    if let Some(cond_op) = node_at_pos.ancestor::<ast::CondOperator>() {
+        let metadata = crate::bang_operator::get_metadata_for_syntax_kind(
+            syntax::syntax_kind::SyntaxKind::XCond,
+        )?;
+        let mut values = Vec::new();
+        for clause in cond_op.clauses() {
+            values.extend(clause.condition());
+            values.extend(clause.value());
+        }
+        let active = find_active_parameter_in_values(values.into_iter(), pos);
+        return Some(build_bang_operator_signature_help(metadata, active));
+    }
+
+    if let Some(switch_op) = node_at_pos.ancestor::<ast::SwitchOperator>() {
+        let metadata = crate::bang_operator::get_metadata_for_syntax_kind(
+            syntax::syntax_kind::SyntaxKind::XSwitch,
+        )?;
+        let mut values = Vec::new();
+        values.extend(switch_op.key());
+        for case in switch_op.cases() {
+            values.extend(case.key());
+            values.extend(case.value());
+        }
+        values.extend(switch_op.default_value());
+        let active = find_active_parameter_in_values(values.into_iter(), pos);
+        return Some(build_bang_operator_signature_help(metadata, active));
+    }
+
     None
 }
 
@@ -328,6 +356,34 @@ class Foo {
 }
 "#
         ));
+    }
+
+    #[test]
+    fn switch_case_value() {
+        let (db, f) = tests::single_file(
+            r#"
+class Foo {
+  string x = !switch(1, 1: $"one", "other");
+}
+"#,
+        );
+        let help = super::exec(&db, f.source_unit_id(), f.marker(0)).expect("signature help");
+        assert!(help.label.starts_with("!switch(key,"));
+        assert_eq!(help.active_parameter, Some(2));
+    }
+
+    #[test]
+    fn cond_clause_value() {
+        let (db, f) = tests::single_file(
+            r#"
+class Foo {
+  int x = !cond(false: $0, true: 1);
+}
+"#,
+        );
+        let help = super::exec(&db, f.source_unit_id(), f.marker(0)).expect("signature help");
+        assert!(help.label.starts_with("!cond(cond1:"));
+        assert_eq!(help.active_parameter, Some(1));
     }
 
     #[test]

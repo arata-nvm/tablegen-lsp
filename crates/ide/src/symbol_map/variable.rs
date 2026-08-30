@@ -24,6 +24,7 @@ pub enum VariableKind {
     XFilter,
     XFoldl,
     XForeach,
+    XSort,
 }
 
 impl Variable {

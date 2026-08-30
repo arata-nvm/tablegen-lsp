@@ -1253,6 +1253,47 @@ is undefined for shift counts outside 0...63."#,
 The size of a DAG is the number of arguments; the operator does not count."#,
     },
     BangOperatorMetadata {
+        name: "sort",
+        signature: r#"!sort(var, list, key)"#,
+        needs_type_annotation: false,
+        min_args: 3,
+        max_args: Some(3),
+        syntax_kind: SyntaxKind::XSort,
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "var",
+                optional: false,
+                label_start: 6,
+                label_end: 9,
+            },
+            BangSignatureParamMetadata {
+                name: "list",
+                optional: false,
+                label_start: 11,
+                label_end: 15,
+            },
+            BangSignatureParamMetadata {
+                name: "key",
+                optional: false,
+                label_start: 17,
+                label_end: 20,
+            },
+        ],
+        documentation: r#"This operator creates a new `list` containing the same elements as *list*
+but in sorted order. To determine the order, TableGen binds the variable
+*var* to each element and evaluates the *key* expression, which presumably
+refers to *var*. The key must produce a `string` or integer value
+(`bit`, `bits`, or `int`); all keys must be of the same type. Elements
+with equal keys preserve their original relative order, resulting in a
+stable sort.
+
+For example, to sort a list of records by their `Name` field:
+
+```
+list<Thing> sorted = !sort(t, Things, t.Name);
+```"#,
+    },
+    BangOperatorMetadata {
         name: "sra",
         signature: r#"!sra(a, count)"#,
         needs_type_annotation: false,
@@ -1416,6 +1457,70 @@ position of the substring is specified by *start*, which can range
 between 0 and the length of the string. The length of the substring
 is specified by *length*; if not specified, the rest of the string is
 extracted. The *start* and *length* arguments must be integers."#,
+    },
+    BangOperatorMetadata {
+        name: "switch",
+        signature: r#"!switch(key, case1:val1, ..., casen:valn, default)"#,
+        needs_type_annotation: false,
+        min_args: 6,
+        max_args: None,
+        syntax_kind: SyntaxKind::XSwitch,
+        signature_params: &[
+            BangSignatureParamMetadata {
+                name: "key",
+                optional: false,
+                label_start: 8,
+                label_end: 11,
+            },
+            BangSignatureParamMetadata {
+                name: "case1",
+                optional: false,
+                label_start: 13,
+                label_end: 18,
+            },
+            BangSignatureParamMetadata {
+                name: "val1",
+                optional: false,
+                label_start: 19,
+                label_end: 23,
+            },
+            BangSignatureParamMetadata {
+                name: "casen",
+                optional: false,
+                label_start: 30,
+                label_end: 35,
+            },
+            BangSignatureParamMetadata {
+                name: "valn",
+                optional: false,
+                label_start: 36,
+                label_end: 40,
+            },
+            BangSignatureParamMetadata {
+                name: "default",
+                optional: false,
+                label_start: 42,
+                label_end: 49,
+            },
+        ],
+        documentation: r#"This operator compares *key* to each *casei* in turn using `!eq`.
+If *key* equals *casei*, the operator returns *vali*. If no case
+matches, the operator returns *default* --- the trailing argument
+with no `:` is the default value, identified by position. Both
+the trailing default and at least one *casei* : *vali* pair are
+mandatory.
+
+`!switch` is a compact form of `!cond` using `!eq` comparisons.
+The expression `!switch(key, c1: v1, c2: v2, vd)` is equivalent to
+`!cond(!eq(key, c1): v1, !eq(key, c2): v2, true: vd)`.
+
+This example maps an integer size to a register-class name:
+
+```
+!switch(size, 1: "byte", 2: "halfword", 4: "word", "unknown")
+```
+
+(See also `!cond`.)"#,
     },
     BangOperatorMetadata {
         name: "tail",

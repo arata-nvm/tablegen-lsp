@@ -1,67 +1,111 @@
 ---
 source: crates/syntax/src/grammar.rs
-expression: "parse(r#\"defvar OpName = !getdagopname((foo)); defvar NamedOp = !setdagopname((foo), \"name\");\"#)"
+expression: "parse(\"defvar A = !sort(x, [3, 1, 2], x); defvar B = !switch(A, 1: \\\"one\\\", 2: \\\"two\\\", \\\"other\\\");\")"
 ---
 (
-    SourceFile@0..84
-      StatementList@0..84
-        Defvar@0..38
+    SourceFile@0..86
+      StatementList@0..86
+        Defvar@0..35
           DefvarKw@0..6 "defvar"
           Whitespace@6..7 " "
-          Identifier@7..14
-            Id@7..13 "OpName"
-            Whitespace@13..14 " "
-          Equal@14..15 "="
-          Whitespace@15..16 " "
-          Value@16..36
-            InnerValue@16..36
-              BangOperator@16..36
-                XGetDagOpName@16..29 "!getdagopname"
-                LParen@29..30 "("
-                Value@30..35
-                  InnerValue@30..35
-                    Dag@30..35
-                      LParen@30..31 "("
-                      DagArg@31..34
-                        Value@31..34
-                          InnerValue@31..34
-                            Identifier@31..34
-                              Id@31..34 "foo"
-                      RParen@34..35 ")"
-                RParen@35..36 ")"
-          Semi@36..37 ";"
-          Whitespace@37..38 " "
-        Defvar@38..84
-          DefvarKw@38..44 "defvar"
-          Whitespace@44..45 " "
-          Identifier@45..53
-            Id@45..52 "NamedOp"
-            Whitespace@52..53 " "
-          Equal@53..54 "="
-          Whitespace@54..55 " "
-          Value@55..83
-            InnerValue@55..83
-              BangOperator@55..83
-                XSetDagOpName@55..68 "!setdagopname"
-                LParen@68..69 "("
-                Value@69..74
-                  InnerValue@69..74
-                    Dag@69..74
-                      LParen@69..70 "("
-                      DagArg@70..73
-                        Value@70..73
-                          InnerValue@70..73
-                            Identifier@70..73
-                              Id@70..73 "foo"
-                      RParen@73..74 ")"
-                Comma@74..75 ","
-                Whitespace@75..76 " "
-                Value@76..82
-                  InnerValue@76..82
-                    String@76..82
-                      StrVal@76..82 "\"name\""
-                RParen@82..83 ")"
-          Semi@83..84 ";"
+          Identifier@7..9
+            Id@7..8 "A"
+            Whitespace@8..9 " "
+          Equal@9..10 "="
+          Whitespace@10..11 " "
+          Value@11..33
+            InnerValue@11..33
+              BangOperator@11..33
+                XSort@11..16 "!sort"
+                LParen@16..17 "("
+                Value@17..18
+                  InnerValue@17..18
+                    Identifier@17..18
+                      Id@17..18 "x"
+                Comma@18..19 ","
+                Whitespace@19..20 " "
+                Value@20..29
+                  InnerValue@20..29
+                    List@20..29
+                      ValueList@20..29
+                        LSquare@20..21 "["
+                        Value@21..22
+                          InnerValue@21..22
+                            Integer@21..22
+                              IntVal@21..22 "3"
+                        Comma@22..23 ","
+                        Whitespace@23..24 " "
+                        Value@24..25
+                          InnerValue@24..25
+                            Integer@24..25
+                              IntVal@24..25 "1"
+                        Comma@25..26 ","
+                        Whitespace@26..27 " "
+                        Value@27..28
+                          InnerValue@27..28
+                            Integer@27..28
+                              IntVal@27..28 "2"
+                        RSquare@28..29 "]"
+                Comma@29..30 ","
+                Whitespace@30..31 " "
+                Value@31..32
+                  InnerValue@31..32
+                    Identifier@31..32
+                      Id@31..32 "x"
+                RParen@32..33 ")"
+          Semi@33..34 ";"
+          Whitespace@34..35 " "
+        Defvar@35..86
+          DefvarKw@35..41 "defvar"
+          Whitespace@41..42 " "
+          Identifier@42..44
+            Id@42..43 "B"
+            Whitespace@43..44 " "
+          Equal@44..45 "="
+          Whitespace@45..46 " "
+          Value@46..85
+            InnerValue@46..85
+              SwitchOperator@46..85
+                XSwitch@46..53 "!switch"
+                LParen@53..54 "("
+                Value@54..55
+                  InnerValue@54..55
+                    Identifier@54..55
+                      Id@54..55 "A"
+                Comma@55..56 ","
+                Whitespace@56..57 " "
+                SwitchCase@57..65
+                  Value@57..58
+                    InnerValue@57..58
+                      Integer@57..58
+                        IntVal@57..58 "1"
+                  Colon@58..59 ":"
+                  Whitespace@59..60 " "
+                  Value@60..65
+                    InnerValue@60..65
+                      String@60..65
+                        StrVal@60..65 "\"one\""
+                Comma@65..66 ","
+                Whitespace@66..67 " "
+                SwitchCase@67..75
+                  Value@67..68
+                    InnerValue@67..68
+                      Integer@67..68
+                        IntVal@67..68 "2"
+                  Colon@68..69 ":"
+                  Whitespace@69..70 " "
+                  Value@70..75
+                    InnerValue@70..75
+                      String@70..75
+                        StrVal@70..75 "\"two\""
+                Comma@75..76 ","
+                Whitespace@76..77 " "
+                Value@77..84
+                  InnerValue@77..84
+                    String@77..84
+                      StrVal@77..84 "\"other\""
+                RParen@84..85 ")"
+          Semi@85..86 ";"
     ,
     [],
 )

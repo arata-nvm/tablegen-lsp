@@ -223,6 +223,35 @@ impl Type {
         )
     }
 
+    pub fn is_sort_key(&self) -> bool {
+        matches!(
+            self,
+            Self::Bit { .. }
+                | Self::Bits { .. }
+                | Self::Int { .. }
+                | Self::String { .. }
+                | Self::Uninitialized { .. }
+                | Self::Unknown { .. }
+                | Self::NamedUnknown { .. }
+        )
+    }
+
+    pub fn supports_let_concat(&self) -> bool {
+        matches!(
+            self,
+            Self::List { .. }
+                | Self::String { .. }
+                | Self::Code { .. }
+                | Self::Dag { .. }
+                | Self::Unknown { .. }
+                | Self::NamedUnknown { .. }
+        )
+    }
+
+    pub fn is_uninitialized(&self) -> bool {
+        matches!(self, Self::Uninitialized { .. })
+    }
+
     pub fn list_element_type(&self) -> Result<Type, TypeError> {
         match self {
             Self::List { elm, _priv: _ } => Ok(*elm.clone()),

@@ -494,7 +494,11 @@ impl<'a> CompletionContext<'a> {
 
     fn complete_bang_operators(&mut self) {
         for meta in bang_operator::OPS {
-            let snippet = if meta.needs_type_annotation {
+            let snippet = if meta.name == "cond" {
+                "cond(${1}: ${2})$0".to_string()
+            } else if meta.name == "switch" {
+                "switch(${1}, ${2}: ${3}, ${4})$0".to_string()
+            } else if meta.needs_type_annotation {
                 let args = (0..meta.min_args)
                     .map(|i| format!("${{{}}}", i + 2))
                     .collect::<Vec<_>>()
@@ -895,6 +899,29 @@ mod tests {
     fn bang_operator() {
         insta::assert_debug_snapshot!(check_trigger("!$", "!"));
         insta::assert_debug_snapshot!(check("!str$"));
+    }
+
+    #[test]
+    fn cond_and_switch_completion_snippets() {
+        let result = check_trigger("!$", "!");
+
+        let cond = result
+            .iter()
+            .find(|item| item.label == "cond")
+            .expect("cond completion not found");
+        assert_eq!(
+            cond.insert_text_snippet.as_deref(),
+            Some("cond(${1}: ${2})$0")
+        );
+
+        let switch = result
+            .iter()
+            .find(|item| item.label == "switch")
+            .expect("switch completion not found");
+        assert_eq!(
+            switch.insert_text_snippet.as_deref(),
+            Some("switch(${1}, ${2}: ${3}, ${4})$0")
+        );
     }
 
     #[test]

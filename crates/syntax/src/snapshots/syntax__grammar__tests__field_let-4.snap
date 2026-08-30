@@ -1,0 +1,78 @@
+---
+source: crates/syntax/src/grammar.rs
+expression: "parse(\"class Foo { let append A = [1]; let prepend B = \\\"x\\\"; let append = 1; }\")"
+---
+(
+    SourceFile@0..70
+      StatementList@0..70
+        Class@0..70
+          ClassKw@0..5 "class"
+          Whitespace@5..6 " "
+          Identifier@6..10
+            Id@6..9 "Foo"
+            Whitespace@9..10 " "
+          RecordBody@10..70
+            ParentClassList@10..10
+            Body@10..70
+              LBrace@10..11 "{"
+              Whitespace@11..12 " "
+              FieldLet@12..32
+                LetKw@12..15 "let"
+                Whitespace@15..16 " "
+                LetMode@16..23
+                  Identifier@16..23
+                    Id@16..22 "append"
+                    Whitespace@22..23 " "
+                Identifier@23..25
+                  Id@23..24 "A"
+                  Whitespace@24..25 " "
+                Equal@25..26 "="
+                Whitespace@26..27 " "
+                Value@27..30
+                  InnerValue@27..30
+                    List@27..30
+                      ValueList@27..30
+                        LSquare@27..28 "["
+                        Value@28..29
+                          InnerValue@28..29
+                            Integer@28..29
+                              IntVal@28..29 "1"
+                        RSquare@29..30 "]"
+                Semi@30..31 ";"
+                Whitespace@31..32 " "
+              FieldLet@32..53
+                LetKw@32..35 "let"
+                Whitespace@35..36 " "
+                LetMode@36..44
+                  Identifier@36..44
+                    Id@36..43 "prepend"
+                    Whitespace@43..44 " "
+                Identifier@44..46
+                  Id@44..45 "B"
+                  Whitespace@45..46 " "
+                Equal@46..47 "="
+                Whitespace@47..48 " "
+                Value@48..51
+                  InnerValue@48..51
+                    String@48..51
+                      StrVal@48..51 "\"x\""
+                Semi@51..52 ";"
+                Whitespace@52..53 " "
+              FieldLet@53..69
+                LetKw@53..56 "let"
+                Whitespace@56..57 " "
+                Identifier@57..64
+                  Id@57..63 "append"
+                  Whitespace@63..64 " "
+                Equal@64..65 "="
+                Whitespace@65..66 " "
+                Value@66..67
+                  InnerValue@66..67
+                    Integer@66..67
+                      IntVal@66..67 "1"
+                Semi@67..68 ";"
+                Whitespace@68..69 " "
+              RBrace@69..70 "}"
+    ,
+    [],
+)

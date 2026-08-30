@@ -101,12 +101,14 @@ pub enum TokenKind {
     XSetDagOpName,
     XShl,
     XSize,
+    XSort,
     XSra,
     XSrl,
     XStrConcat,
     XSub,
     XSubst,
     XSubstr,
+    XSwitch,
     XTail,
     XToLower,
     XToUpper,
@@ -189,6 +191,7 @@ impl TokenKind {
                 | Self::XSetDagOpName
                 | Self::XShl
                 | Self::XSize
+                | Self::XSort
                 | Self::XSra
                 | Self::XSrl
                 | Self::XStrConcat
@@ -204,6 +207,10 @@ impl TokenKind {
 
     pub fn is_cond_operator(&self) -> bool {
         matches!(self, Self::XCond)
+    }
+
+    pub fn is_switch_operator(&self) -> bool {
+        matches!(self, Self::XSwitch)
     }
 }
 
@@ -300,12 +307,14 @@ macro_rules! T {
     [!setdagopname] => {$crate::token_kind::TokenKind::XSetDagOpName};
     [!shl] => {$crate::token_kind::TokenKind::XShl};
     [!size] => {$crate::token_kind::TokenKind::XSize};
+    [!sort] => {$crate::token_kind::TokenKind::XSort};
     [!sra] => {$crate::token_kind::TokenKind::XSra};
     [!srl] => {$crate::token_kind::TokenKind::XSrl};
     [!strconcat] => {$crate::token_kind::TokenKind::XStrConcat};
     [!sub] => {$crate::token_kind::TokenKind::XSub};
     [!subst] => {$crate::token_kind::TokenKind::XSubst};
     [!substr] => {$crate::token_kind::TokenKind::XSubstr};
+    [!switch] => {$crate::token_kind::TokenKind::XSwitch};
     [!tail] => {$crate::token_kind::TokenKind::XTail};
     [!tolower] => {$crate::token_kind::TokenKind::XToLower};
     [!toupper] => {$crate::token_kind::TokenKind::XToUpper};

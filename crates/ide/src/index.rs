@@ -626,6 +626,15 @@ impl IndexStatement for ast::LetList {
 
 impl IndexStatement for ast::LetItem {
     fn index_statement(&self, ctx: &mut IndexCtx) {
+        if let Some(mode) = self.mode()
+            && let Some(range_list) = self.range_list()
+        {
+            let mode = mode.kind().map_or("append/prepend", |mode| mode.as_str());
+            ctx.error_by_syntax(
+                range_list.syntax(),
+                format!("let {mode} cannot be combined with a bit range"),
+            );
+        }
         if let Some(value) = self.value() {
             let _ = value.index_expression(ctx);
         }
@@ -1078,6 +1087,26 @@ impl IndexStatement for ast::FieldLet {
         let field = ctx.symbol_map.record_field(field_id);
         let mut field_typ = field.typ.clone();
 
+        if let Some(mode_node) = self.mode() {
+            let mode = mode_node
+                .kind()
+                .map_or("append/prepend", |mode| mode.as_str());
+            if let Some(range_list) = self.range_list() {
+                ctx.error_by_syntax(
+                    range_list.syntax(),
+                    format!("let {mode} cannot be combined with a bit range"),
+                );
+            }
+            if !field_typ.supports_let_concat() {
+                ctx.error_by_syntax(
+                    mode_node.syntax(),
+                    format!(
+                        "let {mode} requires a list, string, code, or dag field; found {field_typ}",
+                    ),
+                );
+            }
+        }
+
         let new_field = RecordField::new(name.clone(), field_typ.clone(), record_id, reference_loc);
         let new_field_id = ctx.symbol_map.add_record_field(new_field);
 
@@ -1092,7 +1121,9 @@ impl IndexStatement for ast::FieldLet {
             return;
         };
 
-        if let Some(range_list) = self.range_list() {
+        if self.mode().is_none()
+            && let Some(range_list) = self.range_list()
+        {
             let Some(bits) = get_bit_list_in_range_list(&range_list) else {
                 return;
             };
@@ -1242,6 +1273,74 @@ impl IndexExpression for ast::CondOperator {
 
         Some(result_typ.unwrap_or(Type::unknown()))
     }
+}
+
+impl IndexExpression for ast::SwitchOperator {
+    type Output = Type;
+
+    fn index_expression(&self, ctx: &mut IndexCtx) -> Option<Self::Output> {
+        let key = self.key()?;
+        let key_typ = key.index_expression(ctx).unwrap_or(Type::unknown());
+        let mut result_typ: Option<Type> = None;
+
+        for case in self.cases() {
+            if let Some(case_key) = case.key() {
+                let case_key_typ = case_key.index_expression(ctx).unwrap_or(Type::unknown());
+                if key_typ
+                    .resolve_with(&ctx.symbol_map, &case_key_typ)
+                    .is_none()
+                {
+                    ctx.error_by_syntax(
+                        case_key.syntax(),
+                        format!("inconsistent key types {key_typ} and {case_key_typ} for !switch",),
+                    );
+                }
+            }
+
+            if let Some(value) = case.value() {
+                let value_typ = value.index_expression(ctx).unwrap_or(Type::unknown());
+                merge_switch_result_type(ctx, &mut result_typ, value_typ, &value);
+            }
+        }
+
+        if let Some(default_value) = self.default_value() {
+            let default_typ = default_value
+                .index_expression(ctx)
+                .unwrap_or(Type::unknown());
+            merge_switch_result_type(ctx, &mut result_typ, default_typ, &default_value);
+        }
+
+        let result_typ = result_typ.unwrap_or(Type::unknown());
+        if result_typ.is_uninitialized() {
+            ctx.error_by_syntax(
+                self.syntax(),
+                "could not determine result type for !switch from its arguments",
+            );
+            return Some(Type::unknown());
+        }
+        Some(result_typ)
+    }
+}
+
+fn merge_switch_result_type(
+    ctx: &mut IndexCtx,
+    result_typ: &mut Option<Type>,
+    value_typ: Type,
+    value: &ast::Value,
+) {
+    *result_typ = match result_typ.as_ref() {
+        None => Some(value_typ),
+        Some(current) => match current.resolve_with(&ctx.symbol_map, &value_typ) {
+            Some(common) => Some(common),
+            None => {
+                ctx.error_by_syntax(
+                    value.syntax(),
+                    format!("inconsistent result types {current} and {value_typ} for !switch"),
+                );
+                Some(Type::unknown())
+            }
+        },
+    };
 }
 
 impl IndexValue for ast::InnerValue {
@@ -1491,6 +1590,9 @@ impl IndexValue for ast::SimpleValue {
             }
             ast::SimpleValue::BangOperator(bang_operator) => bang_operator.index_expression(ctx),
             ast::SimpleValue::CondOperator(cond_operator) => cond_operator.index_expression(ctx),
+            ast::SimpleValue::SwitchOperator(switch_operator) => {
+                switch_operator.index_expression(ctx)
+            }
         };
 
         if let Some(ref typ) = typ {
@@ -1719,6 +1821,37 @@ class Bar;
         let (db, f) = tests::load_single_file_with_tblgen("testdata/value.td");
         let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_symbol_map(&index.symbol_map));
+        insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
+    }
+
+    #[test]
+    fn llvm23_features() {
+        let (db, f) = tests::single_file(
+            r#"
+class Features {
+  list<int> Items = [2, 3];
+  string Name = "base";
+  code Snippet = [{ base }];
+  dag Nodes = (?);
+  int Unsupported = 0;
+  bits<4> Flags = 0;
+  let append Items = [4];
+  let prepend Name = "prefix";
+  let append Snippet = [{ suffix }];
+  let prepend Nodes = (?);
+  let append Unsupported = 1;
+  let append Flags{0} = 1;
+}
+
+defvar Sorted = !sort(x, [3, 1, 2], x);
+defvar BadSort = !sort(x, [3, 1, 2], [x]);
+defvar Selected = !switch(2, 1: "one", 2: "two", "other");
+defvar BadKey = !switch(2, "one": 1, 2: 2, 0);
+defvar BadResult = !switch(2, 1: "one", 2: 2, "other");
+defvar AllUnset = !switch(2, 1: ?, 2: ?, ?);
+"#,
+        );
+        let index = db.index(f.source_unit_id());
         insta::assert_snapshot!(dump_diagnostics(&index.diagnostics, &f));
     }
 }
