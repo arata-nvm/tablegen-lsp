@@ -22,7 +22,7 @@ See [`docs/configuration.md`](docs/configuration.md) for configuration options.
 
 ### Dependencies
 
-- LLVM 22
+- LLVM 23.1.0
 
 ### Building from Source
 
@@ -32,10 +32,10 @@ git clone --recurse-submodules https://github.com/arata-nvm/tablegen-lsp
 cd tablegen-lsp
 
 # Linux
-TABLEGEN_220_PREFIX=/usr/lib/llvm-22 cargo build
+TABLEGEN_230_PREFIX=/usr/lib/llvm-23 cargo build
 
 # macOS
-brew install llvm@22
+brew install llvm@23
 cargo build
 ```
 

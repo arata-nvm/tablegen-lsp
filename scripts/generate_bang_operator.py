@@ -56,12 +56,14 @@ SYNTAX_KIND_BY_NAME = {
     "setdagopname": "XSetDagOpName",
     "shl": "XShl",
     "size": "XSize",
+    "sort": "XSort",
     "sra": "XSra",
     "srl": "XSrl",
     "strconcat": "XStrConcat",
     "sub": "XSub",
     "subst": "XSubst",
     "substr": "XSubstr",
+    "switch": "XSwitch",
     "tail": "XTail",
     "tolower": "XToLower",
     "toupper": "XToUpper",
@@ -263,6 +265,13 @@ def build_documentation_from_lines(block_lines: list[str]) -> tuple[str, str]:
             while code_start < len(body_lines) and body_lines[code_start] == "":
                 code_start += 1
 
+            if code_start < len(body_lines) and body_lines[code_start].startswith(
+                ".. code-block::"
+            ):
+                code_start += 1
+                while code_start < len(body_lines) and body_lines[code_start] == "":
+                    code_start += 1
+
             if code_start < len(body_lines):
                 code_indent = len(body_lines[code_start]) - len(
                     body_lines[code_start].lstrip(" ")
@@ -272,6 +281,8 @@ def build_documentation_from_lines(block_lines: list[str]) -> tuple[str, str]:
                 while code_end < len(body_lines):
                     candidate = body_lines[code_end]
                     if candidate == "":
+                        if code_indent == 0 and any(code_lines):
+                            break
                         code_lines.append("")
                         code_end += 1
                         continue

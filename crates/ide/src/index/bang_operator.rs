@@ -298,6 +298,55 @@ impl IndexExpression for ast::BangOperator {
                 let expr_typ = expr_typ.unwrap_or(Type::unknown());
                 Some(Type::list(expr_typ))
             }
+            SyntaxKind::XSort => {
+                common::check_type_annotation(ctx, self, meta);
+                let values = common::expect_values(ctx, self, meta);
+
+                let var = values.first()?;
+                let list = values.get(1)?;
+                let key = values.get(2)?;
+
+                let list_typ = list.index_expression(ctx)?;
+                let var_typ = match list_typ.list_element_type() {
+                    Ok(elm_typ) => elm_typ,
+                    Err(err) => {
+                        ctx.error_by_syntax(list.syntax(), err.to_string());
+                        Type::unknown()
+                    }
+                };
+
+                let (var_name, var_define_loc) = match var.inner_values().next()?.simple_value() {
+                    Some(ast::SimpleValue::Identifier(identifier)) => {
+                        super::common::identifier(&identifier, ctx)?
+                    }
+                    _ => {
+                        ctx.error_by_syntax(var.syntax(), "expected identifier for !sort variable");
+                        return Some(list_typ);
+                    }
+                };
+
+                let variable = Variable::new(
+                    var_name.clone(),
+                    var_typ,
+                    VariableKind::XSort,
+                    var_define_loc,
+                );
+                let var_id = ctx.symbol_map.add_variable(variable);
+                ctx.scopes.push(ScopeKind::XSort(var_name, var_id));
+                let key_typ = key.index_expression(ctx);
+                ctx.scopes.pop();
+
+                if let Some(key_typ) = key_typ
+                    && !key_typ.is_sort_key()
+                {
+                    ctx.error_by_syntax(
+                        key.syntax(),
+                        format!("expected bit, bits, int, or string sort key; found {key_typ}"),
+                    );
+                }
+
+                Some(list_typ)
+            }
             SyntaxKind::XGe | SyntaxKind::XGt | SyntaxKind::XLe | SyntaxKind::XLt => {
                 common::check_type_annotation(ctx, self, meta);
                 let values = common::expect_values(ctx, self, meta);

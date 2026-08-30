@@ -1,4 +1,4 @@
-use syntax::ast;
+use syntax::{ast, syntax_kind::SyntaxKind};
 
 use crate::bang_operator::get_metadata_for_syntax_kind;
 use crate::db::IndexDatabase;
@@ -37,8 +37,21 @@ pub fn exec(
         });
     }
 
-    if let Some(bang_operator) = node_at_pos.ancestor::<ast::BangOperator>() {
-        let operator_kind = bang_operator.kind()?;
+    let operator_kind = node_at_pos
+        .ancestor::<ast::BangOperator>()
+        .and_then(|operator| operator.kind())
+        .or_else(|| {
+            node_at_pos
+                .ancestor::<ast::CondOperator>()
+                .map(|_| SyntaxKind::XCond)
+        })
+        .or_else(|| {
+            node_at_pos
+                .ancestor::<ast::SwitchOperator>()
+                .map(|_| SyntaxKind::XSwitch)
+        });
+
+    if let Some(operator_kind) = operator_kind {
         let metadata = get_metadata_for_syntax_kind(operator_kind)?;
 
         return Some(Hover {
@@ -92,6 +105,7 @@ fn extract_symbol_signature(
             VariableKind::XFilter => format!("{} {}", variable.typ, variable.name),
             VariableKind::XFoldl => format!("{} {}", variable.typ, variable.name),
             VariableKind::XForeach => format!("{} {}", variable.typ, variable.name),
+            VariableKind::XSort => format!("{} {}", variable.typ, variable.name),
         },
         Symbol::Defset(defset) => {
             format!("{} {}", defset.typ, defset.name)
@@ -169,5 +183,17 @@ class $Foo;
     #[test]
     fn bang_operator() {
         insta::assert_debug_snapshot!(check("defvar a = !add$(1, 2);"));
+    }
+
+    #[test]
+    fn switch_operator() {
+        let switch = check("defvar a = !s$witch(1, 1: \"one\", \"other\");");
+        assert!(switch.signature.starts_with("!switch(key,"));
+    }
+
+    #[test]
+    fn cond_operator() {
+        let cond = check("defvar a = !c$ond(false: 0, true: 1);");
+        assert!(cond.signature.starts_with("!cond(cond1:"));
     }
 }

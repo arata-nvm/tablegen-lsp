@@ -7,7 +7,7 @@ use crate::{
 
 use super::{delimited, statement, r#type};
 
-pub(super) const VALUE_START: [TokenKind; 67] = [
+pub(super) const VALUE_START: [TokenKind; 70] = [
     TokenKind::IntVal,
     TokenKind::BinaryIntVal,
     TokenKind::StrVal,
@@ -53,6 +53,7 @@ pub(super) const VALUE_START: [TokenKind; 67] = [
     T![!listsplat],
     T![!log2],
     T![!lt],
+    T![!match],
     T![!mul],
     T![!ne],
     T![!not],
@@ -65,12 +66,14 @@ pub(super) const VALUE_START: [TokenKind; 67] = [
     T![!setdagopname],
     T![!shl],
     T![!size],
+    T![!sort],
     T![!sra],
     T![!srl],
     T![!strconcat],
     T![!sub],
     T![!subst],
     T![!substr],
+    T![!switch],
     T![!tail],
     T![!tolower],
     T![!toupper],
@@ -233,7 +236,7 @@ pub(super) fn field_suffix(p: &mut Parser) -> CompletedMarker {
     CompletedMarker::Success
 }
 
-// SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator
+// SimpleValue ::= Integer | String | Code | Boolean | Uninitialized | Bits | List | Dag | Identifier | ClassValue | BangOperator | CondOperator | SwitchOperator
 pub(super) fn simple_value(p: &mut Parser) -> CompletedMarker {
     match p.peek() {
         TokenKind::IntVal | TokenKind::BinaryIntVal => integer(p),
@@ -247,6 +250,7 @@ pub(super) fn simple_value(p: &mut Parser) -> CompletedMarker {
         TokenKind::Id => identifier_or_class_value(p),
         kind if kind.is_bang_operator() => bang_operator(p),
         kind if kind.is_cond_operator() => cond_operator(p),
+        kind if kind.is_switch_operator() => switch_operator(p),
         _ => {
             p.error_and_recover("unknown token when parsing a value");
             CompletedMarker::Fail
@@ -468,6 +472,43 @@ pub(super) fn cond_clause(p: &mut Parser) -> CompletedMarker {
     value(p);
     p.expect(T![:]);
     value(p);
+    p.finish_node();
+    CompletedMarker::Success
+}
+
+// SwitchOperator ::= SWITCHOP "(" Value "," SwitchCase ( "," SwitchCase )* "," Value ")"
+// SwitchCase ::= Value ":" Value
+pub(super) fn switch_operator(p: &mut Parser) -> CompletedMarker {
+    p.start_node(SyntaxKind::SwitchOperator);
+    p.expect(T![!switch]);
+    p.expect(T!['(']);
+    value(p);
+    p.expect_with_msg(T![,], "expected at least one case after !switch key");
+
+    let mut case_count = 0;
+    let mut has_default = false;
+    while !p.at(T![')']) && !p.eof() {
+        let checkpoint = p.checkpoint();
+        value(p);
+        if p.eat_if(T![:]) {
+            p.start_node_at(checkpoint, SyntaxKind::SwitchCase);
+            value(p);
+            p.finish_node();
+            case_count += 1;
+            p.expect_with_msg(T![,], "expected ',' after !switch case");
+        } else {
+            has_default = true;
+            break;
+        }
+    }
+
+    if case_count == 0 {
+        p.error("expected at least one case in !switch");
+    }
+    if !has_default {
+        p.error("expected default value at end of !switch");
+    }
+    p.expect_with_msg(T![')'], "expected default value at end of !switch");
     p.finish_node();
     CompletedMarker::Success
 }

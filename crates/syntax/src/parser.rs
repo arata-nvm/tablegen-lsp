@@ -94,6 +94,11 @@ impl<T: TokenStream> ParserBase<T> {
     }
 
     #[inline]
+    pub(crate) fn current_text(&self) -> &str {
+        self.token_stream.text(self.current_range.clone())
+    }
+
+    #[inline]
     pub(crate) fn at(&self, kind: TokenKind) -> bool {
         self.peek() == kind
     }

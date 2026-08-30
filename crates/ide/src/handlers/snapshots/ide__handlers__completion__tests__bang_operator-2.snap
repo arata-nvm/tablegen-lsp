@@ -62,7 +62,7 @@ expression: "check(\"!str$\")"
     CompletionItem {
         label: "cond",
         insert_text_snippet: Some(
-            "cond(${1}, ${2}, ${3}, ${4}, ${5}, ${6})$0",
+            "cond(${1}: ${2})$0",
         ),
         detail: "",
         documentation: Some(
@@ -662,6 +662,20 @@ expression: "check(\"!str$\")"
         item_type: None,
     },
     CompletionItem {
+        label: "sort",
+        insert_text_snippet: Some(
+            "sort(${1}, ${2}, ${3})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator creates a new `list` containing the same elements as *list*\nbut in sorted order. To determine the order, TableGen binds the variable\n*var* to each element and evaluates the *key* expression, which presumably\nrefers to *var*. The key must produce a `string` or integer value\n(`bit`, `bits`, or `int`); all keys must be of the same type. Elements\nwith equal keys preserve their original relative order, resulting in a\nstable sort.\n\nFor example, to sort a list of records by their `Name` field:\n\n```\nlist<Thing> sorted = !sort(t, Things, t.Name);\n```",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
         label: "sra",
         insert_text_snippet: Some(
             "sra(${1}, ${2})$0",
@@ -739,6 +753,20 @@ expression: "check(\"!str$\")"
         detail: "",
         documentation: Some(
             "This operator extracts a substring of the given *string*. The starting\nposition of the substring is specified by *start*, which can range\nbetween 0 and the length of the string. The length of the substring\nis specified by *length*; if not specified, the rest of the string is\nextracted. The *start* and *length* arguments must be integers.",
+        ),
+        kind: Keyword,
+        sort_text: None,
+        trigger_signature_help: true,
+        item_type: None,
+    },
+    CompletionItem {
+        label: "switch",
+        insert_text_snippet: Some(
+            "switch(${1}, ${2}: ${3}, ${4})$0",
+        ),
+        detail: "",
+        documentation: Some(
+            "This operator compares *key* to each *casei* in turn using `!eq`.\nIf *key* equals *casei*, the operator returns *vali*. If no case\nmatches, the operator returns *default* --- the trailing argument\nwith no `:` is the default value, identified by position. Both\nthe trailing default and at least one *casei* : *vali* pair are\nmandatory.\n\n`!switch` is a compact form of `!cond` using `!eq` comparisons.\nThe expression `!switch(key, c1: v1, c2: v2, vd)` is equivalent to\n`!cond(!eq(key, c1): v1, !eq(key, c2): v2, true: vd)`.\n\nThis example maps an integer size to a register-class name:\n\n```\n!switch(size, 1: \"byte\", 2: \"halfword\", 4: \"word\", \"unknown\")\n```\n\n(See also `!cond`.)",
         ),
         kind: Keyword,
         sort_text: None,
