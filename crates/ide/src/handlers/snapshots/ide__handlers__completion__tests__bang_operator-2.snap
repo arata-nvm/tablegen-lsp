@@ -62,7 +62,7 @@ expression: "check(\"!str$\")"
     CompletionItem {
         label: "cond",
         insert_text_snippet: Some(
-            "cond(${1}, ${2}, ${3}, ${4}, ${5}, ${6})$0",
+            "cond(${1}: ${2})$0",
         ),
         detail: "",
         documentation: Some(
