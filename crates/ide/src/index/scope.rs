@@ -149,6 +149,7 @@ pub enum ScopeKind {
     XFilter(EcoString, VariableId),
     XFoldl(EcoString, VariableId, EcoString, VariableId),
     XForeach(EcoString, VariableId),
+    XSort(EcoString, VariableId),
 }
 
 impl Scope {
@@ -215,6 +216,7 @@ impl Scope {
             ScopeKind::Foreach(ref var_name, var_id)
             | ScopeKind::XFilter(ref var_name, var_id)
             | ScopeKind::XForeach(ref var_name, var_id)
+            | ScopeKind::XSort(ref var_name, var_id)
                 if name == var_name =>
             {
                 Some(var_id)

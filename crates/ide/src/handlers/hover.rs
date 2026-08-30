@@ -47,6 +47,14 @@ pub fn exec(
         });
     }
 
+    if node_at_pos.ancestor::<ast::SwitchOperator>().is_some() {
+        let metadata = get_metadata_for_syntax_kind(syntax::syntax_kind::SyntaxKind::XSwitch)?;
+        return Some(Hover {
+            signature: metadata.signature.to_string(),
+            document: Some(metadata.documentation.to_string()),
+        });
+    }
+
     None
 }
 
@@ -92,6 +100,7 @@ fn extract_symbol_signature(
             VariableKind::XFilter => format!("{} {}", variable.typ, variable.name),
             VariableKind::XFoldl => format!("{} {}", variable.typ, variable.name),
             VariableKind::XForeach => format!("{} {}", variable.typ, variable.name),
+            VariableKind::XSort => format!("{} {}", variable.typ, variable.name),
         },
         Symbol::Defset(defset) => {
             format!("{} {}", defset.typ, defset.name)
@@ -169,5 +178,11 @@ class $Foo;
     #[test]
     fn bang_operator() {
         insta::assert_debug_snapshot!(check("defvar a = !add$(1, 2);"));
+    }
+
+    #[test]
+    fn switch_operator() {
+        let switch = check("defvar a = !s$witch(1, 1: \"one\", \"other\");");
+        assert!(switch.signature.starts_with("!switch(key,"));
     }
 }

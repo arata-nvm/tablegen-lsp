@@ -1,0 +1,38 @@
+---
+source: crates/ide/src/index.rs
+expression: "dump_diagnostics(&index.diagnostics, &f)"
+---
+/main.td
+let append requires a list, string, code, or dag field; found int
+  let append Unsupported = 1;
+      ^^^^^^
+
+/main.td
+let append requires a list, string, code, or dag field; found bits<4>
+  let append Flags{0} = 1;
+      ^^^^^^
+
+/main.td
+let append cannot be combined with a bit range
+  let append Flags{0} = 1;
+                   ^
+
+/main.td
+expected bit, bits, int, or string sort key; found list<int>
+defvar BadSort = !sort(x, [3, 1, 2], [x]);
+                                     ^^^
+
+/main.td
+inconsistent key types int and string for !switch
+defvar BadKey = !switch(2, "one": 1, 2: 2, 0);
+                           ^^^^^
+
+/main.td
+inconsistent result types string and int for !switch
+defvar BadResult = !switch(2, 1: "one", 2: 2, "other");
+                                           ^
+
+/main.td
+could not determine result type for !switch from its arguments
+defvar AllUnset = !switch(2, 1: ?, 2: ?, ?);
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^

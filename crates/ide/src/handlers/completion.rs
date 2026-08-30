@@ -494,7 +494,9 @@ impl<'a> CompletionContext<'a> {
 
     fn complete_bang_operators(&mut self) {
         for meta in bang_operator::OPS {
-            let snippet = if meta.needs_type_annotation {
+            let snippet = if meta.name == "switch" {
+                "switch(${1}, ${2}: ${3}, ${4})$0".to_string()
+            } else if meta.needs_type_annotation {
                 let args = (0..meta.min_args)
                     .map(|i| format!("${{{}}}", i + 2))
                     .collect::<Vec<_>>()
