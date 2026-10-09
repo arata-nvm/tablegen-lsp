@@ -1,16 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "minimumReleaseAge": "7 days",
-  "packageRules": [
-    {
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true
-    }
+  "extends": [
+    "config:best-practices",
+    "security:minimumReleaseAgeCrate",
+    ":automergeMinor"
   ],
   "vulnerabilityAlerts": {
-    "labels": ["type:security"],
-    "minimumReleaseAge": null
+    "labels": ["type:security"]
   },
   "git-submodules": {
     "enabled": true
