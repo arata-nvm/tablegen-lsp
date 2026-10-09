@@ -101,15 +101,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "18.x",
-    "@types/vscode": "^1.82.0",
-    "@vscode/test-electron": "^3.0.0",
-    "@vscode/vsce": "^4.0.0",
-    "esbuild": "^0.28.0",
-    "glob": "^13.0.0",
-    "mocha": "^12.0.0",
-    "typescript": "^7.0.0"
+    "@types/mocha": "10.0.10",
+    "@types/node": "18.19.130",
+    "@types/vscode": "1.140.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2",
+    "glob": "13.0.6",
+    "mocha": "12.0.3",
+    "typescript": "7.0.2"
   },
   "dependencies": {
     "vscode-languageclient": "^10.0.0"
