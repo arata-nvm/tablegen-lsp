@@ -112,6 +112,6 @@
     "typescript": "7.0.2"
   },
   "dependencies": {
-    "vscode-languageclient": "^10.0.0"
+    "vscode-languageclient": "^11.0.0"
   }
 }
