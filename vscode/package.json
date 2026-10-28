@@ -102,7 +102,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
     "@types/mocha": "10.0.10",
-    "@types/node": "18.19.130",
+    "@types/node": "26.6.5",
     "@types/vscode": "1.140.0",
     "@vscode/test-electron": "3.1.0",
     "@vscode/vsce": "4.0.0",
